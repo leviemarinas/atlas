@@ -50,6 +50,7 @@ import { ServiceConfiguration, ServicesHub } from './serviceModules';
 import { PayrollHub, SettingsHub, StatutoryTables } from './StatutoryTables';
 import { ReferenceTables } from './ReferenceTables';
 import { StandardComputationAdmin } from './StandardComputationAdmin';
+import { RoleSwitch } from './RoleContext';
 
 const violet = '#54248f';
 
@@ -148,6 +149,7 @@ function Topbar() {
     <header className="topbar">
       <button className="company-switch">ABC Company Ltd <CaretDown weight="bold" /></button>
       <div className="top-actions">
+        <RoleSwitch />
         <button className="icon-button" aria-label="Search"><MagnifyingGlass /></button>
         <button className="icon-button notification" aria-label="Notifications"><Bell /></button>
         <div className="avatar">JD</div>

@@ -37,6 +37,11 @@ button:disabled { cursor: not-allowed; }
 .company-switch, .profile { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
 .company-switch svg, .profile svg { width: 13px; }
 .top-actions { display: flex; align-items: center; gap: 9px; }
+.role-switch { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid #e2d6ee; border-radius: 999px; background: #faf7fd; }
+.role-switch button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; color: #6f6976; font-size: 10px; font-weight: 500; white-space: nowrap; transition: .15s ease; }
+.role-switch button svg { width: 15px; height: 15px; }
+.role-switch button:hover { color: var(--violet); }
+.role-switch button.active { background: var(--violet); color: white; box-shadow: 0 2px 7px rgba(84,36,143,.28); }
 .icon-button { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 8px; }
 .icon-button:hover { background: #efedf3; }
 .icon-button svg { width: 21px; height: 21px; }
@@ -222,6 +227,10 @@ textarea { min-height: 72px; resize: vertical; }
 .config-table th, .config-table td { padding: 10px 9px; white-space: nowrap; }
 .config-table th:last-child, .config-table td:last-child { width: 98px; }
 .row-actions.always { opacity: 1; }
+.row-lock { width: 26px; height: 26px; display: grid; place-items: center; color: #a99cb8; }
+.row-lock svg { width: 15px; height: 15px; }
+.drawer-lock-note { display: inline-flex; align-items: center; gap: 7px; color: #6f6976; font-size: 9.5px; line-height: 1.4; }
+.drawer-lock-note svg { width: 17px; height: 17px; color: var(--violet); flex: 0 0 auto; }
 .status-pill { display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; border-radius: 12px; font-size: 9px; font-weight: 600; background: #eeeaf2; color: #6d6772; }
 .status-pill.active { background: #e4f7ed; color: #168252; }
 .status-pill.inactive { background: #f4edf5; color: #8a668f; }

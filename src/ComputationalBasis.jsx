@@ -10,6 +10,7 @@ import {
   FilePdf,
   Flask,
   Function,
+  Lock,
   MagnifyingGlass,
   PencilSimple,
   Plus,
@@ -18,6 +19,17 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { PolicyComputations } from './PolicyComputations';
+import { useRole } from './RoleContext';
+
+/**
+ * Built-in standard formulas are maintained in Settings > Standard Computation
+ * Library. A Client Admin may only edit company-specific (admin-defined)
+ * computations; the BRD allows editing "with available fields and operators
+ * only" and forbids creating new computations outright.
+ */
+export function canEditComputation(record, isAdmin) {
+  return isAdmin || record.isBuiltIn === false;
+}
 
 const STORAGE = {
   computations: 'atlas-computational-basis-library-v2',
@@ -429,7 +441,7 @@ function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
   </Modal>;
 }
 
-function ComputationDrawer({ record, onClose, onEdit }) {
+function ComputationDrawer({ record, onClose, onEdit, canEdit }) {
   const mapped = usedFields(record.expression);
   let result = null;
   try { result = evaluateExpression(record.expression, Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { /* validated on edit */ }
@@ -443,7 +455,9 @@ function ComputationDrawer({ record, onClose, onEdit }) {
         <section><h3>Mapped fields</h3><div className="mapped-chip-list">{mapped.map(code => <span key={code}>{fieldMap[code]?.label || code}</span>)}</div></section>
         <section><h3>Standard test result</h3><div className="drawer-test"><Check weight="bold" /><span><small>Passed using sample values</small><strong>₱ {result?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? '—'}</strong></span></div></section>
       </div>
-      <footer><button className="button secondary" onClick={onClose}>Close</button><button className="button primary" onClick={() => onEdit(record)}><PencilSimple /> Edit computation</button></footer>
+      <footer><button className="button secondary" onClick={onClose}>Close</button>{canEdit
+        ? <button className="button primary" onClick={() => onEdit(record)}><PencilSimple /> Edit computation</button>
+        : <span className="drawer-lock-note"><Lock weight="duotone" /> Built-in formula — edit in Settings › Standard Computation Library</span>}</footer>
     </aside>
   </div>;
 }
@@ -493,6 +507,7 @@ function ReferenceEditor({ table: reference, onClose, onSave, onExport }) {
 }
 
 export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab = 'computations' }) {
+  const { isAdmin } = useRole();
   const [computations, setComputations] = useState(() => readStored(STORAGE.computations, seedComputations()).map(item => ({ ...item, isBuiltIn: item.isBuiltIn !== false })));
   const [assignments, setAssignments] = useState(() => readStored(STORAGE.assignments, initialAssignments));
   const [references, setReferences] = useState(() => readStored(STORAGE.references, seedReferences()));
@@ -525,11 +540,16 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
   }), [computations, query, category, status]);
   const pages = Math.max(1, Math.ceil(filteredComputations.length / pageSize));
   const visibleComputations = filteredComputations.slice((page - 1) * pageSize, page * pageSize);
+  const lockedCount = filteredComputations.filter(item => !canEditComputation(item, isAdmin)).length;
   useEffect(() => { setPage(1); }, [query, category, status, tab]);
 
   const saveComputation = draft => {
+    if (!canEditComputation(draft, isAdmin)) {
+      notify({ type: 'error', message: `${draft.code} is a built-in formula. Edit it in Settings › Standard Computation Library.` });
+      return;
+    }
     const version = (Number(draft.version) + 0.1).toFixed(1);
-    const saved = { ...draft, version, updatedBy: 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
+    const saved = { ...draft, version, updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
     delete saved.changeNote;
     setComputations(previous => previous.map(item => item.id === saved.id ? saved : item));
     addHistory({ item: saved.name, type: 'Computation', action: draft.changeNote || 'Formula updated', version });
@@ -566,6 +586,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
       if (codeIndex < 0 || expressionIndex < 0) { notify({ type: 'error', message: 'Use the Atlas template with Code and Expression columns.' }); return; }
       let updated = 0;
       let skipped = 0;
+      let locked = 0;
       const incoming = new Map(lines.map(line => {
         const values = parseCsvLine(line);
         return [values[codeIndex], values];
@@ -573,12 +594,14 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
       setComputations(previous => previous.map(item => {
         const values = incoming.get(item.code);
         if (!values) return item;
+        if (!canEditComputation(item, isAdmin)) { locked += 1; return item; }
         try { evaluateExpression(values[expressionIndex], Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { skipped += 1; return item; }
         updated += 1;
-        return { ...item, expression: values[expressionIndex], version: (Number(item.version) + 0.1).toFixed(1), updatedBy: 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US') };
+        return { ...item, expression: values[expressionIndex], version: (Number(item.version) + 0.1).toFixed(1), updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US') };
       }));
-      addHistory({ item: file.name, type: 'Computation', action: `Bulk update · ${updated} matched, ${skipped} skipped`, version: 'Multiple' });
-      notify({ type: updated ? 'success' : 'error', message: updated ? `${updated} existing computations updated. ${skipped} invalid rows skipped.` : 'No existing computation codes were updated.' });
+      const lockedNote = locked ? ` ${locked} built-in formulas were left unchanged.` : '';
+      addHistory({ item: file.name, type: 'Computation', action: `Bulk update · ${updated} matched, ${skipped} invalid, ${locked} locked`, version: 'Multiple' });
+      notify({ type: updated ? 'success' : 'error', message: updated ? `${updated} computations updated. ${skipped} invalid rows skipped.${lockedNote}` : `No computations were updated.${lockedNote}` });
     };
     reader.readAsText(file);
     event.target.value = '';
@@ -638,9 +661,13 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
         <input ref={computationUploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={updateComputationList} />
         <ReportMenu onCsv={() => { exportCsv('atlas-computational-basis.csv', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis CSV report downloaded.' }); }} onPdf={() => { printReport('Atlas Computational Basis', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis print report prepared.' }); }} />
       </div>
-      <div className="library-notice"><Function weight="duotone" /><span><strong>Standard status is shown for every formula.</strong> Built-in formulas are maintained by the Settings administrator; client assignments consume the active version from this controlled library.</span></div>
+      <div className="library-notice">{isAdmin ? <Function weight="duotone" /> : <Lock weight="duotone" />}<span>{isAdmin
+        ? <><strong>P&amp;A Admin view — every formula is editable.</strong> Changes here update the controlled library for this company and are recorded in Change history.</>
+        : <><strong>Built-in formulas are read-only in the client view.</strong> {lockedCount} of {filteredComputations.length} listed formulas are Atlas standards maintained in Settings › Standard Computation Library. Company-specific formulas remain editable here.</>}</span></div>
       <div className="table-card config-table-card basis-table-card"><table className="config-table basis-table"><thead><tr><th>Code</th><th>Type</th><th>Computation</th><th>Category</th><th>Formula</th><th>Version</th><th>Status</th><th>Action</th></tr></thead><tbody>
-        {visibleComputations.map(item => <tr key={item.id}><td><strong>{item.code}</strong></td><td><span className={`computation-source ${item.isBuiltIn !== false ? 'built-in' : 'admin-defined'}`} title={item.isBuiltIn !== false ? 'Built-in standard computation' : 'Admin-defined computation'}><Function weight="duotone" />{item.isBuiltIn !== false ? 'Built-in' : 'Admin-defined'}</span></td><td><div className="table-title-cell"><strong>{item.name}</strong><small>Updated {item.updatedAt} by {item.updatedBy}</small></div></td><td>{item.category}</td><td><code className="table-formula">{item.expression}</code></td><td>{item.version}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setViewing(item)} aria-label={`View ${item.name}`}><Eye /></button><button onClick={() => setEditing(item)} aria-label={`Edit ${item.name}`}><PencilSimple /></button></div></td></tr>)}
+        {visibleComputations.map(item => <tr key={item.id}><td><strong>{item.code}</strong></td><td><span className={`computation-source ${item.isBuiltIn !== false ? 'built-in' : 'admin-defined'}`} title={item.isBuiltIn !== false ? 'Built-in standard computation' : 'Admin-defined computation'}><Function weight="duotone" />{item.isBuiltIn !== false ? 'Built-in' : 'Admin-defined'}</span></td><td><div className="table-title-cell"><strong>{item.name}</strong><small>Updated {item.updatedAt} by {item.updatedBy}</small></div></td><td>{item.category}</td><td><code className="table-formula">{item.expression}</code></td><td>{item.version}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setViewing(item)} aria-label={`View ${item.name}`}><Eye /></button>{canEditComputation(item, isAdmin)
+          ? <button onClick={() => setEditing(item)} aria-label={`Edit ${item.name}`}><PencilSimple /></button>
+          : <span className="row-lock" title="Built-in formula — edit in Settings › Standard Computation Library"><Lock weight="duotone" /></span>}</div></td></tr>)}
       </tbody></table></div>
       <div className="pagination"><span>Displaying <strong>{visibleComputations.length}</strong> of {filteredComputations.length} computations</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
     </>}
@@ -671,7 +698,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
     </>}
 
     {editing && <FormulaEditor record={editing} onClose={() => setEditing(null)} onSave={saveComputation} onTestHistory={(draft) => addHistory({ item: draft.name, type: 'Computation', action: 'Test calculation passed', version: draft.version })} />}
-    {viewing && <ComputationDrawer record={viewing} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
+    {viewing && <ComputationDrawer record={viewing} canEdit={canEditComputation(viewing, isAdmin)} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
     {assignmentEditing !== undefined && <AssignmentModal record={assignmentEditing} computations={computations} references={references} onClose={() => setAssignmentEditing(undefined)} onSave={saveAssignment} />}
     {referenceEditing && <ReferenceEditor table={referenceEditing} onClose={() => setReferenceEditing(null)} onSave={saveReference} onExport={table => exportCsv(`${table.code.toLowerCase()}-${table.version}.csv`, table.entries, [['key', 'Key'], ['value', 'Value'], ['note', 'Note']])} />}
   </div>;
