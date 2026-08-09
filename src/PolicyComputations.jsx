@@ -142,7 +142,7 @@ export function readHierarchy(references) {
   return rows.length ? rows.sort((a, b) => a.rank - b.rank) : fallbackHierarchy;
 }
 
-function readPolicies() {
+export function readPolicies() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (!saved) return seedPolicies;

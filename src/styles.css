@@ -691,12 +691,18 @@ textarea { min-height: 72px; resize: vertical; }
 .statutory-entry-grid label strong { min-height: 35px; padding: 9px 0; border-bottom: 1px solid var(--line); color: #29242f; font-size: 10px; }
 .statutory-entry-grid input:disabled { color: #645c6b; background: #f4f3f5; }
 
-/* Company policy link */
-.rule-policy-banner { min-height: 62px; margin-bottom: 11px; padding: 11px 13px; border: 1px solid #deccea; border-radius: 7px; color: var(--violet); background: #faf7fd; display: grid; grid-template-columns: 31px 1fr auto; gap: 10px; align-items: center; }
-.rule-policy-banner > svg { width: 27px; height: 27px; }
-.rule-policy-banner > span { display: grid; gap: 2px; }
-.rule-policy-banner strong { font-size: 10px; }
-.rule-policy-banner small { color: var(--muted); font-size: 8px; }
+/* Read-only reflection of the Computational Basis policy parameters */
+.derived-policies { margin-bottom: 12px; border: 1px solid #deccea; border-radius: 7px; background: #faf7fd; overflow: hidden; }
+.derived-policies > header { padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.derived-policies > header > div { display: flex; align-items: center; gap: 10px; }
+.derived-policies > header svg { width: 27px; height: 27px; color: var(--violet); flex: 0 0 auto; }
+.derived-policies h2 { margin: 0; color: var(--violet); font-size: 10px; }
+.derived-policies p { margin: 2px 0 0; color: var(--muted); font-size: 8px; max-width: 62ch; }
+.derived-policies table { width: 100%; border-top: 1px solid #e6d9f0; background: white; table-layout: auto; }
+.derived-policies th, .derived-policies td { padding: 7px 13px; font-size: 8px; text-align: left; }
+.derived-policies th { color: var(--muted); font-weight: 500; background: #fcfafe; }
+.derived-policies td:first-child { color: var(--violet); font-weight: 500; white-space: nowrap; }
+.derived-value { display: inline-block; padding: 2px 7px; border-radius: 4px; background: var(--violet-soft); color: var(--violet); font-weight: 500; }
 
 /* Take-home and retirement policy engines */
 .policy-workspace { padding: 12px 0 30px; }
@@ -964,8 +970,8 @@ textarea { min-height: 72px; resize: vertical; }
   .statutory-main { padding-inline: 17px; }
   .statutory-version-meta, .statutory-entry-grid, .policy-form-grid, .policy-test-grid { grid-template-columns: 1fr; }
   .policy-form-grid label.wide { grid-column: 1; }
-  .rule-policy-banner { grid-template-columns: 31px 1fr; }
-  .rule-policy-banner .button { grid-column: 1 / -1; }
+  .derived-policies > header .button { width: 100%; }
+  .derived-policies { overflow-x: auto; }
   .reference-screen { grid-template-columns: 58px 1fr; }
   .reference-screen .reference-sidebar { display: none; }
   .reference-page { padding-inline: 16px; }

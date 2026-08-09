@@ -51,6 +51,7 @@ import { PayrollHub, SettingsHub, StatutoryTables } from './StatutoryTables';
 import { ReferenceTables } from './ReferenceTables';
 import { StandardComputationAdmin } from './StandardComputationAdmin';
 import { RoleSwitch } from './RoleContext';
+import { readPolicies } from './PolicyComputations';
 
 const violet = '#54248f';
 
@@ -92,21 +93,16 @@ const baseRules = [
   { id: 10, category: 'Pay and Earnings', subcategory: 'Earnings and Allowances', rule: 'Wage of Kasambahay', parameter: '-', enabled: true },
   { id: 11, category: 'Pay and Earnings', subcategory: 'Benefits', rule: 'Meal allowance eligibility', parameter: '₱120/day', enabled: false },
   { id: 12, category: 'Attendance & Timekeeping', subcategory: 'Overtime', rule: 'Overtime starts after the regular shift', parameter: '30 mins', enabled: true },
-  { id: 13, category: 'Pay and Earnings', subcategory: 'Take-Home Pay', rule: 'Net Pay Protection is enabled for all assigned employees.', parameter: 'Enabled', enabled: true },
-  { id: 14, category: 'Pay and Earnings', subcategory: 'Take-Home Pay', rule: 'Protected minimum is based on gross pay less reimbursements and receivables.', parameter: '30%', enabled: true },
-  { id: 15, category: 'Pay and Earnings', subcategory: 'Take-Home Pay', rule: 'BIR withholding tax, SSS, PhilHealth, and Pag-IBIG are mandatory and shall always be applied in full.', parameter: 'Never deferred', enabled: true },
-  { id: 16, category: 'Pay and Earnings', subcategory: 'Deduction Hierarchy', rule: 'Adjust controllable loans and deductions only up to the amount needed to meet the protected take-home threshold.', parameter: 'Rank 1 first', enabled: true },
-  { id: 17, category: 'Pay and Earnings', subcategory: 'Deferred Deductions', rule: 'Deferred deductions carry forward with the original due amount, deducted amount, deferred amount, next schedule, and remaining balance.', parameter: 'Auto carry-forward', enabled: true },
-  { id: 18, category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Statutory retirement eligibility requires at least age 60 and five years of service; compulsory age is 65.', parameter: '60 / 65 years; 5 years service', enabled: true },
-  { id: 19, category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Use the higher qualifying value between RA 7641 and the company retirement plan.', parameter: 'More beneficial value', enabled: true },
-  { id: 20, category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'A service fraction of six months or more counts as one full year for retirement computation.', parameter: '6-month rounding rule', enabled: true },
 ];
 
+// Take-home, deduction-hierarchy and retirement entries are intentionally absent:
+// they are computation parameters owned by Computational Basis, surfaced here
+// read-only by DerivedPolicies rather than duplicated as editable free text.
 const initialRules = [
   ...baseRules,
   ...Array.from({ length: 65 }, (_, index) => {
     const source = baseRules[index % baseRules.length];
-    return { ...source, id: index + 21, rule: `${source.rule.split('\n')[0]} — policy ${index + 2}` };
+    return { ...source, id: baseRules.length + index + 1, rule: `${source.rule.split('\n')[0]} — policy ${index + 2}` };
   }),
 ];
 
@@ -334,6 +330,43 @@ function Modal({ title, onClose, children, width = '760px' }) {
 
 const categories = ['All categories', ...new Set(initialRules.map(r => r.category))];
 
+const peso = value => `₱${Number(value || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 })}`;
+
+/**
+ * Take-home and retirement qualifiers are configured in Computational Basis.
+ * They are shown here read-only so Company Rules stays a single register of
+ * company policy without becoming a second, editable copy of the parameters.
+ */
+function DerivedPolicies({ onOpenPolicies }) {
+  const policies = useMemo(() => readPolicies(), []);
+  const { takeHome, retirement, finalPay } = policies;
+  const rows = [
+    ['Take-Home Pay', 'Net pay protection', takeHome.enabled ? 'Enabled' : 'Disabled'],
+    ['Take-Home Pay', `Protected minimum on ${takeHome.base.toLowerCase()}`, takeHome.thresholdType === 'Percentage' ? `${takeHome.threshold}%` : peso(takeHome.threshold)],
+    ['Take-Home Pay', 'Statutory deductions are always applied in full', 'Never deferred'],
+    ['Take-Home Pay', 'Conflict priority when the loan cap and the threshold disagree', takeHome.priorityChoice],
+    ['Deduction Hierarchy', 'Adjustment order for controllable loans and deductions', 'Reference table REF-011'],
+    ['Deferred Deductions', 'Carry forward with outstanding amount, schedule and balance', takeHome.carryForward ? 'Auto carry-forward' : 'Off'],
+    ['Retirement Pay', 'Eligibility', `Age ${retirement.minimumAge}–${retirement.compulsoryAge}; ${retirement.minimumServiceYears} years service`],
+    ['Retirement Pay', 'Plan basis', retirement.planType],
+    ['Retirement Pay', 'Service rounding', retirement.rounding],
+    ['Final Pay', 'Retirement pay forms part of final pay', finalPay.components['Retirement pay'] ? 'Included' : 'Excluded'],
+    ['Final Pay', 'Net pay rule when negative', finalPay.negativeNetPayRule],
+  ];
+  return (
+    <section className="derived-policies">
+      <header>
+        <div><ShieldCheck weight="duotone" /><div><h2>Derived from Computational Basis</h2><p>These qualifiers are read-only here. Edit them in the policy engines so the rule register and the computations cannot drift apart.</p></div></div>
+        <button className="button secondary" onClick={onOpenPolicies}>Open policy engines <ArrowRight /></button>
+      </header>
+      <table>
+        <thead><tr><th>Sub-Category</th><th>Policy</th><th>Current setting</th></tr></thead>
+        <tbody>{rows.map(([subcategory, rule, parameter]) => <tr key={`${subcategory}-${rule}`}><td>{subcategory}</td><td>{rule}</td><td><span className="derived-value">{parameter}</span></td></tr>)}</tbody>
+      </table>
+    </section>
+  );
+}
+
 function RulesPage({ rules, setRules, setToast, onOpenPolicies }) {
   const [tab, setTab] = useState('Rules');
   const [query, setQuery] = useState('');
@@ -372,7 +405,7 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies }) {
       </div>
       {tab === 'Rules' ? (
         <>
-          <div className="rule-policy-banner"><ShieldCheck weight="duotone" /><span><strong>Take-home and retirement policies</strong><small>Qualifiers live in Company Rules; formulas and scenario testing are versioned in Computational Basis.</small></span><button className="button secondary" onClick={onOpenPolicies}>Open policy engines <ArrowRight /></button></div>
+          <DerivedPolicies onOpenPolicies={onOpenPolicies} />
           <div className="rules-toolbar">
             <div className="search-box"><input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Search rules..." /><MagnifyingGlass /></div>
             <button className={`filter-button ${(category !== 'All categories' || enabledOnly) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
