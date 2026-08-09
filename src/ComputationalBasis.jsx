@@ -34,7 +34,7 @@ export function canEditComputation(record, isAdmin) {
 const STORAGE = {
   computations: 'atlas-computational-basis-library-v2',
   assignments: 'atlas-computational-basis-assignments-v2',
-  references: 'atlas-computational-basis-references-v1',
+  references: 'atlas-computational-basis-references-v2',
   history: 'atlas-computational-basis-history-v2',
 };
 
@@ -163,6 +163,19 @@ const initialAssignments = [
 ];
 
 function refRows(type) {
+  // BRD row 47 keeps the deduction/loan adjustment order in a reference table.
+  // `note` carries "Group · Classification"; `value` is the rank (0 = never adjusted).
+  if (type === 'hierarchy') return [
+    { id: 1, key: 'Statutory deductions', value: '0', note: 'Statutory · Never adjusted' },
+    { id: 2, key: 'HMO', value: '1', note: 'Loan · Company-mandated' },
+    { id: 3, key: 'Educational Loan', value: '2', note: 'Loan · Company-mandated' },
+    { id: 4, key: 'Salary Loan', value: '3', note: 'Loan · Company-mandated' },
+    { id: 5, key: 'SSS Salary Loan', value: '4', note: 'Loan · Government' },
+    { id: 6, key: 'HDMF Salary Loan', value: '5', note: 'Loan · Government' },
+    { id: 7, key: 'SSS Calamity Loan', value: '6', note: 'Loan · Government' },
+    { id: 8, key: 'Optional deductions', value: '7', note: 'Deduction · Optional' },
+    { id: 9, key: 'Lates, Absences & Undertime', value: '8', note: 'Deduction · Attendance' },
+  ];
   if (type === 'rate') return [
     { id: 1, key: 'Employee rate', value: '5.00%', note: 'Effective January 2025' },
     { id: 2, key: 'Employer rate', value: '10.00%', note: 'Effective January 2025' },
@@ -190,7 +203,7 @@ const referenceSeeds = [
   ['REF-008', 'Overtime Premium Rates', 'Earnings', 'rate'],
   ['REF-009', 'Holiday Premium Rates', 'Earnings', 'rate'],
   ['REF-010', 'Factor Days', 'Basic Pay', 'default'],
-  ['REF-011', 'Deduction and Loan Hierarchy', 'Deductions', 'default'],
+  ['REF-011', 'Deduction and Loan Hierarchy', 'Deductions', 'hierarchy'],
   ['REF-012', 'Minimum Take Home Pay', 'Deductions', 'default'],
   ['REF-013', 'Bank Codes', 'Accounting', 'default'],
   ['REF-014', 'General Ledger Mapping', 'Accounting', 'default'],
@@ -646,7 +659,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
     <div className="basis-tabs" role="tablist">
       <button className={tab === 'computations' ? 'active' : ''} onClick={() => setTab('computations')}>Computations <span>{computations.length}</span></button>
       <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Client assignments <span>{assignments.length}</span></button>
-      <button className={tab === 'policies' ? 'active' : ''} onClick={() => setTab('policies')}>Policy engines <span>2</span></button>
+      <button className={tab === 'policies' ? 'active' : ''} onClick={() => setTab('policies')}>Policy engines <span>3</span></button>
       <button className={tab === 'references' ? 'active' : ''} onClick={() => setTab('references')}>Reference tables <span>{references.length}</span></button>
       <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Change history</button>
     </div>
@@ -679,7 +692,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, notify, initialTab
       </tbody></table></div>
     </>}
 
-    {tab === 'policies' && <PolicyComputations notify={notify} />}
+    {tab === 'policies' && <PolicyComputations notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} />}
 
     {tab === 'references' && <>
       <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Reference tables</h2><p>Maintain formula reference sources. Statutory contribution versions are linked here but managed in Settings, then consumed read-only in Payroll.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>
