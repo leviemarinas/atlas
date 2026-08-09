@@ -1,0 +1,252 @@
+===== SHEET: Take Home Pay =====
+1		Sample Take Home Pay Policies								
+3	1	Minimum Take‑Home Pay Based on Basic Salary (employee group assignment)								
+4	E.g	Employees must receive not less than 40% of their basic salary after all payroll deductions per payroll cycle.								
+6		Sample Rules:								
+7	a	Mandatory statutory deductions (SSS, PhilHealth, Pag‑IBIG, WHT) shall be applied in full.								
+8	b	Company loans, cooperative loans, salary advances, and optional deductions may be reduced or deferred to preserve the minimum take‑home pay.								
+9	c	Any deferred deductions shall be carried over to the succeeding payroll cycles.								
+10	d	HR/Payroll shall notify employees when deductions are deferred.								
+12	2	Take‑Home Pay Guarantee on Gross Pay (employee group assignment)								
+13	E.g	Employees must receive at least 30% of their total gross pay (basic pay + allowances + OT + premiums + de minimis + reimbursements/receivables + absences + tardiness + undertime + bonus + other earnings).								
+15		Sample Rules:								
+16	a	All statutory deductions shall still apply in full.								
+17	b	If optional deductions exceed allowable limits, they will be automatically prorated or deferred.								
+18	c	Deductions with existing repayment schedules (e.g., company loans) must be reprioritized to comply with the minimum THP rule.								
+20	3	Take‑Home Pay Guarantee on Gross Pay Less Reimbursements/Receivables (employee group assignment)								
+21	E.g	Employees must receive at least 30% of their total gross pay less reimbursements/receivables (gross pay - reimbursements/receivables).								
+23		Sample Rules:								
+24	a	All statutory deductions shall still apply in full.								
+25	b	If optional deductions exceed allowable limits, they will be automatically prorated or deferred.								
+26	c	Deductions with existing repayment schedules (e.g., company loans) must be reprioritized to comply with the minimum THP rule.								
+28	4	Guaranteed Minimum Net Pay Policy (employee group assignment)								
+29	E.g	All employees must take home not less than ₱8,000 net pay per pay period								
+31		Sample Rules:								
+32	a	Applies equally to daily‑paid, monthly‑paid, probationary, and regular employees.								
+33	b	Non‑essential deductions (e.g., meal charges, gym dues, social club fees) are deprioritized.								
+34	c	HRIS must automatically defer low‑priority deductions when net pay risks falling below the guaranteed minimum.								
+36	5	Guaranteed Minimum Net Pay Policy (employee group assignment)								
+37	E.g	All employees must take home not less than ₱0.00 net pay per pay period								
+39		Sample Rules:								
+40	a	Applies equally to daily‑paid, monthly‑paid, probationary, and regular employees.								
+41	b	Non‑essential deductions (e.g., meal charges, gym dues, social club fees) are deprioritized.								
+42	c	HRIS must automatically defer low‑priority deductions when net pay risks falling below the guaranteed minimum.								
+44	1	Sample Rule on Loan Deduction Cap With Take‑Home Protection (employee group assignment)								
+45	E.g	Total loan repayments may not exceed 25% of the employee’s gross salary unless expressly approved by the Approver.								
+47		Sample Rules:								
+48	a	All loan deductions (company, bank, cooperative) are combined for computation.								
+49	b	If the total exceeds 25%, excess loan repayments shall be restructured.								
+50	c	Ensures that the employee’s take‑home pay remains adequate for living needs.								
+52	2	Sample Rule on Loan Deduction Cap With Take‑Home Protection (employee group assignment)								
+53	E.g	Total loan repayments may not exceed P10,000 unless expressly approved by the Approver.								
+55		Sample Rules:								
+56	a	All loan deductions (company, bank, cooperative) are combined for computation.								
+57	b	If the total exceeds P10,000, excess loan repayments shall be restructured.								
+58	c	Ensures that the employee’s take‑home pay remains adequate for living needs.								
+60	3	Sample Rule on Lates, Absences, Undertime Cap With Take‑Home Protection (employee group assignment)								
+61	E.g	Total LAABS and Undertime deduction may not exceed 25% of the employee’s gross salary unless expressly approved by the Approver.								
+63		Sample Rules:								
+64	a	All LAABS and undertime are combined for computation.								
+65	b	If the total exceeds 25%, excess LAABS and Undertime shall be deferred for deduction.								
+66	c	Ensures that the employee’s take‑home pay remains adequate for living needs.								
+68	4	Sample Rule on Lates, Absences, Undertime Cap With Take‑Home Protection (employee group assignment)								
+69	E.g	Total LAABS and Undertime deduction may not exceed __ number of days unless expressly approved by the Approver.								
+71		Sample Rules:								
+72	a	All LAABS and undertime are combined for computation.								
+73	b	If the total exceeds __ number of days, excess LAABS and Undertime shall be deferred for deduction.								
+74	c	Ensures that the employee’s take‑home pay remains adequate for living needs.								
+76	5	Sample Rule on Lates, Absences, Undertime Cap With Take‑Home Protection (employee group assignment)								
+77	E.g	Total LAABS and Undertime deduction should not result in a net pay lower than the protected minimum unless expressly approved by the Approver.								
+79		Sample Rules:								
+80	a	All LAABS and undertime are combined for computation.								
+81	b	If the total results in a net pay lower than the protected minimum, excess LAABS and Undertime shall be deferred for deduction. The system will automatically adjust the number of LAABS and Undertime to meet the minimum take home pay requirement								
+82	c	Ensures that the employee’s take‑home pay remains adequate for living needs.								
+84	6	Sample Rule on Hierarchy of Deductions/Loans and Take‑Home Safeguard (employee group assignment)								
+85		To ensure fair deduction management, the following order of hierarchy (what will be the first item to be adjusted) applies:.								
+86		Please take note different scenarios and setup: (1) Adjust the amount of the 1st rank. If the 1st rank adjustment will cause the net pay amount to meet the percentage or amount required take home pay, the system doesn't need to adjust/deduct the full amount, only adjust upto the amount needed to meet the requirement. (2) Adjust the amount of the 1st rank. If the 1st rank adjustment will not yet meet the percentage or amount required take home pay, the system will adjust the 2nd rank, and apply and adjust the sequence or order until the employee's minimum take home pay is reached. (3) Deduct the full amount of the 1st rank. If the 1st rank adjustment will cause the net pay amount to meet the percentage or amount required take home pay, the system doesn't need to deduct the full amount of the next ranks.								
+87	E.g.	For sample purposes only depending on the company policy (per company setup)								
+89		Deductions/Loans	Hiearchy (Rank for Adjustment)							
+90	1	Loans								
+91	a.	Company‑mandated deductions								
+92	a1.	HMO	1							
+93	a2.	Educational Loan	2							
+94	a3.	Salary loan.....	3							
+95	b.	Goverment Loan								
+96	b1.	SSS Salary Loan	4							
+97	b2.	HDMF Salary Loan	5							
+98	b3.	SSS Calamity loan....	6							
+100	2	Optional deductions (One time deductions)								
+101		**If the application of deductions results in a net pay lower than the protected minimum, lower‑priority deductions shall be automatically postponed.	7							
+102	3	Statutory deductions	0							
+105	7	Sample Rule on Loan Deduction Cap and Deduction Prioritization With Take‑Home Safeguard (employee group assignment)								
+106	E.g	Loan repayments are already at 25% of the employee's gross salary, but the net pay is still lower than the protected minimum.								
+108	1	Choose what to prioritize - Take Home Pay or Loan Deduction Cap								
+112		Possible Company Set Up								
+114	1	Turn ON or Enable "Net Pay Protection" or "Take Home Pay"								
+115	2	Select Base (Basic Pay, Gross Pay, Etc. per sample policies above)								
+116	3	Set Threshold (40%, 30%, P50,000, P10,000, etc.)								
+117	a	Percentage or Amount								
+118	4	Deductions Caps - limit placed on the total amount or percentage that can be deducted in a payroll period (if applicable)								
+119	a	Base (Basic Pay, Gross Pay, Etc. per sample policies above)								
+120	b	Percentage or Amount								
+121	5	Lates, Absences, Undertime Caps - limit placed on the total number of days or percentage that can be deducted in a payroll period (if applicable)								
+122	a	Base (Basic Pay, Gross Pay, Etc. per sample policies above)								
+123	b	Number of Days or Amount								
+124	6a	Hierarchy of Deductions (what will be the 1st to be adjusted) Rules								
+125	a	1st								
+126	b	2nd ... and so on								
+127	6b	Hierarchy of Loans (what will be the 1st to be adjusted) Rules								
+128	a	1st								
+129	b	2nd ... and so on								
+130	7	Enable Auto-Defer/Stagger Deductions - when earnings are insufficient								
+131		* Log the deferred amount into the employee record								
+132		* Must ensure to deduct until all deferred deductions were already deducted from the employee's payroll								
+133		**Must show the remaining balance								
+134	8	Enable Carry-Forward to Next Payroll								
+135		* Must ensure to deduct until all deferred deductions were already deducted from the employee's payroll								
+136		**Must show the remaining balance								
+137	9	Link Deferred Deductions to Next Payroll - this avoids missing deductions or incorrect loan balances								
+138		System must carry forward:								
+139	a	Outstanding amount								
+140	b	Rescheduled deduction date								
+141	c	New balance								
+142	10	Enable Payslip Tagging - Deferred Deductions								
+143		Deferred Deduction includes:								
+144	a	Deduction Name (e.g. Loan, cash advance, etc.)								
+145	b	Amount originally due - amount supposed to be collected for the pay period								
+146	c	Amount deducted								
+147	d	Deferred amount - entire amount moved to next cutoff								
+148	e	Accumulated amount -								
+149	f	Remaining balance - new total balance after deferment								
+150	g	Reason (e.g. Insufficient Net Pay, Below Net Pay Requirement, etc)								
+151		*Must show the remaining balance so employees can trace repayments								
+152		**If same deduction code/name, must show the cut-off's deferred amount and the accumulated deferred amount. So the admin and employee would know when multiple payroll periods were insufficient for deductions.								
+153	11	Maintain Deduction Ledger or Loan Tracker - multi-cut off loans, partial repayments, accurate balances for wage transparency								
+154		***Must show scheduled deduction amount next cut off and next cut-offs (if applicable)								
+155	12	Employee Group/employee field assignment/employee masterfile								
+156	13	Net Pay Validation								
+157	14	Turn on Exception Alert/Notification to Admin if an employee falls below the threshold even after all deferrals								
+160		** Please note that minimum take-home pay rules never apply to the mandatory statutory deductions:								
+161		BIR witholding tax								
+162		SSS contributions								
+163		Philhealth contributions								
+164		Pag-IBIG contributions								
+166		Possible Computation Steps:								
+167	1	Compute gross income								
+168	2	Apply all statutory deductions								
+169	3	Apply prioritized deductions								
+170		Set priorities or hierarchy so:								
+171	a	Statutory deductions are always deducted								
+172	b	High-priority company/government deductions or loans are deducted is possible								
+173	c	Low-priority company/government deductions or loans are trimmed, reduced, or skipped								
+174	4	Run the take home pay threshold check								
+175		Is the net pay equals or more than the required minimum?								
+176		If yes, payroll posts normally								
+177		If no, system reduces, prorates, or defers lower-priority deductions until the minimum net pay is reached								
+178	5	Report shortfall deductions								
+179		The system should add the uncollected deductions to the next payroll								
+180		It can also be shown in the payslip as "Deferred Deduction" or "Adjustment Next Cycle" so the employee would know								
+181	6	Notify admin/employee								
+182	7	Audit Log								
+===== SHEET: Retirement Pay =====
+1									Standard:
+2		Possible Computation Steps:							
+3	1	Determine daily rate							
+4	2	Determine 22.5 day equivalent (22.5 x daily rate = 1/2 monthly salary equivalent)							
+5	3	Multiply by years of service - fractions equal or more than 6 months count as 1 full year							
+6		Retirement pay = Daily rate x 22.5 x years of service							
+7	4	Integrate/Add to the final pay computation							
+11		Possible Company Set Up							
+12	1	Enable Retirement Module/Configuration							
+13	2	Select retirement plan type							
+14	a	Statutory RA 7641 - company has no retirement plan and the system will use 22.5 day formula automatically (legal minimum)							
+15	b	Company retirement plan - company has its own plan and the system uses company formula and overrides RA 7641 if more beneficial							
+16	3	Employee Group/Employee Field Level							
+17	4	Enter Formula Inputs							
+18	a	Statutory formula (default)							
+19		Daily rate = monthly salary / __ (30, or 26, etc.) calendar days							
+20		Half-month equivalent = Daily Rate x 22.5 days							
+21		Years = FLOOR (ServiceYears) + (IF (Fractional Months >= 6,1,0))							
+22		RetirementPay = Half Month Equivalent * Years							
+23	b	Company plan formula (override)							
+24	b1	Multiplier/Daily rate divisor (e.g. 30 days/year, 45 days/year, etc.) - configurable							
+25	b2	Days per year (22.5 or company plan value) - configurable							
+26	b3	Salary basis (basic pay, average salary, last 36 months salary, etc.) - configurable							
+27	b4	Additional benefits (eg. lump sum bonus, gratuity, etc.) - configurable							
+28	b5	Service year rounding rules - configurable							
+29	b6	Maximum cap or minimum guarantee - configurable							
+30		The system must compute RetirementPay = MAX(StatutoryValue, CompanyPlanValue)							
+31	5	Set Eligibility Rules (Configurable conditions)							
+32		Required fields:							
+33	a	Input minimum age (default 60 years old) - statutory							
+34	b	Compulsory age (65 years old) - statutory							
+35	c	Input minimum service years (5) - statutory							
+36	d	Company early-retirement age (optional)							
+37		** The system should automatically: - Identify eligible employees - Trigger computation on final pay							
+38	6	Configure Taxation Rules							
+39	a	RA 7641 Tax Exemption - tax exempt if conditions under NIRC Section 32 (B)(6)(a) apply							
+40	b	RA 4917 Tax Exemption - if the company has a BIR-approved retirement plan, retirement pay is also tax-exempt.							
+41		**The system must store: - Whether retirement pay is tax exempt - Conditions the system should check automatically							
+42	7	Link to Employee Masterfile							
+43		Ensure every employee is tagged as:							
+44	a	Statutory plan member, OR							
+45	b	Company plan member (if applicable)							
+46	8	Link to Final Pay							
+47		Enable automatic addition to final pay computation							
+48		Retirement pay forms part of final pay.							
+49		**The system has to combine: - Unpaid salary - 13th month pay - Leave conversions -Retirement pay							
+50	9	Audit Trail							
+53		Possible Employee Set Up							
+54	1	Date Hired (to compute years of service) - Employee							
+55	3	Date of Retirement (to determine eligibility - age and service) - Employee							
+56	4	Date of Birth (to check if 60-65 years old at the time of the computation/release) - Employee							
+57	5	Job Level - rank and file/managerial (all are covered under RA 7641 unless plan says otherwise) - Employee							
+58	6	Reason for Separation (retirement vs separation pay) - Employee							
+59	7	Daily Rate Divisor (30 calendar days, or 26 calendar days, etc.)							
+60	8	Half-month salary equivalent (22.5 days)							
+61	9	Year of Service (rounded using 6 month rule)							
+62	10	Plan Type Indicator							
+63		a. RA 7641 statutory plan							
+64		b. RA 4917 BIR approved plan - Company retirement (override statutory if more beneficial)							
+67	1	Eligibility	Age 60-65 + 5 years of service or more						
+68	2	Formula	Daily rate x 22.5 x years of service						
+69	3	Daily rate	Monthly salary / 30 calendar days						
+70	4	Fraction rule	6 months or more is equal to 1 year						
+71	5	Tax	Exempt if under NIRC 32 (B)(6)(a) or RA 4917 conditions						
+72	6	Company plans	Override statutory if more beneficial						
+===== SHEET: Final Pay =====
+1		Possible Set Up
+2	1	Enable Final Pay Module/Configuration
+3	2	Configure Final Pay Components
+4		Turn ON the following mandatory pay:
+5	a	Unpaid Salary
+6	b	Prorated 13th month pay
+7	c	SIL conversion
+8	d	Separation pay (if applicable)
+9	e	Retirement pay (if applicable)
+10	f	Final Tax computation (refund/tax payable)
+11		Add optional company-specific components:
+12	a	convertible VL/Sick Leave beyond SIL
+13	b	Allowances
+14	c	Commissions
+15	d	Cash Bonds return
+16	e	Gratutiy Pay
+17	f	Etc. - Tag other earnings/deductions/loans
+18	3	Configure Company Rules
+19	a	Leave conversion rules
+20	b	Separation pay rules by cause
+21	c	Retirement plan rules
+22	d	Daily rate divisor (30, 26, etc)
+23	e	Rounding rules for years of service
+24	f	Advance 13th month deduction rules
+25	g	Last cutoff computation rules
+26	h	Government loan outstanding balance rules
+27	i	Company deduction/loan outstanding balance rules
+28	j	Net pay rules (if negative)
+29	4	Link Timekeeping and Leave Balances
+30		Final pay must automatically pull: - Last days worked unpaid - Leave balances - Overtime/holiday pay not yet paid - Absences/Tardiness/Undertime not yet deducted
+31	5	Configure Deductions/Loans
+32		Specify: - Only authorized deductions allowed - Property accountabilities - Loan balances
+33		**The system should auto-offset any deductions before computing net final pay
+34	6	Enable Notification to Admin
+35	7	Output - final pay breakdown
