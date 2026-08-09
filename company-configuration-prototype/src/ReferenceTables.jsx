@@ -21,6 +21,7 @@ import {
   Users,
   X,
 } from '@phosphor-icons/react';
+import { RoleSwitch } from './RoleContext';
 
 const groups = [
   { id: 'generic', label: 'Generic Information' },
@@ -52,7 +53,7 @@ function ReferenceRail({ onBack }) {
 }
 
 function ReferenceTopbar() {
-  return <header className="topbar"><button className="company-switch">ABC Company Ltd <CaretDown weight="bold" /></button><div className="top-actions"><button className="icon-button" aria-label="Search"><MagnifyingGlass /></button><button className="icon-button notification" aria-label="Notifications"><Bell /></button><div className="avatar">JD</div><button className="profile">John Doe <CaretDown /></button></div></header>;
+  return <header className="topbar"><button className="company-switch">ABC Company Ltd <CaretDown weight="bold" /></button><div className="top-actions"><RoleSwitch /><button className="icon-button" aria-label="Search"><MagnifyingGlass /></button><button className="icon-button notification" aria-label="Notifications"><Bell /></button><div className="avatar">JD</div><button className="profile">John Doe <CaretDown /></button></div></header>;
 }
 
 function ReferenceSidebar({ activeGroup, setActiveGroup, onBack, closeTable }) {

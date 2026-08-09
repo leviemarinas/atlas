@@ -32,6 +32,7 @@ import {
   PersonalDetails,
   TimeOff,
 } from './EmployeeMasterfileModules';
+import { RoleSwitch } from './RoleContext';
 
 const today = '2026-01-01';
 
@@ -153,7 +154,7 @@ function Rail({ onBack }) {
 }
 
 function EmployeeTopbar() {
-  return <header className="topbar"><button className="company-switch">ABC Company Ltd <CaretDown weight="bold" /></button><div className="top-actions"><button className="icon-button" aria-label="Search"><MagnifyingGlass /></button><button className="icon-button notification" aria-label="Notifications"><Bell /></button><div className="avatar">JD</div><button className="profile">John Doe <CaretDown /></button></div></header>;
+  return <header className="topbar"><button className="company-switch">ABC Company Ltd <CaretDown weight="bold" /></button><div className="top-actions"><RoleSwitch /><button className="icon-button" aria-label="Search"><MagnifyingGlass /></button><button className="icon-button notification" aria-label="Notifications"><Bell /></button><div className="avatar">JD</div><button className="profile">John Doe <CaretDown /></button></div></header>;
 }
 
 function EmployeeSidebar({ onBack, module, setModule, closeDetail }) {
