@@ -131,13 +131,60 @@ Problems:
 
 > **Root cause.** `ComputationalBasis` and `StandardComputationAdmin` both read *and write* the same localStorage key `atlas-computational-basis-library-v2` (`ComputationalBasis.jsx:23`, `StandardComputationAdmin.jsx:17`). There is no admin/client separation to enforce, so client edits silently overwrite the admin library.
 
-> **Duplicate reference-table stores.** The Core "Reference Table" module persists to `atlas-reference-tables-v2` (`ReferenceTables.jsx:119`) while the Computational Basis tab persists to `atlas-computational-basis-references-v1`. Two divergent copies of the same concept.
+> **~~Duplicate reference-table stores.~~ — CORRECTED, not a defect.** I first read the two stores as divergent copies. They are not. The Core "Reference Table" module holds master data lookups (Civil Status, Country, Bank, Department, Job Title). The Computational Basis tab holds payroll computation sources (BIR tax table, contribution tables, factor days, hierarchy). Different data that happens to share a name. BRD row 24 spans both facets in one feature description.
+>
+> A **partial** overlap does remain: `REF-013 Bank Codes`, `REF-015 Departments`, `REF-016 Positions` and `REF-017 Locations` restate Core's Bank, Department, Job Title and Work Location. Left alone — merging them is a sizeable refactor with little prototype benefit.
 
 > **Hierarchy not in a reference table.** BRD row 47 requires it; `REF-011` is a stub.
 
 ---
 
-## 6. Proposed changes (not yet applied)
+## 6. Changes — all applied
+
+Status as of the `Stop duplicating policy parameters in Company Rules` commit. Verified in the running app unless noted.
+
+| | Change | Status |
+|---|---|---|
+| A | Built-ins locked to Settings | Done |
+| B | Client / P&A Admin role switch | Done |
+| C | Three defects fixed | Done |
+| D | Hierarchy sourced from REF-011 | Done |
+| E | Take-home completions | Done |
+| F | Retirement completions | Done |
+| G | Final Pay engine | Done |
+| H | Company Rules cleanup | Done |
+| I | Audit trail on policy saves | Done |
+
+**A. Built-ins locked to Settings.** `canEditComputation()` gates the row edit action, the drawer footer, `saveComputation()`, and the CSV bulk update. In the client view all 219 built-ins show a lock; company-specific computations stay editable. The shared library key is kept deliberately — one source of truth, with writes gated by role rather than a second diverging store.
+
+**B. Role switch.** `RoleContext.jsx` persists the active role to `atlas-active-role-v1`; `RoleSwitch` sits in all four topbars. P&A Admin unlocks formula editing everywhere and the add/edit/delete actions in the Standard Computation Library.
+
+**C. Defects.**
+- Conflict priority now drives `takeHomeResult()`. Verified: at an 80% threshold, "Take-Home Pay" defers ₱6,950 of loans and meets the minimum; "Loan Deduction Cap" protects the loans, defers only ₱1,650 of non-loan items and raises a ₱5,300 exception.
+- Tax exemption: an explicit "Taxable company benefit" rule now wins over the RA 4917 toggle. Verified both directions.
+- Service rounding: three options that change the result. Verified — 12y 6m gives 13 years (₱795,000) under the six-month rule and 12 years (₱735,000) under round-down.
+
+**D. Hierarchy in REF-011.** Seeded with the workbook's own ranks (rows 90–103): statutory 0, loans 1–6, optional 7, LAUT 8. `readHierarchy()` parses `key`/`value`/`note` into name/rank/group, displayed as the workbook's separate 6a and 6b sections, with the Atlas default order as fallback when the table is empty. The reference store key moved to `-v2` so existing sessions pick up the seed.
+
+**E. Take-home.** Deductions cap with selectable base; selectable bases for the loan and attendance caps; ledger extended with Accumulated and Remaining balance; carry-forward table with outstanding amount, rescheduled date and new balance; payslip tag table carrying all seven a–g fields.
+
+**F. Retirement.** `additionalBenefits` promoted from scenario input to plan configuration; "Average salary" basis added; the tax determination and its reason are stored and shown; a roster panel identifies eligible retirees automatically (2 of 5 in the seed). `Date of Retirement`, `Retirement Plan Type` and `Daily Rate Divisor` added to the employee record.
+
+**G. Final Pay.** Third policy engine covering the workbook's six mandatory and five optional components, ten company rules, auto-offset, and a breakdown that consumes the retirement result.
+
+**H. Company Rules.** The eight duplicated parameter rows are gone; `DerivedPolicies` reflects live policy configuration read-only. "Apply New Rule" retained per BRD row 61.
+
+**I. Audit trail.** `addHistory` is passed into the engines; every policy save writes a `Policy` entry into the existing Change history.
+
+### Not done
+
+- Merging the partially overlapping reference tables (see section 5).
+- "Services Information" remains both a section inside Company Information and a sibling nav item.
+- Reference tables stand at 18 of the BRD's 30 target; computations at 219 of 300. Both are content backlogs, not structural gaps.
+
+---
+
+## Appendix — original proposal (superseded by section 6)
 
 **A. Lock built-ins to Settings** — add an `isAdmin` role context. In client view, `FormulaEditor` shows the expression read-only with an "Editable in Settings" note; name/description/category/status stay locked too for built-ins. Split storage so Settings owns the library and the client owns overrides/assignments.
 
