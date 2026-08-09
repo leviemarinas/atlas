@@ -208,11 +208,6 @@ textarea { min-height: 72px; resize: vertical; }
 .service-card h2 { margin: 0 0 5px; color: var(--violet); font-size: 17px; }
 .service-card p { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.55; }
 .service-card > svg { color: #8b5fbc; }
-.brd-note-card { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 18px 20px; border: 1px dashed #cdb6e5; border-radius: 8px; color: var(--violet); background: #f8f3fc; }
-.brd-note-card svg { width: 27px; height: 27px; flex: 0 0 auto; }
-.brd-note-card div { display: grid; gap: 3px; }
-.brd-note-card strong { font-size: 12px; }
-.brd-note-card span { color: #6f6976; font-size: 10px; }
 .inline-back { display: inline-flex; align-items: center; gap: 7px; color: var(--violet); font-size: 10.5px; font-weight: 500; margin: 1px 0 7px; }
 .inline-back svg { width: 14px; }
 .service-config-page { max-width: none; padding-right: 34px; }
