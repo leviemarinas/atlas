@@ -139,8 +139,15 @@ export function PersonalDetails({ employee, notify }) {
 
 const employeeRecordFields = [
   ['workPermit', 'Work Permit Number'], ['dateHired', 'Date Hired', 'date'], ['jobTenure', 'Job Tenure'], ['rehireDate', 'Date Re-hired', 'date'], ['regularizationDate', 'Regularization Date', 'date'], ['employmentHold', 'Employment Hold', 'select', ['No', 'Maternity', 'Administrative']], ['holdEndDate', 'Hold End Date', 'date'], ['dateSeparated', 'Date Separated', 'date'], ['shiftSchedule', 'Shift Schedule'], ['timezone', 'Timezone'], ['chargeCodes', 'Employee Charge Codes'], ['site', 'Site'], ['division', 'Division'], ['department', 'Department'], ['section', 'Section'], ['jobTitle', 'Job Title'], ['jobLevel', 'Job Level'], ['jobGrade', 'Job Grade'], ['costCenter', 'Cost Center'], ['officeLocation', 'Office Location'], ['reportingManager', 'Reporting Manager'], ['directReports', 'Direct Reports'], ['birBranch', 'BIR Branch Code'], ['sssBranch', 'SSS Branch Code'], ['phicBranch', 'PHIC Branch Code'], ['hdmfBranch', 'HDMF Branch Code'], ['currency', 'Multi-Currency'], ['employmentType', 'Employment Type'], ['employmentStatus', 'Employment Status'], ['incomeType', 'Income Type'], ['employeeCategory', 'Employee Category'], ['taxType', 'Tax Type'], ['overtimeRate', 'Overtime Related Area'], ['workDays', 'Work Days'], ['absenceClass', 'Absence Classification'], ['tardinessClass', 'Tardiness Classification'], ['undertimeClass', 'Undertime Classification'], ['overtimeClass', 'Overtime Classification'], ['bankCompanyCode', 'Bank Company Code'], ['holidayGroup', 'Holiday Group'], ['reasonSeparation', 'Reason of Separation'], ['paymentMode', 'Payment Mode'],
+  // Retirement inputs required by the Retirement Pay workbook (Possible Employee Set Up).
+  ['retirementDate', 'Date of Retirement', 'date'], ['retirementPlanType', 'Retirement Plan Type', 'select', ['RA 7641 statutory plan member', 'RA 4917 company plan member']], ['dailyRateDivisor', 'Daily Rate Divisor', 'number'],
 ];
-const employeeRecordSeed = Object.fromEntries(employeeRecordFields.map(field => [field[0], field[2] === 'date' ? '2026-01-01' : field[0].includes('Status') ? 'Active' : 'Configured']));
+const employeeRecordSeed = Object.fromEntries(employeeRecordFields.map(([key, , type, options]) => {
+  if (type === 'date') return [key, '2026-01-01'];
+  if (type === 'select') return [key, options[0]];
+  if (type === 'number') return [key, key === 'dailyRateDivisor' ? '30' : '0'];
+  return [key, key.includes('Status') ? 'Active' : 'Configured'];
+}));
 const employeeRecordDefinitions = [
   { key: 'contracts', title: 'Employment Contract', columns: [['number', 'Contract No.'], ['dateCreated', 'Date Created'], ['dateSigned', 'Date Signed'], ['name', 'Contract Name']], fields: [['number', 'Employment Contract Number'], ['dateCreated', 'Date Created', 'date'], ['dateSigned', 'Date Signed', 'date'], ['name', 'Contract Name'], ['remarks', 'Remarks']] },
   { key: 'officeLocations', title: 'Office Location Record', columns: [['office', 'Present Office Location'], ['site', 'Present Site'], ['effectiveDate', 'Date Changed']], fields: [['office', 'Present Office Location'], ['site', 'Present Site'], ['effectiveDate', 'Effective Date', 'date']] },
