@@ -705,11 +705,38 @@ textarea { min-height: 72px; resize: vertical; }
 .policy-tabs button span { margin-left: 5px; color: #95869e; font-size: 7px; }
 .policy-tabs button.active { color: white; border-color: var(--violet); background: var(--violet); }
 .policy-tabs button.active span { color: rgba(255,255,255,.7); }
-.policy-brd-note { min-height: 47px; margin-bottom: 12px; padding: 9px 12px; border: 1px solid #ded2e8; border-radius: 6px; color: var(--violet); background: #faf7fd; display: flex; align-items: center; gap: 9px; }
-.policy-brd-note > svg { width: 18px; flex: 0 0 auto; }
-.policy-brd-note span { display: grid; gap: 2px; }
-.policy-brd-note strong { font-size: 9px; }
-.policy-brd-note small { color: var(--muted); font-size: 7.5px; }
+.policy-subheading { margin: 14px 15px 6px; color: var(--violet); font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; }
+.hierarchy-source { margin: 0 15px 9px; padding: 8px 10px; border-radius: 5px; display: flex; align-items: center; gap: 8px; font-size: 7.5px; line-height: 1.5; }
+.hierarchy-source svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.hierarchy-source.linked { border: 1px solid #ded2e8; color: #5a4d64; background: #faf7fd; }
+.hierarchy-source.linked svg { color: var(--violet); }
+.hierarchy-source.fallback { border: 1px solid #f0d9a8; color: #7a5c14; background: #fdf7e9; }
+.hierarchy-source.fallback svg { color: #b98a1c; }
+.hierarchy-source strong { color: inherit; }
+.deduction-rank-table h4 { margin: 0; padding: 7px 9px; border-bottom: 1px solid var(--line); color: var(--violet); font-size: 8px; background: #faf7fd; }
+.deduction-rank-table + .deduction-rank-table { margin-top: 9px; }
+.rank-chip { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; color: var(--violet); background: var(--violet-soft); font-size: 7.5px; font-weight: 600; }
+.carry-forward-card { margin: 0 15px 12px; border: 1px solid var(--line); border-radius: 5px; overflow: auto; }
+.carry-forward-card h3 { margin: 0; padding: 8px 9px; border-bottom: 1px solid var(--line); color: var(--violet); font-size: 8.5px; background: #faf7fd; }
+.carry-forward-card table { min-width: 380px; table-layout: auto; }
+.carry-forward-card th, .carry-forward-card td { padding: 6px 7px; font-size: 7px; }
+.payslip-tag-table { margin-top: 5px; width: 100%; table-layout: auto; }
+.payslip-tag-table th, .payslip-tag-table td { padding: 4px 5px; font-size: 6.5px; text-align: left; }
+.component-checklist-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 10px; margin: 0 15px; }
+.component-checklist { padding: 10px 11px; border: 1px solid var(--line); border-radius: 5px; background: #fcfafe; }
+.component-checklist h3 { margin: 0 0 7px; color: var(--violet); font-size: 8.5px; }
+.component-checklist div { display: grid; gap: 5px; }
+.component-checklist label { display: flex; align-items: center; gap: 6px; color: #4c4453; font-size: 7.5px; }
+.component-checklist input { width: 13px; height: 13px; accent-color: var(--violet); }
+.eligible-roster { margin: 0 15px 15px; border: 1px solid var(--line); border-radius: 5px; overflow: auto; }
+.eligible-roster header { display: flex; align-items: center; gap: 8px; padding: 8px 9px; border-bottom: 1px solid var(--line); background: #faf7fd; }
+.eligible-roster header svg { width: 18px; height: 18px; color: var(--violet); flex: 0 0 auto; }
+.eligible-roster h3 { margin: 0; color: var(--violet); font-size: 8.5px; }
+.eligible-roster p { margin: 1px 0 0; color: var(--muted); font-size: 7px; }
+.eligible-roster table { min-width: 430px; table-layout: auto; }
+.eligible-roster th, .eligible-roster td { padding: 6px 7px; font-size: 7px; }
+.eligible-roster td strong, .eligible-roster td small { display: block; }
+.eligible-roster td small { color: var(--muted); font-size: 6px; }
 .policy-engine-grid { display: grid; grid-template-columns: minmax(520px, 1.22fr) minmax(380px, .88fr); gap: 13px; align-items: start; }
 .policy-config-card, .policy-simulator { border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 5px 18px rgba(50,38,63,.04); overflow: hidden; }
 .policy-config-card > header, .policy-simulator > header { min-height: 67px; padding: 12px 15px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
@@ -768,8 +795,9 @@ textarea { min-height: 72px; resize: vertical; }
 .simulation-ledger td strong, .simulation-ledger td small { display: block; }
 .simulation-ledger td small { color: var(--muted); font-size: 6px; }
 .deferred-copy { color: #a76c09; font-weight: 600; }
-.payslip-note { margin: 0 15px 15px; padding: 9px 10px; border: 1px dashed #cab2df; border-radius: 5px; color: var(--violet); display: flex; align-items: center; gap: 8px; }
-.payslip-note > svg { width: 17px; }
+.payslip-note { margin: 0 15px 15px; padding: 9px 10px; border: 1px dashed #cab2df; border-radius: 5px; color: var(--violet); display: flex; align-items: flex-start; gap: 8px; }
+.payslip-note > svg { width: 17px; flex: 0 0 auto; margin-top: 1px; }
+.payslip-note > div { flex: 1; min-width: 0; overflow-x: auto; }
 .payslip-note span { display: grid; gap: 2px; }
 .payslip-note strong { font-size: 7.5px; }
 .payslip-note small { color: var(--muted); font-size: 6.5px; }
