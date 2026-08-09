@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Computational Basis recording review</title>
+  <style>
+    body { margin: 0; background: #18151d; color: white; font-family: Arial, sans-serif; }
+    main { display: grid; grid-template-rows: auto 1fr; min-height: 100vh; }
+    header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #29242f; }
+    input, button, select { height: 34px; padding: 0 10px; }
+    input { width: 90px; }
+    output { min-width: 180px; font-size: 13px; }
+    video { width: 100%; height: calc(100vh - 54px); background: black; object-fit: contain; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <strong>Recording review</strong>
+      <button id="back">−10s</button>
+      <input id="time" type="number" min="0" step="1" value="0" aria-label="Time in seconds" />
+      <button id="go">Go</button>
+      <button id="forward">+10s</button>
+      <select id="speed" aria-label="Playback speed"><option>1</option><option>1.5</option><option>2</option></select>
+      <output id="status">Loading…</output>
+    </header>
+    <video id="video" controls preload="metadata" src="http://127.0.0.1:4182/video.mp4"></video>
+  </main>
+  <script>
+    const video = document.querySelector('#video');
+    const time = document.querySelector('#time');
+    const status = document.querySelector('#status');
+    const update = () => { status.value = `${Math.round(video.currentTime)}s / ${Math.round(video.duration || 0)}s`; };
+    video.addEventListener('loadedmetadata', update);
+    video.addEventListener('timeupdate', update);
+    document.querySelector('#go').onclick = () => { video.currentTime = Number(time.value || 0); };
+    document.querySelector('#back').onclick = () => { video.currentTime = Math.max(0, video.currentTime - 10); };
+    document.querySelector('#forward').onclick = () => { video.currentTime = Math.min(video.duration, video.currentTime + 10); };
+    document.querySelector('#speed').onchange = (event) => { video.playbackRate = Number(event.target.value); };
+  </script>
+</body>
+</html>

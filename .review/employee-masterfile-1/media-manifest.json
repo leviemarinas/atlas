@@ -1,0 +1,480 @@
+{
+  "paragraphs": [
+    "P0: Employee Masterfile",
+    "P1: Personal Information",
+    "P2:  [IMAGES: image1.png]",
+    "P4:  [IMAGES: image2.png]",
+    "P5:  [IMAGES: image3.png]",
+    "P6:  [IMAGES: image4.png]",
+    "P8:  [IMAGES: image5.png]",
+    "P9:  [IMAGES: image6.png]",
+    "P10:  [IMAGES: image7.png]",
+    "P11:  [IMAGES: image8.png]",
+    "P12:  [IMAGES: image9.png]",
+    "P13:  [IMAGES: image10.png]",
+    "P14:  [IMAGES: image11.png]",
+    "P15:  [IMAGES: image12.png]",
+    "P16:  [IMAGES: image13.png]",
+    "P17:  [IMAGES: image14.png]",
+    "P18:  [IMAGES: image15.png]",
+    "P19:  [IMAGES: image16.png]",
+    "P20:  [IMAGES: image17.png]",
+    "P21:  [IMAGES: image18.png]",
+    "P22:  [IMAGES: image19.png]",
+    "P23:  [IMAGES: image20.png]",
+    "P24:  [IMAGES: image21.png]",
+    "P25:  [IMAGES: image22.png]",
+    "P26:  [IMAGES: image23.png]",
+    "P27:  [IMAGES: image24.png]",
+    "P28:  [IMAGES: image25.png]",
+    "P29:  [IMAGES: image26.png]",
+    "P30:  [IMAGES: image27.png]",
+    "P31:  [IMAGES: image28.png]",
+    "P32:  [IMAGES: image29.png]",
+    "P33:  [IMAGES: image30.png]",
+    "P34:  [IMAGES: image31.png]",
+    "P35:  [IMAGES: image32.png]",
+    "P36:  [IMAGES: image33.png]",
+    "P37:  [IMAGES: image34.png]",
+    "P38:  [IMAGES: image35.png]",
+    "P39:  [IMAGES: image36.png]",
+    "P40:  [IMAGES: image37.png]",
+    "P41:  [IMAGES: image38.png]",
+    "P42:  [IMAGES: image39.png]",
+    "P43:  [IMAGES: image40.png]",
+    "P44:  [IMAGES: image41.png]",
+    "P45:  [IMAGES: image42.png]",
+    "P46:  [IMAGES: image43.png]",
+    "P47:  [IMAGES: image44.png]",
+    "P48:  [IMAGES: image45.png]",
+    "P49:  [IMAGES: image46.png]",
+    "P50:  [IMAGES: image47.png]"
+  ],
+  "image_order": [
+    "image1.png",
+    "image2.png",
+    "image3.png",
+    "image4.png",
+    "image5.png",
+    "image6.png",
+    "image7.png",
+    "image8.png",
+    "image9.png",
+    "image10.png",
+    "image11.png",
+    "image12.png",
+    "image13.png",
+    "image14.png",
+    "image15.png",
+    "image16.png",
+    "image17.png",
+    "image18.png",
+    "image19.png",
+    "image20.png",
+    "image21.png",
+    "image22.png",
+    "image23.png",
+    "image24.png",
+    "image25.png",
+    "image26.png",
+    "image27.png",
+    "image28.png",
+    "image29.png",
+    "image30.png",
+    "image31.png",
+    "image32.png",
+    "image33.png",
+    "image34.png",
+    "image35.png",
+    "image36.png",
+    "image37.png",
+    "image38.png",
+    "image39.png",
+    "image40.png",
+    "image41.png",
+    "image42.png",
+    "image43.png",
+    "image44.png",
+    "image45.png",
+    "image46.png",
+    "image47.png"
+  ],
+  "media": [
+    {
+      "name": "image1.png",
+      "size": [
+        667,
+        492
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image10.png",
+      "size": [
+        708,
+        658
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image11.png",
+      "size": [
+        702,
+        567
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image12.png",
+      "size": [
+        681,
+        617
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image13.png",
+      "size": [
+        703,
+        523
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image14.png",
+      "size": [
+        705,
+        352
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image15.png",
+      "size": [
+        345,
+        296
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image16.png",
+      "size": [
+        722,
+        543
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image17.png",
+      "size": [
+        525,
+        607
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image18.png",
+      "size": [
+        487,
+        625
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image19.png",
+      "size": [
+        507,
+        597
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image2.png",
+      "size": [
+        658,
+        487
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image20.png",
+      "size": [
+        482,
+        588
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image21.png",
+      "size": [
+        540,
+        616
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image22.png",
+      "size": [
+        537,
+        628
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image23.png",
+      "size": [
+        547,
+        576
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image24.png",
+      "size": [
+        917,
+        391
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image25.png",
+      "size": [
+        917,
+        373
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image26.png",
+      "size": [
+        907,
+        497
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image27.png",
+      "size": [
+        886,
+        572
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image28.png",
+      "size": [
+        925,
+        587
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image29.png",
+      "size": [
+        910,
+        602
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image3.png",
+      "size": [
+        661,
+        485
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image30.png",
+      "size": [
+        927,
+        445
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image31.png",
+      "size": [
+        883,
+        647
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image32.png",
+      "size": [
+        855,
+        228
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image33.png",
+      "size": [
+        740,
+        611
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image34.png",
+      "size": [
+        712,
+        506
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image35.png",
+      "size": [
+        750,
+        557
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image36.png",
+      "size": [
+        655,
+        363
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image37.png",
+      "size": [
+        752,
+        600
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image38.png",
+      "size": [
+        510,
+        520
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image39.png",
+      "size": [
+        482,
+        417
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image4.png",
+      "size": [
+        558,
+        690
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image40.png",
+      "size": [
+        867,
+        653
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image41.png",
+      "size": [
+        840,
+        363
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image42.png",
+      "size": [
+        726,
+        620
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image43.png",
+      "size": [
+        473,
+        562
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image44.png",
+      "size": [
+        830,
+        288
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image45.png",
+      "size": [
+        713,
+        528
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image46.png",
+      "size": [
+        918,
+        486
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image47.png",
+      "size": [
+        842,
+        338
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image5.png",
+      "size": [
+        932,
+        687
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image6.png",
+      "size": [
+        562,
+        582
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image7.png",
+      "size": [
+        585,
+        606
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image8.png",
+      "size": [
+        583,
+        623
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "name": "image9.png",
+      "size": [
+        602,
+        488
+      ],
+      "mode": "RGBA"
+    }
+  ]
+}
