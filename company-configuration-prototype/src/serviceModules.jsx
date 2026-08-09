@@ -215,10 +215,6 @@ export function ServicesHub({ onOpen }) {
           );
         })}
       </section>
-      <section className="brd-note-card">
-        <FileText weight="duotone" />
-        <div><strong>BRD-aligned service setup</strong><span>Standard computations are controlled and editable; pay items, client assignments, reference-table versions, search, upload, and export are available in their respective workspaces.</span></div>
-      </section>
     </div>
   );
 }
