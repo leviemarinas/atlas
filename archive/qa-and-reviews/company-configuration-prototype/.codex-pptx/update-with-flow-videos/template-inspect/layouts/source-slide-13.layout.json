@@ -1,0 +1,711 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/hgzapcr6",
+    "id": "hgzapcr6",
+    "slide": 13,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q50nydsj",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "TAKE-HOME PAY · SETUP",
+      "textPreview": "TAKE-HOME PAY · SETUP",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TAKE-HOME PAY · SETUP"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TAKE-HOME PAY · SETUP",
+          "runs": [
+            {
+              "index": 1,
+              "text": "TAKE-HOME PAY · SETUP",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bq9orito",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Caps on deductions, loans and attendance",
+      "textPreview": "Caps on deductions, loans and attendance",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Caps on deductions, loans and attendance"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Caps on deductions, loans and attendance",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Caps on deductions, loans and attendance",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/m98jmlcv",
+      "id": "14",
+      "name": "Image 0",
+      "bbox": [
+        94.88,
+        144,
+        447.68,
+        480
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "/ppt/media/image9.png",
+        "contentType": "image/png",
+        "byteLength": 145274
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image9.png",
+        "contentType": "image/png",
+        "byteLength": 145274
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p4r6p8by",
+      "id": "5",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        626.88,
+        518.4,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Cap configuration",
+      "textPreview": "Cap configuration",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Cap configuration"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Cap configuration",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Cap configuration",
+              "fontSize": 12.67,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/21gnuts7",
+      "id": "6",
+      "name": "Text 3",
+      "bbox": [
+        621.12,
+        144,
+        596.16,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "Loan cap",
+      "textPreview": "Loan cap",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Loan cap"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Loan cap",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Loan cap",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/32ponyts",
+      "id": "7",
+      "name": "Text 4",
+      "bbox": [
+        621.12,
+        168.96,
+        596.16,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "“Total loan repayments may not exceed 25% of gross salary” — or a fixed amount such as ₱10,000.",
+      "textPreview": "“Total loan repayments may not exceed 25% of gross salary” — or a fixed amount such as ₱10,000.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "“Total loan repayments may not exceed 25% of gross salary” — or a fixed amount such"
+          },
+          {
+            "index": 2,
+            "text": "as ₱10,000."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "“Total loan repayments may not exceed 25% of gross salary” — or a fixed amount such as ₱10,000.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "“Total loan repayments may not exceed 25% of gross salary” — or a fixed amount such as ₱10,000.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gzy5s3a1",
+      "id": "8",
+      "name": "Text 5",
+      "bbox": [
+        621.12,
+        240,
+        596.16,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "LAABS cap",
+      "textPreview": "LAABS cap",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "LAABS cap"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "LAABS cap",
+          "runs": [
+            {
+              "index": 1,
+              "text": "LAABS cap",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1076lobm",
+      "id": "9",
+      "name": "Text 6",
+      "bbox": [
+        621.12,
+        264.96,
+        596.16,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Lates, absences and undertime capped by percentage, peso amount, or a number of days.",
+      "textPreview": "Lates, absences and undertime capped by percentage, peso amount, or a number of days.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Lates, absences and undertime capped by percentage, peso amount, or a number of"
+          },
+          {
+            "index": 2,
+            "text": "days."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Lates, absences and undertime capped by percentage, peso amount, or a number of days.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Lates, absences and undertime capped by percentage, peso amount, or a number of days.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcfy9k3u",
+      "id": "10",
+      "name": "Text 7",
+      "bbox": [
+        621.12,
+        336,
+        596.16,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "Conflict priority",
+      "textPreview": "Conflict priority",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Conflict priority"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Conflict priority",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Conflict priority",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gb6x0zm9",
+      "id": "11",
+      "name": "Text 8",
+      "bbox": [
+        621.12,
+        360.96,
+        596.16,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "When loans are already at their cap but net pay is still short, the company decides which rule wins.",
+      "textPreview": "When loans are already at their cap but net pay is still short, the company decides which rule wins.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "When loans are already at their cap but net pay is still short, the company decides"
+          },
+          {
+            "index": 2,
+            "text": "which rule wins."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "When loans are already at their cap but net pay is still short, the company decides which rule wins.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "When loans are already at their cap but net pay is still short, the company decides which rule wins.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vaxg7ulo",
+      "id": "12",
+      "name": "Shape 9",
+      "bbox": [
+        621.12,
+        635.52,
+        596.16,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u9ofyp43",
+      "id": "13",
+      "name": "Text 10",
+      "bbox": [
+        636.48,
+        635.52,
+        567.36,
+        40.32
+      ],
+      "geometry": "rect",
+      "text": "Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)",
+      "textPreview": "Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#1E2761"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

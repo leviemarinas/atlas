@@ -1,0 +1,2097 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/1obmtofm",
+    "id": "1obmtofm",
+    "slide": 35,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/idonexon",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "TAKE-HOME PAY · FIELD GUIDE",
+      "textPreview": "TAKE-HOME PAY · FIELD GUIDE",
+      "resolvedFontSize": 20.68,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.86,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "TAKE-HOME PAY · FIELD GUIDE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "TAKE-HOME PAY · FIELD GUIDE",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "TAKE-HOME PAY · FIELD GUIDE",
+              "fontSize": 13,
+              "typeface": "Calibri",
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ex47ip8",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Hierarchy rows and carry-forward balances",
+      "textPreview": "Hierarchy rows and carry-forward balances",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hierarchy rows and carry-forward balances"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hierarchy rows and carry-forward balances",
+          "resolvedTextStyle": {
+            "fontSize": 30,
+            "color": "#111111",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hierarchy rows and carry-forward balances",
+              "fontSize": 30,
+              "typeface": "Cambria",
+              "color": "#111111",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcfm5s72",
+      "id": "5",
+      "name": "Text 2",
+      "bbox": [
+        60,
+        686,
+        710,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Numbered arrows point to the live wireframe control; values shown are demo data.",
+      "textPreview": "Numbered arrows point to the live wireframe control; values shown are demo data.",
+      "resolvedFontSize": 18.08,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.75,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Numbered arrows point to the live wireframe control; values shown are demo data."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Numbered arrows point to the live wireframe control; values shown are demo data.",
+          "resolvedTextStyle": {
+            "fontSize": 11.51,
+            "color": "#66645F",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Numbered arrows point to the live wireframe control; values shown are demo data.",
+              "fontSize": 11.51,
+              "typeface": "Calibri",
+              "color": "#66645F",
+              "italic": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u943ador",
+      "id": "6",
+      "name": "Text 3",
+      "bbox": [
+        838,
+        150,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Priority",
+      "textPreview": "Priority",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Priority"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Priority",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Priority",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vad43ipc",
+      "id": "7",
+      "name": "Text 4",
+      "bbox": [
+        838,
+        173,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Lower rank numbers are adjusted first; statutory deductions remain protected and outside deferral.",
+      "textPreview": "Lower rank numbers are adjusted first; statutory deductions remain protected and outside deferral.",
+      "resolvedFontSize": 17.33,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.72,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Lower rank numbers are adjusted first; statutory deductions remain protected and outside"
+          },
+          {
+            "index": 2,
+            "text": "deferral."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Lower rank numbers are adjusted first; statutory deductions remain protected and outside deferral.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Lower rank numbers are adjusted first; statutory deductions remain protected and outside deferral.",
+              "fontSize": 12.51,
+              "typeface": "Calibri",
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ml836l",
+      "id": "8",
+      "name": "Text 5",
+      "bbox": [
+        838,
+        234,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Collection",
+      "textPreview": "Collection",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Collection"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Collection",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Collection",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t8vm1876",
+      "id": "9",
+      "name": "Text 6",
+      "bbox": [
+        838,
+        257,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Displays the owning module code, classification, and partial/full-deduction behavior.",
+      "textPreview": "Displays the owning module code, classification, and partial/full-deduction behavior.",
+      "resolvedFontSize": 20.4,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.85,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Displays the owning module code, classification, and partial/full-deduction behavior."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Displays the owning module code, classification, and partial/full-deduction behavior.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Displays the owning module code, classification, and partial/full-deduction behavior.",
+              "fontSize": 12.51,
+              "typeface": "Calibri",
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5of6xcbi",
+      "id": "10",
+      "name": "Text 7",
+      "bbox": [
+        838,
+        318,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Amount due",
+      "textPreview": "Amount due",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Amount due"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Amount due",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Amount due",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4n65o7ax",
+      "id": "11",
+      "name": "Text 8",
+      "bbox": [
+        838,
+        341,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Current cutoff amount requested by the owning deduction or loan module.",
+      "textPreview": "Current cutoff amount requested by the owning deduction or loan module.",
+      "resolvedFontSize": 22.88,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.95,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Current cutoff amount requested by the owning deduction or loan module."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Current cutoff amount requested by the owning deduction or loan module.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Current cutoff amount requested by the owning deduction or loan module.",
+              "fontSize": 12.51,
+              "typeface": "Calibri",
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3mxov2tc",
+      "id": "12",
+      "name": "Shape 9",
+      "bbox": [
+        820,
+        140,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ilonmxsr",
+      "id": "13",
+      "name": "Text 10",
+      "bbox": [
+        820,
+        686,
+        398,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Source · ATLAS local wireframe · Client view",
+      "textPreview": "Source · ATLAS local wireframe · Client view",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Source · ATLAS local wireframe · Client view"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Source · ATLAS local wireframe · Client view",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "color": "#66645F",
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Source · ATLAS local wireframe · Client view",
+              "fontSize": 10.51,
+              "typeface": "Calibri",
+              "color": "#66645F"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/vutsbq9c",
+      "id": "86",
+      "bbox": [
+        260,
+        132.01,
+        376,
+        551.98
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "/ppt/media/image28.png",
+        "contentType": "image/png",
+        "byteLength": 89186
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image28.png",
+        "contentType": "image/png",
+        "byteLength": 89186
+      }
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gjm5knal",
+      "id": "15",
+      "name": "callout-anchor-1",
+      "bbox": [
+        819,
+        179,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vidorit0",
+      "id": "16",
+      "name": "field-anchor-1",
+      "bbox": [
+        631,
+        172,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fm90nadg",
+      "id": "70",
+      "bbox": [
+        632,
+        172.5,
+        187,
+        7
+      ],
+      "horizontalFlip": true,
+      "verticalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgv6psba",
+      "id": "18",
+      "name": "callout-anchor-2",
+      "bbox": [
+        819,
+        263,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8fm5gnap",
+      "id": "19",
+      "name": "field-anchor-2",
+      "bbox": [
+        631,
+        250,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nihwfu1",
+      "id": "73",
+      "bbox": [
+        632,
+        250.5,
+        187,
+        13
+      ],
+      "horizontalFlip": true,
+      "verticalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l0z65sj6",
+      "id": "21",
+      "name": "callout-anchor-3",
+      "bbox": [
+        819,
+        347,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxonud0f",
+      "id": "22",
+      "name": "field-anchor-3",
+      "bbox": [
+        631,
+        330,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tkryl0va",
+      "id": "76",
+      "bbox": [
+        632,
+        330.5,
+        187,
+        17
+      ],
+      "horizontalFlip": true,
+      "verticalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cv65s3i9",
+      "id": "24",
+      "name": "callout-anchor-4",
+      "bbox": [
+        819,
+        431,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xwf618ju",
+      "id": "25",
+      "name": "field-anchor-4",
+      "bbox": [
+        631,
+        410,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/idgzmlcn",
+      "id": "79",
+      "bbox": [
+        632,
+        410.5,
+        187,
+        21
+      ],
+      "horizontalFlip": true,
+      "verticalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/buxozy1o",
+      "id": "27",
+      "name": "callout-anchor-5",
+      "bbox": [
+        819,
+        515,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wrap47it",
+      "id": "28",
+      "name": "field-anchor-5",
+      "bbox": [
+        631,
+        500,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wz2h4v2p",
+      "id": "82",
+      "bbox": [
+        632,
+        500.5,
+        187,
+        15
+      ],
+      "horizontalFlip": true,
+      "verticalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ry50jqpc",
+      "id": "30",
+      "name": "callout-anchor-6",
+      "bbox": [
+        819,
+        599,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qxwzq5o7",
+      "id": "31",
+      "name": "field-anchor-6",
+      "bbox": [
+        631,
+        610,
+        1,
+        1
+      ],
+      "geometry": "ellipse",
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nutgr6l8",
+      "id": "85",
+      "bbox": [
+        632,
+        599.5,
+        187,
+        11
+      ],
+      "horizontalFlip": true,
+      "geometry": "bentConnector3",
+      "lineColor": "#5C2A91",
+      "lineWidth": 1.6
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czehsv6x",
+      "id": "33",
+      "name": "field-badge-1",
+      "bbox": [
+        616,
+        159,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z250napo",
+      "id": "34",
+      "name": "field-number-1",
+      "bbox": [
+        616,
+        159,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1wzu5o3",
+      "id": "35",
+      "name": "callout-box-2",
+      "bbox": [
+        820,
+        224,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#C9AFE0",
+      "lineWidth": 1
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/147ipk7u",
+      "id": "36",
+      "name": "field-badge-2",
+      "bbox": [
+        616,
+        237,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/03y1wf69",
+      "id": "37",
+      "name": "field-number-2",
+      "bbox": [
+        616,
+        237,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 36,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v6l0b6pk",
+      "id": "38",
+      "name": "callout-box-3",
+      "bbox": [
+        820,
+        308,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1
+    },
+    {
+      "order": 37,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u5czil8z",
+      "id": "39",
+      "name": "field-badge-3",
+      "bbox": [
+        616,
+        317,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 38,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mpgzylgv",
+      "id": "40",
+      "name": "field-number-3",
+      "bbox": [
+        616,
+        317,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "3",
+      "textPreview": "3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 39,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ap0rqx0",
+      "id": "41",
+      "name": "callout-box-4",
+      "bbox": [
+        820,
+        392,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#C9AFE0",
+      "lineWidth": 1
+    },
+    {
+      "order": 40,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8byh0vyl",
+      "id": "42",
+      "name": "callout-title-4",
+      "bbox": [
+        838,
+        402,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Deferred",
+      "textPreview": "Deferred",
+      "resolvedFontSize": 17.71,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.74,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Deferred"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Deferred",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Deferred",
+              "fontSize": 14,
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 41,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9c7itgf6",
+      "id": "43",
+      "name": "callout-copy-4",
+      "bbox": [
+        838,
+        425,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Amount not collected this cutoff because the net-pay requirement or cap was reached.",
+      "textPreview": "Amount not collected this cutoff because the net-pay requirement or cap was reached.",
+      "resolvedFontSize": 22.71,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.95,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Amount not collected this cutoff because the net-pay requirement or"
+          },
+          {
+            "index": 2,
+            "text": "cap was reached."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Amount not collected this cutoff because the net-pay requirement or cap was reached.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Amount not collected this cutoff because the net-pay requirement or cap was reached.",
+              "fontSize": 12.51,
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 42,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/udgj2lwr",
+      "id": "44",
+      "name": "field-badge-4",
+      "bbox": [
+        616,
+        397,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 43,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vep0vqxc",
+      "id": "45",
+      "name": "field-number-4",
+      "bbox": [
+        616,
+        397,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "4",
+      "textPreview": "4",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 44,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wfy14vex",
+      "id": "46",
+      "name": "callout-box-5",
+      "bbox": [
+        820,
+        476,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1
+    },
+    {
+      "order": 45,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hgrix0fi",
+      "id": "47",
+      "name": "callout-title-5",
+      "bbox": [
+        838,
+        486,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Outstanding / carry-forward",
+      "textPreview": "Outstanding / carry-forward",
+      "resolvedFontSize": 17.71,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.74,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Outstanding / carry-forward"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Outstanding / carry-forward",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Outstanding / carry-forward",
+              "fontSize": 14,
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 46,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ih0j65wn",
+      "id": "48",
+      "name": "callout-copy-5",
+      "bbox": [
+        838,
+        509,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Remaining module balance after the current deduction and any deferral are posted.",
+      "textPreview": "Remaining module balance after the current deduction and any deferral are posted.",
+      "resolvedFontSize": 22.71,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.95,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Remaining module balance after the current deduction and any deferral"
+          },
+          {
+            "index": 2,
+            "text": "are posted."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Remaining module balance after the current deduction and any deferral are posted.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Remaining module balance after the current deduction and any deferral are posted.",
+              "fontSize": 12.51,
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 47,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ji90zax8",
+      "id": "49",
+      "name": "field-badge-5",
+      "bbox": [
+        616,
+        487,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 48,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dcb254zq",
+      "id": "50",
+      "name": "field-number-5",
+      "bbox": [
+        616,
+        487,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "5",
+      "textPreview": "5",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "5"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "5",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "5",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 49,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sb2lwzy5",
+      "id": "51",
+      "name": "callout-box-6",
+      "bbox": [
+        820,
+        560,
+        398,
+        78
+      ],
+      "geometry": "roundRect",
+      "lineColor": "#C9AFE0",
+      "lineWidth": 1
+    },
+    {
+      "order": 50,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ratk3uhk",
+      "id": "52",
+      "name": "callout-title-6",
+      "bbox": [
+        838,
+        570,
+        364,
+        22
+      ],
+      "geometry": "rect",
+      "text": "Deduction and loan sections",
+      "textPreview": "Deduction and loan sections",
+      "resolvedFontSize": 17.71,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.74,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Deduction and loan sections"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Deduction and loan sections",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "color": "#5C2A91",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Deduction and loan sections",
+              "fontSize": 14,
+              "color": "#5C2A91",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 51,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q9k3up0z",
+      "id": "53",
+      "name": "callout-copy-6",
+      "bbox": [
+        838,
+        593,
+        364,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Separate lists preserve module ownership while a single REF-011 order controls the combined calculation.",
+      "textPreview": "Separate lists preserve module ownership while a single REF-011 order controls the combined calculation.",
+      "resolvedFontSize": 22.71,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.95,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Separate lists preserve module ownership while a single REF-011 order"
+          },
+          {
+            "index": 2,
+            "text": "controls the combined calculation."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Separate lists preserve module ownership while a single REF-011 order controls the combined calculation.",
+          "resolvedTextStyle": {
+            "fontSize": 12.51,
+            "color": "#111111",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Separate lists preserve module ownership while a single REF-011 order controls the combined calculation.",
+              "fontSize": 12.51,
+              "color": "#111111"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    },
+    {
+      "order": 52,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/10vm94zm",
+      "id": "54",
+      "name": "field-badge-6",
+      "bbox": [
+        616,
+        597,
+        28,
+        28
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#111111",
+      "lineColor": "#111111",
+      "lineWidth": 1
+    },
+    {
+      "order": 53,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0f2l0zy1",
+      "id": "55",
+      "name": "field-number-6",
+      "bbox": [
+        616,
+        597,
+        28,
+        28
+      ],
+      "geometry": "rect",
+      "text": "6",
+      "textPreview": "6",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 1,
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "6"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "6",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "6",
+              "fontSize": 12,
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

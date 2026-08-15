@@ -1,0 +1,1624 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/ofu103u5",
+    "id": "ofu103u5",
+    "slide": 34,
+    "layoutId": "/ppt/slideLayouts/slideLayout2.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout2.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster2.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster2.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pwzm1kbm",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "FINAL PAY · FIELD GUIDE 3 OF 4",
+      "textPreview": "FINAL PAY · FIELD GUIDE 3 OF 4",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "FINAL PAY · FIELD GUIDE 3 OF 4"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "FINAL PAY · FIELD GUIDE 3 OF 4",
+          "runs": [
+            {
+              "index": 1,
+              "text": "FINAL PAY · FIELD GUIDE 3 OF 4",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ovq58fu1",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Recovery and outstanding balances",
+      "textPreview": "Recovery and outstanding balances",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Recovery and outstanding balances"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Recovery and outstanding balances",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Recovery and outstanding balances",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/bi9w3etg",
+      "id": "47",
+      "name": "Image 0",
+      "bbox": [
+        59.52,
+        325.95,
+        609.6,
+        149.71
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "/ppt/media/image29.png",
+        "contentType": "image/png",
+        "byteLength": 56925
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image29.png",
+        "contentType": "image/png",
+        "byteLength": 56925
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qx8napc7",
+      "id": "5",
+      "name": "Shape 2",
+      "bbox": [
+        357.9,
+        334.59,
+        0,
+        36.81
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d0zm54bi",
+      "id": "6",
+      "name": "Shape 3",
+      "bbox": [
+        357.9,
+        334.59,
+        326.58,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czq5czux",
+      "id": "7",
+      "name": "Shape 4",
+      "bbox": [
+        684.48,
+        202.44,
+        0,
+        132.15
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z2147eto",
+      "id": "8",
+      "name": "Shape 5",
+      "bbox": [
+        684.48,
+        202.44,
+        44.16,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.67
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/y18ne9c3",
+      "id": "9",
+      "name": "Shape 6",
+      "bbox": [
+        652.01,
+        371.39,
+        35.93,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0vidkfu5",
+      "id": "10",
+      "name": "Shape 7",
+      "bbox": [
+        687.94,
+        334.68,
+        0,
+        36.71
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1wredkbq",
+      "id": "11",
+      "name": "Shape 8",
+      "bbox": [
+        687.94,
+        334.68,
+        40.7,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.67
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e90vipcz",
+      "id": "12",
+      "name": "Shape 9",
+      "bbox": [
+        357.9,
+        334.59,
+        0,
+        104.18
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/za9wbutk",
+      "id": "13",
+      "name": "Shape 10",
+      "bbox": [
+        357.9,
+        334.59,
+        333.49,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oz2dozu1",
+      "id": "14",
+      "name": "Shape 11",
+      "bbox": [
+        691.39,
+        334.59,
+        0,
+        132.33
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/90beh4bm",
+      "id": "15",
+      "name": "Shape 12",
+      "bbox": [
+        691.39,
+        466.92,
+        37.25,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.67
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mxkvmpcb",
+      "id": "16",
+      "name": "Shape 13",
+      "bbox": [
+        652.01,
+        438.76,
+        42.84,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nytwfutg",
+      "id": "17",
+      "name": "Shape 14",
+      "bbox": [
+        694.85,
+        438.76,
+        0,
+        160.4
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w32xszud",
+      "id": "18",
+      "name": "Shape 15",
+      "bbox": [
+        694.85,
+        599.16,
+        33.79,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E7EBD",
+      "lineWidth": 1.67
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x4vel4by",
+      "id": "19",
+      "name": "Shape 16",
+      "bbox": [
+        344.46,
+        357.95,
+        26.88,
+        26.88
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761",
+      "lineColor": "#FFFFFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l87mpkzq",
+      "id": "20",
+      "name": "Text 17",
+      "bbox": [
+        344.46,
+        357.95,
+        26.88,
+        26.88
+      ],
+      "geometry": "rect",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/k7y5gfi5",
+      "id": "21",
+      "name": "Shape 18",
+      "bbox": [
+        728.64,
+        144,
+        488.64,
+        116.88
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j6p4nahk",
+      "id": "22",
+      "name": "Shape 19",
+      "bbox": [
+        740.16,
+        155.52,
+        24.96,
+        24.96
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/y5wne50z",
+      "id": "23",
+      "name": "Text 20",
+      "bbox": [
+        740.16,
+        155.52,
+        24.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 10.67,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tc7mtkzm",
+      "id": "24",
+      "name": "Text 21",
+      "bbox": [
+        774.72,
+        151.68,
+        429.12,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Advance 13th month rule",
+      "textPreview": "Advance 13th month rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Advance 13th month rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Advance 13th month rule",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Advance 13th month rule",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8by5kfi1",
+      "id": "25",
+      "name": "Text 22",
+      "bbox": [
+        742.08,
+        184.32,
+        461.76,
+        68.88
+      ],
+      "geometry": "rect",
+      "text": "Whether an already-released 13th month advance is deducted back from final pay.",
+      "textPreview": "Whether an already-released 13th month advance is deducted back from final pay.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Whether an already-released 13th month advance is deducted back from final pay."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Whether an already-released 13th month advance is deducted back from final pay.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Whether an already-released 13th month advance is deducted back from final pay.",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#4B4458"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ap4rahw",
+      "id": "26",
+      "name": "Shape 23",
+      "bbox": [
+        638.57,
+        357.95,
+        26.88,
+        26.88
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761",
+      "lineColor": "#FFFFFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/69gni50b",
+      "id": "27",
+      "name": "Text 24",
+      "bbox": [
+        638.57,
+        357.95,
+        26.88,
+        26.88
+      ],
+      "geometry": "rect",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9gnmh0zi",
+      "id": "28",
+      "name": "Shape 25",
+      "bbox": [
+        728.64,
+        276.24,
+        488.64,
+        116.88
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ofe58vix",
+      "id": "29",
+      "name": "Shape 26",
+      "bbox": [
+        740.16,
+        287.76,
+        24.96,
+        24.96
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/elsji1gv",
+      "id": "30",
+      "name": "Text 27",
+      "bbox": [
+        740.16,
+        287.76,
+        24.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 10.67,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fmlkbmxg",
+      "id": "31",
+      "name": "Text 28",
+      "bbox": [
+        774.72,
+        283.92,
+        429.12,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Last cutoff rule",
+      "textPreview": "Last cutoff rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Last cutoff rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Last cutoff rule",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Last cutoff rule",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nu1kry1",
+      "id": "32",
+      "name": "Text 29",
+      "bbox": [
+        742.08,
+        316.56,
+        461.76,
+        68.88
+      ],
+      "geometry": "rect",
+      "text": "Whether the still-unposted last payroll cutoff is folded into final pay or processed separately.",
+      "textPreview": "Whether the still-unposted last payroll cutoff is folded into final pay or processed separately.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Whether the still-unposted last payroll cutoff is folded into final pay or processed"
+          },
+          {
+            "index": 2,
+            "text": "separately."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Whether the still-unposted last payroll cutoff is folded into final pay or processed separately.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Whether the still-unposted last payroll cutoff is folded into final pay or processed separately.",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#4B4458"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1o32dwf6",
+      "id": "33",
+      "name": "Shape 30",
+      "bbox": [
+        344.46,
+        425.32,
+        26.88,
+        26.88
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761",
+      "lineColor": "#FFFFFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mpcjm1gr",
+      "id": "34",
+      "name": "Text 31",
+      "bbox": [
+        344.46,
+        425.32,
+        26.88,
+        26.88
+      ],
+      "geometry": "rect",
+      "text": "3",
+      "textPreview": "3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nalkf6xc",
+      "id": "35",
+      "name": "Shape 32",
+      "bbox": [
+        728.64,
+        408.48,
+        488.64,
+        116.88
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/obulobyx",
+      "id": "36",
+      "name": "Shape 33",
+      "bbox": [
+        740.16,
+        420,
+        24.96,
+        24.96
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 36,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9c32hgfi",
+      "id": "37",
+      "name": "Text 34",
+      "bbox": [
+        740.16,
+        420,
+        24.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "3",
+      "textPreview": "3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3",
+              "fontSize": 10.67,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 37,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/it8jahgn",
+      "id": "38",
+      "name": "Text 35",
+      "bbox": [
+        774.72,
+        416.16,
+        429.12,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Government loan balance",
+      "textPreview": "Government loan balance",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Government loan balance"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Government loan balance",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Government loan balance",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 38,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ehk32x8",
+      "id": "39",
+      "name": "Text 36",
+      "bbox": [
+        742.08,
+        448.8,
+        461.76,
+        68.88
+      ],
+      "geometry": "rect",
+      "text": "How an outstanding government loan balance (SSS, HDMF) is settled at separation.",
+      "textPreview": "How an outstanding government loan balance (SSS, HDMF) is settled at separation.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "How an outstanding government loan balance (SSS, HDMF) is settled at separation."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "How an outstanding government loan balance (SSS, HDMF) is settled at separation.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "How an outstanding government loan balance (SSS, HDMF) is settled at separation.",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#4B4458"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 39,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ja907y9w",
+      "id": "40",
+      "name": "Shape 37",
+      "bbox": [
+        638.57,
+        425.32,
+        26.88,
+        26.88
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761",
+      "lineColor": "#FFFFFF",
+      "lineWidth": 2
+    },
+    {
+      "order": 40,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/i90zet8b",
+      "id": "41",
+      "name": "Text 38",
+      "bbox": [
+        638.57,
+        425.32,
+        26.88,
+        26.88
+      ],
+      "geometry": "rect",
+      "text": "4",
+      "textPreview": "4",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 41,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5cbi98r2",
+      "id": "42",
+      "name": "Shape 39",
+      "bbox": [
+        728.64,
+        540.72,
+        488.64,
+        116.88
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 42,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kb2hg3qh",
+      "id": "43",
+      "name": "Shape 40",
+      "bbox": [
+        740.16,
+        552.24,
+        24.96,
+        24.96
+      ],
+      "geometry": "ellipse",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 43,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7et0bi98",
+      "id": "44",
+      "name": "Text 41",
+      "bbox": [
+        740.16,
+        552.24,
+        24.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "4",
+      "textPreview": "4",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4",
+              "fontSize": 10.67,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 44,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6dkzid8n",
+      "id": "45",
+      "name": "Text 42",
+      "bbox": [
+        774.72,
+        548.4,
+        429.12,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Company loan balance",
+      "textPreview": "Company loan balance",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Company loan balance"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Company loan balance",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Company loan balance",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 45,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tgbid87y",
+      "id": "46",
+      "name": "Text 43",
+      "bbox": [
+        742.08,
+        581.04,
+        461.76,
+        68.88
+      ],
+      "geometry": "rect",
+      "text": "How an outstanding company loan balance is settled at separation.",
+      "textPreview": "How an outstanding company loan balance is settled at separation.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "How an outstanding company loan balance is settled at separation."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "How an outstanding company loan balance is settled at separation.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "How an outstanding company loan balance is settled at separation.",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#4B4458"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

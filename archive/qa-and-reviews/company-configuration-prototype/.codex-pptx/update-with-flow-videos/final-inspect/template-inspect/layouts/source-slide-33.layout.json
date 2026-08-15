@@ -1,0 +1,709 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/nax4b2dk",
+    "id": "nax4b2dk",
+    "slide": 33,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lk3m50nq",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "FINAL PAY · DEMO",
+      "textPreview": "FINAL PAY · DEMO",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "FINAL PAY · DEMO"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "FINAL PAY · DEMO",
+          "runs": [
+            {
+              "index": 1,
+              "text": "FINAL PAY · DEMO",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0jalwfm5",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Select components, offsets and settlement rules",
+      "textPreview": "Select components, offsets and settlement rules",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Select components, offsets and settlement rules"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Select components, offsets and settlement rules",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Select components, offsets and settlement rules",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/jmh8v6p4",
+      "id": "14",
+      "name": "Image 0",
+      "bbox": [
+        127.86,
+        144,
+        247.32,
+        480
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "/ppt/media/image25.png",
+        "contentType": "image/png",
+        "byteLength": 360642
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image25.png",
+        "contentType": "image/png",
+        "byteLength": 360642
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mlc3y54b",
+      "id": "5",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        626.88,
+        384,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "What to watch",
+      "textPreview": "What to watch",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "What to watch"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "What to watch",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "What to watch",
+              "fontSize": 12.67,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9o3m9knm",
+      "id": "6",
+      "name": "Text 3",
+      "bbox": [
+        486.72,
+        144,
+        730.56,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "1 · Choose code",
+      "textPreview": "1 · Choose code",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1 · Choose code"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1 · Choose code",
+          "runs": [
+            {
+              "index": 1,
+              "text": "1 · Choose code",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nul0fmh",
+      "id": "7",
+      "name": "Text 4",
+      "bbox": [
+        486.72,
+        168.96,
+        730.56,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Open FIN-001 from the governed library.",
+      "textPreview": "Open FIN-001 from the governed library.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Open FIN-001 from the governed library."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Open FIN-001 from the governed library.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Open FIN-001 from the governed library.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vql4bu5s",
+      "id": "8",
+      "name": "Text 5",
+      "bbox": [
+        486.72,
+        240,
+        730.56,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "2 · Configure",
+      "textPreview": "2 · Configure",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2 · Configure"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2 · Configure",
+          "runs": [
+            {
+              "index": 1,
+              "text": "2 · Configure",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/apc32p47",
+      "id": "9",
+      "name": "Text 6",
+      "bbox": [
+        486.72,
+        264.96,
+        730.56,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Enable pay components and define authorized offsets.",
+      "textPreview": "Enable pay components and define authorized offsets.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Enable pay components and define authorized offsets."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Enable pay components and define authorized offsets.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Enable pay components and define authorized offsets.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/grad8zah",
+      "id": "10",
+      "name": "Text 7",
+      "bbox": [
+        486.72,
+        336,
+        730.56,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "3 · Validate",
+      "textPreview": "3 · Validate",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3 · Validate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3 · Validate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "3 · Validate",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hsjuhkb2",
+      "id": "11",
+      "name": "Text 8",
+      "bbox": [
+        486.72,
+        360.96,
+        730.56,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Review the employee-level breakdown and negative-net handling.",
+      "textPreview": "Review the employee-level breakdown and negative-net handling.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Review the employee-level breakdown and negative-net handling."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Review the employee-level breakdown and negative-net handling.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Review the employee-level breakdown and negative-net handling.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/upsv6psb",
+      "id": "12",
+      "name": "Shape 9",
+      "bbox": [
+        486.72,
+        635.52,
+        730.56,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vq1cfutw",
+      "id": "13",
+      "name": "Text 10",
+      "bbox": [
+        502.08,
+        635.52,
+        701.76,
+        40.32
+      ],
+      "geometry": "rect",
+      "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+      "textPreview": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+          "runs": [
+            {
+              "index": 1,
+              "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#1E2761"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

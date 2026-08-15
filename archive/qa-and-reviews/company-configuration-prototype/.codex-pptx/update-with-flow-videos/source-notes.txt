@@ -1,0 +1,3 @@
+This revision uses only user-provided Atlas wireframe screenshots and the existing user-provided presentation deck. No external visual assets or externally sourced claims were added.
+
+Animated walkthrough frames are derived from the local Atlas wireframe captures under captures/. Each GIF is embedded directly in the final PPTX.

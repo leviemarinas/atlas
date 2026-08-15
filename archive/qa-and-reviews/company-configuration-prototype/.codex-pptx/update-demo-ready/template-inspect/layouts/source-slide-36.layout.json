@@ -1,0 +1,1058 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/m9s3ehgf",
+    "id": "m9s3ehgf",
+    "slide": 36,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5s3atkbq",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX E",
+      "textPreview": "APPENDIX E",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX E"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX E",
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX E",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4rut0fa5",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Gross Up traceability",
+      "textPreview": "Gross Up traceability",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Gross Up traceability"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Gross Up traceability",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Gross Up traceability",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rulsvutw",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        119.04,
+        1157.76,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Annex B → sheet “Gross Up”",
+      "textPreview": "Annex B → sheet “Gross Up”",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex B → sheet “Gross Up”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex B → sheet “Gross Up”",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex B → sheet “Gross Up”",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "table",
+      "scope": "slide",
+      "aid": "tb/zq5wbydc",
+      "id": "5",
+      "name": "Table 0",
+      "bbox": [
+        59.52,
+        155.52,
+        1157.76,
+        362.88
+      ],
+      "text": "Source rows | What the workbook says | Where it appears in the app\nRow 2 | Employer shoulders the tax so the employee receives a guaranteed net | Employer-absorbed share, default 100%\nRow 3 | Divide the intended net by (1 − rate) | Available as the flat / final tax method\nRow 4 | Use BIR tables: taxable income, correct bracket, base tax + excess % | Graduated method, reading the effective BIR table\nRows 7–8 | Choose the income and enable gross-up | Guaranteed target selector and engine switch\nRows 10–11 | Add grossed-up income; subtract mandatory contributions | Taxable compensation line in the calculation trace\nRows 12–14 | Identify bracket; apply base tax + excess × rate | Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%\nRow 15 | Recompute gross until net equals the required amount | Iteration table with the gap closing to zero\nRows 16–18 | Show gross, employer-absorbed tax, and net released | The four result tiles",
+      "textPreview": "Source rows | What the workbook says | Where it appears in the app | Row 2 | Employer shoulders the tax so the employee receives a guaran...",
+      "rows": 9,
+      "cols": 3,
+      "cells": [
+        {
+          "index": 1,
+          "row": 1,
+          "column": 1,
+          "bbox": [
+            59.52,
+            155.52,
+            192,
+            40.32
+          ],
+          "text": "Source rows",
+          "textPreview": "Source rows",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Source rows",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Source rows",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "row": 1,
+          "column": 2,
+          "bbox": [
+            251.52,
+            155.52,
+            480,
+            40.32
+          ],
+          "text": "What the workbook says",
+          "textPreview": "What the workbook says",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "What the workbook says",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "What the workbook says",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "row": 1,
+          "column": 3,
+          "bbox": [
+            731.52,
+            155.52,
+            485.76,
+            40.32
+          ],
+          "text": "Where it appears in the app",
+          "textPreview": "Where it appears in the app",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Where it appears in the app",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Where it appears in the app",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "row": 2,
+          "column": 1,
+          "bbox": [
+            59.52,
+            195.84,
+            192,
+            40.32
+          ],
+          "text": "Row 2",
+          "textPreview": "Row 2",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 2",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 2",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "row": 2,
+          "column": 2,
+          "bbox": [
+            251.52,
+            195.84,
+            480,
+            40.32
+          ],
+          "text": "Employer shoulders the tax so the employee receives a guaranteed net",
+          "textPreview": "Employer shoulders the tax so the employee receives a guaranteed net",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Employer shoulders the tax so the employee receives a guaranteed net",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Employer shoulders the tax so the employee receives a guaranteed net",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "row": 2,
+          "column": 3,
+          "bbox": [
+            731.52,
+            195.84,
+            485.76,
+            40.32
+          ],
+          "text": "Employer-absorbed share, default 100%",
+          "textPreview": "Employer-absorbed share, default 100%",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Employer-absorbed share, default 100%",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Employer-absorbed share, default 100%",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "row": 3,
+          "column": 1,
+          "bbox": [
+            59.52,
+            236.16,
+            192,
+            40.32
+          ],
+          "text": "Row 3",
+          "textPreview": "Row 3",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 3",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 3",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "row": 3,
+          "column": 2,
+          "bbox": [
+            251.52,
+            236.16,
+            480,
+            40.32
+          ],
+          "text": "Divide the intended net by (1 − rate)",
+          "textPreview": "Divide the intended net by (1 − rate)",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Divide the intended net by (1 − rate)",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Divide the intended net by (1 − rate)",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "row": 3,
+          "column": 3,
+          "bbox": [
+            731.52,
+            236.16,
+            485.76,
+            40.32
+          ],
+          "text": "Available as the flat / final tax method",
+          "textPreview": "Available as the flat / final tax method",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Available as the flat / final tax method",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Available as the flat / final tax method",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "row": 4,
+          "column": 1,
+          "bbox": [
+            59.52,
+            276.48,
+            192,
+            40.32
+          ],
+          "text": "Row 4",
+          "textPreview": "Row 4",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 4",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 4",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "row": 4,
+          "column": 2,
+          "bbox": [
+            251.52,
+            276.48,
+            480,
+            40.32
+          ],
+          "text": "Use BIR tables: taxable income, correct bracket, base tax + excess %",
+          "textPreview": "Use BIR tables: taxable income, correct bracket, base tax + excess %",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Use BIR tables: taxable income, correct bracket, base tax + excess %",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Use BIR tables: taxable income, correct bracket, base tax + excess %",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "row": 4,
+          "column": 3,
+          "bbox": [
+            731.52,
+            276.48,
+            485.76,
+            40.32
+          ],
+          "text": "Graduated method, reading the effective BIR table",
+          "textPreview": "Graduated method, reading the effective BIR table",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Graduated method, reading the effective BIR table",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Graduated method, reading the effective BIR table",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "row": 5,
+          "column": 1,
+          "bbox": [
+            59.52,
+            316.8,
+            192,
+            40.32
+          ],
+          "text": "Rows 7–8",
+          "textPreview": "Rows 7–8",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 7–8",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 7–8",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 14,
+          "row": 5,
+          "column": 2,
+          "bbox": [
+            251.52,
+            316.8,
+            480,
+            40.32
+          ],
+          "text": "Choose the income and enable gross-up",
+          "textPreview": "Choose the income and enable gross-up",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Choose the income and enable gross-up",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Choose the income and enable gross-up",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 15,
+          "row": 5,
+          "column": 3,
+          "bbox": [
+            731.52,
+            316.8,
+            485.76,
+            40.32
+          ],
+          "text": "Guaranteed target selector and engine switch",
+          "textPreview": "Guaranteed target selector and engine switch",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Guaranteed target selector and engine switch",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Guaranteed target selector and engine switch",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 16,
+          "row": 6,
+          "column": 1,
+          "bbox": [
+            59.52,
+            357.12,
+            192,
+            40.32
+          ],
+          "text": "Rows 10–11",
+          "textPreview": "Rows 10–11",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 10–11",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 10–11",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 17,
+          "row": 6,
+          "column": 2,
+          "bbox": [
+            251.52,
+            357.12,
+            480,
+            40.32
+          ],
+          "text": "Add grossed-up income; subtract mandatory contributions",
+          "textPreview": "Add grossed-up income; subtract mandatory contributions",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Add grossed-up income; subtract mandatory contributions",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Add grossed-up income; subtract mandatory contributions",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 18,
+          "row": 6,
+          "column": 3,
+          "bbox": [
+            731.52,
+            357.12,
+            485.76,
+            40.32
+          ],
+          "text": "Taxable compensation line in the calculation trace",
+          "textPreview": "Taxable compensation line in the calculation trace",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Taxable compensation line in the calculation trace",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Taxable compensation line in the calculation trace",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 19,
+          "row": 7,
+          "column": 1,
+          "bbox": [
+            59.52,
+            397.44,
+            192,
+            40.32
+          ],
+          "text": "Rows 12–14",
+          "textPreview": "Rows 12–14",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 12–14",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 12–14",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 20,
+          "row": 7,
+          "column": 2,
+          "bbox": [
+            251.52,
+            397.44,
+            480,
+            40.32
+          ],
+          "text": "Identify bracket; apply base tax + excess × rate",
+          "textPreview": "Identify bracket; apply base tax + excess × rate",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Identify bracket; apply base tax + excess × rate",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Identify bracket; apply base tax + excess × rate",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 21,
+          "row": 7,
+          "column": 3,
+          "bbox": [
+            731.52,
+            397.44,
+            485.76,
+            40.32
+          ],
+          "text": "Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%",
+          "textPreview": "Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 22,
+          "row": 8,
+          "column": 1,
+          "bbox": [
+            59.52,
+            437.76,
+            192,
+            40.32
+          ],
+          "text": "Row 15",
+          "textPreview": "Row 15",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 15",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 15",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 23,
+          "row": 8,
+          "column": 2,
+          "bbox": [
+            251.52,
+            437.76,
+            480,
+            40.32
+          ],
+          "text": "Recompute gross until net equals the required amount",
+          "textPreview": "Recompute gross until net equals the required amount",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Recompute gross until net equals the required amount",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Recompute gross until net equals the required amount",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 24,
+          "row": 8,
+          "column": 3,
+          "bbox": [
+            731.52,
+            437.76,
+            485.76,
+            40.32
+          ],
+          "text": "Iteration table with the gap closing to zero",
+          "textPreview": "Iteration table with the gap closing to zero",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Iteration table with the gap closing to zero",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Iteration table with the gap closing to zero",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 25,
+          "row": 9,
+          "column": 1,
+          "bbox": [
+            59.52,
+            478.08,
+            192,
+            40.32
+          ],
+          "text": "Rows 16–18",
+          "textPreview": "Rows 16–18",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 16–18",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 16–18",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 26,
+          "row": 9,
+          "column": 2,
+          "bbox": [
+            251.52,
+            478.08,
+            480,
+            40.32
+          ],
+          "text": "Show gross, employer-absorbed tax, and net released",
+          "textPreview": "Show gross, employer-absorbed tax, and net released",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Show gross, employer-absorbed tax, and net released",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Show gross, employer-absorbed tax, and net released",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 27,
+          "row": 9,
+          "column": 3,
+          "bbox": [
+            731.52,
+            478.08,
+            485.76,
+            40.32
+          ],
+          "text": "The four result tiles",
+          "textPreview": "The four result tiles",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "The four result tiles",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "The four result tiles",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

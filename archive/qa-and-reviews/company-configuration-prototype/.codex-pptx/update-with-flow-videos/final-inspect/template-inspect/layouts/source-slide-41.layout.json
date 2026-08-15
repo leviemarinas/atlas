@@ -1,0 +1,828 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/cnmpwjmp",
+    "id": "cnmpwjmp",
+    "slide": 41,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t0rqhkju",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "GROSS UP · DEMO",
+      "textPreview": "GROSS UP · DEMO",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GROSS UP · DEMO"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GROSS UP · DEMO",
+          "runs": [
+            {
+              "index": 1,
+              "text": "GROSS UP · DEMO",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/szi98fi9",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Define the net target and tax absorption method",
+      "textPreview": "Define the net target and tax absorption method",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Define the net target and tax absorption method"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Define the net target and tax absorption method",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Define the net target and tax absorption method",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/twnulwnq",
+      "id": "16",
+      "name": "Image 0",
+      "bbox": [
+        84.14,
+        144,
+        392.37,
+        480
+      ],
+      "contentType": "image/png",
+      "asset": {
+        "assetId": "/ppt/media/image31.png",
+        "contentType": "image/png",
+        "byteLength": 236127
+      },
+      "fillImage": {
+        "assetId": "/ppt/media/image31.png",
+        "contentType": "image/png",
+        "byteLength": 236127
+      }
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u10rap0f",
+      "id": "5",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        626.88,
+        441.6,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "What to watch",
+      "textPreview": "What to watch",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "What to watch"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "What to watch",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "What to watch",
+              "fontSize": 12.67,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/h4bqlkj6",
+      "id": "6",
+      "name": "Text 3",
+      "bbox": [
+        544.32,
+        144,
+        672.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "1 · Choose code",
+      "textPreview": "1 · Choose code",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1 · Choose code"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1 · Choose code",
+          "runs": [
+            {
+              "index": 1,
+              "text": "1 · Choose code",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/g3i9czil",
+      "id": "7",
+      "name": "Text 4",
+      "bbox": [
+        544.32,
+        168.96,
+        672.96,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Open GUP-001 from the governed library.",
+      "textPreview": "Open GUP-001 from the governed library.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Open GUP-001 from the governed library."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Open GUP-001 from the governed library.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Open GUP-001 from the governed library.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/36t8nu1w",
+      "id": "8",
+      "name": "Text 5",
+      "bbox": [
+        544.32,
+        240,
+        672.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "2 · Define target",
+      "textPreview": "2 · Define target",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2 · Define target"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2 · Define target",
+          "runs": [
+            {
+              "index": 1,
+              "text": "2 · Define target",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/25krep0r",
+      "id": "9",
+      "name": "Text 6",
+      "bbox": [
+        544.32,
+        264.96,
+        672.96,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Choose guaranteed net, tax method and rate source.",
+      "textPreview": "Choose guaranteed net, tax method and rate source.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Choose guaranteed net, tax method and rate source."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Choose guaranteed net, tax method and rate source.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Choose guaranteed net, tax method and rate source.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cvqp43qh",
+      "id": "10",
+      "name": "Text 7",
+      "bbox": [
+        544.32,
+        336,
+        672.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "3 · Control",
+      "textPreview": "3 · Control",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3 · Control"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3 · Control",
+          "runs": [
+            {
+              "index": 1,
+              "text": "3 · Control",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dwjqd8r2",
+      "id": "11",
+      "name": "Text 8",
+      "bbox": [
+        544.32,
+        360.96,
+        672.96,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Set employer share, rounding and convergence limits.",
+      "textPreview": "Set employer share, rounding and convergence limits.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Set employer share, rounding and convergence limits."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Set employer share, rounding and convergence limits.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Set employer share, rounding and convergence limits.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qt872t8b",
+      "id": "12",
+      "name": "Text 9",
+      "bbox": [
+        544.32,
+        432,
+        672.96,
+        24.96
+      ],
+      "geometry": "rect",
+      "text": "4 · Validate",
+      "textPreview": "4 · Validate",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4 · Validate"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4 · Validate",
+          "runs": [
+            {
+              "index": 1,
+              "text": "4 · Validate",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ruh8by9w",
+      "id": "13",
+      "name": "Text 10",
+      "bbox": [
+        544.32,
+        456.96,
+        672.96,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Confirm the calculated gross and employer tax cost.",
+      "textPreview": "Confirm the calculated gross and employer tax cost.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Confirm the calculated gross and employer tax cost."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Confirm the calculated gross and employer tax cost.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Confirm the calculated gross and employer tax cost.",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0za983qd",
+      "id": "14",
+      "name": "Shape 11",
+      "bbox": [
+        544.32,
+        635.52,
+        672.96,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/10jqh8ry",
+      "id": "15",
+      "name": "Text 12",
+      "bbox": [
+        559.68,
+        635.52,
+        644.16,
+        40.32
+      ],
+      "geometry": "rect",
+      "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+      "textPreview": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+          "runs": [
+            {
+              "index": 1,
+              "text": "AUTO-PLAY DEMO · 7 sec · HD MP4 included",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#1E2761"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

@@ -1,0 +1,8 @@
+Intentional deviations from copied source frames
+
+- Output slide 31: source slide 31 is reused as a new section divider. Only its three inherited text objects are rewritten.
+- Output slides 32–44: source slide 12 is reused because it already establishes the deck's screenshot-plus-explanation pattern.
+- On slides 32–44, the inherited screenshot is replaced with a sharper focused crop; inherited callout text is rewritten.
+- Native PowerPoint numbered badges and connector arrows are added so every description visibly points to the relevant field group.
+- Additional callout boxes are added only inside the mapped content zone to cover the larger field inventory without shrinking the screenshots.
+- Existing source slides 1–30 and 31–39 are otherwise preserved without edits.

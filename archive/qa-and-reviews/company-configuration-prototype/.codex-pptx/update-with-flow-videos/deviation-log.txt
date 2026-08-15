@@ -1,0 +1,13 @@
+Five intentional additions are inserted without modifying the original 55 slides:
+- Company Rules demo after source slide 10.
+- Take-Home Pay demo after source slide 11.
+- Retirement Pay demo after source slide 22.
+- Final Pay demo after source slide 29.
+- Gross Up demo after source slide 36.
+Each addition reuses its section's annotated-wireframe layout, replaces the inherited screenshot frame with an animated GIF, and rewrites only the inherited labels and explanation fields. Companion 1280x720 MP4 files are delivered beside the deck.
+
+Sharp GIF revision:
+- Re-exported all five GIFs at 1920x1080 instead of 960x540.
+- Increased the palette from 128 to 256 colors and removed Bayer dithering to preserve UI text edges.
+- Replaced the corrupted symbol caption with an ASCII-safe WPS slideshow instruction.
+- Matched every GIF canvas to its inherited image frame, using centered UI-focused crops instead of stretching.

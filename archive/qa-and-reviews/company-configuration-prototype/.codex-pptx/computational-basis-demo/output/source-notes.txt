@@ -1,0 +1,184 @@
+SLIDE 1
+Presenter cue: Open by framing this as a payroll-policy conversation, not a technical system tour. The four engines are the visible proof points.
+
+[Sources]
+- ATLAS wireframe, http://localhost:5173/wireframe, client view captured 2026-08-10.
+- Phase 2 - Payroll - Project Plan.xlsx, Non-existing in Phase 1 and Modules and Features tabs.
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Gross Up, Take Home Pay, Retirement Pay, and Final Pay tabs.
+[/Sources]
+
+---
+
+SLIDE 2
+Presenter cue: Explain the five objects in plain language. The important design choice is that company-specific values live in a reusable policy code, while the Company Rule determines the audience and activation.
+
+[Sources]
+- ATLAS_Phase2_Master_Requirements_for_Codex_Claude.md, sections 8, 11, and 12.
+- Phase 2 - Payroll - Project Plan.xlsx, requirement rows HTP018, HTP019, HTP023, HTP073-HTP075.
+[/Sources]
+
+---
+
+SLIDE 3
+Presenter cue: Use the tabs as the mental model: formulas, assignments, engines, sources, and history. Avoid treating the inventory counts as final contractual totals until the source discrepancy is reconciled.
+
+[Sources]
+- ATLAS wireframe, Computational Basis client view, captured 2026-08-10.
+- Phase 2 - Payroll - Project Plan.xlsx, Computational Basis requirements; source materials contain an inventory/target discrepancy between 219 and roughly 300 computations, and between 18 and 30 reference tables.
+[/Sources]
+
+---
+
+SLIDE 4
+Presenter cue: Show that Take-Home Pay, Retirement Pay, and Final Pay appear in the same register as ordinary company rules, but their values remain owned by the policy engine. This is the control that prevents two copies of the same setting.
+
+[Sources]
+- ATLAS wireframe, Company Rules client view, captured 2026-08-10.
+- Phase 2 BRD Audit Summary.xlsx, Rules Setup requirement H61:I61 and computational-basis notes J63:J64.
+[/Sources]
+
+---
+
+SLIDE 5
+Presenter cue: Walk left to right. The sub-category is selected from governed options, the policy code is filtered to that sub-category, and the review screen exposes the effective values rather than hiding them behind a code.
+
+[Sources]
+- ATLAS wireframe, Apply New Rule steps 1-3, captured 2026-08-10.
+- Phase 2 BRD Audit Summary.xlsx, company rule setup and employee/group assignment requirements.
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, employee-group assignment examples in Take Home Pay and Retirement Pay tabs.
+[/Sources]
+
+---
+
+SLIDE 6
+Presenter cue: Use the example as a business translation: the selected basis is gross less reimbursements, the protected minimum is 30%, mandatory statutory deductions remain whole, and controllable items are the only ones reduced or deferred.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Take Home Pay tab, A4:C183; includes alternative percentage, fixed-amount, loan-cap, LAUT-cap, hierarchy, deferral, notification, ledger, and employee-group examples.
+- ATLAS wireframe, Take-Home Pay policy and scenario simulator, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 7
+Presenter cue: Stress module ownership. Take-Home Pay does not recreate loan or deduction setup. It reads the active collections, applies REF-011 ordering and the company threshold, and returns posted versus deferred amounts with carry-forward balances.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Take Home Pay tab, hierarchy and carry-forward sections A90:C158; Deductions and Loans source tabs.
+- ATLAS wireframe, Take-Home Pay hierarchy showing navigation to Deductions, Company Loans, Government Loans and REF-011, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 8
+Presenter cue: Start with the simple source example, then point to the richer app scenario. The business can configure plan type, salary basis, divisor, days per service year, eligibility, rounding, tax treatment, caps, and additional benefits; the simulator compares qualifying values.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Retirement Pay tab, A1:C72.
+- 05Sample Computation - Retirement.xlsx, Definition and Retirement tabs; example monthly pay ₱20,000, 22.5 days, 10 years, result ₱150,000.
+- ATLAS wireframe, Retirement Pay policy and scenario, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 9
+Presenter cue: Show the dependency chain. Final Pay is the assembly point: it turns on applicable components, pulls leave/timekeeping and retirement results, offsets authorized balances, applies tax treatment, and produces an itemized final-pay result.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Final Pay tab, A2:B36.
+- Phase 2 BRD Audit Summary.xlsx, Final Pay setup and assignment requirements H55:J55.
+- ATLAS wireframe, Final Pay configuration and breakdown, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 10
+Presenter cue: The simple example explains the principle. The wireframe generalizes it: select the target, tax method, effective table date, employer share, tolerance, iterations and rounding, then show the candidate gross and calculation trace.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Gross Up tab, A2:B18.
+- 04Sample Gross Up of Earnings.xlsx, Gross up Earnings and Tax computation tabs; simple net ₱10,000 / (1-20%) example.
+- 06Sample Computation and Gross Up_Final Tax.xlsx, Final Tax and Gross Up tabs.
+- ATLAS wireframe, Gross Up configuration and scenario, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 11
+Presenter cue: This resolves the source conflict safely. Atlas standard computations stay controlled; a client may create a company-owned computation only through the approved field and operator palette, with validation before save.
+
+[Sources]
+- Phase 2 - Payroll - Project Plan.xlsx, HTP019 and HTP073-HTP075; source wording conflicts between customizable/add-edit behavior and no creation of new standard computations.
+- ATLAS_Phase2_Master_Requirements_for_Codex_Claude.md, section 8.1 conflict note.
+- ATLAS wireframe, Create company computation modal, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 12
+Presenter cue: Show that a calculation does not become active merely because it exists. A client assignment links the approved computation to a reference version, employee group and frequency. Reference tables remain effective-dated and can be enabled per client.
+
+[Sources]
+- Phase 2 - Payroll - Project Plan.xlsx, HTP023 and HTP073-HTP075.
+- PHASE 2 - REFERENCE TABLE [CORE].xlsx and ATLAS-3001 Reference Tables.docx, reference-table inventory and administration requirements.
+- ATLAS wireframe, Client assignments and Reference sources views, captured 2026-08-10.
+[/Sources]
+
+---
+
+SLIDE 13
+Presenter cue: Use this slide as the live-demo script. For each engine, business owners should validate the basis, ordering, assignment scope, result and trace—not just whether the screen can save.
+
+[Sources]
+- ATLAS wireframe workflow captured 2026-08-10.
+- ATLAS_Phase2_Master_Requirements_for_Codex_Claude.md, confirmed intent for validation, exception alerts, employee/admin notification, audit logging and deterministic policy traces.
+[/Sources]
+
+---
+
+SLIDE 14
+Presenter cue: Close the main presentation here. Ask the business to validate one representative scenario for each engine and to confirm employee-group assignments, data owners and effective dates. The remaining slides are the sourced annex.
+
+[Sources]
+- Synthesis of supplied payroll workbooks, requirements summary, and ATLAS wireframe evidence cited throughout slides 2-13.
+[/Sources]
+
+---
+
+SLIDE 15
+Presenter cue: Use this table when a stakeholder asks where a screen came from. It points to the source tab and the exact wireframe object used in the main story.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Take Home Pay, Retirement Pay, Final Pay and Gross Up tabs.
+- Phase 2 BRD Audit Summary.xlsx, computational-basis, rules and reference-table rows cited in the table.
+- Phase 2 - Payroll - Project Plan.xlsx, HTP018, HTP019, HTP023, HTP073-HTP075.
+[/Sources]
+
+---
+
+SLIDE 16
+Presenter cue: These are workshop-friendly starting cases derived from the supplied files. Use them to agree the expected result before expanding into exceptions and edge cases.
+
+[Sources]
+- 02Annex B_ Employee Masterfile Payroll Data Tables from Dorado.xlsx, Gross Up, Take Home Pay, Retirement Pay and Final Pay tabs.
+- 04Sample Gross Up of Earnings.xlsx and 05Sample Computation - Retirement.xlsx.
+[/Sources]
+
+---
+
+SLIDE 17
+Presenter cue: Use this only if terminology becomes a distraction during discussion. The separation between computation, policy code, rule and assignment is the key distinction.
+
+[Sources]
+- Terminology aligned to the ATLAS wireframe information architecture and supplied requirement documents.
+[/Sources]
+
+---
+
+SLIDE 18
+Presenter cue: This is the derivation record. Call out the two inventory discrepancies and the implementation interpretation around company-created calculations. Statutory rates and effective values must be validated by the designated business/legal owner before production.
+
+[Sources]
+- All source files listed on this slide were supplied by the user and inspected locally for this deck.
+- ATLAS wireframe, http://localhost:5173/wireframe, captured 2026-08-10.
+[/Sources]

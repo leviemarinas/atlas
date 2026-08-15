@@ -1,0 +1,979 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/9w7yt8zy",
+    "id": "9w7yt8zy",
+    "slide": 53,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m9kfqxo3",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX A",
+      "textPreview": "APPENDIX A",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX A"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX A",
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX A",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/natwz2po",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Source documents",
+      "textPreview": "Source documents",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Source documents"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Source documents",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Source documents",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0n2xon6x",
+      "id": "4",
+      "name": "Shape 2",
+      "bbox": [
+        59.52,
+        140.16,
+        292.8,
+        115.2
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1obexs7i",
+      "id": "5",
+      "name": "Text 3",
+      "bbox": [
+        76.8,
+        151.68,
+        259.2,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "Annex B",
+      "textPreview": "Annex B",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex B"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex B",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex B",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/elkfmx87",
+      "id": "6",
+      "name": "Text 4",
+      "bbox": [
+        76.8,
+        197.76,
+        261.12,
+        49.92
+      ],
+      "geometry": "rect",
+      "text": "Employee Masterfile Payroll Data Tables from Dorado",
+      "textPreview": "Employee Masterfile Payroll Data Tables from Dorado",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Employee Masterfile Payroll Data Tables from Dorado"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Employee Masterfile Payroll Data Tables from Dorado",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Employee Masterfile Payroll Data Tables from Dorado",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zmtwv2ps",
+      "id": "7",
+      "name": "Text 5",
+      "bbox": [
+        376.32,
+        144,
+        840,
+        107.52
+      ],
+      "geometry": "rect",
+      "text": "Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado Previous Employer · De Minimis Ceiling Set Up · 13th Mo Pay & Other Bonuses",
+      "textPreview": "Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado Pr...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado"
+          },
+          {
+            "index": 2,
+            "text": "Previous Employer · De Minimis Ceiling Set Up · 13th Mo Pay & Other Bonuses"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado Previous Employer · De Minimis Ceiling Set Up · 13th Mo Pay & Other Bonuses",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado Previous Employer · De Minimis Ceiling Set Up · 13th Mo Pay & Other Bonuses",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cjixknq1",
+      "id": "8",
+      "name": "Shape 6",
+      "bbox": [
+        59.52,
+        270.72,
+        292.8,
+        115.2
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dkbets7m",
+      "id": "9",
+      "name": "Text 7",
+      "bbox": [
+        76.8,
+        282.24,
+        259.2,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "Annex C",
+      "textPreview": "Annex C",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex C"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex C",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex C",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/98vu5grq",
+      "id": "10",
+      "name": "Text 8",
+      "bbox": [
+        76.8,
+        328.32,
+        261.12,
+        49.92
+      ],
+      "geometry": "rect",
+      "text": "Sub Module 3 — Payroll",
+      "textPreview": "Sub Module 3 — Payroll",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sub Module 3 — Payroll"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sub Module 3 — Payroll",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sub Module 3 — Payroll",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/o7mdwbq5",
+      "id": "11",
+      "name": "Text 9",
+      "bbox": [
+        376.32,
+        274.56,
+        840,
+        107.52
+      ],
+      "geometry": "rect",
+      "text": "Payroll transaction preparation, inputs, calculation and approval lifecycle. Referenced for how a computed policy is consumed by a payroll run.",
+      "textPreview": "Payroll transaction preparation, inputs, calculation and approval lifecycle. Referenced for how a computed policy is consumed by a payrol...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Payroll transaction preparation, inputs, calculation and approval lifecycle. Referenced for how a computed policy is consumed by a payroll"
+          },
+          {
+            "index": 2,
+            "text": "run."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Payroll transaction preparation, inputs, calculation and approval lifecycle. Referenced for how a computed policy is consumed by a payroll run.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Payroll transaction preparation, inputs, calculation and approval lifecycle. Referenced for how a computed policy is consumed by a payroll run.",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n6dc369k",
+      "id": "12",
+      "name": "Shape 10",
+      "bbox": [
+        59.52,
+        401.28,
+        292.8,
+        115.2
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m54vu18f",
+      "id": "13",
+      "name": "Text 11",
+      "bbox": [
+        76.8,
+        412.8,
+        259.2,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "Phase 2 BRD Audit Summary",
+      "textPreview": "Phase 2 BRD Audit Summary",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Phase 2 BRD Audit Summary"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Phase 2 BRD Audit Summary",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Phase 2 BRD Audit Summary",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kvu1wru",
+      "id": "14",
+      "name": "Text 12",
+      "bbox": [
+        76.8,
+        458.88,
+        261.12,
+        49.92
+      ],
+      "geometry": "rect",
+      "text": "Overall status — 331 requirement rows",
+      "textPreview": "Overall status — 331 requirement rows",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Overall status — 331 requirement rows"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Overall status — 331 requirement rows",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Overall status — 331 requirement rows",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0j2tsrq9",
+      "id": "15",
+      "name": "Text 13",
+      "bbox": [
+        376.32,
+        405.12,
+        840,
+        107.52
+      ],
+      "geometry": "rect",
+      "text": "Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184.",
+      "textPreview": "Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184.",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zitcz69o",
+      "id": "16",
+      "name": "Shape 14",
+      "bbox": [
+        59.52,
+        531.84,
+        292.8,
+        115.2
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#F4F6FB",
+      "lineColor": "#D8DEEC",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ehkbq183",
+      "id": "17",
+      "name": "Text 15",
+      "bbox": [
+        76.8,
+        543.36,
+        259.2,
+        44.16
+      ],
+      "geometry": "rect",
+      "text": "Tax Tables Flow",
+      "textPreview": "Tax Tables Flow",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Tax Tables Flow"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Tax Tables Flow",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Tax Tables Flow",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dgbuxwri",
+      "id": "18",
+      "name": "Text 16",
+      "bbox": [
+        76.8,
+        589.44,
+        261.12,
+        49.92
+      ],
+      "geometry": "rect",
+      "text": "v2 dated 14 May 2026 (supersedes v1)",
+      "textPreview": "v2 dated 14 May 2026 (supersedes v1)",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "v2 dated 14 May 2026 (supersedes v1)"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "v2 dated 14 May 2026 (supersedes v1)",
+          "runs": [
+            {
+              "index": 1,
+              "text": "v2 dated 14 May 2026 (supersedes v1)",
+              "fontSize": 11.33,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cf2torqx",
+      "id": "19",
+      "name": "Text 17",
+      "bbox": [
+        376.32,
+        535.68,
+        840,
+        107.52
+      ],
+      "geometry": "rect",
+      "text": "Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited.",
+      "textPreview": "Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited.",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

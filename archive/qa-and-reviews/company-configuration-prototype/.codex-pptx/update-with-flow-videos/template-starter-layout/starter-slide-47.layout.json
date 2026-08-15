@@ -1,0 +1,1223 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/24rdpb",
+    "id": "24rdpb",
+    "slide": 47,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/va1cv2p8",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "THE WIRING",
+      "textPreview": "THE WIRING",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "THE WIRING"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "THE WIRING",
+          "runs": [
+            {
+              "index": 1,
+              "text": "THE WIRING",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u9sb2x8n",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "What each engine reads and feeds",
+      "textPreview": "What each engine reads and feeds",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "What each engine reads and feeds"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "What each engine reads and feeds",
+          "runs": [
+            {
+              "index": 1,
+              "text": "What each engine reads and feeds",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5g3u1c7a",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        388.8,
+        136.32,
+        422.4,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Reads from",
+      "textPreview": "Reads from",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Reads from"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Reads from",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Reads from",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4fut87qp",
+      "id": "5",
+      "name": "Text 3",
+      "bbox": [
+        840,
+        136.32,
+        374.4,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Produces",
+      "textPreview": "Produces",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Produces"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Produces",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Produces",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jelczmpk",
+      "id": "6",
+      "name": "Shape 4",
+      "bbox": [
+        59.52,
+        170.88,
+        307.2,
+        101.76
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/idcb6h8z",
+      "id": "7",
+      "name": "Text 5",
+      "bbox": [
+        78.72,
+        170.88,
+        268.8,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Take-Home Pay",
+      "textPreview": "Take-Home Pay",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Take-Home Pay"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Take-Home Pay",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Take-Home Pay",
+              "fontSize": 18,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/dk3u5w7m",
+      "id": "8",
+      "name": "Shape 6",
+      "bbox": [
+        374.4,
+        213.12,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sjutcrq1",
+      "id": "9",
+      "name": "Text 7",
+      "bbox": [
+        403.2,
+        170.88,
+        417.6,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Deduction hierarchy reference table · employee loan and deduction balances",
+      "textPreview": "Deduction hierarchy reference table · employee loan and deduction balances",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Deduction hierarchy reference table · employee loan and deduction"
+          },
+          {
+            "index": 2,
+            "text": "balances"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Deduction hierarchy reference table · employee loan and deduction balances",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Deduction hierarchy reference table · employee loan and deduction balances",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2dcrqp47",
+      "id": "10",
+      "name": "Shape 8",
+      "bbox": [
+        827.52,
+        213.12,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ne5sjuls",
+      "id": "11",
+      "name": "Text 9",
+      "bbox": [
+        859.2,
+        170.88,
+        355.2,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Deferred amounts, carry-forward schedule, payslip tags",
+      "textPreview": "Deferred amounts, carry-forward schedule, payslip tags",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Deferred amounts, carry-forward schedule, payslip tags"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Deferred amounts, carry-forward schedule, payslip tags",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Deferred amounts, carry-forward schedule, payslip tags",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#1F7A5C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oze9szmx",
+      "id": "12",
+      "name": "Shape 10",
+      "bbox": [
+        59.52,
+        288,
+        307.2,
+        101.76
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p0nal43i",
+      "id": "13",
+      "name": "Text 11",
+      "bbox": [
+        78.72,
+        288,
+        268.8,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Retirement Pay",
+      "textPreview": "Retirement Pay",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Retirement Pay"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Retirement Pay",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Retirement Pay",
+              "fontSize": 18,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a1wru943",
+      "id": "14",
+      "name": "Shape 12",
+      "bbox": [
+        374.4,
+        330.24,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b25snelo",
+      "id": "15",
+      "name": "Text 13",
+      "bbox": [
+        403.2,
+        288,
+        417.6,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Employee dates of birth, hire and retirement · plan membership · salary basis",
+      "textPreview": "Employee dates of birth, hire and retirement · plan membership · salary basis",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Employee dates of birth, hire and retirement · plan membership ·"
+          },
+          {
+            "index": 2,
+            "text": "salary basis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Employee dates of birth, hire and retirement · plan membership · salary basis",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Employee dates of birth, hire and retirement · plan membership · salary basis",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c3e9wjm9",
+      "id": "16",
+      "name": "Shape 14",
+      "bbox": [
+        827.52,
+        330.24,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x4nap43u",
+      "id": "17",
+      "name": "Text 15",
+      "bbox": [
+        859.2,
+        288,
+        355.2,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Retirement pay value and its tax status",
+      "textPreview": "Retirement pay value and its tax status",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Retirement pay value and its tax status"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Retirement pay value and its tax status",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Retirement pay value and its tax status",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#1F7A5C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/65sri54z",
+      "id": "18",
+      "name": "Shape 16",
+      "bbox": [
+        59.52,
+        405.12,
+        307.2,
+        101.76
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r618balk",
+      "id": "19",
+      "name": "Text 17",
+      "bbox": [
+        78.72,
+        405.12,
+        268.8,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Final Pay",
+      "textPreview": "Final Pay",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Final Pay"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Final Pay",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Final Pay",
+              "fontSize": 18,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vahoj61c",
+      "id": "20",
+      "name": "Shape 18",
+      "bbox": [
+        374.4,
+        447.36,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/up87q1kr",
+      "id": "21",
+      "name": "Text 19",
+      "bbox": [
+        403.2,
+        405.12,
+        417.6,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Retirement engine result · leave balances · outstanding loan and deduction balances",
+      "textPreview": "Retirement engine result · leave balances · outstanding loan and deduction balances",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Retirement engine result · leave balances · outstanding loan and"
+          },
+          {
+            "index": 2,
+            "text": "deduction balances"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Retirement engine result · leave balances · outstanding loan and deduction balances",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Retirement engine result · leave balances · outstanding loan and deduction balances",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcz6lgj2",
+      "id": "22",
+      "name": "Shape 20",
+      "bbox": [
+        827.52,
+        447.36,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wbqpsb2x",
+      "id": "23",
+      "name": "Text 21",
+      "bbox": [
+        859.2,
+        405.12,
+        355.2,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Net final pay breakdown for release",
+      "textPreview": "Net final pay breakdown for release",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Net final pay breakdown for release"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Net final pay breakdown for release",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Net final pay breakdown for release",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#1F7A5C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mxof610",
+      "id": "24",
+      "name": "Shape 22",
+      "bbox": [
+        59.52,
+        522.24,
+        307.2,
+        101.76
+      ],
+      "geometry": "roundRect",
+      "fillColor": "#1E2761"
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mlonm1kf",
+      "id": "25",
+      "name": "Text 23",
+      "bbox": [
+        78.72,
+        522.24,
+        268.8,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Gross Up",
+      "textPreview": "Gross Up",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Gross Up"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Gross Up",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Gross Up",
+              "fontSize": 18,
+              "typeface": "Calibri",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9oz6hgj6",
+      "id": "26",
+      "name": "Shape 24",
+      "bbox": [
+        374.4,
+        564.48,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8n65ob2l",
+      "id": "27",
+      "name": "Text 25",
+      "bbox": [
+        403.2,
+        522.24,
+        417.6,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Effective BIR withholding table · employee statutory share",
+      "textPreview": "Effective BIR withholding table · employee statutory share",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Effective BIR withholding table · employee statutory share"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Effective BIR withholding table · employee statutory share",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Effective BIR withholding table · employee statutory share",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#2B3350"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ri1orq1k",
+      "id": "28",
+      "name": "Shape 26",
+      "bbox": [
+        827.52,
+        564.48,
+        17.28,
+        17.28
+      ],
+      "geometry": "rightArrow",
+      "fillColor": "#9AA6C4",
+      "lineColor": "#333333",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6hs7ilkz",
+      "id": "29",
+      "name": "Text 27",
+      "bbox": [
+        859.2,
+        522.24,
+        355.2,
+        101.76
+      ],
+      "geometry": "rect",
+      "text": "Gross to pay and the tax the employer absorbs",
+      "textPreview": "Gross to pay and the tax the employer absorbs",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Gross to pay and the tax the employer absorbs"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Gross to pay and the tax the employer absorbs",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Gross to pay and the tax the employer absorbs",
+              "fontSize": 14.67,
+              "typeface": "Calibri",
+              "color": "#1F7A5C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

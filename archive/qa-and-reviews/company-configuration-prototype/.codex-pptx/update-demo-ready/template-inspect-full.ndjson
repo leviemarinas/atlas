@@ -1,0 +1,590 @@
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"ATLAS PHASE 2 · PAYROLL","textShapes":8}
+{"kind":"shape","id":"sh/547294r6","slide":1,"name":"Text 0","text":"ATLAS PHASE 2 · PAYROLL","bbox":[59.52,182.4,768,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/k3yl0zql","slide":1,"name":"Text 1","text":"Computational Basis Demo","bbox":[59.52,220.8,864,91.2],"placeholder":null}
+{"kind":"shape","id":"sh/7qp4be9c","slide":1,"name":"Text 2","text":"How the setup drives take-home pay, retirement pay, final pay, and gross-up calculations","bbox":[59.52,321.6,806.4,96],"placeholder":null}
+{"kind":"shape","id":"sh/65g3298r","slide":1,"name":"Shape 3","text":"","bbox":[59.52,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/ts7md4r2","slide":1,"name":"Text 4","text":"Take-Home Pay","bbox":[59.52,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/sryl4zqx","slide":1,"name":"Shape 5","text":"","bbox":[311.04,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/fu94fe98","slide":1,"name":"Text 6","text":"Retirement Pay","bbox":[311.04,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/utg3698n","slide":1,"name":"Shape 7","text":"","bbox":[562.56,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/wn6dc7eh","slide":1,"name":"Text 8","text":"Final Pay","bbox":[562.56,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/hofulsf2","slide":1,"name":"Shape 9","text":"","bbox":[814.08,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/ul4vaxgb","slide":1,"name":"Text 10","text":"Gross Up","bbox":[814.08,456,232.32,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/vmdcj2xw","slide":1,"name":"Text 11","text":"Demo build · wireframe screenshots · sample values for walkthrough only","bbox":[59.52,552,960,28.8],"placeholder":null}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"AGENDA","textShapes":17}
+{"kind":"shape","id":"sh/9072xkry","slide":2,"name":"Text 0","text":"AGENDA","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/ozy1ofad","slide":2,"name":"Text 1","text":"Demo walkthrough","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/b29kza94","slide":2,"name":"Shape 2","text":"","bbox":[59.52,148.8,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/a10jqpsj","slide":2,"name":"Text 3","text":"1","bbox":[59.52,148.8,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"name":"Text 4","text":"Start with the policy","bbox":[128.64,143.04,297.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/w3i1sfa9","slide":2,"name":"Text 5","text":"We start from the written rule, turn it into an approved code, then apply it as a Company Rule.","bbox":[433.92,143.04,787.2,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"name":"Shape 6","text":"","bbox":[59.52,250.56,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/q5wjelsz","slide":2,"name":"Text 7","text":"2","bbox":[59.52,250.56,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/ove9o7yd","slide":2,"name":"Text 8","text":"Show the four setups","bbox":[128.64,244.8,297.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/9wnqhczy","slide":2,"name":"Text 9","text":"Take-Home Pay, Retirement Pay, Final Pay, and Gross Up — each with its own setup and sample run.","bbox":[433.92,244.8,787.2,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"name":"Shape 10","text":"","bbox":[59.52,352.32,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/nu58f2hs","slide":2,"name":"Text 11","text":"3","bbox":[59.52,352.32,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/wjy9sry9","slide":2,"name":"Text 12","text":"Use real sample numbers","bbox":[128.64,346.56,297.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/xk7qlczu","slide":2,"name":"Text 13","text":"The examples follow the Annex B samples so the calculation can be checked on screen.","bbox":[433.92,346.56,787.2,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"name":"Shape 14","text":"","bbox":[59.52,454.08,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/bip8jmho","slide":2,"name":"Text 15","text":"4","bbox":[59.52,454.08,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/cnupgny5","slide":2,"name":"Text 16","text":"Connect the pieces","bbox":[128.64,448.32,297.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/do3q9szq","slide":2,"name":"Text 17","text":"Company Rules, reference tables, statutory tables, and employee payroll records all feed the result.","bbox":[433.92,448.32,787.2,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/t8byxkn2","slide":2,"name":"Shape 18","text":"","bbox":[59.52,555.84,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/s72xofmh","slide":2,"name":"Text 19","text":"5","bbox":[59.52,555.84,44.16,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/76twva5c","slide":2,"name":"Text 20","text":"End with traceability","bbox":[128.64,550.08,297.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/65kfmpor","slide":2,"name":"Text 21","text":"The appendix shows where each screen and rule came from, plus the items still needing confirmation.","bbox":[433.92,550.08,787.2,57.6],"placeholder":null}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"THE FLOW","textShapes":19}
+{"kind":"shape","id":"sh/cza94vmx","slide":3,"name":"Text 0","text":"THE FLOW","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/d0jax03i","slide":3,"name":"Text 1","text":"From policy to payroll result","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/298ryl4v","slide":3,"name":"Shape 2","text":"","bbox":[59.52,168,216,249.6],"placeholder":null}
+{"kind":"shape","id":"sh/3ah8rqlg","slide":3,"name":"Shape 3","text":"","bbox":[82.56,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/obq90bml","slide":3,"name":"Text 4","text":"1","bbox":[82.56,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/pcjqtg36","slide":3,"name":"Text 5","text":"Written policy","bbox":[80.64,249.6,173.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/m5cra54z","slide":3,"name":"Text 6","text":"Annex B rule, written in\nbusiness terms","bbox":[80.64,289.92,173.76,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/n6ls3alk","slide":3,"name":"Shape 7","text":"","bbox":[279.84,283.2,21.12,19.2],"placeholder":null}
+{"kind":"shape","id":"sh/n2l4fq98","slide":3,"name":"Shape 8","text":"","bbox":[305.28,168,216,249.6],"placeholder":null}
+{"kind":"shape","id":"sh/m1c3mlsn","slide":3,"name":"Shape 9","text":"","bbox":[328.32,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/943mhgre","slide":3,"name":"Text 10","text":"2","bbox":[328.32,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/83ulovat","slide":3,"name":"Text 11","text":"Approved code","bbox":[326.4,249.6,173.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/v6l4jq94","slide":3,"name":"Text 12","text":"Reusable calculation code,\nfor example THP-001","bbox":[326.4,289.92,173.76,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"Shape 13","text":"","bbox":[525.6,283.2,21.12,19.2],"placeholder":null}
+{"kind":"shape","id":"sh/x8nml0ra","slide":3,"name":"Shape 14","text":"","bbox":[551.04,168,216,249.6],"placeholder":null}
+{"kind":"shape","id":"sh/w7ulsvqp","slide":3,"name":"Shape 15","text":"","bbox":[574.08,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/ja54na9g","slide":3,"name":"Text 16","text":"3","bbox":[574.08,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/i9w3u58v","slide":3,"name":"Text 17","text":"Company Rule","bbox":[572.16,249.6,173.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/e10f2twf","slide":3,"name":"Text 18","text":"Applied to an employee\ngroup with its own values","bbox":[572.16,289.92,173.76,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/f29gbyx0","slide":3,"name":"Shape 19","text":"","bbox":[771.36,283.2,21.12,19.2],"placeholder":null}
+{"kind":"shape","id":"sh/03ix43e5","slide":3,"name":"Shape 20","text":"","bbox":[796.8,168,216,249.6],"placeholder":null}
+{"kind":"shape","id":"sh/14ryd8fq","slide":3,"name":"Shape 21","text":"","bbox":[819.84,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/6d0fytg3","slide":3,"name":"Text 22","text":"4","bbox":[819.84,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/re9g7yxo","slide":3,"name":"Text 23","text":"Policy engine","bbox":[817.92,249.6,173.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/sfix03y9","slide":3,"name":"Text 24","text":"Runs the calculation and\nshows the working","bbox":[817.92,289.92,173.76,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/tgry9ofu","slide":3,"name":"Shape 25","text":"","bbox":[1017.12,283.2,21.12,19.2],"placeholder":null}
+{"kind":"shape","id":"sh/a9kfadwn","slide":3,"name":"Shape 26","text":"","bbox":[1042.56,168,216,249.6],"placeholder":null}
+{"kind":"shape","id":"sh/batgjixs","slide":3,"name":"Shape 27","text":"","bbox":[1065.6,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/l4fi9cza","slide":3,"name":"Text 28","text":"5","bbox":[1065.6,192,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/k3m1g7yp","slide":3,"name":"Text 29","text":"Payroll result","bbox":[1063.68,249.6,173.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/z2d07mh4","slide":3,"name":"Text 30","text":"Deduction changes, deferrals,\nledger, and payslip tags","bbox":[1063.68,289.92,173.76,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/y14jehgj","slide":3,"name":"Text 31","text":"The formula stays controlled. The values can change per company rule or employee group.","bbox":[59.52,456,1157.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/x0vi5czy","slide":3,"name":"Shape 32","text":"","bbox":[59.52,513.6,902.4,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/czmhc7id","slide":3,"name":"Text 33","text":"Source · BRD “Rules Set Up — Client-defined Rules”; Annex B Take Home Pay rows 113–156","bbox":[74.88,513.6,873.6,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"ORIENTATION","textShapes":10}
+{"kind":"shape","id":"sh/1cj2d8b6","slide":4,"name":"Text 0","text":"ORIENTATION","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/0ba143al","slide":4,"name":"Text 1","text":"Where to find Computational Basis","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/tcvm5gji","slide":4,"name":"Image 0","text":"","bbox":[64.32,144,768,480],"placeholder":null}
+{"kind":"shape","id":"sh/ql8jytsj","slide":4,"name":"Text 2","text":"Computational Basis — wireframe view","bbox":[59.52,626.88,777.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"name":"Text 3","text":"One place for the logic","bbox":[880.32,144,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/sna103ap","slide":4,"name":"Text 4","text":"This is the controlled area for standard formulas, client assignments, policy engines, and the reference sources they use.","bbox":[880.32,168.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"name":"Text 5","text":"No hidden numbers inside formulas","bbox":[880.32,240,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/ih8ju9sn","slide":4,"name":"Text 6","text":"Rates, brackets, and ceilings are maintained in versioned tables instead of being typed directly into a formula.","bbox":[880.32,264.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/kbm987y5","slide":4,"name":"Text 7","text":"Navigation path","bbox":[880.32,336,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/5cva1cfq","slide":4,"name":"Text 8","text":"Company Configuration → Services Information → Computational Basis.","bbox":[880.32,360.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"name":"Shape 9","text":"","bbox":[880.32,635.52,336.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/jadsz2xk","slide":4,"name":"Text 10","text":"Source · BRD Computational Basis Module (feature points 73–82)","bbox":[895.68,635.52,308.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/w72947yt","slide":4,"name":"Rectangle 13","text":"","bbox":[118.2,240,92.13,24.93],"placeholder":null}
+{"kind":"shape","id":"sh/x8vaxsfe","slide":4,"name":"Rectangle 14","text":"","bbox":[280.47,200,185.8,36],"placeholder":null}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"TODAY’S SCOPE","textShapes":19}
+{"kind":"shape","id":"sh/dgbulwnm","slide":5,"name":"Text 0","text":"TODAY’S SCOPE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/cf2tcr61","slide":5,"name":"Text 1","text":"The four calculation areas in this demo","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/4f6hgfq1","slide":5,"name":"Image 0","text":"","bbox":[150.72,134.4,975.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/yhkbe1o7","slide":5,"name":"Shape 2","text":"","bbox":[59.52,240,280.32,312],"placeholder":null}
+{"kind":"shape","id":"sh/l4bupwny","slide":5,"name":"Shape 3","text":"","bbox":[84.48,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/032tgr6d","slide":5,"name":"Text 4","text":"1","bbox":[84.48,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/n6dcr65o","slide":5,"name":"Text 5","text":"Take-Home Pay","bbox":[84.48,320.64,230.4,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/m5kbi1oj","slide":5,"name":"Text 6","text":"THP-001 · THP-002","bbox":[84.48,355.2,230.4,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/w32dkbuh","slide":5,"name":"Text 7","text":"Protects the employee’s minimum net pay, caps controllable deductions, and defers the rest in the set order.","bbox":[84.48,387.84,230.4,144],"placeholder":null}
+{"kind":"shape","id":"sh/x4vedgvm","slide":5,"name":"Shape 8","text":"","bbox":[362.88,240,280.32,312],"placeholder":null}
+{"kind":"shape","id":"sh/ahkvi1cb","slide":5,"name":"Shape 9","text":"","bbox":[387.84,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/v2twb6dw","slide":5,"name":"Text 10","text":"2","bbox":[387.84,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/k7mxovud","slide":5,"name":"Text 11","text":"Retirement Pay","bbox":[387.84,320.64,230.4,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"name":"Text 12","text":"RET-001 · RET-002","bbox":[387.84,355.2,230.4,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"Text 13","text":"Checks the statutory formula against the company plan and uses the more beneficial result.","bbox":[387.84,387.84,230.4,144],"placeholder":null}
+{"kind":"shape","id":"sh/j6dwfqds","slide":5,"name":"Shape 14","text":"","bbox":[666.24,240,280.32,312],"placeholder":null}
+{"kind":"shape","id":"sh/sb6xsvu9","slide":5,"name":"Shape 15","text":"","bbox":[691.2,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/tcfel0vu","slide":5,"name":"Text 16","text":"3","bbox":[691.2,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/hgrmpwj2","slide":5,"name":"Text 17","text":"Final Pay","bbox":[691.2,320.64,230.4,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/gfi5grih","slide":5,"name":"Text 18","text":"FIN-001","bbox":[691.2,355.2,230.4,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/fe94nm1w","slide":5,"name":"Text 19","text":"Builds the final pay breakdown, applies authorized offsets, and returns the net amount for release.","bbox":[691.2,387.84,230.4,144],"placeholder":null}
+{"kind":"shape","id":"sh/ud0ne10b","slide":5,"name":"Shape 20","text":"","bbox":[969.6,240,280.32,312],"placeholder":null}
+{"kind":"shape","id":"sh/pkr6tgjy","slide":5,"name":"Shape 21","text":"","bbox":[994.56,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/4ji5kbid","slide":5,"name":"Text 22","text":"4","bbox":[994.56,264.96,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/3i94r61s","slide":5,"name":"Text 23","text":"Gross Up","bbox":[994.56,320.64,230.4,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/2h0ni107","slide":5,"name":"Text 24","text":"GUP-001","bbox":[994.56,355.2,230.4,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/5o7mhcju","slide":5,"name":"Text 25","text":"Finds the gross amount needed to release a guaranteed net amount to the employee.","bbox":[994.56,387.84,230.4,144],"placeholder":null}
+{"kind":"shape","id":"sh/kny587i9","slide":5,"name":"Shape 26","text":"","bbox":[59.52,590.4,921.6,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/atcjidg7","slide":5,"name":"Text 27","text":"Source · Annex B sheets: Take Home Pay · Retirement Pay · Final Pay · Gross Up","bbox":[74.88,590.4,892.8,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"HOW IT CONNECTS","textShapes":10}
+{"kind":"shape","id":"sh/yhg7epsj","slide":6,"name":"Text 0","text":"HOW IT CONNECTS","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"Text 1","text":"Company Rules is where the setup is applied","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/y9sbm9c3","slide":6,"name":"Image 0","text":"","bbox":[64.32,144,768,480],"placeholder":null}
+{"kind":"shape","id":"sh/98rqt4r6","slide":6,"name":"Text 2","text":"Company Rules register — wireframe view","bbox":[59.52,626.88,777.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"Text 3","text":"One rule register","bbox":[880.32,144,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/7m98ru9g","slide":6,"name":"Text 4","text":"All company rules sit in one place, even when different engines calculate them.","bbox":[880.32,168.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/oryp8fah","slide":6,"name":"Text 5","text":"Engine-owned rows stay locked","bbox":[880.32,240,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/pc76hkr2","slide":6,"name":"Text 6","text":"If a rule is backed by a policy engine, the calculation details are changed inside that engine only.","bbox":[880.32,264.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/h4bupgn6","slide":6,"name":"Text 7","text":"Apply New Rule","bbox":[880.32,336,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/w32twb6l","slide":6,"name":"Text 8","text":"Three steps: choose who it applies to, select the approved code, then enter the rule values.","bbox":[880.32,360.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"name":"Shape 9","text":"","bbox":[880.32,635.52,336.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/u1kbu1ov","slide":6,"name":"Text 10","text":"Source · BRD feature point 60, “Rules Set Up — Client-defined Rules”","bbox":[895.68,635.52,308.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"APPLYING A RULE","textShapes":6}
+{"kind":"shape","id":"sh/cb2tkvap","slide":7,"name":"Text 0","text":"APPLYING A RULE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/dcbud0ra","slide":7,"name":"Text 1","text":"Step 1 — define who the rule applies to","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/wz6dk3it","slide":7,"name":"Image 0","text":"","bbox":[81.74,139.2,627.57,499.2],"placeholder":null}
+{"kind":"shape","id":"sh/zedcfa9g","slide":7,"name":"Text 2","text":"Plain-language rule","bbox":[765.12,153.6,452.16,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/kzmdova1","slide":7,"name":"Text 3","text":"“Employees must receive at least 30% of gross pay after reimbursements / receivables are removed.”","bbox":[765.12,190.08,452.16,105.6],"placeholder":null}
+{"kind":"shape","id":"sh/l0vuh0rm","slide":7,"name":"Text 4","text":"The employee group is selected first, so the same rule can still have different values by group.","bbox":[765.12,302.4,452.16,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/eh0ba1sr","slide":7,"name":"Shape 5","text":"","bbox":[765.12,432,452.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/fi9c369c","slide":7,"name":"Text 6","text":"Source · Annex B “Take Home Pay” rows 21–27 (policy 3)","bbox":[780.48,432,423.36,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"APPLYING A RULE","textShapes":6}
+{"kind":"shape","id":"sh/18byd4zy","slide":8,"name":"Text 0","text":"APPLYING A RULE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"Text 1","text":"Step 2 — choose an approved computation","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/r2tobe1c","slide":8,"name":"Image 0","text":"","bbox":[59.52,157.42,672,462.76],"placeholder":null}
+{"kind":"shape","id":"sh/6h0fypgb","slide":8,"name":"Text 2","text":"Only approved codes are available","bbox":[765.12,153.6,452.16,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"name":"Text 3","text":"The list is filtered by the selected sub-category. Users pick from approved templates instead of creating a formula from scratch.","bbox":[765.12,190.08,452.16,134.4],"placeholder":null}
+{"kind":"shape","id":"sh/sjix0zy1","slide":8,"name":"Text 4","text":"THP-001  Minimum Take-Home Pay\nTHP-002  Maximum Controllable Deductions","bbox":[765.12,331.2,452.16,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/je9g3ahk","slide":8,"name":"Shape 5","text":"","bbox":[765.12,441.6,452.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/id0fu50z","slide":8,"name":"Text 6","text":"Source · Annex B rows 4–5 (policy 1) and 45–51 (loan cap)","bbox":[780.48,441.6,423.36,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"APPLYING A RULE","textShapes":6}
+{"kind":"shape","id":"sh/1cfmhgne","slide":9,"name":"Text 0","text":"APPLYING A RULE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"Text 1","text":"Step 3 — enter the values for this rule","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/faho3ad0","slide":9,"name":"Image 0","text":"","bbox":[107.52,139.2,499.2,499.2],"placeholder":null}
+{"kind":"shape","id":"sh/mdonql4z","slide":9,"name":"Text 2","text":"Same structure, different values","bbox":[688.32,153.6,528.96,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"name":"Text 3","text":"The approved code defines the fields. This rule supplies its own base, threshold type, and threshold value.","bbox":[688.32,190.08,528.96,144],"placeholder":null}
+{"kind":"shape","id":"sh/ofq5svm5","slide":9,"name":"Text 4","text":"That is how one policy library can support different companies and employee groups without copying formulas.","bbox":[688.32,345.6,528.96,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/bih4na5w","slide":9,"name":"Shape 5","text":"","bbox":[688.32,480,528.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/ah8nu54b","slide":9,"name":"Text 6","text":"Source · Annex B rows 113–124, “Possible Company Set Up” 1–5","bbox":[703.68,480,500.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/m90b6t0r","slide":10,"title":"THE LIBRARY","textShapes":10}
+{"kind":"shape","id":"sh/xc3mho32","slide":10,"name":"Text 0","text":"THE LIBRARY","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/cbu58j2h","slide":10,"name":"Text 1","text":"The library keeps the formulas controlled","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/7e50vel0","slide":10,"name":"Image 0","text":"","bbox":[59.52,150.22,806.4,457.97],"placeholder":null}
+{"kind":"shape","id":"sh/ydcnatkn","slide":10,"name":"Text 2","text":"Policy engine code library — wireframe view","bbox":[59.52,617.28,806.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/l036l83y","slide":10,"name":"Text 3","text":"Coverage is visible","bbox":[909.12,144,308.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/kzu5c32t","slide":10,"name":"Text 4","text":"The header shows how many Company Rules sub-categories already have an approved template.","bbox":[909.12,168.96,308.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/725onyl4","slide":10,"name":"Text 5","text":"Standard vs client variant","bbox":[909.12,240,308.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/m1cnetkj","slide":10,"name":"Text 6","text":"Standard codes stay locked. A client variant starts from the standard code and only changes the allowed values.","bbox":[909.12,264.96,308.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/s7yt4b21","slide":10,"name":"Text 7","text":"Open the engine","bbox":[909.12,336,308.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/d87uxg3m","slide":10,"name":"Text 8","text":"This opens the screen that calculates the selected code.","bbox":[909.12,360.96,308.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/q5gb21kb","slide":10,"name":"Shape 9","text":"","bbox":[909.12,635.52,308.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/r6pcv6lw","slide":10,"name":"Text 10","text":"Source · BRD feature points 19–20, Computational Basis set-up","bbox":[924.48,635.52,279.36,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/jetc3ut0","slide":11,"title":"ENGINE 1 OF 4","textShapes":11}
+{"kind":"shape","id":"sh/xcryxg7y","slide":11,"name":"Text 0","text":"ENGINE 1 OF 4","bbox":[59.52,211.2,614.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/wbih4b6d","slide":11,"name":"Text 1","text":"Take-Home Pay","bbox":[59.52,244.8,691.2,96],"placeholder":null}
+{"kind":"shape","id":"sh/n69grmpw","slide":11,"name":"Text 2","text":"Protect minimum net pay, cap selected deductions, and carry forward what cannot be deducted this cutoff.","bbox":[59.52,347.52,662.4,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/250zy18b","slide":11,"name":"Shape 3","text":"","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/98rytw72","slide":11,"name":"Text 4","text":"1","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/o7ih0r6h","slide":11,"name":"Text 5","text":"Protected minimum","bbox":[875.52,240.96,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/72t03qp0","slide":11,"name":"Shape 6","text":"","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/61kzalof","slide":11,"name":"Text 7","text":"2","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/ofqtgnyt","slide":11,"name":"Text 8","text":"Deduction and loan caps","bbox":[875.52,323.52,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/9gza9sze","slide":11,"name":"Shape 9","text":"","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/mdobedg3","slide":11,"name":"Text 10","text":"3","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/nehs7iho","slide":11,"name":"Text 11","text":"Adjustment order","bbox":[875.52,406.08,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/0b6tc3yx","slide":11,"name":"Shape 12","text":"","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/1cfa58zi","slide":11,"name":"Text 13","text":"4","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/epobatgr","slide":11,"name":"Text 14","text":"Deferral and carry-forward","bbox":[875.52,488.64,336,57.6],"placeholder":null}
+{"kind":"slide","id":"sl/8f2psfyx","slide":12,"title":"TAKE-HOME PAY · SETUP","textShapes":10}
+{"kind":"shape","id":"sh/1gbm9s3a","slide":12,"name":"Text 0","text":"TAKE-HOME PAY · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/0f2lgnmp","slide":12,"name":"Text 1","text":"Set the protected minimum","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/q903ad4n","slide":12,"name":"Text 2","text":"Minimum Take-Home Pay settings","bbox":[59.52,482.88,710.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/dcbm583y","slide":12,"name":"Text 3","text":"Base","bbox":[813.12,144,404.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/sb2lcnmd","slide":12,"name":"Text 4","text":"Basic Pay, Gross Pay, or Gross Pay less reimbursements — these match the sample bases in Annex B.","bbox":[813.12,168.96,404.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/b6d4f2lc","slide":12,"name":"Text 5","text":"Threshold","bbox":[813.12,240,404.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/a543mx4r","slide":12,"name":"Text 6","text":"The minimum can be a percentage or a fixed peso amount, including zero.","bbox":[813.12,264.96,404.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/wvupgz6t","slide":12,"name":"Text 7","text":"Result","bbox":[813.12,336,404.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/xw3q94ne","slide":12,"name":"Text 8","text":"For this sample, 30% of ₱34,500 gives a protected minimum of ₱10,350.","bbox":[813.12,360.96,404.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/atc7epon","slide":12,"name":"Shape 9","text":"","bbox":[813.12,635.52,404.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/bulo7u58","slide":12,"name":"Text 10","text":"Source · Annex B “Take Home Pay” rows 4, 13, 21, 29, 37","bbox":[828.48,635.52,375.36,40.32],"placeholder":null}
+{"kind":"image","id":"im/fudovqlo","slide":12,"name":"Picture 14","text":"","bbox":[11.67,144,780.2,288.53],"placeholder":null}
+{"kind":"slide","id":"sl/hgzapcr6","slide":13,"title":"TAKE-HOME PAY · SETUP","textShapes":10}
+{"kind":"shape","id":"sh/q50nydsj","slide":13,"name":"Text 0","text":"TAKE-HOME PAY · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/bq9orito","slide":13,"name":"Text 1","text":"Set caps for deductions, loans, and attendance","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/p4r6p8by","slide":13,"name":"Text 2","text":"Cap configuration","bbox":[59.52,626.88,518.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/21gnuts7","slide":13,"name":"Text 3","text":"Loan cap","bbox":[621.12,144,596.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/32ponyts","slide":13,"name":"Text 4","text":"Loan repayments can be capped by percentage of gross pay or by a fixed amount, such as ₱10,000.","bbox":[621.12,168.96,596.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/gzy5s3a1","slide":13,"name":"Text 5","text":"LAABS cap","bbox":[621.12,240,596.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/1076lobm","slide":13,"name":"Text 6","text":"Lates, absences, and undertime can be capped by percentage, fixed amount, or number of days.","bbox":[621.12,264.96,596.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/hcfy9k3u","slide":13,"name":"Text 7","text":"Conflict priority","bbox":[621.12,336,596.16,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/gb6x0zm9","slide":13,"name":"Text 8","text":"When more than one rule applies, the company decides which rule takes priority.","bbox":[621.12,360.96,596.16,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/vaxg7ulo","slide":13,"name":"Shape 9","text":"","bbox":[621.12,635.52,596.16,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/u9ofyp43","slide":13,"name":"Text 10","text":"Source · Annex B rows 45–84 (caps) and 106–109 (conflict priority)","bbox":[636.48,635.52,567.36,40.32],"placeholder":null}
+{"kind":"image","id":"im/m98jmlcv","slide":13,"name":"Picture 14","text":"","bbox":[29.2,150.93,566.67,461.13],"placeholder":null}
+{"kind":"slide","id":"sl/6lsnupw7","slide":14,"title":"TAKE-HOME PAY · SETUP","textShapes":10}
+{"kind":"shape","id":"sh/xc7eds76","slide":14,"name":"Text 0","text":"TAKE-HOME PAY · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/wbydknq1","slide":14,"name":"Text 1","text":"Set the adjustment order","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/rq1cvq1g","slide":14,"name":"Image 0","text":"","bbox":[140.28,144,251.28,480],"placeholder":null}
+{"kind":"shape","id":"sh/idgvmx8r","slide":14,"name":"Text 2","text":"Deduction and loan hierarchy","bbox":[59.52,626.88,412.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/5grehs7i","slide":14,"name":"Text 3","text":"Ranked order","bbox":[515.52,144,701.76,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/kfidonqx","slide":14,"name":"Text 4","text":"Statutory deductions stay at rank 0 and are always deducted in full. The other items follow the agreed order.","bbox":[515.52,168.96,701.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/zi5c3y98","slide":14,"name":"Text 5","text":"Only adjust what is needed","bbox":[515.52,240,701.76,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/ehwvat8n","slide":14,"name":"Text 6","text":"The engine trims just enough to meet the protected minimum. If rank 1 is enough, it stops there.","bbox":[515.52,264.96,701.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/c3e1gjyd","slide":14,"name":"Text 7","text":"Maintained as a table","bbox":[515.52,336,701.76,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/x4ni9ofy","slide":14,"name":"Text 8","text":"The order is data. It can be updated without changing the calculation code.","bbox":[515.52,360.96,701.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/a1wze9g7","slide":14,"name":"Shape 9","text":"","bbox":[515.52,635.52,701.76,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/b2507exs","slide":14,"name":"Text 10","text":"Source · Annex B rows 85–103, hierarchy table and note at row 87","bbox":[530.88,635.52,672.96,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/vaxsvy10","slide":15,"title":"TAKE-HOME PAY · WORKED EXAMPLE","textShapes":16}
+{"kind":"shape","id":"sh/547mhg3m","slide":15,"name":"Text 0","text":"TAKE-HOME PAY · WORKED EXAMPLE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/k3y5ov21","slide":15,"name":"Text 1","text":"Sample payroll run","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/3ypo7mtw","slide":15,"name":"Image 0","text":"","bbox":[73.84,139.2,384.16,441.6],"placeholder":null}
+{"kind":"image","id":"im/ozypgrah","slide":15,"name":"Image 1","text":"","bbox":[504,142.81,441.6,309.59],"placeholder":null}
+{"kind":"shape","id":"sh/t87ml0ji","slide":15,"name":"Text 2","text":"Gross pay","bbox":[974.4,144,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/s7y5sv2x","slide":15,"name":"Text 3","text":"₱36,500","bbox":[974.4,167.04,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/na5476l8","slide":15,"name":"Text 4","text":"Less reimbursements","bbox":[974.4,223.68,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/m9c3e1kn","slide":15,"name":"Text 5","text":"₱2,000","bbox":[974.4,246.72,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/wrm9kvep","slide":15,"name":"Text 6","text":"Protected base","bbox":[974.4,303.36,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/hsvat0fa","slide":15,"name":"Text 7","text":"₱34,500","bbox":[974.4,326.4,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/upkrilwj","slide":15,"name":"Text 8","text":"Protected minimum (30%)","bbox":[974.4,383.04,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/vqdsrqx4","slide":15,"name":"Text 9","text":"₱10,350","bbox":[974.4,406.08,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/4vm9ovel","slide":15,"name":"Text 10","text":"Final take-home","bbox":[974.4,462.72,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/5wvax0f6","slide":15,"name":"Text 11","text":"₱15,500","bbox":[974.4,485.76,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/it4rm5wv","slide":15,"name":"Text 12","text":"Deferred this cutoff","bbox":[974.4,542.4,242.88,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/judsvqxg","slide":15,"name":"Text 13","text":"₱750","bbox":[974.4,565.44,242.88,36.48],"placeholder":null}
+{"kind":"shape","id":"sh/0z29cbyh","slide":15,"name":"Text 14","text":"Statutory deductions stayed whole at ₱6,500. Only the ranked controllable items were adjusted.","bbox":[504,475.2,441.6,48],"placeholder":null}
+{"kind":"shape","id":"sh/l0bqlgf2","slide":15,"name":"Shape 15","text":"","bbox":[504,537.6,441.6,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/1kjyt83e","slide":15,"name":"Text 16","text":"Source · Annex B rows 8–11 (statutory in full, defer, carry over, notify)","bbox":[519.36,537.6,412.8,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/gny5sjyp","slide":16,"title":"TAKE-HOME PAY · WORKED EXAMPLE","textShapes":10}
+{"kind":"shape","id":"sh/8z2h8bq1","slide":16,"name":"Text 0","text":"TAKE-HOME PAY · WORKED EXAMPLE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/9kby1g7m","slide":16,"name":"Text 1","text":"Deferred amounts carry forward","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/kji90fa5","slide":16,"name":"Image 0","text":"","bbox":[67.87,144,674.5,480],"placeholder":null}
+{"kind":"shape","id":"sh/zutgvm94","slide":16,"name":"Text 2","text":"Carry-forward and payslip tagging","bbox":[59.52,626.88,691.2,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/kv2h4rqp","slide":16,"name":"Text 3","text":"Carried forward","bbox":[793.92,144,423.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/lwbyxwra","slide":16,"name":"Text 4","text":"Outstanding amount, rescheduled deduction date, and new balance are shown for each deferred item.","bbox":[793.92,168.96,423.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/ip4zel83","slide":16,"name":"Text 5","text":"Payslip tag","bbox":[793.92,240,423.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/3qdg7qpo","slide":16,"name":"Text 6","text":"The payslip can show the original due amount, amount deducted, deferred amount, accumulated amount, remaining balance, and reason.","bbox":[793.92,264.96,423.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/fm1gzq5o","slide":16,"name":"Text 7","text":"Why it matters","bbox":[793.92,336,423.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/e1sf65o3","slide":16,"name":"Text 8","text":"This gives the employee a clear trail across cutoffs, and keeps the loan or deduction balance accurate.","bbox":[793.92,360.96,423.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/1ojy10ne","slide":16,"name":"Shape 9","text":"","bbox":[793.92,635.52,423.36,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/gnax8v6t","slide":16,"name":"Text 10","text":"Source · Annex B rows 138–155","bbox":[809.28,635.52,394.56,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/14bup87q","slide":17,"title":"TAKE-HOME PAY · GOVERNANCE","textShapes":10}
+{"kind":"shape","id":"sh/1c7e50ni","slide":17,"name":"Text 0","text":"TAKE-HOME PAY · GOVERNANCE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/gbedwfmx","slide":17,"name":"Text 1","text":"Two codes support one take-home policy","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/b2d07qh4","slide":17,"name":"Image 0","text":"","bbox":[102.79,144,508.66,480],"placeholder":null}
+{"kind":"shape","id":"sh/6lwvql4v","slide":17,"name":"Text 2","text":"Opened from THP-002","bbox":[59.52,626.88,595.2,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/t8ne10n6","slide":17,"name":"Text 3","text":"THP-001","bbox":[697.92,144,519.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/snedsvml","slide":17,"name":"Text 4","text":"Handles the protected minimum: base, threshold, and deferral behavior.","bbox":[697.92,168.96,519.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/jilcvq54","slide":17,"name":"Text 5","text":"THP-002","bbox":[697.92,240,519.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/ihcvml4j","slide":17,"name":"Text 6","text":"Handles the caps: deductions, loans, attendance, and conflict priority.","bbox":[697.92,264.96,519.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/4by9or6l","slide":17,"name":"Text 7","text":"Why it is split","bbox":[697.92,336,519.36,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/pc7qhwn6","slide":17,"name":"Text 8","text":"The company still has one policy. The two codes just let the setup stay cleaner and easier to maintain.","bbox":[697.92,360.96,519.36,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/29grm1of","slide":17,"name":"Shape 9","text":"","bbox":[697.92,635.52,519.36,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/3ap8fm50","slide":17,"name":"Text 10","text":"Source · Annex B rows 113–130, set-up items 1–6b","bbox":[713.28,635.52,490.56,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/y5wne50z","slide":18,"title":"ENGINE 2 OF 4","textShapes":11}
+{"kind":"shape","id":"sh/wrelszu9","slide":18,"name":"Text 0","text":"ENGINE 2 OF 4","bbox":[59.52,211.2,614.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/hsn2l4bu","slide":18,"name":"Text 1","text":"Retirement Pay","bbox":[59.52,244.8,691.2,96],"placeholder":null}
+{"kind":"shape","id":"sh/itw3upcf","slide":18,"name":"Text 2","text":"Calculate statutory retirement pay, compare it with the company plan, and use the better amount.","bbox":[59.52,347.52,662.4,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/je5knut0","slide":18,"name":"Shape 3","text":"","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/4felwzu5","slide":18,"name":"Text 4","text":"1","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/5gnmp4bq","slide":18,"name":"Text 5","text":"Plan type and formula","bbox":[875.52,240.96,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/6hw3y9sb","slide":18,"name":"Shape 6","text":"","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/rip4retw","slide":18,"name":"Text 7","text":"2","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/fapkr6pw","slide":18,"name":"Text 8","text":"Eligibility rules","bbox":[875.52,323.52,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/upg3i18r","slide":18,"name":"Shape 9","text":"","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/1cr2tg72","slide":18,"name":"Text 10","text":"3","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/gbylkbqh","slide":18,"name":"Text 11","text":"Service-year rounding","bbox":[875.52,406.08,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/7mpknmp0","slide":18,"name":"Shape 12","text":"","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/6lg3e18f","slide":18,"name":"Text 13","text":"4","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/to72pw76","slide":18,"name":"Text 14","text":"Tax treatment","bbox":[875.52,488.64,336,57.6],"placeholder":null}
+{"kind":"slide","id":"sl/nid43ytk","slide":19,"title":"RETIREMENT PAY · SETUP","textShapes":10}
+{"kind":"shape","id":"sh/9gb6xgbi","slide":19,"name":"Text 0","text":"RETIREMENT PAY · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/8v2pobax","slide":19,"name":"Text 1","text":"Set the plan and eligibility rules","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/nyh4zi1k","slide":19,"name":"Image 0","text":"","bbox":[100.11,144,312.42,480],"placeholder":null}
+{"kind":"shape","id":"sh/ahk7qls3","slide":19,"name":"Text 2","text":"Retirement Pay settings","bbox":[59.52,626.88,393.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/xkbq10be","slide":19,"name":"Text 3","text":"Plan type","bbox":[496.32,144,720.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/wj2psvat","slide":19,"name":"Text 4","text":"Use statutory RA 7641, a company plan, or the “best of both” option.","bbox":[496.32,168.96,720.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/jmd83atk","slide":19,"name":"Text 5","text":"Inputs are editable","bbox":[496.32,240,720.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/il47u5sz","slide":19,"name":"Text 6","text":"Daily-rate divisor, days per service year, salary basis, additional benefits, minimum guarantee, and maximum cap can be configured.","bbox":[496.32,264.96,720.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/cri1gnql","slide":19,"name":"Text 7","text":"Eligibility","bbox":[496.32,336,720.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/dsri9sr6","slide":19,"name":"Text 8","text":"Age 60, compulsory age 65, five years of service, and optional company early-retirement age are part of the rule.","bbox":[496.32,360.96,720.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/qpgjex8f","slide":19,"name":"Shape 9","text":"","bbox":[496.32,635.52,720.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/rqp07290","slide":19,"name":"Text 10","text":"Source · Annex B “Retirement Pay” rows 11–37","bbox":[511.68,635.52,692.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/zyxsni5k","slide":20,"title":"RETIREMENT PAY · WORKED EXAMPLE","textShapes":15}
+{"kind":"shape","id":"sh/qpwjmh8n","slide":20,"name":"Text 0","text":"RETIREMENT PAY · WORKED EXAMPLE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/rq50vmp8","slide":20,"name":"Text 1","text":"Sample retirement calculation","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/1k7mlsvy","slide":20,"name":"Image 0","text":"","bbox":[95.03,144,341.78,480],"placeholder":null}
+{"kind":"shape","id":"sh/po3itc72","slide":20,"name":"Text 2","text":"Service 12 years 6 months","bbox":[518.4,153.6,672,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/2lczih8r","slide":20,"name":"Text 3","text":"rounds to 13 qualifying years because six months or more counts as a full year.","bbox":[518.4,190.08,662.4,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/3ml0rmpw","slide":20,"name":"Shape 4","text":"","bbox":[518.4,283.2,698.88,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/gjuhg7ql","slide":20,"name":"Text 5","text":"Statutory value","bbox":[543.36,294.72,288,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/hk3ipcr6","slide":20,"name":"Text 6","text":"₱60,000 ÷ 30 × 22.5 × 13","bbox":[543.36,327.36,403.2,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/dkfmp4zy","slide":20,"name":"Text 7","text":"₱585,000","bbox":[960,302.4,230.4,48],"placeholder":null}
+{"kind":"shape","id":"sh/cj65wzyd","slide":20,"name":"Shape 8","text":"","bbox":[518.4,384,698.88,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/rid4nuhs","slide":20,"name":"Text 9","text":"Company-plan value","bbox":[543.36,395.52,288,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/qh4nupg7","slide":20,"name":"Text 10","text":"using the company divisor, days, and benefits","bbox":[543.36,428.16,403.2,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/pwvmlkzm","slide":20,"name":"Text 11","text":"₱795,000","bbox":[960,403.2,230.4,48],"placeholder":null}
+{"kind":"shape","id":"sh/4vm5sfy1","slide":20,"name":"Shape 12","text":"","bbox":[518.4,484.8,698.88,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/3ud4juhg","slide":20,"name":"Text 13","text":"Retirement pay used","bbox":[543.36,496.32,288,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/2t4nqpgb","slide":20,"name":"Text 14","text":"the better amount between statutory and company plan","bbox":[543.36,528.96,403.2,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/hsvmhkzq","slide":20,"name":"Text 15","text":"₱795,000","bbox":[960,504,230.4,48],"placeholder":null}
+{"kind":"shape","id":"sh/grm5ofy5","slide":20,"name":"Text 16","text":"The result is stored as tax exempt under RA 4917 when the company-plan conditions are met.","bbox":[518.4,590.4,698.88,33.6],"placeholder":null}
+{"kind":"shape","id":"sh/8b654f61","slide":20,"name":"Shape 17","text":"","bbox":[518.4,633.6,698.88,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/tcz6dk7m","slide":20,"name":"Text 18","text":"Source · Annex B “Retirement Pay” rows 3–6, 30, 38–41, 67–72","bbox":[533.76,633.6,670.08,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/m1wvqtk3","slide":21,"title":"ENGINE 3 OF 4","textShapes":11}
+{"kind":"shape","id":"sh/1gbmxs7a","slide":21,"name":"Text 0","text":"ENGINE 3 OF 4","bbox":[59.52,211.2,614.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/0f2lon6p","slide":21,"name":"Text 1","text":"Final Pay","bbox":[59.52,244.8,691.2,96],"placeholder":null}
+{"kind":"shape","id":"sh/ra9kryp8","slide":21,"name":"Text 2","text":"Build the final pay breakdown, apply authorized offsets, and show the net amount for release.","bbox":[59.52,347.52,662.4,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/qp03yt8n","slide":21,"name":"Shape 3","text":"","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/dcb2t87y","slide":21,"name":"Text 4","text":"1","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/sb2lk36t","slide":21,"name":"Text 5","text":"Mandatory components","bbox":[875.52,240.96,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/b6d432pc","slide":21,"name":"Shape 6","text":"","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/al43uxor","slide":21,"name":"Text 7","text":"2","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/4jax4nqd","slide":21,"name":"Text 8","text":"Optional components","bbox":[875.52,323.52,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/5kjydsri","slide":21,"name":"Shape 9","text":"","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/ixsf2d87","slide":21,"name":"Text 10","text":"3","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/jy1gbi9s","slide":21,"name":"Text 11","text":"Authorized offsets","bbox":[875.52,406.08,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/wvax03q1","slide":21,"name":"Shape 12","text":"","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/hwjy98rm","slide":21,"name":"Text 13","text":"4","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/utsfyt8v","slide":21,"name":"Text 14","text":"Negative net rule","bbox":[875.52,488.64,336,57.6],"placeholder":null}
+{"kind":"slide","id":"sl/5onypobq","slide":22,"title":"FINAL PAY · SETUP","textShapes":10}
+{"kind":"shape","id":"sh/6987itcr","slide":22,"name":"Text 0","text":"FINAL PAY · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/7a18rydc","slide":22,"name":"Text 1","text":"Final pay components are switched on or off","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/m5032hkr","slide":22,"name":"Image 0","text":"","bbox":[127.86,144,247.32,480],"placeholder":null}
+{"kind":"shape","id":"sh/58zqpov6","slide":22,"name":"Text 2","text":"Final Pay settings","bbox":[59.52,626.88,384,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/il87etcv","slide":22,"name":"Text 3","text":"Mandatory","bbox":[486.72,144,730.56,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/jmh8nyd0","slide":22,"name":"Text 4","text":"Unpaid salary, prorated 13th month, SIL conversion, separation pay, retirement pay, and final tax.","bbox":[486.72,168.96,730.56,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/43u9snu5","slide":22,"name":"Text 5","text":"Optional","bbox":[486.72,240,730.56,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/p43q1sva","slide":22,"name":"Text 6","text":"Convertible VL/SL beyond SIL, allowances, commissions, cash bond return, and gratuity.","bbox":[486.72,264.96,730.56,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/p4z6tcri","slide":22,"name":"Text 7","text":"Company rules","bbox":[486.72,336,730.56,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/436507qx","slide":22,"name":"Text 8","text":"Leave conversion, divisor, rounding, advance 13th month recovery, loan balance treatment, and negative-net handling.","bbox":[486.72,360.96,730.56,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/3ixor29c","slide":22,"name":"Shape 9","text":"","bbox":[486.72,635.52,730.56,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/2honyx8r","slide":22,"name":"Text 10","text":"Source · Annex B “Final Pay” rows 5–18 (components) and 19–29 (rules)","bbox":[502.08,635.52,701.76,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/c7uhcr6t","slide":23,"title":"FINAL PAY · WORKED EXAMPLE","textShapes":12}
+{"kind":"shape","id":"sh/90vqdczq","slide":23,"name":"Text 0","text":"FINAL PAY · WORKED EXAMPLE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/8zm9k7y5","slide":23,"name":"Text 1","text":"Retirement pay flows into final pay","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/twvmpw7q","slide":23,"name":"Image 0","text":"","bbox":[122.92,144,410.81,288],"placeholder":null}
+{"kind":"shape","id":"sh/a14rmhgb","slide":23,"name":"Text 2","text":"Gross final pay","bbox":[633.6,153.6,583.68,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/xovqhcz2","slide":23,"name":"Text 3","text":"₱856,500","bbox":[633.6,178.56,583.68,52.8],"placeholder":null}
+{"kind":"shape","id":"sh/w3m9o7yh","slide":23,"name":"Text 4","text":"Retirement pay included","bbox":[633.6,261.12,583.68,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/jqd8jmhs","slide":23,"name":"Text 5","text":"₱795,000","bbox":[633.6,286.08,583.68,52.8],"placeholder":null}
+{"kind":"shape","id":"sh/ip4rqhgn","slide":23,"name":"Text 6","text":"Total offsets","bbox":[633.6,368.64,583.68,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/sby90zm1","slide":23,"name":"Text 7","text":"−₱47,800","bbox":[633.6,393.6,583.68,52.8],"placeholder":null}
+{"kind":"shape","id":"sh/tc7at436","slide":23,"name":"Text 8","text":"Net final pay","bbox":[633.6,476.16,583.68,26.88],"placeholder":null}
+{"kind":"shape","id":"sh/69gry94v","slide":23,"name":"Text 9","text":"₱808,700","bbox":[633.6,501.12,583.68,52.8],"placeholder":null}
+{"kind":"shape","id":"sh/rapsrelg","slide":23,"name":"Text 10","text":"The ₱795,000 comes from the Retirement Pay engine. It is pulled into Final Pay instead of being re-entered.","bbox":[59.52,465.6,537.6,91.2],"placeholder":null}
+{"kind":"shape","id":"sh/0fi94jmx","slide":23,"name":"Shape 11","text":"","bbox":[59.52,576,537.6,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/1graxo3i","slide":23,"name":"Text 12","text":"Source · Annex B “Retirement Pay” rows 46–49; “Final Pay” rows 30–34","bbox":[74.88,576,508.8,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/7qto7e10","slide":24,"title":"ENGINE 4 OF 4","textShapes":11}
+{"kind":"shape","id":"sh/1sfqxsv6","slide":24,"name":"Text 0","text":"ENGINE 4 OF 4","bbox":[59.52,211.2,614.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/0r6p4nul","slide":24,"name":"Text 1","text":"Gross Up","bbox":[59.52,244.8,691.2,96],"placeholder":null}
+{"kind":"shape","id":"sh/nux8zidc","slide":24,"name":"Text 2","text":"Calculate the gross amount needed so the employee receives the guaranteed net amount.","bbox":[59.52,347.52,662.4,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/2to76dcr","slide":24,"name":"Shape 3","text":"","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/9wzq1svi","slide":24,"name":"Text 4","text":"1","bbox":[816,244.8,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/ov6p8nux","slide":24,"name":"Text 5","text":"Guaranteed net target","bbox":[875.52,240.96,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/3ydonyd8","slide":24,"name":"Shape 6","text":"","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/ix47utcn","slide":24,"name":"Text 7","text":"2","bbox":[816,327.36,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/8veh8ril","slide":24,"name":"Text 8","text":"BIR withholding table","bbox":[875.52,323.52,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/9wni1wjq","slide":24,"name":"Shape 9","text":"","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/mtwz6h0f","slide":24,"name":"Text 10","text":"3","bbox":[816,409.92,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/nu50zm10","slide":24,"name":"Text 11","text":"Repeat until matched","bbox":[875.52,406.08,336,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/wzyhcrih","slide":24,"name":"Shape 12","text":"","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/x07i5wj2","slide":24,"name":"Text 13","text":"4","bbox":[816,492.48,42.24,42.24],"placeholder":null}
+{"kind":"shape","id":"sh/axgza10b","slide":24,"name":"Text 14","text":"Employer cost shown","bbox":[875.52,488.64,336,57.6],"placeholder":null}
+{"kind":"slide","id":"sl/69wfm9o7","slide":25,"title":"GROSS UP · SETUP","textShapes":12}
+{"kind":"shape","id":"sh/xg7axgf2","slide":25,"name":"Text 0","text":"GROSS UP · SETUP","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/cfyt4beh","slide":25,"name":"Text 1","text":"Set the target, method, and tax share","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/hcrixc3u","slide":25,"name":"Image 0","text":"","bbox":[84.14,144,392.37,480],"placeholder":null}
+{"kind":"shape","id":"sh/29wby1wf","slide":25,"name":"Text 2","text":"Gross Up settings","bbox":[59.52,626.88,441.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/pc7atgf6","slide":25,"name":"Text 3","text":"Target","bbox":[544.32,144,672.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/obyt0bel","slide":25,"name":"Text 4","text":"A guaranteed net pay or net benefit can be entered or uploaded.","bbox":[544.32,168.96,672.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/fm5snmx4","slide":25,"name":"Text 5","text":"Method","bbox":[544.32,240,672.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/elwbu1wj","slide":25,"name":"Text 6","text":"Use the graduated BIR withholding table, or a flat rate for final and expanded tax cases.","bbox":[544.32,264.96,672.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/wza9cbqp","slide":25,"name":"Text 7","text":"Employer share","bbox":[544.32,336,672.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/h0jalgra","slide":25,"name":"Text 8","text":"Set to 100% for a classic gross-up, or use a split such as 50/50.","bbox":[544.32,360.96,672.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/uxsra18j","slide":25,"name":"Text 9","text":"Controls","bbox":[544.32,432,672.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/vy1sj694","slide":25,"name":"Text 10","text":"Tolerance, iteration limit, and rounding stage are configurable by company.","bbox":[544.32,456.96,672.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/8ba98bqt","slide":25,"name":"Shape 11","text":"","bbox":[544.32,635.52,672.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/9cjahgry","slide":25,"name":"Text 12","text":"Source · Annex B “Gross Up” rows 6–18","bbox":[559.68,635.52,644.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/l0bepsfm","slide":26,"title":"GROSS UP · WORKED EXAMPLE","textShapes":13}
+{"kind":"shape","id":"sh/uhk36lk7","slide":26,"name":"Text 0","text":"GROSS UP · WORKED EXAMPLE","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/vitkzqlc","slide":26,"name":"Text 1","text":"Sample gross-up calculation","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/m5kbex8j","slide":26,"name":"Image 0","text":"","bbox":[96.21,144,349.02,345.6],"placeholder":null}
+{"kind":"image","id":"im/98bu9sru","slide":26,"name":"Image 1","text":"","bbox":[107.42,504,326.59,129.6],"placeholder":null}
+{"kind":"shape","id":"sh/md0321kv","slide":26,"name":"Text 2","text":"Why it is not just net ÷ (1 − rate)","bbox":[528,148.8,689.28,34.56],"placeholder":null}
+{"kind":"shape","id":"sh/7e9kv6lg","slide":26,"name":"Text 3","text":"That shortcut only works with one flat rate. For compensation tax, the engine tests a gross amount, reads the bracket, recomputes the net, and repeats until the target is reached.","bbox":[528,187.2,689.28,110.4],"placeholder":null}
+{"kind":"shape","id":"sh/kbil0r2p","slide":26,"name":"Text 4","text":"Gross taxable pay","bbox":[528,312,449.28,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/lcr2tw3a","slide":26,"name":"Text 5","text":"₱51,875.00","bbox":[967.68,312,249.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/lsja143i","slide":26,"name":"Shape 6","text":"","bbox":[528,352.32,689.28,0],"placeholder":null}
+{"kind":"shape","id":"sh/krat8z2x","slide":26,"name":"Text 7","text":"Withholding tax absorbed by employer","bbox":[528,390.72,449.28,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/z61szulc","slide":26,"name":"Text 8","text":"₱5,208.40","bbox":[967.68,390.72,249.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/y5sr69kr","slide":26,"name":"Shape 9","text":"","bbox":[528,431.04,689.28,0],"placeholder":null}
+{"kind":"shape","id":"sh/x4jax436","slide":26,"name":"Text 10","text":"Net released to employee","bbox":[528,469.44,449.28,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/c3a94z21","slide":26,"name":"Text 11","text":"₱50,000.00","bbox":[967.68,469.44,249.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/b21svulg","slide":26,"name":"Shape 12","text":"","bbox":[528,509.76,689.28,0],"placeholder":null}
+{"kind":"shape","id":"sh/a18r2pkv","slide":26,"name":"Text 13","text":"Total employer cost","bbox":[528,548.16,449.28,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/p0zatk3a","slide":26,"name":"Text 14","text":"₱57,083.40","bbox":[967.68,548.16,249.6,32.64],"placeholder":null}
+{"kind":"shape","id":"sh/ozq90f2p","slide":26,"name":"Shape 15","text":"","bbox":[528,633.6,689.28,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/0ve1wjex","slide":26,"name":"Text 16","text":"Source · Annex B “Gross Up” rows 2–4 and steps 4–12","bbox":[543.36,633.6,660.48,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/4vyxknqp","slide":27,"title":"THE CONNECTIONS","textShapes":16}
+{"kind":"shape","id":"sh/kn694nmx","slide":27,"name":"Text 0","text":"THE CONNECTIONS","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/lofadsni","slide":27,"name":"Text 1","text":"What each engine reads and produces","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/mpor6x43","slide":27,"name":"Text 2","text":"Reads","bbox":[388.8,136.32,422.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/7qxsfi5o","slide":27,"name":"Text 3","text":"Produces","bbox":[840,136.32,374.4,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/8r698nm9","slide":27,"name":"Shape 4","text":"","bbox":[59.52,170.88,307.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/9sfahsnu","slide":27,"name":"Text 5","text":"Take-Home Pay","bbox":[78.72,170.88,268.8,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/utobax4f","slide":27,"name":"Shape 6","text":"","bbox":[374.4,213.12,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/vuxsj250","slide":27,"name":"Text 7","text":"Deduction hierarchy table · employee loan and deduction balances","bbox":[403.2,170.88,417.6,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/ju5gv294","slide":27,"name":"Shape 8","text":"","bbox":[827.52,213.12,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/ytwfmx8j","slide":27,"name":"Text 9","text":"Deferred amounts, carry-forward schedule, and payslip tags","bbox":[859.2,170.88,355.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/lw7yxcra","slide":27,"name":"Shape 10","text":"","bbox":[59.52,288,307.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/kvyxo7qp","slide":27,"name":"Text 11","text":"Retirement Pay","bbox":[78.72,288,268.8,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/bq5gr298","slide":27,"name":"Shape 12","text":"","bbox":[374.4,330.24,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/apwfix8n","slide":27,"name":"Text 13","text":"Birth date, hire date, retirement date, plan membership, and salary basis","bbox":[403.2,288,417.6,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/xsnytcry","slide":27,"name":"Shape 14","text":"","bbox":[827.52,330.24,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/wrexk7qt","slide":27,"name":"Text 15","text":"Retirement pay amount and tax status","bbox":[859.2,288,355.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/vmpg3m9c","slide":27,"name":"Shape 16","text":"","bbox":[59.52,405.12,307.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/ulgzuh8r","slide":27,"name":"Text 17","text":"Final Pay","bbox":[78.72,405.12,268.8,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/qhkj2lsz","slide":27,"name":"Shape 18","text":"","bbox":[374.4,447.36,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/rit0vqtk","slide":27,"name":"Text 19","text":"Retirement result, leave balances, and outstanding loan/deduction balances","bbox":[403.2,405.12,417.6,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/sj214va5","slide":27,"name":"Shape 20","text":"","bbox":[827.52,447.36,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/dkb2x0bq","slide":27,"name":"Text 21","text":"Net final pay breakdown for release","bbox":[859.2,405.12,355.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/elkj65sb","slide":27,"name":"Shape 22","text":"","bbox":[59.52,522.24,307.2,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/fmdkzatw","slide":27,"name":"Text 23","text":"Gross Up","bbox":[78.72,522.24,268.8,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/0nm18fa1","slide":27,"name":"Shape 24","text":"","bbox":[374.4,564.48,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/1ov210bm","slide":27,"name":"Text 25","text":"Effective BIR withholding table and employee statutory share","bbox":[403.2,522.24,417.6,101.76],"placeholder":null}
+{"kind":"shape","id":"sh/up0ju1sr","slide":27,"name":"Shape 26","text":"","bbox":[827.52,564.48,17.28,17.28],"placeholder":null}
+{"kind":"shape","id":"sh/vq90n6tc","slide":27,"name":"Text 27","text":"Gross amount to pay and tax absorbed by employer","bbox":[859.2,522.24,355.2,101.76],"placeholder":null}
+{"kind":"slide","id":"sl/3mdove10","slide":28,"title":"CONNECTED DATA","textShapes":10}
+{"kind":"shape","id":"sh/q9cz6xkv","slide":28,"name":"Text 0","text":"CONNECTED DATA","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/ralgf21g","slide":28,"name":"Text 1","text":"Rates and ceilings are versioned","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/6lkrad4j","slide":28,"name":"Image 0","text":"","bbox":[64.32,144,768,480],"placeholder":null}
+{"kind":"shape","id":"sh/10nylwji","slide":28,"name":"Text 2","text":"BIR withholding table — wireframe view","bbox":[59.52,626.88,777.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/exwzahkr","slide":28,"name":"Text 3","text":"Effective date matters","bbox":[880.32,144,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/zy5gjm1c","slide":28,"name":"Text 4","text":"Payroll uses the table version active for that run, so old payroll results can still be reproduced.","bbox":[880.32,168.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/o3ehgr29","slide":28,"name":"Text 5","text":"Used tables are locked","bbox":[880.32,240,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/947ipwje","slide":28,"name":"Text 6","text":"Once a payroll has used a table, it cannot be edited. A new version must be published instead.","bbox":[880.32,264.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/lg3690fq","slide":28,"name":"Text 7","text":"Feeds Gross Up","bbox":[880.32,336,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/kfu5gfe5","slide":28,"name":"Text 8","text":"The gross-up trace reads the bracket from this table instead of hard-coding it.","bbox":[880.32,360.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/je1o7ax0","slide":28,"name":"Shape 9","text":"","bbox":[880.32,635.52,336.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/ytsne5wf","slide":28,"name":"Text 10","text":"Source · Tax Tables Flow v2 (14 May 2026); BRD Statutory Requirements 180–184","bbox":[895.68,635.52,308.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/i5o3q10v","slide":29,"title":"CONNECTED DATA","textShapes":10}
+{"kind":"shape","id":"sh/tk36hwby","slide":29,"name":"Text 0","text":"CONNECTED DATA","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/8jup8rad","slide":29,"name":"Text 1","text":"Reference sources sit behind the formulas","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/bqxgv6d4","slide":29,"name":"Image 0","text":"","bbox":[64.32,144,768,480],"placeholder":null}
+{"kind":"shape","id":"sh/ulc7a1s3","slide":29,"name":"Text 2","text":"Formula reference sources — wireframe view","bbox":[59.52,626.88,777.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/h8n6lwbu","slide":29,"name":"Text 3","text":"Named sources","bbox":[880.32,144,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/g7upcra9","slide":29,"name":"Text 4","text":"Formula inputs point to maintained reference sources instead of numbers typed directly into a rule.","bbox":[880.32,168.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/bq1o72tk","slide":29,"name":"Text 5","text":"Deduction hierarchy","bbox":[880.32,240,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/apsnyxcz","slide":29,"name":"Text 6","text":"The take-home adjustment order is one of these sources, so the business can maintain it.","bbox":[880.32,264.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/kf2tw7a1","slide":29,"name":"Text 7","text":"Update once","bbox":[880.32,336,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/5gbupcrm","slide":29,"name":"Text 8","text":"When the source is updated, every rule that reads it follows the new version.","bbox":[880.32,360.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/idkbuxsv","slide":29,"name":"Shape 9","text":"","bbox":[880.32,635.52,336.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/jetc329g","slide":29,"name":"Text 10","text":"Source · BRD Reference Table Module (feature points 62–63, 97–98)","bbox":[895.68,635.52,308.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/wnqh07ex","slide":30,"title":"CONNECTED DATA","textShapes":10}
+{"kind":"shape","id":"sh/po72d8nm","slide":30,"name":"Text 0","text":"CONNECTED DATA","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/o3yl4361","slide":30,"name":"Text 1","text":"Employee payroll records feed the engines","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"image","id":"im/3y9svqhk","slide":30,"name":"Image 0","text":"","bbox":[64.32,144,768,480],"placeholder":null}
+{"kind":"shape","id":"sh/apg36do7","slide":30,"name":"Text 2","text":"Employee Masterfile — payroll data","bbox":[59.52,626.88,777.6,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/xsr2h8ni","slide":30,"name":"Text 3","text":"Loans and deductions","bbox":[880.32,144,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/cril836d","slide":30,"name":"Text 4","text":"Balances, amortization, holds, and remarks are the values adjusted by the take-home engine.","bbox":[880.32,168.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/ru5k3ep8","slide":30,"name":"Text 5","text":"Dates and plan type","bbox":[880.32,240,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/6twju9o3","slide":30,"name":"Text 6","text":"Hire date, birth date, and plan membership drive retirement eligibility.","bbox":[880.32,264.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/onqx8zix","slide":30,"name":"Text 7","text":"Ceilings are applied here too","bbox":[880.32,336,336.96,24.96],"placeholder":null}
+{"kind":"shape","id":"sh/p8ze14zi","slide":30,"name":"Text 8","text":"Bonus and De Minimis ceilings split taxable and non-taxable amounts on the employee record.","bbox":[880.32,360.96,336.96,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/2l8f6p0r","slide":30,"name":"Shape 9","text":"","bbox":[880.32,635.52,336.96,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/3mhwzu1c","slide":30,"name":"Text 10","text":"Source · Annex B Dorado sheets: Loans, Deduction, Cost Allocation, Previous Employer","bbox":[895.68,635.52,308.16,40.32],"placeholder":null}
+{"kind":"slide","id":"sl/lcn6tkb6","slide":31,"title":"APPENDIX","textShapes":3}
+{"kind":"shape","id":"sh/dgja98fe","slide":31,"name":"Text 0","text":"APPENDIX","bbox":[59.52,278.4,576,30.72],"placeholder":null}
+{"kind":"shape","id":"sh/cfa903yt","slide":31,"name":"Text 1","text":"Reference section","bbox":[59.52,314.88,864,86.4],"placeholder":null}
+{"kind":"shape","id":"sh/zilsbyx4","slide":31,"name":"Text 2","text":"Source documents, row-level mapping, glossary, and open decisions","bbox":[59.52,408,768,38.4],"placeholder":null}
+{"kind":"slide","id":"sl/6l0j294r","slide":32,"title":"APPENDIX A","textShapes":14}
+{"kind":"shape","id":"sh/kr61sfy1","slide":32,"name":"Text 0","text":"APPENDIX A","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/lszilkfm","slide":32,"name":"Text 1","text":"Source documents used","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/6t8jupg7","slide":32,"name":"Shape 2","text":"","bbox":[59.52,140.16,292.8,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/7uh0nuxs","slide":32,"name":"Text 3","text":"Annex B","bbox":[76.8,151.68,259.2,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/8vq1wzyd","slide":32,"name":"Text 4","text":"Employee Masterfile Payroll Data Tables from Dorado","bbox":[76.8,197.76,261.12,49.92],"placeholder":null}
+{"kind":"shape","id":"sh/twzipkfy","slide":32,"name":"Text 5","text":"Sheets used: Take Home Pay · Retirement Pay · Final Pay · Gross Up · Dorado Loans · Dorado Deduction · Dorado Cost Allocation · Dorado Previous Employer · De Minimis Ceiling Set Up · 13th Mo Pay & Other Bonuses","bbox":[376.32,144,840,107.52],"placeholder":null}
+{"kind":"shape","id":"sh/mx4zilg3","slide":32,"name":"Shape 6","text":"","bbox":[59.52,270.72,292.8,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/nyd0bqxo","slide":32,"name":"Text 7","text":"Annex C","bbox":[76.8,282.24,259.2,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/ry94z29w","slide":32,"name":"Text 8","text":"Sub Module 3 — Payroll","bbox":[76.8,328.32,261.12,49.92],"placeholder":null}
+{"kind":"shape","id":"sh/qx0nqx8b","slide":32,"name":"Text 9","text":"Payroll transaction preparation, inputs, calculation, and approval lifecycle. Used to show how a computed policy is consumed in payroll.","bbox":[376.32,274.56,840,107.52],"placeholder":null}
+{"kind":"shape","id":"sh/d0bm1c7m","slide":32,"name":"Shape 10","text":"","bbox":[59.52,401.28,292.8,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/szi5s7qh","slide":32,"name":"Text 11","text":"Phase 2 BRD Audit Summary","bbox":[76.8,412.8,259.2,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/3a94vi9k","slide":32,"name":"Text 12","text":"331 requirement rows reviewed","bbox":[76.8,458.88,261.12,49.92],"placeholder":null}
+{"kind":"shape","id":"sh/i903mx8z","slide":32,"name":"Text 13","text":"Computational Basis module (feature points 73–82), Settings module set-up rows 18–20 and 50–55, Statutory Requirements 180–184.","bbox":[376.32,405.12,840,107.52],"placeholder":null}
+{"kind":"shape","id":"sh/5crmxsrq","slide":32,"name":"Shape 14","text":"","bbox":[59.52,531.84,292.8,115.2],"placeholder":null}
+{"kind":"shape","id":"sh/4bilonq5","slide":32,"name":"Text 15","text":"Tax Tables Flow","bbox":[76.8,543.36,259.2,44.16],"placeholder":null}
+{"kind":"shape","id":"sh/v6p4ri9o","slide":32,"name":"Text 16","text":"v2 dated 14 May 2026 (supersedes v1)","bbox":[76.8,589.44,261.12,49.92],"placeholder":null}
+{"kind":"shape","id":"sh/u5g3yd83","slide":32,"name":"Text 17","text":"Table structure, effectivity selection, and the rule that a table used by a payroll transaction may not be edited.","bbox":[376.32,535.68,840,107.52],"placeholder":null}
+{"kind":"slide","id":"sl/nax4b2dk","slide":33,"title":"APPENDIX B","textShapes":4}
+{"kind":"shape","id":"sh/lk3m50nq","slide":33,"name":"Text 0","text":"APPENDIX B","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/0jalwfm5","slide":33,"name":"Text 1","text":"Take-Home Pay traceability","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/nml47a5w","slide":33,"name":"Text 2","text":"Annex B → sheet “Take Home Pay”","bbox":[59.52,119.04,1157.76,28.8],"placeholder":null}
+{"kind":"table","id":"tb/nexk7qdw","slide":33,"name":"Table 0","text":"Source rows | What the workbook says | Where it appears in the app\nRows 4–5 | Minimum take-home based on basic salary, 40% example | Protected base = Basic Pay; threshold type Percentage\nRows 13–14 | Guarantee on gross pay, 30% example | Protected base = Gross Pay\nRows 21–22 | Guarantee on gross less reimbursements, 30% | Protected base = Gross Pay less reimbursements — used in the demo\nRows 29–30 | Guaranteed minimum peso net pay, ₱8,000 example | Threshold type = Fixed Amount\nRows 8–11 | Statutory in full; loans may be deferred; carry over; notify | Statutory rank 0; auto-defer, carry-forward and notification switches\nRows 45–59 | Loan repayment cap, 25% of gross or a fixed ₱10,000 | Loan cap base, type and value\nRows 61–83 | LAABS and undertime cap by %, days, or protected net | Attendance cap base, type and value\nRows 85–103 | Hierarchy table, statutory rank 0, optional last | Deduction and loan hierarchy, maintained as a reference source\nRows 106–109 | Loans at cap but net still short — choose what wins | Conflict priority selector\nRows 138–155 | Deferred tracking, payslip tag fields, deduction ledger | Carry-forward table, payslip tag block and deduction ledger","bbox":[59.52,155.52,1157.76,443.52],"placeholder":null}
+{"kind":"slide","id":"sl/ofu103u5","slide":34,"title":"APPENDIX C","textShapes":4}
+{"kind":"shape","id":"sh/pwzm1kbm","slide":34,"name":"Text 0","text":"APPENDIX C","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/ovq58fu1","slide":34,"name":"Text 1","text":"Retirement Pay traceability","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/byh43utc","slide":34,"name":"Text 2","text":"Annex B → sheet “Retirement Pay”","bbox":[59.52,119.04,1157.76,28.8],"placeholder":null}
+{"kind":"table","id":"tb/369of6do","slide":34,"name":"Table 0","text":"Source rows | What the workbook says | Where it appears in the app\nRows 3–6 | Daily rate × 22.5 × years of service | Statutory value shown in the scenario\nRow 5 | Fractions of six months or more count as one year | Service rounding rule; 12y 6m → 13 years\nRows 13–15 | Statutory RA 7641, company plan, or override if more beneficial | Retirement plan type selector\nRows 24–29 | Divisor, days per year, salary basis, benefits, rounding, cap | Formula inputs, all configurable\nRow 30 | RetirementPay = MAX(statutory, company plan) | “Best of” option; both values displayed\nRows 31–37 | Age 60, compulsory 65, five years service, early retirement | Eligibility rules and the eligibility strip\nRows 38–41 | RA 7641 and RA 4917 tax exemption conditions | Taxation rule; the result records why it is exempt\nRows 46–49 | Retirement pay forms part of final pay | Result feeds the Final Pay engine automatically","bbox":[59.52,155.52,1157.76,362.88],"placeholder":null}
+{"kind":"slide","id":"sl/1obmtofm","slide":35,"title":"APPENDIX D","textShapes":4}
+{"kind":"shape","id":"sh/idonexon","slide":35,"name":"Text 0","text":"APPENDIX D","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/3ex47ip8","slide":35,"name":"Text 1","text":"Final Pay traceability","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/gb6lcn6x","slide":35,"name":"Text 2","text":"Annex B → sheet “Final Pay”","bbox":[59.52,119.04,1157.76,28.8],"placeholder":null}
+{"kind":"table","id":"tb/83mdgfyx","slide":35,"name":"Table 0","text":"Source rows | What the workbook says | Where it appears in the app\nRows 5–11 | Mandatory: unpaid salary, 13th month, SIL, separation, retirement, final tax | Mandatory component switches\nRows 12–18 | Optional: convertible leave, allowances, commissions, cash bond, gratuity | Optional component switches\nRows 19–29 | Company rules: conversion, divisor, rounding, advance 13th, loan balances, negative net | Company rule selectors on the settings card\nRows 30–31 | Pull last days worked, leave balances, unpaid OT and LAABS | Scenario inputs drawn from the employee record\nRows 32–34 | Only authorised deductions; auto-offset before net | Offsets shown as negative lines in the breakdown\nRow 36 | Output — final pay breakdown | Component-by-component breakdown table","bbox":[59.52,155.52,1157.76,282.24],"placeholder":null}
+{"kind":"slide","id":"sl/m9s3ehgf","slide":36,"title":"APPENDIX E","textShapes":4}
+{"kind":"shape","id":"sh/5s3atkbq","slide":36,"name":"Text 0","text":"APPENDIX E","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/4rut0fa5","slide":36,"name":"Text 1","text":"Gross Up traceability","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/rulsvutw","slide":36,"name":"Text 2","text":"Annex B → sheet “Gross Up”","bbox":[59.52,119.04,1157.76,28.8],"placeholder":null}
+{"kind":"table","id":"tb/zq5wbydc","slide":36,"name":"Table 0","text":"Source rows | What the workbook says | Where it appears in the app\nRow 2 | Employer shoulders the tax so the employee receives a guaranteed net | Employer-absorbed share, default 100%\nRow 3 | Divide the intended net by (1 − rate) | Available as the flat / final tax method\nRow 4 | Use BIR tables: taxable income, correct bracket, base tax + excess % | Graduated method, reading the effective BIR table\nRows 7–8 | Choose the income and enable gross-up | Guaranteed target selector and engine switch\nRows 10–11 | Add grossed-up income; subtract mandatory contributions | Taxable compensation line in the calculation trace\nRows 12–14 | Identify bracket; apply base tax + excess × rate | Bracket named in the trace, e.g. from ₱33,333, ₱1,875 + 20%\nRow 15 | Recompute gross until net equals the required amount | Iteration table with the gap closing to zero\nRows 16–18 | Show gross, employer-absorbed tax, and net released | The four result tiles","bbox":[59.52,155.52,1157.76,362.88],"placeholder":null}
+{"kind":"slide","id":"sl/jyhsreh4","slide":37,"title":"APPENDIX F","textShapes":20}
+{"kind":"shape","id":"sh/61c7md0r","slide":37,"name":"Text 0","text":"APPENDIX F","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/7m58vyhw","slide":37,"name":"Text 1","text":"Glossary","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/kzupk3il","slide":37,"name":"Text 2","text":"Computational Basis","bbox":[59.52,144,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/503qt8z6","slide":37,"name":"Text 3","text":"The controlled area for approved formulas, policy engines, and the reference sources they read.","bbox":[59.52,172.8,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/ixc7it0f","slide":37,"name":"Text 4","text":"Policy engine","bbox":[59.52,245.76,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/jyl8ryh0","slide":37,"name":"Text 5","text":"A screen for one payroll policy area that runs the calculation and shows the working.","bbox":[59.52,274.56,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/4vy9wnyp","slide":37,"name":"Text 6","text":"Policy code","bbox":[59.52,347.52,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/pw7q5sza","slide":37,"name":"Text 7","text":"A reusable approved code, such as THP-001, that can be assigned to Company Rules.","bbox":[59.52,376.32,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/9cfa9gry","slide":37,"name":"Text 8","text":"Company Rule","bbox":[59.52,449.28,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/8b69gbqd","slide":37,"name":"Text 9","text":"A policy applied to a company or employee group, with its own values.","bbox":[59.52,478.08,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/naxs7q9s","slide":37,"name":"Text 10","text":"Protected minimum","bbox":[59.52,551.04,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/m94rel87","slide":37,"name":"Text 11","text":"The minimum net pay guaranteed by a rule, either as a percentage of a base or a fixed amount.","bbox":[59.52,579.84,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/l8va5grm","slide":37,"name":"Text 12","text":"Hierarchy / rank","bbox":[649.92,144,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/07m9cbq1","slide":37,"name":"Text 13","text":"The order for trimming controllable deductions. Statutory items stay rank 0 and are not adjusted.","bbox":[649.92,172.8,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/z6ds369w","slide":37,"name":"Text 14","text":"Deferral / carry-forward","bbox":[649.92,245.76,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/y54ra18b","slide":37,"name":"Text 15","text":"An amount not collected in the current cutoff and moved to a later deduction schedule.","bbox":[649.92,274.56,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/54zah0r6","slide":37,"name":"Text 16","text":"Effective-dated","bbox":[649.92,347.52,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/43qtofql","slide":37,"name":"Text 17","text":"A version with a start date. Payroll uses the version active during the payroll run.","bbox":[649.92,376.32,556.8,67.2],"placeholder":null}
+{"kind":"shape","id":"sh/47ydkjyh","slide":37,"name":"Text 18","text":"Convergence","bbox":[649.92,449.28,556.8,28.8],"placeholder":null}
+{"kind":"shape","id":"sh/p87udof2","slide":37,"name":"Text 19","text":"For gross-up: repeating the calculation until the computed net matches the target within tolerance.","bbox":[649.92,478.08,556.8,67.2],"placeholder":null}
+{"kind":"slide","id":"sl/ofahkri5","slide":38,"title":"APPENDIX G","textShapes":23}
+{"kind":"shape","id":"sh/kvy1kbep","slide":38,"name":"Text 0","text":"APPENDIX G","bbox":[59.52,34.56,1157.76,23.04],"placeholder":null}
+{"kind":"shape","id":"sh/lw7idgva","slide":38,"name":"Text 1","text":"Items to confirm before sign-off","bbox":[59.52,57.6,1157.76,59.52],"placeholder":null}
+{"kind":"shape","id":"sh/mxgjmlwv","slide":38,"name":"Text 2","text":"These are the items where the workbook gives options or leaves the value open. The demo keeps them configurable instead of assuming the answer.","bbox":[59.52,117.12,1157.76,38.4],"placeholder":null}
+{"kind":"shape","id":"sh/7yp0f6dg","slide":38,"name":"Shape 3","text":"","bbox":[59.52,170.88,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/8zi1obe1","slide":38,"name":"Text 4","text":"1","bbox":[59.52,170.88,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/90rihgv6","slide":38,"name":"Text 5","text":"Active take-home policy","bbox":[122.88,167.04,336,48],"placeholder":null}
+{"kind":"shape","id":"sh/u10jqlwr","slide":38,"name":"Text 6","text":"Annex B lists several minimum-net options and cap rules. Confirm which set should be active per company or group.","bbox":[472.32,167.04,528,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/v290jqdc","slide":38,"name":"Text 7","text":"Take Home Pay rows 4–43","bbox":[1019.52,167.04,201.6,48],"placeholder":null}
+{"kind":"shape","id":"sh/3it0j25o","slide":38,"name":"Shape 8","text":"","bbox":[59.52,272.64,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/ih0zqxoj","slide":38,"name":"Text 9","text":"2","bbox":[59.52,272.64,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/5kbilcnu","slide":38,"name":"Text 10","text":"Bonus threshold priority","bbox":[122.88,268.8,336,48],"placeholder":null}
+{"kind":"shape","id":"sh/4j2hs7m9","slide":38,"name":"Text 11","text":"If multiple bonus types share one non-taxable ceiling, confirm the consuming order.","bbox":[472.32,268.8,528,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/ve90f25s","slide":38,"name":"Text 12","text":"BRD 13th month / bonus ceiling","bbox":[1019.52,268.8,201.6,48],"placeholder":null}
+{"kind":"shape","id":"sh/ud0zmxo7","slide":38,"name":"Shape 13","text":"","bbox":[59.52,374.4,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/hgrihsny","slide":38,"name":"Text 14","text":"3","bbox":[59.52,374.4,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/gfihon6d","slide":38,"name":"Text 15","text":"Negative final pay","bbox":[122.88,370.56,336,48],"placeholder":null}
+{"kind":"shape","id":"sh/fad0rm5w","slide":38,"name":"Text 16","text":"Confirm how any remaining balance should be handled when final pay becomes negative.","bbox":[472.32,370.56,528,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/e94jyh4b","slide":38,"name":"Text 17","text":"Final Pay row 29","bbox":[1019.52,370.56,201.6,48],"placeholder":null}
+{"kind":"shape","id":"sh/a5o3qloj","slide":38,"name":"Shape 18","text":"","bbox":[59.52,476.16,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/b6xkjqp4","slide":38,"name":"Text 19","text":"4","bbox":[59.52,476.16,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/w76lsv6p","slide":38,"name":"Text 20","text":"Gross-up tolerance","bbox":[122.88,472.32,336,48],"placeholder":null}
+{"kind":"shape","id":"sh/x8z2l07a","slide":38,"name":"Text 21","text":"Confirm tolerance, iteration limit, and rounding stage. The current screen uses demo defaults.","bbox":[472.32,472.32,528,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/y983u5ov","slide":38,"name":"Text 22","text":"Gross Up rows 15–16","bbox":[1019.52,472.32,201.6,48],"placeholder":null}
+{"kind":"shape","id":"sh/jahknqpg","slide":38,"name":"Shape 23","text":"","bbox":[59.52,577.92,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/kbqlwv61","slide":38,"name":"Text 24","text":"5","bbox":[59.52,577.92,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/lczmp07m","slide":38,"name":"Text 25","text":"Statutory values","bbox":[122.88,574.08,336,48],"placeholder":null}
+{"kind":"shape","id":"sh/ed43i18r","slide":38,"name":"Text 26","text":"Rates, brackets, and ceilings shown here are sample values. They need confirmation against the effective official tables.","bbox":[472.32,574.08,528,57.6],"placeholder":null}
+{"kind":"shape","id":"sh/fedkb6pw","slide":38,"name":"Text 27","text":"Statutory tables","bbox":[1019.52,574.08,201.6,48],"placeholder":null}
+{"kind":"slide","id":"sl/twb2lg7e","slide":39,"title":"Close-out message","textShapes":9}
+{"kind":"shape","id":"sh/50769kvu","slide":39,"name":"Text 0","text":"Close-out message","bbox":[59.52,225.6,864,76.8],"placeholder":null}
+{"kind":"shape","id":"sh/4ze50fu9","slide":39,"name":"Shape 1","text":"","bbox":[59.52,326.4,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/r2pobudk","slide":39,"name":"Text 2","text":"1","bbox":[59.52,326.4,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/q1gn2pcf","slide":39,"name":"Text 3","text":"Policies are handled as configurable settings, not one-off code changes.","bbox":[124.8,322.56,1008,48],"placeholder":null}
+{"kind":"shape","id":"sh/do76d4vq","slide":39,"name":"Shape 4","text":"","bbox":[59.52,395.52,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/snyp4zu5","slide":39,"name":"Text 5","text":"2","bbox":[59.52,395.52,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/76lozqdg","slide":39,"name":"Text 6","text":"Each result shows the working: base, threshold, ranks, brackets, and iterations.","bbox":[124.8,391.68,1008,48],"placeholder":null}
+{"kind":"shape","id":"sh/65cnq5cv","slide":39,"name":"Shape 7","text":"","bbox":[59.52,464.64,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/sjmpon2x","slide":39,"name":"Text 8","text":"3","bbox":[59.52,464.64,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/dkvqxsji","slide":39,"name":"Text 9","text":"The engines pass results to each other, so values are not re-keyed.","bbox":[124.8,460.8,1008,48],"placeholder":null}
+{"kind":"shape","id":"sh/qx47mdkr","slide":39,"name":"Shape 10","text":"","bbox":[59.52,533.76,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/rid8vi1c","slide":39,"name":"Text 11","text":"4","bbox":[59.52,533.76,40.32,40.32],"placeholder":null}
+{"kind":"shape","id":"sh/0n6psni9","slide":39,"name":"Text 12","text":"The appendix maps the screens back to the source workbook rows for review and sign-off.","bbox":[124.8,529.92,1008,48],"placeholder":null}

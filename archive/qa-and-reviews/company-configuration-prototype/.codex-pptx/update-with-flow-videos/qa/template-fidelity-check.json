@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-08-10T16:03:42.081Z",
+  "workspace": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos",
+  "finalPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\ATLAS_Phase2_Computational_Basis_Demo_with_Section_Videos.pptx",
+  "starterPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-starter.pptx",
+  "mapPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-frame-map.json",
+  "starterLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-starter-layout",
+  "finalLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\final-inspect-2\\template-inspect\\layouts",
+  "editDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos",
+  "issueCount": 0,
+  "issues": []
+}

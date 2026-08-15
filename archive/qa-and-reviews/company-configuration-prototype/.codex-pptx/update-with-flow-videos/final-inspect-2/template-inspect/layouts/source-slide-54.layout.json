@@ -1,0 +1,1237 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/uhgfqdcf",
+    "id": "uhgfqdcf",
+    "slide": 54,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lwjyporq",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX B",
+      "textPreview": "APPENDIX B",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX B"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX B",
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX B",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0vqxgja5",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Take-Home Pay traceability",
+      "textPreview": "Take-Home Pay traceability",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Take-Home Pay traceability"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Take-Home Pay traceability",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Take-Home Pay traceability",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/b6hgju9o",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        119.04,
+        1157.76,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Annex B → sheet “Take Home Pay”",
+      "textPreview": "Annex B → sheet “Take Home Pay”",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex B → sheet “Take Home Pay”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex B → sheet “Take Home Pay”",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex B → sheet “Take Home Pay”",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "table",
+      "scope": "slide",
+      "aid": "tb/r6h8zu9o",
+      "id": "5",
+      "name": "Table 0",
+      "bbox": [
+        59.52,
+        155.52,
+        1157.76,
+        443.52
+      ],
+      "text": "Source rows | What the workbook says | Where it appears in the app\nRows 4–5 | Minimum take-home based on basic salary, 40% example | Protected base = Basic Pay; threshold type Percentage\nRows 13–14 | Guarantee on gross pay, 30% example | Protected base = Gross Pay\nRows 21–22 | Guarantee on gross less reimbursements, 30% | Protected base = Gross Pay less reimbursements — used in the demo\nRows 29–30 | Guaranteed minimum peso net pay, ₱8,000 example | Threshold type = Fixed Amount\nRows 8–11 | Statutory in full; loans may be deferred; carry over; notify | Statutory rank 0; auto-defer, carry-forward and notification switches\nRows 45–59 | Loan repayment cap, 25% of gross or a fixed ₱10,000 | Loan cap base, type and value\nRows 61–83 | LAABS and undertime cap by %, days, or protected net | Attendance cap base, type and value\nRows 85–103 | Hierarchy table, statutory rank 0, optional last | Deduction and loan hierarchy, maintained as a reference source\nRows 106–109 | Loans at cap but net still short — choose what wins | Conflict priority selector\nRows 138–155 | Deferred tracking, payslip tag fields, deduction ledger | Carry-forward table, payslip tag block and deduction ledger",
+      "textPreview": "Source rows | What the workbook says | Where it appears in the app | Rows 4–5 | Minimum take-home based on basic salary, 40% example | Pr...",
+      "rows": 11,
+      "cols": 3,
+      "cells": [
+        {
+          "index": 1,
+          "row": 1,
+          "column": 1,
+          "bbox": [
+            59.52,
+            155.52,
+            192,
+            40.32
+          ],
+          "text": "Source rows",
+          "textPreview": "Source rows",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Source rows",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Source rows",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "row": 1,
+          "column": 2,
+          "bbox": [
+            251.52,
+            155.52,
+            480,
+            40.32
+          ],
+          "text": "What the workbook says",
+          "textPreview": "What the workbook says",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "What the workbook says",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "What the workbook says",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "row": 1,
+          "column": 3,
+          "bbox": [
+            731.52,
+            155.52,
+            485.76,
+            40.32
+          ],
+          "text": "Where it appears in the app",
+          "textPreview": "Where it appears in the app",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Where it appears in the app",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Where it appears in the app",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "row": 2,
+          "column": 1,
+          "bbox": [
+            59.52,
+            195.84,
+            192,
+            40.32
+          ],
+          "text": "Rows 4–5",
+          "textPreview": "Rows 4–5",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 4–5",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 4–5",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "row": 2,
+          "column": 2,
+          "bbox": [
+            251.52,
+            195.84,
+            480,
+            40.32
+          ],
+          "text": "Minimum take-home based on basic salary, 40% example",
+          "textPreview": "Minimum take-home based on basic salary, 40% example",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Minimum take-home based on basic salary, 40% example",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Minimum take-home based on basic salary, 40% example",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "row": 2,
+          "column": 3,
+          "bbox": [
+            731.52,
+            195.84,
+            485.76,
+            40.32
+          ],
+          "text": "Protected base = Basic Pay; threshold type Percentage",
+          "textPreview": "Protected base = Basic Pay; threshold type Percentage",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Protected base = Basic Pay; threshold type Percentage",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Protected base = Basic Pay; threshold type Percentage",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "row": 3,
+          "column": 1,
+          "bbox": [
+            59.52,
+            236.16,
+            192,
+            40.32
+          ],
+          "text": "Rows 13–14",
+          "textPreview": "Rows 13–14",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 13–14",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 13–14",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "row": 3,
+          "column": 2,
+          "bbox": [
+            251.52,
+            236.16,
+            480,
+            40.32
+          ],
+          "text": "Guarantee on gross pay, 30% example",
+          "textPreview": "Guarantee on gross pay, 30% example",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Guarantee on gross pay, 30% example",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Guarantee on gross pay, 30% example",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "row": 3,
+          "column": 3,
+          "bbox": [
+            731.52,
+            236.16,
+            485.76,
+            40.32
+          ],
+          "text": "Protected base = Gross Pay",
+          "textPreview": "Protected base = Gross Pay",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Protected base = Gross Pay",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Protected base = Gross Pay",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "row": 4,
+          "column": 1,
+          "bbox": [
+            59.52,
+            276.48,
+            192,
+            40.32
+          ],
+          "text": "Rows 21–22",
+          "textPreview": "Rows 21–22",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 21–22",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 21–22",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "row": 4,
+          "column": 2,
+          "bbox": [
+            251.52,
+            276.48,
+            480,
+            40.32
+          ],
+          "text": "Guarantee on gross less reimbursements, 30%",
+          "textPreview": "Guarantee on gross less reimbursements, 30%",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Guarantee on gross less reimbursements, 30%",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Guarantee on gross less reimbursements, 30%",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "row": 4,
+          "column": 3,
+          "bbox": [
+            731.52,
+            276.48,
+            485.76,
+            40.32
+          ],
+          "text": "Protected base = Gross Pay less reimbursements — used in the demo",
+          "textPreview": "Protected base = Gross Pay less reimbursements — used in the demo",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Protected base = Gross Pay less reimbursements — used in the demo",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Protected base = Gross Pay less reimbursements — used in the demo",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "row": 5,
+          "column": 1,
+          "bbox": [
+            59.52,
+            316.8,
+            192,
+            40.32
+          ],
+          "text": "Rows 29–30",
+          "textPreview": "Rows 29–30",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 29–30",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 29–30",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 14,
+          "row": 5,
+          "column": 2,
+          "bbox": [
+            251.52,
+            316.8,
+            480,
+            40.32
+          ],
+          "text": "Guaranteed minimum peso net pay, ₱8,000 example",
+          "textPreview": "Guaranteed minimum peso net pay, ₱8,000 example",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Guaranteed minimum peso net pay, ₱8,000 example",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Guaranteed minimum peso net pay, ₱8,000 example",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 15,
+          "row": 5,
+          "column": 3,
+          "bbox": [
+            731.52,
+            316.8,
+            485.76,
+            40.32
+          ],
+          "text": "Threshold type = Fixed Amount",
+          "textPreview": "Threshold type = Fixed Amount",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Threshold type = Fixed Amount",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Threshold type = Fixed Amount",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 16,
+          "row": 6,
+          "column": 1,
+          "bbox": [
+            59.52,
+            357.12,
+            192,
+            40.32
+          ],
+          "text": "Rows 8–11",
+          "textPreview": "Rows 8–11",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 8–11",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 8–11",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 17,
+          "row": 6,
+          "column": 2,
+          "bbox": [
+            251.52,
+            357.12,
+            480,
+            40.32
+          ],
+          "text": "Statutory in full; loans may be deferred; carry over; notify",
+          "textPreview": "Statutory in full; loans may be deferred; carry over; notify",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Statutory in full; loans may be deferred; carry over; notify",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Statutory in full; loans may be deferred; carry over; notify",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 18,
+          "row": 6,
+          "column": 3,
+          "bbox": [
+            731.52,
+            357.12,
+            485.76,
+            40.32
+          ],
+          "text": "Statutory rank 0; auto-defer, carry-forward and notification switches",
+          "textPreview": "Statutory rank 0; auto-defer, carry-forward and notification switches",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Statutory rank 0; auto-defer, carry-forward and notification switches",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Statutory rank 0; auto-defer, carry-forward and notification switches",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 19,
+          "row": 7,
+          "column": 1,
+          "bbox": [
+            59.52,
+            397.44,
+            192,
+            40.32
+          ],
+          "text": "Rows 45–59",
+          "textPreview": "Rows 45–59",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 45–59",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 45–59",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 20,
+          "row": 7,
+          "column": 2,
+          "bbox": [
+            251.52,
+            397.44,
+            480,
+            40.32
+          ],
+          "text": "Loan repayment cap, 25% of gross or a fixed ₱10,000",
+          "textPreview": "Loan repayment cap, 25% of gross or a fixed ₱10,000",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Loan repayment cap, 25% of gross or a fixed ₱10,000",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Loan repayment cap, 25% of gross or a fixed ₱10,000",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 21,
+          "row": 7,
+          "column": 3,
+          "bbox": [
+            731.52,
+            397.44,
+            485.76,
+            40.32
+          ],
+          "text": "Loan cap base, type and value",
+          "textPreview": "Loan cap base, type and value",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Loan cap base, type and value",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Loan cap base, type and value",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 22,
+          "row": 8,
+          "column": 1,
+          "bbox": [
+            59.52,
+            437.76,
+            192,
+            40.32
+          ],
+          "text": "Rows 61–83",
+          "textPreview": "Rows 61–83",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 61–83",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 61–83",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 23,
+          "row": 8,
+          "column": 2,
+          "bbox": [
+            251.52,
+            437.76,
+            480,
+            40.32
+          ],
+          "text": "LAABS and undertime cap by %, days, or protected net",
+          "textPreview": "LAABS and undertime cap by %, days, or protected net",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "LAABS and undertime cap by %, days, or protected net",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "LAABS and undertime cap by %, days, or protected net",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 24,
+          "row": 8,
+          "column": 3,
+          "bbox": [
+            731.52,
+            437.76,
+            485.76,
+            40.32
+          ],
+          "text": "Attendance cap base, type and value",
+          "textPreview": "Attendance cap base, type and value",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Attendance cap base, type and value",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Attendance cap base, type and value",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 25,
+          "row": 9,
+          "column": 1,
+          "bbox": [
+            59.52,
+            478.08,
+            192,
+            40.32
+          ],
+          "text": "Rows 85–103",
+          "textPreview": "Rows 85–103",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 85–103",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 85–103",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 26,
+          "row": 9,
+          "column": 2,
+          "bbox": [
+            251.52,
+            478.08,
+            480,
+            40.32
+          ],
+          "text": "Hierarchy table, statutory rank 0, optional last",
+          "textPreview": "Hierarchy table, statutory rank 0, optional last",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Hierarchy table, statutory rank 0, optional last",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Hierarchy table, statutory rank 0, optional last",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 27,
+          "row": 9,
+          "column": 3,
+          "bbox": [
+            731.52,
+            478.08,
+            485.76,
+            40.32
+          ],
+          "text": "Deduction and loan hierarchy, maintained as a reference source",
+          "textPreview": "Deduction and loan hierarchy, maintained as a reference source",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Deduction and loan hierarchy, maintained as a reference source",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Deduction and loan hierarchy, maintained as a reference source",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 28,
+          "row": 10,
+          "column": 1,
+          "bbox": [
+            59.52,
+            518.4,
+            192,
+            40.32
+          ],
+          "text": "Rows 106–109",
+          "textPreview": "Rows 106–109",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 106–109",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 106–109",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 29,
+          "row": 10,
+          "column": 2,
+          "bbox": [
+            251.52,
+            518.4,
+            480,
+            40.32
+          ],
+          "text": "Loans at cap but net still short — choose what wins",
+          "textPreview": "Loans at cap but net still short — choose what wins",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Loans at cap but net still short — choose what wins",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Loans at cap but net still short — choose what wins",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 30,
+          "row": 10,
+          "column": 3,
+          "bbox": [
+            731.52,
+            518.4,
+            485.76,
+            40.32
+          ],
+          "text": "Conflict priority selector",
+          "textPreview": "Conflict priority selector",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Conflict priority selector",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Conflict priority selector",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 31,
+          "row": 11,
+          "column": 1,
+          "bbox": [
+            59.52,
+            558.72,
+            192,
+            40.32
+          ],
+          "text": "Rows 138–155",
+          "textPreview": "Rows 138–155",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 138–155",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 138–155",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 32,
+          "row": 11,
+          "column": 2,
+          "bbox": [
+            251.52,
+            558.72,
+            480,
+            40.32
+          ],
+          "text": "Deferred tracking, payslip tag fields, deduction ledger",
+          "textPreview": "Deferred tracking, payslip tag fields, deduction ledger",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Deferred tracking, payslip tag fields, deduction ledger",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Deferred tracking, payslip tag fields, deduction ledger",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 33,
+          "row": 11,
+          "column": 3,
+          "bbox": [
+            731.52,
+            558.72,
+            485.76,
+            40.32
+          ],
+          "text": "Carry-forward table, payslip tag block and deduction ledger",
+          "textPreview": "Carry-forward table, payslip tag block and deduction ledger",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Carry-forward table, payslip tag block and deduction ledger",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Carry-forward table, payslip tag block and deduction ledger",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

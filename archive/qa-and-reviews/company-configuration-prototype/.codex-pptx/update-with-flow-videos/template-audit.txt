@@ -1,0 +1,7 @@
+Source deck: ATLAS_Phase2_Computational_Basis_Demo_with_Flow.pptx (55 slides, 16:9).
+Structure: business walkthrough, Company Rules, four policy-engine sections, linked inputs, appendix, close.
+Reusable slide type: large annotated wireframe on the left with three concise explanation blocks on the right.
+Insertion contract: preserve all 55 source slides in original order; insert one cloned demonstration slide within each relevant section.
+Typography and spacing: preserve inherited Calibri/Cambria styles, source positions, margins, colors, and section labels.
+Media: replace only the inherited screenshot image frame on each demonstration slide with an animated wireframe walkthrough.
+Placeholders: source deck uses slide-local text and image shapes; no inherited empty structural placeholders were identified in the selected demo layouts.

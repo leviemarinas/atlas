@@ -1,0 +1,33 @@
+ATLAS computational-basis demo deck — template audit
+
+Source structure
+- 39 slides, 1280 × 720, default master/layout, clean off-white business-demo visual language.
+- Reusable patterns: title/closing, agenda and process, engine dividers, screenshot-plus-callout field explanation, worked examples, traceability tables, glossary, source appendix.
+- Slides 1–30 form the current business-demo narrative. Slides 31–39 form the reference/appendix section.
+
+Selected insertion contract
+- Preserve source slides 1–30 in their current order.
+- Insert a new field-guide divider and 13 detailed field pages before the existing appendix.
+- Preserve source slides 31–39 after the new field-guide section.
+- Use source slide 31 for the new divider and source slide 12 for every detailed field page.
+
+Reusable frame: source slide 12
+- Kicker and title across the top.
+- Large left screenshot region.
+- Right-side explanatory hierarchy using field heading plus plain-language description.
+- Caption and source treatment along the lower edge.
+- New pages replace the inherited screenshot with native-resolution crops, rewrite inherited text, and add only native badges/arrows/callout boxes within the mapped content zone.
+
+Brand and typography
+- Purple is used sparingly for section labels and callout emphasis.
+- Main typography is Calibri/Aptos-like sans serif; headings remain compact and direct.
+- White/very-light-gray base, black text, light gray borders, limited green for successful result states.
+
+Screenshot quality
+- Screens were recaptured from the current local wireframe and cropped at native pixel dimensions.
+- Crops are embedded from concrete PNG bytes and are not exported through a low-resolution intermediate.
+- Slides use focused panels rather than scaled full-page screenshots.
+
+Placeholder handling
+- The imported deck has no structural layout/master placeholders in the chosen frames.
+- All inherited slide-12 text/image elements are explicitly rewritten or replaced for new pages; additional annotations are explicitly mapped.

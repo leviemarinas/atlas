@@ -1,0 +1,1266 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/mdo3u583",
+    "id": "mdo3u583",
+    "slide": 58,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9wb6x87y",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX F",
+      "textPreview": "APPENDIX F",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX F"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX F",
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX F",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8v2p43qt",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Glossary",
+      "textPreview": "Glossary",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Glossary"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Glossary",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Glossary",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zqtorypw",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        144,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Computational Basis",
+      "textPreview": "Computational Basis",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Computational Basis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Computational Basis",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Computational Basis",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yp07yt8b",
+      "id": "5",
+      "name": "Text 3",
+      "bbox": [
+        59.52,
+        172.8,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "The controlled library of standard formulas, policy engines and the reference sources they read.",
+      "textPreview": "The controlled library of standard formulas, policy engines and the reference sources they read.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The controlled library of standard formulas, policy engines and the reference sources they read."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The controlled library of standard formulas, policy engines and the reference sources they read.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The controlled library of standard formulas, policy engines and the reference sources they read.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lsb6to72",
+      "id": "6",
+      "name": "Text 4",
+      "bbox": [
+        59.52,
+        245.76,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Policy engine",
+      "textPreview": "Policy engine",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Policy engine"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Policy engine",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Policy engine",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0r2p03qh",
+      "id": "7",
+      "name": "Text 5",
+      "bbox": [
+        59.52,
+        274.56,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "A screen that computes one family of payroll policy and shows its full working. There are four.",
+      "textPreview": "A screen that computes one family of payroll policy and shows its full working. There are four.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "A screen that computes one family of payroll policy and shows its full working. There are four."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "A screen that computes one family of payroll policy and shows its full working. There are four.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "A screen that computes one family of payroll policy and shows its full working. There are four.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jmd83ipg",
+      "id": "8",
+      "name": "Text 6",
+      "bbox": [
+        59.52,
+        347.52,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Policy code",
+      "textPreview": "Policy code",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Policy code"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Policy code",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Policy code",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/il47adov",
+      "id": "9",
+      "name": "Text 7",
+      "bbox": [
+        59.52,
+        376.32,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "A reusable, approved handle on an engine — for example THP-001. Assigned to Company Rules.",
+      "textPreview": "A reusable, approved handle on an engine — for example THP-001. Assigned to Company Rules.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "A reusable, approved handle on an engine — for example THP-001. Assigned to Company Rules."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "A reusable, approved handle on an engine — for example THP-001. Assigned to Company Rules.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "A reusable, approved handle on an engine — for example THP-001. Assigned to Company Rules.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4fm10fmh",
+      "id": "10",
+      "name": "Text 8",
+      "bbox": [
+        59.52,
+        449.28,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Company Rule",
+      "textPreview": "Company Rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Company Rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Company Rule",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Company Rule",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pgf2tkn2",
+      "id": "11",
+      "name": "Text 9",
+      "bbox": [
+        59.52,
+        478.08,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "One policy applied to an employee group, with its own parameter values.",
+      "textPreview": "One policy applied to an employee group, with its own parameter values.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "One policy applied to an employee group, with its own parameter values."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "One policy applied to an employee group, with its own parameter values.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "One policy applied to an employee group, with its own parameter values.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2d4jyp4b",
+      "id": "12",
+      "name": "Text 10",
+      "bbox": [
+        59.52,
+        551.04,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Protected minimum",
+      "textPreview": "Protected minimum",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Protected minimum"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Protected minimum",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Protected minimum",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3edkra5w",
+      "id": "13",
+      "name": "Text 11",
+      "bbox": [
+        59.52,
+        579.84,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "The net pay a rule guarantees, expressed as a percentage of a base or a fixed amount.",
+      "textPreview": "The net pay a rule guarantees, expressed as a percentage of a base or a fixed amount.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The net pay a rule guarantees, expressed as a percentage of a base or a fixed amount."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The net pay a rule guarantees, expressed as a percentage of a base or a fixed amount.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The net pay a rule guarantees, expressed as a percentage of a base or a fixed amount.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gbm1wfm5",
+      "id": "14",
+      "name": "Text 12",
+      "bbox": [
+        649.92,
+        144,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Hierarchy / rank",
+      "textPreview": "Hierarchy / rank",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Hierarchy / rank"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Hierarchy / rank",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Hierarchy / rank",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hcv2pknq",
+      "id": "15",
+      "name": "Text 13",
+      "bbox": [
+        649.92,
+        172.8,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "The order in which controllable deductions are trimmed. Statutory items are rank 0 and never adjusted.",
+      "textPreview": "The order in which controllable deductions are trimmed. Statutory items are rank 0 and never adjusted.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The order in which controllable deductions are trimmed. Statutory items are rank 0 and never"
+          },
+          {
+            "index": 2,
+            "text": "adjusted."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The order in which controllable deductions are trimmed. Statutory items are rank 0 and never adjusted.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "The order in which controllable deductions are trimmed. Statutory items are rank 0 and never adjusted.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/u94ju54f",
+      "id": "16",
+      "name": "Text 14",
+      "bbox": [
+        649.92,
+        245.76,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Deferral / carry-forward",
+      "textPreview": "Deferral / carry-forward",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Deferral / carry-forward"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Deferral / carry-forward",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Deferral / carry-forward",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fadkna5k",
+      "id": "17",
+      "name": "Text 15",
+      "bbox": [
+        649.92,
+        274.56,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "An amount not collected this cutoff, rescheduled with its outstanding balance preserved.",
+      "textPreview": "An amount not collected this cutoff, rescheduled with its outstanding balance preserved.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "An amount not collected this cutoff, rescheduled with its outstanding balance preserved."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "An amount not collected this cutoff, rescheduled with its outstanding balance preserved.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "An amount not collected this cutoff, rescheduled with its outstanding balance preserved.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8n21svm9",
+      "id": "18",
+      "name": "Text 16",
+      "bbox": [
+        649.92,
+        347.52,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Effective-dated",
+      "textPreview": "Effective-dated",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Effective-dated"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Effective-dated",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Effective-dated",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/t8b2l0nu",
+      "id": "19",
+      "name": "Text 17",
+      "bbox": [
+        649.92,
+        376.32,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "A version with a start date. Payroll uses the version in force for that run.",
+      "textPreview": "A version with a start date. Payroll uses the version in force for that run.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "A version with a start date. Payroll uses the version in force for that run."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "A version with a start date. Payroll uses the version in force for that run.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "A version with a start date. Payroll uses the version in force for that run.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9s3q9sb6",
+      "id": "20",
+      "name": "Text 18",
+      "bbox": [
+        649.92,
+        449.28,
+        556.8,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Convergence",
+      "textPreview": "Convergence",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Convergence"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Convergence",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Convergence",
+              "fontSize": 16.67,
+              "typeface": "Calibri",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/oru90nul",
+      "id": "21",
+      "name": "Text 19",
+      "bbox": [
+        649.92,
+        478.08,
+        556.8,
+        67.2
+      ],
+      "geometry": "rect",
+      "text": "For gross-up: repeating the calculation until the computed net matches the target within tolerance.",
+      "textPreview": "For gross-up: repeating the calculation until the computed net matches the target within tolerance.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "For gross-up: repeating the calculation until the computed net matches the target within"
+          },
+          {
+            "index": 2,
+            "text": "tolerance."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "For gross-up: repeating the calculation until the computed net matches the target within tolerance.",
+          "runs": [
+            {
+              "index": 1,
+              "text": "For gross-up: repeating the calculation until the computed net matches the target within tolerance.",
+              "fontSize": 14,
+              "typeface": "Calibri",
+              "color": "#5A6280"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

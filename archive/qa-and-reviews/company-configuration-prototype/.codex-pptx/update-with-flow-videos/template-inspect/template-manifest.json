@@ -1,0 +1,714 @@
+{
+  "sourcePptx": "C:\\Users\\josrp\\Downloads\\ATLAS_Phase2_Computational_Basis_Demo_with_Flow.pptx",
+  "workspace": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos",
+  "outDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect",
+  "generatedAt": "2026-08-10T15:48:16.186Z",
+  "slideCount": 55,
+  "slideArtifacts": [
+    {
+      "slide": 1,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-01.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-01.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-01.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-02.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-02.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-02.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-03.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-03.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-03.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-04.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-04.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-04.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-05.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-05.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-05.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-05.layout.json"
+    },
+    {
+      "slide": 6,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-06.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-06.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-06.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-06.layout.json"
+    },
+    {
+      "slide": 7,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-07.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-07.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-07.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-07.layout.json"
+    },
+    {
+      "slide": 8,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-08.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-08.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-08.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-08.layout.json"
+    },
+    {
+      "slide": 9,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-09.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-09.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-09.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-09.layout.json"
+    },
+    {
+      "slide": 10,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-10.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-10.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-10.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-10.layout.json"
+    },
+    {
+      "slide": 11,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-11.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-11.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-11.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-11.layout.json"
+    },
+    {
+      "slide": 12,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-12.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-12.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-12.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-12.layout.json"
+    },
+    {
+      "slide": 13,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-13.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-13.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-13.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-13.layout.json"
+    },
+    {
+      "slide": 14,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-14.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-14.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-14.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-14.layout.json"
+    },
+    {
+      "slide": 15,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-15.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-15.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-15.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-15.layout.json"
+    },
+    {
+      "slide": 16,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-16.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-16.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-16.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-16.layout.json"
+    },
+    {
+      "slide": 17,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-17.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-17.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-17.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-17.layout.json"
+    },
+    {
+      "slide": 18,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-18.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-18.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-18.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-18.layout.json"
+    },
+    {
+      "slide": 19,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-19.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-19.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-19.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-19.layout.json"
+    },
+    {
+      "slide": 20,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-20.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-20.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-20.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-20.layout.json"
+    },
+    {
+      "slide": 21,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-21.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-21.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-21.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-21.layout.json"
+    },
+    {
+      "slide": 22,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-22.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-22.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-22.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-22.layout.json"
+    },
+    {
+      "slide": 23,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-23.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-23.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-23.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-23.layout.json"
+    },
+    {
+      "slide": 24,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-24.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-24.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-24.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-24.layout.json"
+    },
+    {
+      "slide": 25,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-25.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-25.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-25.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-25.layout.json"
+    },
+    {
+      "slide": 26,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-26.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-26.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-26.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-26.layout.json"
+    },
+    {
+      "slide": 27,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-27.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-27.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-27.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-27.layout.json"
+    },
+    {
+      "slide": 28,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-28.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-28.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-28.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-28.layout.json"
+    },
+    {
+      "slide": 29,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-29.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-29.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-29.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-29.layout.json"
+    },
+    {
+      "slide": 30,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-30.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-30.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-30.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-30.layout.json"
+    },
+    {
+      "slide": 31,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-31.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-31.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-31.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-31.layout.json"
+    },
+    {
+      "slide": 32,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-32.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-32.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-32.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-32.layout.json"
+    },
+    {
+      "slide": 33,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-33.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-33.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-33.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-33.layout.json"
+    },
+    {
+      "slide": 34,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-34.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-34.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-34.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-34.layout.json"
+    },
+    {
+      "slide": 35,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-35.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-35.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-35.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-35.layout.json"
+    },
+    {
+      "slide": 36,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-36.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-36.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-36.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-36.layout.json"
+    },
+    {
+      "slide": 37,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-37.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-37.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-37.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-37.layout.json"
+    },
+    {
+      "slide": 38,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-38.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-38.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-38.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-38.layout.json"
+    },
+    {
+      "slide": 39,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-39.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-39.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-39.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-39.layout.json"
+    },
+    {
+      "slide": 40,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-40.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-40.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-40.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-40.layout.json"
+    },
+    {
+      "slide": 41,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-41.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-41.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-41.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-41.layout.json"
+    },
+    {
+      "slide": 42,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-42.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-42.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-42.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-42.layout.json"
+    },
+    {
+      "slide": 43,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-43.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-43.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-43.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-43.layout.json"
+    },
+    {
+      "slide": 44,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-44.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-44.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-44.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-44.layout.json"
+    },
+    {
+      "slide": 45,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-45.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-45.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-45.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-45.layout.json"
+    },
+    {
+      "slide": 46,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-46.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-46.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-46.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-46.layout.json"
+    },
+    {
+      "slide": 47,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-47.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-47.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-47.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-47.layout.json"
+    },
+    {
+      "slide": 48,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-48.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-48.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-48.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-48.layout.json"
+    },
+    {
+      "slide": 49,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-49.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-49.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-49.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-49.layout.json"
+    },
+    {
+      "slide": 50,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-50.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-50.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-50.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-50.layout.json"
+    },
+    {
+      "slide": 51,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-51.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-51.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-51.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-51.layout.json"
+    },
+    {
+      "slide": 52,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-52.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-52.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-52.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-52.layout.json"
+    },
+    {
+      "slide": 53,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-53.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-53.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-53.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-53.layout.json"
+    },
+    {
+      "slide": 54,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-54.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-54.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-54.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-54.layout.json"
+    },
+    {
+      "slide": 55,
+      "previewPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\source-slides\\source-slide-55.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-55.png",
+      "layoutPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\layouts\\source-slide-55.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-55.layout.json"
+    }
+  ],
+  "inspectPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\template-inspect.ndjson",
+  "inspectRelativePath": "template-inspect/template-inspect.ndjson",
+  "inspectTruncated": true,
+  "inspectMetadata": {
+    "revision": "0bplmi",
+    "target": {
+      "id": "pr/refcii"
+    },
+    "kind": {
+      "requested": "slide,textbox,shape,image,table,chart",
+      "tokens": [
+        "slide",
+        "textbox",
+        "shape",
+        "image",
+        "table",
+        "chart"
+      ]
+    },
+    "include": {
+      "tokens": []
+    },
+    "exclude": {
+      "tokens": []
+    },
+    "notices": []
+  },
+  "extractedMedia": [
+    {
+      "entry": "ppt/media/",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\media",
+      "relativePath": "template-inspect/assets/ppt/media/media",
+      "bytes": 6530125
+    },
+    {
+      "entry": "ppt/media/image1.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image1.png",
+      "relativePath": "template-inspect/assets/ppt/media/image1.png",
+      "bytes": 418507
+    },
+    {
+      "entry": "ppt/media/image10.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image10.png",
+      "relativePath": "template-inspect/assets/ppt/media/image10.png",
+      "bytes": 552750
+    },
+    {
+      "entry": "ppt/media/image11.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image11.png",
+      "relativePath": "template-inspect/assets/ppt/media/image11.png",
+      "bytes": 134824
+    },
+    {
+      "entry": "ppt/media/image12.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image12.png",
+      "relativePath": "template-inspect/assets/ppt/media/image12.png",
+      "bytes": 106761
+    },
+    {
+      "entry": "ppt/media/image13.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image13.png",
+      "relativePath": "template-inspect/assets/ppt/media/image13.png",
+      "bytes": 119468
+    },
+    {
+      "entry": "ppt/media/image14.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image14.png",
+      "relativePath": "template-inspect/assets/ppt/media/image14.png",
+      "bytes": 168371
+    },
+    {
+      "entry": "ppt/media/image15.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image15.png",
+      "relativePath": "template-inspect/assets/ppt/media/image15.png",
+      "bytes": 66647
+    },
+    {
+      "entry": "ppt/media/image16.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image16.png",
+      "relativePath": "template-inspect/assets/ppt/media/image16.png",
+      "bytes": 71323
+    },
+    {
+      "entry": "ppt/media/image17.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image17.png",
+      "relativePath": "template-inspect/assets/ppt/media/image17.png",
+      "bytes": 88713
+    },
+    {
+      "entry": "ppt/media/image18.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image18.png",
+      "relativePath": "template-inspect/assets/ppt/media/image18.png",
+      "bytes": 102096
+    },
+    {
+      "entry": "ppt/media/image19.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image19.png",
+      "relativePath": "template-inspect/assets/ppt/media/image19.png",
+      "bytes": 317518
+    },
+    {
+      "entry": "ppt/media/image2.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image2.png",
+      "relativePath": "template-inspect/assets/ppt/media/image2.png",
+      "bytes": 28653
+    },
+    {
+      "entry": "ppt/media/image20.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image20.png",
+      "relativePath": "template-inspect/assets/ppt/media/image20.png",
+      "bytes": 186579
+    },
+    {
+      "entry": "ppt/media/image21.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image21.png",
+      "relativePath": "template-inspect/assets/ppt/media/image21.png",
+      "bytes": 58153
+    },
+    {
+      "entry": "ppt/media/image22.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image22.png",
+      "relativePath": "template-inspect/assets/ppt/media/image22.png",
+      "bytes": 52353
+    },
+    {
+      "entry": "ppt/media/image23.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image23.png",
+      "relativePath": "template-inspect/assets/ppt/media/image23.png",
+      "bytes": 45973
+    },
+    {
+      "entry": "ppt/media/image24.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image24.png",
+      "relativePath": "template-inspect/assets/ppt/media/image24.png",
+      "bytes": 84365
+    },
+    {
+      "entry": "ppt/media/image25.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image25.png",
+      "relativePath": "template-inspect/assets/ppt/media/image25.png",
+      "bytes": 360642
+    },
+    {
+      "entry": "ppt/media/image26.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image26.png",
+      "relativePath": "template-inspect/assets/ppt/media/image26.png",
+      "bytes": 92419
+    },
+    {
+      "entry": "ppt/media/image27.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image27.png",
+      "relativePath": "template-inspect/assets/ppt/media/image27.png",
+      "bytes": 110179
+    },
+    {
+      "entry": "ppt/media/image28.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image28.png",
+      "relativePath": "template-inspect/assets/ppt/media/image28.png",
+      "bytes": 80024
+    },
+    {
+      "entry": "ppt/media/image29.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image29.png",
+      "relativePath": "template-inspect/assets/ppt/media/image29.png",
+      "bytes": 56925
+    },
+    {
+      "entry": "ppt/media/image3.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image3.png",
+      "relativePath": "template-inspect/assets/ppt/media/image3.png",
+      "bytes": 357871
+    },
+    {
+      "entry": "ppt/media/image30.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image30.png",
+      "relativePath": "template-inspect/assets/ppt/media/image30.png",
+      "bytes": 75487
+    },
+    {
+      "entry": "ppt/media/image31.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image31.png",
+      "relativePath": "template-inspect/assets/ppt/media/image31.png",
+      "bytes": 236127
+    },
+    {
+      "entry": "ppt/media/image32.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image32.png",
+      "relativePath": "template-inspect/assets/ppt/media/image32.png",
+      "bytes": 126341
+    },
+    {
+      "entry": "ppt/media/image33.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image33.png",
+      "relativePath": "template-inspect/assets/ppt/media/image33.png",
+      "bytes": 84266
+    },
+    {
+      "entry": "ppt/media/image34.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image34.png",
+      "relativePath": "template-inspect/assets/ppt/media/image34.png",
+      "bytes": 47090
+    },
+    {
+      "entry": "ppt/media/image35.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image35.png",
+      "relativePath": "template-inspect/assets/ppt/media/image35.png",
+      "bytes": 47118
+    },
+    {
+      "entry": "ppt/media/image36.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image36.png",
+      "relativePath": "template-inspect/assets/ppt/media/image36.png",
+      "bytes": 60513
+    },
+    {
+      "entry": "ppt/media/image37.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image37.png",
+      "relativePath": "template-inspect/assets/ppt/media/image37.png",
+      "bytes": 233827
+    },
+    {
+      "entry": "ppt/media/image38.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image38.png",
+      "relativePath": "template-inspect/assets/ppt/media/image38.png",
+      "bytes": 152929
+    },
+    {
+      "entry": "ppt/media/image39.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image39.png",
+      "relativePath": "template-inspect/assets/ppt/media/image39.png",
+      "bytes": 186323
+    },
+    {
+      "entry": "ppt/media/image4.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image4.png",
+      "relativePath": "template-inspect/assets/ppt/media/image4.png",
+      "bytes": 260258
+    },
+    {
+      "entry": "ppt/media/image5.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image5.png",
+      "relativePath": "template-inspect/assets/ppt/media/image5.png",
+      "bytes": 271092
+    },
+    {
+      "entry": "ppt/media/image6.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image6.png",
+      "relativePath": "template-inspect/assets/ppt/media/image6.png",
+      "bytes": 400184
+    },
+    {
+      "entry": "ppt/media/image7.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image7.png",
+      "relativePath": "template-inspect/assets/ppt/media/image7.png",
+      "bytes": 446272
+    },
+    {
+      "entry": "ppt/media/image8.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image8.png",
+      "relativePath": "template-inspect/assets/ppt/media/image8.png",
+      "bytes": 95910
+    },
+    {
+      "entry": "ppt/media/image9.png",
+      "path": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-with-flow-videos\\template-inspect\\assets\\ppt\\media\\image9.png",
+      "relativePath": "template-inspect/assets/ppt/media/image9.png",
+      "bytes": 145274
+    }
+  ],
+  "fonts": [
+    "+mj-cs",
+    "+mj-ea",
+    "+mj-lt",
+    "+mn-cs",
+    "+mn-ea",
+    "+mn-lt",
+    "Angsana New",
+    "Arial",
+    "Calibri",
+    "Calibri Light",
+    "Cambria",
+    "Cordia New",
+    "DaunPenh",
+    "DokChampa",
+    "Estrangelo Edessa",
+    "Euphemia",
+    "Gautami",
+    "Georgia",
+    "Iskoola Pota",
+    "Kalinga",
+    "Kartika",
+    "Latha",
+    "MV Boli",
+    "Mangal",
+    "Microsoft Himalaya",
+    "Microsoft Uighur",
+    "Microsoft Yi Baiti",
+    "Mongolian Baiti",
+    "MoolBoran",
+    "Nyala",
+    "Plantagenet Cherokee",
+    "Raavi",
+    "Shruti",
+    "Sylfaen",
+    "Times New Roman",
+    "Tunga",
+    "Vrinda",
+    "新細明體",
+    "游ゴシック",
+    "游ゴシック Light",
+    "等线",
+    "等线 Light",
+    "맑은 고딕"
+  ],
+  "packageParts": {
+    "mediaCount": 40,
+    "slideXmlCount": 55,
+    "chartCount": 0,
+    "tableSlideCount": 4
+  }
+}

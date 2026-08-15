@@ -1,0 +1,695 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "preserve source slide 1",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "preserve source slide 2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "preserve source slide 3",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "preserve source slide 4",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "narrativeRole": "preserve source slide 5",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "narrativeRole": "preserve source slide 6",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 7,
+      "narrativeRole": "preserve source slide 7",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 8,
+      "narrativeRole": "preserve source slide 8",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 9,
+      "sourceSlide": 9,
+      "narrativeRole": "preserve source slide 9",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 10,
+      "sourceSlide": 10,
+      "narrativeRole": "preserve source slide 10",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 11,
+      "sourceSlide": 7,
+      "narrativeRole": "company rules workflow demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "sourceElementId": "sh/cb2tkvap",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/dcbud0ra",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "im/wz6dk3it",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/zedcfa9g",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/kzmdova1",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/l0vuh0rm",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/fi9c369c",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        }
+      ]
+    },
+    {
+      "outputSlide": 12,
+      "sourceSlide": 11,
+      "narrativeRole": "preserve source slide 11",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 13,
+      "sourceSlide": 12,
+      "narrativeRole": "take-home pay setup demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "sourceElementId": "sh/1gbm9s3a",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/0f2lgnmp",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "im/fudovqlo",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/q903ad4n",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/dcbm583y",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/sb2lcnmd",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/b6d4f2lc",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/a543mx4r",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/wvupgz6t",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/xw3q94ne",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/bulo7u58",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        }
+      ]
+    },
+    {
+      "outputSlide": 14,
+      "sourceSlide": 12,
+      "narrativeRole": "preserve source slide 12",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 15,
+      "sourceSlide": 13,
+      "narrativeRole": "preserve source slide 13",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 16,
+      "sourceSlide": 14,
+      "narrativeRole": "preserve source slide 14",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 17,
+      "sourceSlide": 15,
+      "narrativeRole": "preserve source slide 15",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 18,
+      "sourceSlide": 16,
+      "narrativeRole": "preserve source slide 16",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 19,
+      "sourceSlide": 17,
+      "narrativeRole": "preserve source slide 17",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 20,
+      "sourceSlide": 18,
+      "narrativeRole": "preserve source slide 18",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 21,
+      "sourceSlide": 19,
+      "narrativeRole": "preserve source slide 19",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 22,
+      "sourceSlide": 20,
+      "narrativeRole": "preserve source slide 20",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 23,
+      "sourceSlide": 21,
+      "narrativeRole": "preserve source slide 21",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 24,
+      "sourceSlide": 22,
+      "narrativeRole": "preserve source slide 22",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 25,
+      "sourceSlide": 23,
+      "narrativeRole": "retirement pay setup demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "sourceElementId": "sh/90vqdczq",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/8zm9k7y5",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "im/7ud4n6p0",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/a14rmhgb",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/xovqhcz2",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/w3m9o7yh",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/jqd8jmhs",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/ip4rqhgn",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/sby90zm1",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/tc7at436",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/rapsrelg",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        }
+      ]
+    },
+    {
+      "outputSlide": 26,
+      "sourceSlide": 23,
+      "narrativeRole": "preserve source slide 23",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 27,
+      "sourceSlide": 24,
+      "narrativeRole": "preserve source slide 24",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 28,
+      "sourceSlide": 25,
+      "narrativeRole": "preserve source slide 25",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 29,
+      "sourceSlide": 26,
+      "narrativeRole": "preserve source slide 26",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 30,
+      "sourceSlide": 27,
+      "narrativeRole": "preserve source slide 27",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 31,
+      "sourceSlide": 28,
+      "narrativeRole": "preserve source slide 28",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 32,
+      "sourceSlide": 29,
+      "narrativeRole": "preserve source slide 29",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 33,
+      "sourceSlide": 30,
+      "narrativeRole": "final pay setup demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "sourceElementId": "sh/po72d8nm",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/o3yl4361",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "im/3y9svqhk",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/apg36do7",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/xsr2h8ni",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/cril836d",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/ru5k3ep8",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/6twju9o3",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/onqx8zix",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/p8ze14zi",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/3mhwzu1c",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        }
+      ]
+    },
+    {
+      "outputSlide": 34,
+      "sourceSlide": 30,
+      "narrativeRole": "preserve source slide 30",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 35,
+      "sourceSlide": 31,
+      "narrativeRole": "preserve source slide 31",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 36,
+      "sourceSlide": 32,
+      "narrativeRole": "preserve source slide 32",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 37,
+      "sourceSlide": 33,
+      "narrativeRole": "preserve source slide 33",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 38,
+      "sourceSlide": 34,
+      "narrativeRole": "preserve source slide 34",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 39,
+      "sourceSlide": 35,
+      "narrativeRole": "preserve source slide 35",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 40,
+      "sourceSlide": 36,
+      "narrativeRole": "preserve source slide 36",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 41,
+      "sourceSlide": 37,
+      "narrativeRole": "gross up setup demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "sourceElementId": "sh/61c7md0r",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/7m58vyhw",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "im/ofm1kvax",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/503qt8z6",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/ixc7it0f",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/jyl8ryh0",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/4vy9wnyp",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/pw7q5sza",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/9cfa9gry",
+          "action": "replace",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/8b69gbqd",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/naxs7q9s",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/m94rel87",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        },
+        {
+          "sourceElementId": "sh/07m9cbq1",
+          "action": "rewrite",
+          "reason": "Populate the inherited demo slide frame with section-specific walkthrough content."
+        }
+      ]
+    },
+    {
+      "outputSlide": 42,
+      "sourceSlide": 37,
+      "narrativeRole": "preserve source slide 37",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 43,
+      "sourceSlide": 38,
+      "narrativeRole": "preserve source slide 38",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 44,
+      "sourceSlide": 39,
+      "narrativeRole": "preserve source slide 39",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 45,
+      "sourceSlide": 40,
+      "narrativeRole": "preserve source slide 40",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 46,
+      "sourceSlide": 41,
+      "narrativeRole": "preserve source slide 41",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 47,
+      "sourceSlide": 42,
+      "narrativeRole": "preserve source slide 42",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 48,
+      "sourceSlide": 43,
+      "narrativeRole": "preserve source slide 43",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 49,
+      "sourceSlide": 44,
+      "narrativeRole": "preserve source slide 44",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 50,
+      "sourceSlide": 45,
+      "narrativeRole": "preserve source slide 45",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 51,
+      "sourceSlide": 46,
+      "narrativeRole": "preserve source slide 46",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 52,
+      "sourceSlide": 47,
+      "narrativeRole": "preserve source slide 47",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 53,
+      "sourceSlide": 48,
+      "narrativeRole": "preserve source slide 48",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 54,
+      "sourceSlide": 49,
+      "narrativeRole": "preserve source slide 49",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 55,
+      "sourceSlide": 50,
+      "narrativeRole": "preserve source slide 50",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 56,
+      "sourceSlide": 51,
+      "narrativeRole": "preserve source slide 51",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 57,
+      "sourceSlide": 52,
+      "narrativeRole": "preserve source slide 52",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 58,
+      "sourceSlide": 53,
+      "narrativeRole": "preserve source slide 53",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 59,
+      "sourceSlide": 54,
+      "narrativeRole": "preserve source slide 54",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 60,
+      "sourceSlide": 55,
+      "narrativeRole": "preserve source slide 55",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    }
+  ],
+  "omittedSourceSlides": []
+}

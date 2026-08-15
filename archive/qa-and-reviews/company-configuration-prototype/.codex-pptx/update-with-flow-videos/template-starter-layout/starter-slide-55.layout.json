@@ -1,0 +1,1058 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/6k7ptt",
+    "id": "6k7ptt",
+    "slide": 55,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Calibri",
+      "Calibri Light",
+      "Cambria"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pgf6pkfu",
+      "id": "2",
+      "name": "Text 0",
+      "bbox": [
+        59.52,
+        34.56,
+        1157.76,
+        23.04
+      ],
+      "geometry": "rect",
+      "text": "APPENDIX C",
+      "textPreview": "APPENDIX C",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "APPENDIX C"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "APPENDIX C",
+          "runs": [
+            {
+              "index": 1,
+              "text": "APPENDIX C",
+              "fontSize": 13.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4f6pwfep",
+      "id": "3",
+      "name": "Text 1",
+      "bbox": [
+        59.52,
+        57.6,
+        1157.76,
+        59.52
+      ],
+      "geometry": "rect",
+      "text": "Retirement Pay traceability",
+      "textPreview": "Retirement Pay traceability",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Retirement Pay traceability"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Retirement Pay traceability",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Retirement Pay traceability",
+              "fontSize": 40,
+              "typeface": "Cambria",
+              "color": "#1E2761",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fqxojaxs",
+      "id": "4",
+      "name": "Text 2",
+      "bbox": [
+        59.52,
+        119.04,
+        1157.76,
+        28.8
+      ],
+      "geometry": "rect",
+      "text": "Annex B → sheet “Retirement Pay”",
+      "textPreview": "Annex B → sheet “Retirement Pay”",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "wrap": "square",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex B → sheet “Retirement Pay”"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex B → sheet “Retirement Pay”",
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex B → sheet “Retirement Pay”",
+              "fontSize": 15.33,
+              "typeface": "Calibri",
+              "color": "#5A6280",
+              "italic": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "table",
+      "scope": "slide",
+      "aid": "tb/fmhg7qdc",
+      "id": "5",
+      "name": "Table 0",
+      "bbox": [
+        59.52,
+        155.52,
+        1157.76,
+        362.88
+      ],
+      "text": "Source rows | What the workbook says | Where it appears in the app\nRows 3–6 | Daily rate × 22.5 × years of service | Statutory value shown in the scenario\nRow 5 | Fractions of six months or more count as one year | Service rounding rule; 12y 6m → 13 years\nRows 13–15 | Statutory RA 7641, company plan, or override if more beneficial | Retirement plan type selector\nRows 24–29 | Divisor, days per year, salary basis, benefits, rounding, cap | Formula inputs, all configurable\nRow 30 | RetirementPay = MAX(statutory, company plan) | “Best of” option; both values displayed\nRows 31–37 | Age 60, compulsory 65, five years service, early retirement | Eligibility rules and the eligibility strip\nRows 38–41 | RA 7641 and RA 4917 tax exemption conditions | Taxation rule; the result records why it is exempt\nRows 46–49 | Retirement pay forms part of final pay | Result feeds the Final Pay engine automatically",
+      "textPreview": "Source rows | What the workbook says | Where it appears in the app | Rows 3–6 | Daily rate × 22.5 × years of service | Statutory value sh...",
+      "rows": 9,
+      "cols": 3,
+      "cells": [
+        {
+          "index": 1,
+          "row": 1,
+          "column": 1,
+          "bbox": [
+            59.52,
+            155.52,
+            192,
+            40.32
+          ],
+          "text": "Source rows",
+          "textPreview": "Source rows",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Source rows",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Source rows",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "row": 1,
+          "column": 2,
+          "bbox": [
+            251.52,
+            155.52,
+            480,
+            40.32
+          ],
+          "text": "What the workbook says",
+          "textPreview": "What the workbook says",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "What the workbook says",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "What the workbook says",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "row": 1,
+          "column": 3,
+          "bbox": [
+            731.52,
+            155.52,
+            485.76,
+            40.32
+          ],
+          "text": "Where it appears in the app",
+          "textPreview": "Where it appears in the app",
+          "fillColor": "#1E2761",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Where it appears in the app",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Where it appears in the app",
+                  "fontSize": 14.67,
+                  "typeface": "Calibri",
+                  "color": "#FFFFFF",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "row": 2,
+          "column": 1,
+          "bbox": [
+            59.52,
+            195.84,
+            192,
+            40.32
+          ],
+          "text": "Rows 3–6",
+          "textPreview": "Rows 3–6",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 3–6",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 3–6",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "row": 2,
+          "column": 2,
+          "bbox": [
+            251.52,
+            195.84,
+            480,
+            40.32
+          ],
+          "text": "Daily rate × 22.5 × years of service",
+          "textPreview": "Daily rate × 22.5 × years of service",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Daily rate × 22.5 × years of service",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Daily rate × 22.5 × years of service",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 6,
+          "row": 2,
+          "column": 3,
+          "bbox": [
+            731.52,
+            195.84,
+            485.76,
+            40.32
+          ],
+          "text": "Statutory value shown in the scenario",
+          "textPreview": "Statutory value shown in the scenario",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Statutory value shown in the scenario",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Statutory value shown in the scenario",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "row": 3,
+          "column": 1,
+          "bbox": [
+            59.52,
+            236.16,
+            192,
+            40.32
+          ],
+          "text": "Row 5",
+          "textPreview": "Row 5",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 5",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 5",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 8,
+          "row": 3,
+          "column": 2,
+          "bbox": [
+            251.52,
+            236.16,
+            480,
+            40.32
+          ],
+          "text": "Fractions of six months or more count as one year",
+          "textPreview": "Fractions of six months or more count as one year",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Fractions of six months or more count as one year",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Fractions of six months or more count as one year",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 9,
+          "row": 3,
+          "column": 3,
+          "bbox": [
+            731.52,
+            236.16,
+            485.76,
+            40.32
+          ],
+          "text": "Service rounding rule; 12y 6m → 13 years",
+          "textPreview": "Service rounding rule; 12y 6m → 13 years",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Service rounding rule; 12y 6m → 13 years",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Service rounding rule; 12y 6m → 13 years",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 10,
+          "row": 4,
+          "column": 1,
+          "bbox": [
+            59.52,
+            276.48,
+            192,
+            40.32
+          ],
+          "text": "Rows 13–15",
+          "textPreview": "Rows 13–15",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 13–15",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 13–15",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 11,
+          "row": 4,
+          "column": 2,
+          "bbox": [
+            251.52,
+            276.48,
+            480,
+            40.32
+          ],
+          "text": "Statutory RA 7641, company plan, or override if more beneficial",
+          "textPreview": "Statutory RA 7641, company plan, or override if more beneficial",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Statutory RA 7641, company plan, or override if more beneficial",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Statutory RA 7641, company plan, or override if more beneficial",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 12,
+          "row": 4,
+          "column": 3,
+          "bbox": [
+            731.52,
+            276.48,
+            485.76,
+            40.32
+          ],
+          "text": "Retirement plan type selector",
+          "textPreview": "Retirement plan type selector",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Retirement plan type selector",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Retirement plan type selector",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 13,
+          "row": 5,
+          "column": 1,
+          "bbox": [
+            59.52,
+            316.8,
+            192,
+            40.32
+          ],
+          "text": "Rows 24–29",
+          "textPreview": "Rows 24–29",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 24–29",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 24–29",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 14,
+          "row": 5,
+          "column": 2,
+          "bbox": [
+            251.52,
+            316.8,
+            480,
+            40.32
+          ],
+          "text": "Divisor, days per year, salary basis, benefits, rounding, cap",
+          "textPreview": "Divisor, days per year, salary basis, benefits, rounding, cap",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Divisor, days per year, salary basis, benefits, rounding, cap",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Divisor, days per year, salary basis, benefits, rounding, cap",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 15,
+          "row": 5,
+          "column": 3,
+          "bbox": [
+            731.52,
+            316.8,
+            485.76,
+            40.32
+          ],
+          "text": "Formula inputs, all configurable",
+          "textPreview": "Formula inputs, all configurable",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Formula inputs, all configurable",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Formula inputs, all configurable",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 16,
+          "row": 6,
+          "column": 1,
+          "bbox": [
+            59.52,
+            357.12,
+            192,
+            40.32
+          ],
+          "text": "Row 30",
+          "textPreview": "Row 30",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Row 30",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Row 30",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 17,
+          "row": 6,
+          "column": 2,
+          "bbox": [
+            251.52,
+            357.12,
+            480,
+            40.32
+          ],
+          "text": "RetirementPay = MAX(statutory, company plan)",
+          "textPreview": "RetirementPay = MAX(statutory, company plan)",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "RetirementPay = MAX(statutory, company plan)",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "RetirementPay = MAX(statutory, company plan)",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 18,
+          "row": 6,
+          "column": 3,
+          "bbox": [
+            731.52,
+            357.12,
+            485.76,
+            40.32
+          ],
+          "text": "“Best of” option; both values displayed",
+          "textPreview": "“Best of” option; both values displayed",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "“Best of” option; both values displayed",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "“Best of” option; both values displayed",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 19,
+          "row": 7,
+          "column": 1,
+          "bbox": [
+            59.52,
+            397.44,
+            192,
+            40.32
+          ],
+          "text": "Rows 31–37",
+          "textPreview": "Rows 31–37",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 31–37",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 31–37",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 20,
+          "row": 7,
+          "column": 2,
+          "bbox": [
+            251.52,
+            397.44,
+            480,
+            40.32
+          ],
+          "text": "Age 60, compulsory 65, five years service, early retirement",
+          "textPreview": "Age 60, compulsory 65, five years service, early retirement",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Age 60, compulsory 65, five years service, early retirement",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Age 60, compulsory 65, five years service, early retirement",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 21,
+          "row": 7,
+          "column": 3,
+          "bbox": [
+            731.52,
+            397.44,
+            485.76,
+            40.32
+          ],
+          "text": "Eligibility rules and the eligibility strip",
+          "textPreview": "Eligibility rules and the eligibility strip",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Eligibility rules and the eligibility strip",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Eligibility rules and the eligibility strip",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 22,
+          "row": 8,
+          "column": 1,
+          "bbox": [
+            59.52,
+            437.76,
+            192,
+            40.32
+          ],
+          "text": "Rows 38–41",
+          "textPreview": "Rows 38–41",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 38–41",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 38–41",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 23,
+          "row": 8,
+          "column": 2,
+          "bbox": [
+            251.52,
+            437.76,
+            480,
+            40.32
+          ],
+          "text": "RA 7641 and RA 4917 tax exemption conditions",
+          "textPreview": "RA 7641 and RA 4917 tax exemption conditions",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "RA 7641 and RA 4917 tax exemption conditions",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "RA 7641 and RA 4917 tax exemption conditions",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 24,
+          "row": 8,
+          "column": 3,
+          "bbox": [
+            731.52,
+            437.76,
+            485.76,
+            40.32
+          ],
+          "text": "Taxation rule; the result records why it is exempt",
+          "textPreview": "Taxation rule; the result records why it is exempt",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Taxation rule; the result records why it is exempt",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Taxation rule; the result records why it is exempt",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 25,
+          "row": 9,
+          "column": 1,
+          "bbox": [
+            59.52,
+            478.08,
+            192,
+            40.32
+          ],
+          "text": "Rows 46–49",
+          "textPreview": "Rows 46–49",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Rows 46–49",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Rows 46–49",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#1E2761",
+                  "bold": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 26,
+          "row": 9,
+          "column": 2,
+          "bbox": [
+            251.52,
+            478.08,
+            480,
+            40.32
+          ],
+          "text": "Retirement pay forms part of final pay",
+          "textPreview": "Retirement pay forms part of final pay",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Retirement pay forms part of final pay",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Retirement pay forms part of final pay",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 27,
+          "row": 9,
+          "column": 3,
+          "bbox": [
+            731.52,
+            478.08,
+            485.76,
+            40.32
+          ],
+          "text": "Result feeds the Final Pay engine automatically",
+          "textPreview": "Result feeds the Final Pay engine automatically",
+          "fillColor": "#FFFFFF",
+          "paragraphs": [
+            {
+              "index": 1,
+              "text": "Result feeds the Final Pay engine automatically",
+              "runs": [
+                {
+                  "index": 1,
+                  "text": "Result feeds the Final Pay engine automatically",
+                  "fontSize": 13.33,
+                  "typeface": "Calibri",
+                  "color": "#2B3350"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

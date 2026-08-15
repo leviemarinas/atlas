@@ -1,0 +1,7 @@
+file 'C:\Users\josrp\OneDrive\Documents\Atlas\company-configuration-prototype\.codex-pptx\update-with-flow-videos\captures\engines-01-library.png'
+duration 2.4
+file 'C:\Users\josrp\OneDrive\Documents\Atlas\company-configuration-prototype\.codex-pptx\update-with-flow-videos\captures\fin-01-top.png'
+duration 2.4
+file 'C:\Users\josrp\OneDrive\Documents\Atlas\company-configuration-prototype\.codex-pptx\update-with-flow-videos\captures\fin-02-details.png'
+duration 2.4
+file 'C:\Users\josrp\OneDrive\Documents\Atlas\company-configuration-prototype\.codex-pptx\update-with-flow-videos\captures\fin-02-details.png'

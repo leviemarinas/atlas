@@ -1,0 +1,1341 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 5,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 6,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 7,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 8,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 9,
+      "sourceSlide": 9,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 10,
+      "sourceSlide": 10,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 11,
+      "sourceSlide": 11,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 12,
+      "sourceSlide": 12,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 13,
+      "sourceSlide": 13,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 14,
+      "sourceSlide": 14,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 15,
+      "sourceSlide": 15,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 16,
+      "sourceSlide": 16,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 17,
+      "sourceSlide": 17,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 18,
+      "sourceSlide": 18,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 19,
+      "sourceSlide": 19,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 20,
+      "sourceSlide": 20,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 21,
+      "sourceSlide": 21,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 22,
+      "sourceSlide": 22,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 23,
+      "sourceSlide": 23,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 24,
+      "sourceSlide": 24,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 25,
+      "sourceSlide": 25,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 26,
+      "sourceSlide": 26,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 27,
+      "sourceSlide": 27,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 28,
+      "sourceSlide": 28,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 29,
+      "sourceSlide": 29,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 30,
+      "sourceSlide": 30,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 31,
+      "sourceSlide": 31,
+      "narrativeRole": "policy engine field guide divider",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dgja98fe",
+          "reason": "Change appendix kicker to field-guide section label."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/cfa903yt",
+          "reason": "Introduce the policy-engine field guide."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/zilsbyx4",
+          "reason": "Explain the screenshot annotation convention."
+        }
+      ]
+    },
+    {
+      "outputSlide": 32,
+      "sourceSlide": 12,
+      "narrativeRole": "THP core fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — scope & protection."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 33,
+      "sourceSlide": 12,
+      "narrativeRole": "THP cap fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — caps."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 34,
+      "sourceSlide": 12,
+      "narrativeRole": "THP deferral fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — deferral controls."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 35,
+      "sourceSlide": 12,
+      "narrativeRole": "THP hierarchy fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Take-Home Pay — hierarchy & balances."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 36,
+      "sourceSlide": 12,
+      "narrativeRole": "Retirement formula fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — plan & formula."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 37,
+      "sourceSlide": 12,
+      "narrativeRole": "Retirement eligibility fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — eligibility & tax."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 38,
+      "sourceSlide": 12,
+      "narrativeRole": "Retirement simulator fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Retirement Pay — scenario & result."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 39,
+      "sourceSlide": 12,
+      "narrativeRole": "Final Pay component fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — included components."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 40,
+      "sourceSlide": 12,
+      "narrativeRole": "Final Pay company-rule fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — company rules."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 41,
+      "sourceSlide": 12,
+      "narrativeRole": "Final Pay input fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — scenario inputs."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 42,
+      "sourceSlide": 12,
+      "narrativeRole": "Final Pay result fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Final Pay — result & trace."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 43,
+      "sourceSlide": 12,
+      "narrativeRole": "Gross Up configuration fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — policy settings."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 44,
+      "sourceSlide": 12,
+      "narrativeRole": "Gross Up simulator fields",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/1gbm9s3a",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/0f2lgnmp",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/q903ad4n",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/dcbm583y",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/sb2lcnmd",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/b6d4f2lc",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/a543mx4r",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/wvupgz6t",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/xw3q94ne",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/atc7epon",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "rewrite",
+          "sourceElementId": "sh/bulo7u58",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "replace",
+          "sourceElementId": "im/fudovqlo",
+          "reason": "Adapt inherited Take-Home setup frame for Gross Up — scenario & result."
+        },
+        {
+          "action": "add",
+          "newPrimitiveAllowed": true,
+          "mustNotOverlapInherited": true,
+          "zone": {
+            "left": 50,
+            "top": 130,
+            "width": 1180,
+            "height": 520
+          },
+          "reason": "Add native numbered badges, connector arrows, and bounded explanatory callout boxes that point to fields in the replaced screenshot."
+        }
+      ]
+    },
+    {
+      "outputSlide": 45,
+      "sourceSlide": 31,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 46,
+      "sourceSlide": 32,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 47,
+      "sourceSlide": 33,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 48,
+      "sourceSlide": 34,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 49,
+      "sourceSlide": 35,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 50,
+      "sourceSlide": 36,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 51,
+      "sourceSlide": 37,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 52,
+      "sourceSlide": 38,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    },
+    {
+      "outputSlide": 53,
+      "sourceSlide": 39,
+      "narrativeRole": "preserve-only",
+      "reuseMode": "duplicate-slide",
+      "editTargets": []
+    }
+  ],
+  "omittedSourceSlides": []
+}

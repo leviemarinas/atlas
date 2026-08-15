@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-08-10T13:51:33.029Z",
+  "workspace": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready",
+  "finalPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready\\ATLAS_Phase2_Computational_Basis_Demo_Ready_Field_Guide.pptx",
+  "starterPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready\\template-starter.pptx",
+  "mapPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready\\template-frame-map.json",
+  "starterLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready\\template-starter-layout",
+  "finalLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready\\final-inspect\\layouts",
+  "editDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\company-configuration-prototype\\.codex-pptx\\update-demo-ready",
+  "issueCount": 0,
+  "issues": []
+}

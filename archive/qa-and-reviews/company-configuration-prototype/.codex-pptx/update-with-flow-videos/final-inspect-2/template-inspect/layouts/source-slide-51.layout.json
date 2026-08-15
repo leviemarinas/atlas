@@ -1,0 +1,3701 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/36hsrmts",
+    "id": "36hsrmts",
+    "slide": 51,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "DEFAULT",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "backgroundColor": "#FFFFFF",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "Office",
+    "colors": {
+      "accent1": "#4472C4",
+      "accent2": "#ED7D31",
+      "accent3": "#A5A5A5",
+      "accent4": "#FFC000",
+      "accent5": "#5B9BD5",
+      "accent6": "#70AD47",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#44546A",
+      "lt2": "#E7E6E6",
+      "hlink": "#0563C1",
+      "folHlink": "#954F72"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Calibri Light"
+      },
+      "minorFont": {
+        "latinTypeface": "Calibri"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "Calibri",
+      "Calibri Light",
+      "Georgia"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "DEFAULT",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l8rat03a",
+      "id": "2",
+      "name": "TextBox 1",
+      "bbox": [
+        59.52,
+        31.68,
+        393.6,
+        22.08
+      ],
+      "geometry": "rect",
+      "text": "E N D - T O - E N D   F L O W",
+      "textPreview": "E N D - T O - E N D   F L O W",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "E N D - T O - E N D   F L O W"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "E N D - T O - E N D   F L O W",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "E N D - T O - E N D   F L O W",
+              "fontSize": 11.33,
+              "typeface": "Arial",
+              "color": "#6E758A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/07yt0vmp",
+      "id": "3",
+      "name": "TextBox 2",
+      "bbox": [
+        59.53,
+        59.53,
+        1187.6,
+        46.07
+      ],
+      "geometry": "rect",
+      "text": "How company policy becomes a payroll result",
+      "textPreview": "How company policy becomes a payroll result",
+      "resolvedFontSize": 21.6,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "autoFitScale": 0.9,
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "How company policy becomes a payroll result"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "How company policy becomes a payroll result",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "How company policy becomes a payroll result",
+              "fontSize": 36,
+              "typeface": "Georgia",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/na9sval0",
+      "id": "4",
+      "name": "TextBox 3",
+      "bbox": [
+        61.44,
+        104.64,
+        768,
+        32.64
+      ],
+      "geometry": "rect",
+      "text": "Use this as the “map” before showing the individual Computational Basis screens and the four policy engines.",
+      "textPreview": "Use this as the “map” before showing the individual Computational Basis screens and the four policy engines.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Use this as the “map” before showing the individual Computational Basis screens and the four policy engines."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Use this as the “map” before showing the individual Computational Basis screens and the four policy engines.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Use this as the “map” before showing the individual Computational Basis screens and the four policy engines.",
+              "fontSize": 14.4,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m90b254v",
+      "id": "5",
+      "name": "Rounded Rectangle 4",
+      "bbox": [
+        59.52,
+        142.08,
+        1156.8,
+        59.52
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#F6F7FC",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9craxk36",
+      "id": "6",
+      "name": "TextBox 5",
+      "bbox": [
+        80.64,
+        155.52,
+        105.6,
+        24
+      ],
+      "geometry": "rect",
+      "text": "SETUP PATH",
+      "textPreview": "SETUP PATH",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SETUP PATH"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SETUP PATH",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SETUP PATH",
+              "fontSize": 10.67,
+              "typeface": "Arial",
+              "color": "#6E758A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8bit4fml",
+      "id": "7",
+      "name": "Rounded Rectangle 6",
+      "bbox": [
+        192,
+        150.72,
+        196.8,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "text": "Company\nConfiguration",
+      "textPreview": "Company | Configuration",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Company"
+          },
+          {
+            "index": 2,
+            "text": "Configuration"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Company\nConfiguration",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Company\nConfiguration",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3e5sj65w",
+      "id": "8",
+      "name": "Connector 7",
+      "bbox": [
+        394.56,
+        170.88,
+        24,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2dwrql4b",
+      "id": "9",
+      "name": "Rounded Rectangle 8",
+      "bbox": [
+        436.8,
+        150.72,
+        192,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "text": "Services\nInformation",
+      "textPreview": "Services | Information",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Services"
+          },
+          {
+            "index": 2,
+            "text": "Information"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Services\nInformation",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Services\nInformation",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/43ad8ve1",
+      "id": "10",
+      "name": "Connector 9",
+      "bbox": [
+        634.56,
+        170.88,
+        24,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/54ju10vm",
+      "id": "11",
+      "name": "Rounded Rectangle 10",
+      "bbox": [
+        676.8,
+        150.72,
+        192,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "text": "Computational\nBasis",
+      "textPreview": "Computational | Basis",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Computational"
+          },
+          {
+            "index": 2,
+            "text": "Basis"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Computational\nBasis",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Computational\nBasis",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#F6F1FC",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ihsv6lwb",
+      "id": "12",
+      "name": "Connector 11",
+      "bbox": [
+        874.56,
+        170.88,
+        24,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j21czqdw",
+      "id": "13",
+      "name": "Rounded Rectangle 12",
+      "bbox": [
+        916.8,
+        150.72,
+        235.2,
+        40.32
+      ],
+      "geometry": "roundRect",
+      "text": "Company Rules +\nPolicy Engines",
+      "textPreview": "Company Rules + | Policy Engines",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Company Rules +"
+          },
+          {
+            "index": 2,
+            "text": "Policy Engines"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Company Rules +\nPolicy Engines",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Company Rules +\nPolicy Engines",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s7udcved",
+      "id": "14",
+      "name": "Connector 13",
+      "bbox": [
+        279.36,
+        340.8,
+        15.36,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d83u50vy",
+      "id": "15",
+      "name": "Connector 14",
+      "bbox": [
+        522.24,
+        340.8,
+        15.36,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q5sva5w7",
+      "id": "16",
+      "name": "Connector 15",
+      "bbox": [
+        765.12,
+        340.8,
+        15.36,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r61c3ads",
+      "id": "17",
+      "name": "Connector 16",
+      "bbox": [
+        1008,
+        340.8,
+        15.36,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8bqt0be9",
+      "id": "18",
+      "name": "Rounded Rectangle 17",
+      "bbox": [
+        59.52,
+        236.16,
+        216,
+        209.28
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9czutgfe",
+      "id": "19",
+      "name": "Rectangle 18",
+      "bbox": [
+        71.04,
+        247.68,
+        192.96,
+        3.36
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pw72h836",
+      "id": "20",
+      "name": "Oval 19",
+      "bbox": [
+        74.88,
+        263.04,
+        32.64,
+        32.64
+      ],
+      "geometry": "ellipse",
+      "text": "1",
+      "textPreview": "1",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1",
+              "fontSize": 13.33,
+              "typeface": "Arial",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ovy1832l",
+      "id": "21",
+      "name": "TextBox 20",
+      "bbox": [
+        113.28,
+        257.28,
+        148.8,
+        43.2
+      ],
+      "geometry": "rect",
+      "text": "Written policy",
+      "textPreview": "Written policy",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Written policy"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Written policy",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Written policy",
+              "fontSize": 15.33,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nupkfyl0",
+      "id": "22",
+      "name": "TextBox 21",
+      "bbox": [
+        76.8,
+        314.88,
+        181.44,
+        118.08
+      ],
+      "geometry": "rect",
+      "text": "Annex B / client policy is captured in business terms.\nExample: protected net pay, retirement formula, final pay components.",
+      "textPreview": "Annex B / client policy is captured in business terms. | Example: protected net pay, retirement formula, final pay components.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Annex B / client policy is"
+          },
+          {
+            "index": 2,
+            "text": "captured in business terms."
+          },
+          {
+            "index": 3,
+            "text": "Example: protected net pay,"
+          },
+          {
+            "index": 4,
+            "text": "retirement formula, final pay"
+          },
+          {
+            "index": 5,
+            "text": "components."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Annex B / client policy is captured in business terms.\nExample: protected net pay, retirement formula, final pay components.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Annex B / client policy is captured in business terms.\nExample: protected net pay, retirement formula, final pay components.",
+              "fontSize": 12.53,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2tgj6tkf",
+      "id": "23",
+      "name": "Rounded Rectangle 22",
+      "bbox": [
+        302.4,
+        236.16,
+        216,
+        209.28
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#F6F1FC",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xkr2ls32",
+      "id": "24",
+      "name": "Rectangle 23",
+      "bbox": [
+        313.92,
+        247.68,
+        192.96,
+        3.36
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#674EA7",
+      "lineWidth": 0
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czi1cn2x",
+      "id": "25",
+      "name": "Oval 24",
+      "bbox": [
+        317.76,
+        263.04,
+        32.64,
+        32.64
+      ],
+      "geometry": "ellipse",
+      "text": "2",
+      "textPreview": "2",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2",
+              "fontSize": 13.33,
+              "typeface": "Arial",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 25,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/by9kjilc",
+      "id": "26",
+      "name": "TextBox 25",
+      "bbox": [
+        356.16,
+        257.28,
+        148.8,
+        43.2
+      ],
+      "geometry": "rect",
+      "text": "Governed code",
+      "textPreview": "Governed code",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Governed code"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Governed code",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Governed code",
+              "fontSize": 15.33,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 26,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/axgjadkr",
+      "id": "27",
+      "name": "TextBox 26",
+      "bbox": [
+        319.68,
+        314.88,
+        181.44,
+        118.08
+      ],
+      "geometry": "rect",
+      "text": "Computational Basis stores the approved formula/template.\nCodes are reusable, versioned, and not hand-typed per rule.",
+      "textPreview": "Computational Basis stores the approved formula/template. | Codes are reusable, versioned, and not hand-typed per rule.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Computational Basis stores"
+          },
+          {
+            "index": 2,
+            "text": "the approved"
+          },
+          {
+            "index": 3,
+            "text": "formula/template."
+          },
+          {
+            "index": 4,
+            "text": "Codes are reusable,"
+          },
+          {
+            "index": 5,
+            "text": "versioned, and not"
+          },
+          {
+            "index": 6,
+            "text": "hand-typed per rule."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Computational Basis stores the approved formula/template.\nCodes are reusable, versioned, and not hand-typed per rule.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Computational Basis stores the approved formula/template.\nCodes are reusable, versioned, and not hand-typed per rule.",
+              "fontSize": 12.53,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 27,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lor2ps3e",
+      "id": "28",
+      "name": "Rounded Rectangle 27",
+      "bbox": [
+        545.28,
+        236.16,
+        216,
+        209.28
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#EBF9F3",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 28,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kni1gn2t",
+      "id": "29",
+      "name": "Rectangle 28",
+      "bbox": [
+        556.8,
+        247.68,
+        192.96,
+        3.36
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#257E5E",
+      "lineWidth": 0
+    },
+    {
+      "order": 29,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/i9czap0b",
+      "id": "30",
+      "name": "Oval 29",
+      "bbox": [
+        560.64,
+        263.04,
+        32.64,
+        32.64
+      ],
+      "geometry": "ellipse",
+      "text": "3",
+      "textPreview": "3",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3",
+              "fontSize": 13.33,
+              "typeface": "Arial",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 30,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ulgju1w",
+      "id": "31",
+      "name": "TextBox 30",
+      "bbox": [
+        599.04,
+        257.28,
+        148.8,
+        43.2
+      ],
+      "geometry": "rect",
+      "text": "Company Rule",
+      "textPreview": "Company Rule",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Company Rule"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Company Rule",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Company Rule",
+              "fontSize": 15.33,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 31,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4vuhczih",
+      "id": "32",
+      "name": "TextBox 31",
+      "bbox": [
+        562.56,
+        314.88,
+        181.44,
+        118.08
+      ],
+      "geometry": "rect",
+      "text": "Apply New Rule from the Company Rules register.\nChoose who it applies to, then the code, then company/group values.",
+      "textPreview": "Apply New Rule from the Company Rules register. | Choose who it applies to, then the code, then company/group values.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Apply New Rule from the"
+          },
+          {
+            "index": 2,
+            "text": "Company Rules register."
+          },
+          {
+            "index": 3,
+            "text": "Choose who it applies to, then"
+          },
+          {
+            "index": 4,
+            "text": "the code, then"
+          },
+          {
+            "index": 5,
+            "text": "company/group values."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Apply New Rule from the Company Rules register.\nChoose who it applies to, then the code, then company/group values.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Apply New Rule from the Company Rules register.\nChoose who it applies to, then the code, then company/group values.",
+              "fontSize": 12.53,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 32,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5w3yl4j2",
+      "id": "33",
+      "name": "Rounded Rectangle 32",
+      "bbox": [
+        788.16,
+        236.16,
+        216,
+        209.28
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 33,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qxczep07",
+      "id": "34",
+      "name": "Rectangle 33",
+      "bbox": [
+        799.68,
+        247.68,
+        192.96,
+        3.36
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#257E5E",
+      "lineWidth": 0
+    },
+    {
+      "order": 34,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rylgnu1s",
+      "id": "35",
+      "name": "Oval 34",
+      "bbox": [
+        803.52,
+        263.04,
+        32.64,
+        32.64
+      ],
+      "geometry": "ellipse",
+      "text": "4",
+      "textPreview": "4",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4",
+              "fontSize": 13.33,
+              "typeface": "Arial",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 35,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/szehgzid",
+      "id": "36",
+      "name": "TextBox 35",
+      "bbox": [
+        841.92,
+        257.28,
+        148.8,
+        43.2
+      ],
+      "geometry": "rect",
+      "text": "Policy engines",
+      "textPreview": "Policy engines",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Policy engines"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Policy engines",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Policy engines",
+              "fontSize": 15.33,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 36,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d0nyp4jy",
+      "id": "37",
+      "name": "TextBox 36",
+      "bbox": [
+        805.44,
+        314.88,
+        181.44,
+        118.08
+      ],
+      "geometry": "rect",
+      "text": "The selected engine runs the active rule during payroll.\nFormula stays controlled; values differ by company or group.",
+      "textPreview": "The selected engine runs the active rule during payroll. | Formula stays controlled; values differ by company or group.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The selected engine runs the"
+          },
+          {
+            "index": 2,
+            "text": "active rule during payroll."
+          },
+          {
+            "index": 3,
+            "text": "Formula stays controlled;"
+          },
+          {
+            "index": 4,
+            "text": "values differ by company or"
+          },
+          {
+            "index": 5,
+            "text": "group."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The selected engine runs the active rule during payroll.\nFormula stays controlled; values differ by company or group.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The selected engine runs the active rule during payroll.\nFormula stays controlled; values differ by company or group.",
+              "fontSize": 12.53,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 37,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1wzi90j",
+      "id": "38",
+      "name": "Rounded Rectangle 37",
+      "bbox": [
+        809.28,
+        389.76,
+        80.64,
+        24
+      ],
+      "geometry": "roundRect",
+      "text": "THP",
+      "textPreview": "THP",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "THP"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "THP",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "THP",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#C1E0D1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 38,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/f25gre14",
+      "id": "39",
+      "name": "Rounded Rectangle 38",
+      "bbox": [
+        893.76,
+        389.76,
+        80.64,
+        24
+      ],
+      "geometry": "roundRect",
+      "text": "RET",
+      "textPreview": "RET",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "RET"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "RET",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "RET",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#C1E0D1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 39,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ni1gvet8",
+      "id": "40",
+      "name": "Rounded Rectangle 39",
+      "bbox": [
+        809.28,
+        418.56,
+        80.64,
+        24
+      ],
+      "geometry": "roundRect",
+      "text": "FIN",
+      "textPreview": "FIN",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "FIN"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "FIN",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "FIN",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#C1E0D1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 40,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mhsz29sn",
+      "id": "41",
+      "name": "Rounded Rectangle 40",
+      "bbox": [
+        893.76,
+        418.56,
+        80.64,
+        24
+      ],
+      "geometry": "roundRect",
+      "text": "GUP",
+      "textPreview": "GUP",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GUP"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GUP",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GUP",
+              "fontSize": 10,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#C1E0D1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 41,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9kjyx4be",
+      "id": "42",
+      "name": "Rounded Rectangle 41",
+      "bbox": [
+        1031.04,
+        236.16,
+        216,
+        209.28
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 42,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ojah4jat",
+      "id": "43",
+      "name": "Rectangle 42",
+      "bbox": [
+        1042.56,
+        247.68,
+        192.96,
+        3.36
+      ],
+      "geometry": "rect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 43,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bmlgzet4",
+      "id": "44",
+      "name": "Oval 43",
+      "bbox": [
+        1046.4,
+        263.04,
+        32.64,
+        32.64
+      ],
+      "geometry": "ellipse",
+      "text": "5",
+      "textPreview": "5",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "5"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "5",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "5",
+              "fontSize": 13.33,
+              "typeface": "Arial",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#1C235B",
+      "lineWidth": 0
+    },
+    {
+      "order": 44,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/alcz69sj",
+      "id": "45",
+      "name": "TextBox 44",
+      "bbox": [
+        1084.8,
+        257.28,
+        148.8,
+        43.2
+      ],
+      "geometry": "rect",
+      "text": "Payroll output",
+      "textPreview": "Payroll output",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Payroll output"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Payroll output",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Payroll output",
+              "fontSize": 15.33,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 45,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xo3y1ora",
+      "id": "46",
+      "name": "TextBox 45",
+      "bbox": [
+        1048.32,
+        314.88,
+        181.44,
+        118.08
+      ],
+      "geometry": "rect",
+      "text": "Result feeds payroll calculation, deduction ledger, deferrals, carry-forward, and payslip tags.\nTraceability shows what rule/code produced the result.",
+      "textPreview": "Result feeds payroll calculation, deduction ledger, deferrals, carry-forward, and payslip tags. | Traceability shows what rule/code produ...",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Result feeds payroll"
+          },
+          {
+            "index": 2,
+            "text": "calculation, deduction ledger,"
+          },
+          {
+            "index": 3,
+            "text": "deferrals, carry-forward, and"
+          },
+          {
+            "index": 4,
+            "text": "payslip tags."
+          },
+          {
+            "index": 5,
+            "text": "Traceability shows what"
+          },
+          {
+            "index": 6,
+            "text": "rule/code produced the result."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Result feeds payroll calculation, deduction ledger, deferrals, carry-forward, and payslip tags.\nTraceability shows what rule/code produced the result.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Result feeds payroll calculation, deduction ledger, deferrals, carry-forward, and payslip tags.\nTraceability shows what rule/code produced the result.",
+              "fontSize": 12.53,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 46,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wnuh8jap",
+      "id": "47",
+      "name": "Rounded Rectangle 46",
+      "bbox": [
+        59.52,
+        472.32,
+        1156.8,
+        59.52
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FBFCFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 47,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/rqhgnut0",
+      "id": "48",
+      "name": "TextBox 47",
+      "bbox": [
+        80.64,
+        485.76,
+        120,
+        24
+      ],
+      "geometry": "rect",
+      "text": "CREATE RULE",
+      "textPreview": "CREATE RULE",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "CREATE RULE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "CREATE RULE",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "CREATE RULE",
+              "fontSize": 10.67,
+              "typeface": "Arial",
+              "color": "#6E758A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 48,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qp8fupsf",
+      "id": "49",
+      "name": "Rounded Rectangle 48",
+      "bbox": [
+        196.8,
+        480,
+        187.2,
+        32.64
+      ],
+      "geometry": "roundRect",
+      "text": "1  Employee group",
+      "textPreview": "1  Employee group",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1  Employee group"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1  Employee group",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1  Employee group",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 49,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gv6d4vqd",
+      "id": "50",
+      "name": "Connector 49",
+      "bbox": [
+        390.72,
+        496.32,
+        26.88,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 50,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hwfexgry",
+      "id": "51",
+      "name": "Rounded Rectangle 50",
+      "bbox": [
+        424.32,
+        480,
+        192,
+        32.64
+      ],
+      "geometry": "roundRect",
+      "text": "2  Approved code",
+      "textPreview": "2  Approved code",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "2  Approved code"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "2  Approved code",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "2  Approved code",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 51,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ut4v2l87",
+      "id": "52",
+      "name": "Connector 51",
+      "bbox": [
+        623.04,
+        496.32,
+        26.88,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 52,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vuxwvq9s",
+      "id": "53",
+      "name": "Rounded Rectangle 52",
+      "bbox": [
+        657.6,
+        480,
+        211.2,
+        32.64
+      ],
+      "geometry": "roundRect",
+      "text": "3  Company values",
+      "textPreview": "3  Company values",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "3  Company values"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "3  Company values",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "3  Company values",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 53,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8rmd0bq1",
+      "id": "54",
+      "name": "Connector 53",
+      "bbox": [
+        875.52,
+        496.32,
+        26.88,
+        0
+      ],
+      "geometry": "line",
+      "lineColor": "#6E758A",
+      "lineWidth": 1.87
+    },
+    {
+      "order": 54,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/tsvutgrm",
+      "id": "55",
+      "name": "Rounded Rectangle 54",
+      "bbox": [
+        910.08,
+        480,
+        232.32,
+        32.64
+      ],
+      "geometry": "roundRect",
+      "text": "4  Enable + compute",
+      "textPreview": "4  Enable + compute",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 0.96,
+          "right": 2.88,
+          "bottom": 0.96,
+          "left": 2.88
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "4  Enable + compute"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "4  Enable + compute",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "4  Enable + compute",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#257E5E",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#EBF9F3",
+      "lineColor": "#C1E0D1",
+      "lineWidth": 1.07
+    },
+    {
+      "order": 55,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/6p4vy18b",
+      "id": "56",
+      "name": "TextBox 55",
+      "bbox": [
+        59.52,
+        554.88,
+        192,
+        24
+      ],
+      "geometry": "rect",
+      "text": "RULE GUARDRAILS",
+      "textPreview": "RULE GUARDRAILS",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "RULE GUARDRAILS"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "RULE GUARDRAILS",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "RULE GUARDRAILS",
+              "fontSize": 11.33,
+              "typeface": "Arial",
+              "color": "#6E758A",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 56,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7qdcr69g",
+      "id": "57",
+      "name": "Rounded Rectangle 56",
+      "bbox": [
+        59.52,
+        581.76,
+        278.4,
+        74.88
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 57,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/cnqdcfql",
+      "id": "58",
+      "name": "TextBox 57",
+      "bbox": [
+        72.96,
+        591.36,
+        251.52,
+        21.12
+      ],
+      "geometry": "rect",
+      "text": "Only approved codes",
+      "textPreview": "Only approved codes",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Only approved codes"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Only approved codes",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Only approved codes",
+              "fontSize": 12.27,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 58,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/doze50r6",
+      "id": "59",
+      "name": "TextBox 58",
+      "bbox": [
+        72.96,
+        615.36,
+        251.52,
+        30.72
+      ],
+      "geometry": "rect",
+      "text": "List is filtered by the selected sub-category.",
+      "textPreview": "List is filtered by the selected sub-category.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "List is filtered by the selected sub-category."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "List is filtered by the selected sub-category.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "List is filtered by the selected sub-category.",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 59,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/18bm9gvy",
+      "id": "60",
+      "name": "Rounded Rectangle 59",
+      "bbox": [
+        353.28,
+        581.76,
+        278.4,
+        74.88
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 60,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/07250bed",
+      "id": "61",
+      "name": "TextBox 60",
+      "bbox": [
+        366.72,
+        591.36,
+        251.52,
+        21.12
+      ],
+      "geometry": "rect",
+      "text": "Formula locked",
+      "textPreview": "Formula locked",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Formula locked"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Formula locked",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Formula locked",
+              "fontSize": 12.27,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 61,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/z6t476ds",
+      "id": "62",
+      "name": "TextBox 61",
+      "bbox": [
+        366.72,
+        615.36,
+        251.52,
+        30.72
+      ],
+      "geometry": "rect",
+      "text": "Standard codes stay controlled; rule values vary.",
+      "textPreview": "Standard codes stay controlled; rule values vary.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Standard codes stay controlled; rule values vary."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Standard codes stay controlled; rule values vary.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Standard codes stay controlled; rule values vary.",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 62,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e5k3y1w7",
+      "id": "63",
+      "name": "Rounded Rectangle 62",
+      "bbox": [
+        647.04,
+        581.76,
+        278.4,
+        74.88
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 63,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d4bm5wvm",
+      "id": "64",
+      "name": "TextBox 63",
+      "bbox": [
+        660.48,
+        591.36,
+        251.52,
+        21.12
+      ],
+      "geometry": "rect",
+      "text": "Register cannot disagree",
+      "textPreview": "Register cannot disagree",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Register cannot disagree"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Register cannot disagree",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Register cannot disagree",
+              "fontSize": 12.27,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 64,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s32lwreh",
+      "id": "65",
+      "name": "TextBox 64",
+      "bbox": [
+        660.48,
+        615.36,
+        251.52,
+        30.72
+      ],
+      "geometry": "rect",
+      "text": "Engine-owned rule rows are edited in the engine.",
+      "textPreview": "Engine-owned rule rows are edited in the engine.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Engine-owned rule rows are edited in the engine."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Engine-owned rule rows are edited in the engine.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Engine-owned rule rows are edited in the engine.",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 65,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r2943mxw",
+      "id": "66",
+      "name": "Rounded Rectangle 65",
+      "bbox": [
+        940.8,
+        581.76,
+        278.4,
+        74.88
+      ],
+      "geometry": "roundRect",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": ""
+          }
+        ]
+      },
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.33
+    },
+    {
+      "order": 66,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q103u1wb",
+      "id": "67",
+      "name": "TextBox 66",
+      "bbox": [
+        954.24,
+        591.36,
+        251.52,
+        21.12
+      ],
+      "geometry": "rect",
+      "text": "References are versioned",
+      "textPreview": "References are versioned",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "References are versioned"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "References are versioned",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "References are versioned",
+              "fontSize": 12.27,
+              "typeface": "Arial",
+              "color": "#1C235B",
+              "bold": true
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 67,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/50rm1wfq",
+      "id": "68",
+      "name": "TextBox 67",
+      "bbox": [
+        954.24,
+        615.36,
+        251.52,
+        30.72
+      ],
+      "geometry": "rect",
+      "text": "Rates, ceilings and brackets live in tables.",
+      "textPreview": "Rates, ceilings and brackets live in tables.",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "tx1",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "wrap": "square",
+        "autoFit": "shrinkText",
+        "insets": {
+          "top": 2.88,
+          "right": 5.76,
+          "bottom": 2.88,
+          "left": 5.76
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Rates, ceilings and brackets live in tables."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Rates, ceilings and brackets live in tables.",
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Rates, ceilings and brackets live in tables.",
+              "fontSize": 10.93,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 68,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4zilsre5",
+      "id": "69",
+      "name": "Rounded Rectangle 68",
+      "bbox": [
+        777.6,
+        673.92,
+        438.72,
+        30.72
+      ],
+      "geometry": "roundRect",
+      "text": "Source · Existing deck pages 3–10: orientation, Company Rules, and policy-engine library",
+      "textPreview": "Source · Existing deck pages 3–10: orientation, Company Rules, and policy-engine library",
+      "resolvedFontSize": 24,
+      "resolvedTextStyle": {
+        "anchor": 2,
+        "fontSize": 24,
+        "typeface": "Calibri",
+        "color": "lt1",
+        "alignment": "left",
+        "verticalAlignment": "middle",
+        "insets": {
+          "top": 4.8,
+          "right": 9.6,
+          "bottom": 4.8,
+          "left": 9.6
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Source · Existing deck pages 3–10: orientation, Company Rules, and policy-engine library"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Source · Existing deck pages 3–10: orientation, Company Rules, and policy-engine library",
+          "resolvedTextStyle": {
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Source · Existing deck pages 3–10: orientation, Company Rules, and policy-engine library",
+              "fontSize": 9.6,
+              "typeface": "Arial",
+              "color": "#444B60"
+            }
+          ],
+          "bulletCharacter": "",
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "#F6F7FC",
+      "lineColor": "#E1E4EE",
+      "lineWidth": 1.07
+    }
+  ],
+  "composeRuns": []
+}
