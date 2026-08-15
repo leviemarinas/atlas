@@ -15,5 +15,8 @@ export default defineConfig({
       clientFiles: ["./src/main.jsx"],
     },
   },
+  preview: {
+    allowedHosts: ["atlas-mockup.onrender.com"],
+  },
   plugins: [react()],
 });
