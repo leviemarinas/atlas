@@ -40,8 +40,30 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Counted nouns go through `plural()` in `src/textFormat.js` so a single row never reads "1 tickets".
 - Two registers must not share a label. The Reference Table module owns "reference tables"; the REF-0xx register inside Computational Basis is "formula reference sources". The code library's engine-family tally is "Engine families", distinct from the four interactive "Policy engines".
 - Several policy codes may govern one engine — a company has one Take-Home Pay policy, but THP-001 owns its protected minimum and THP-002 its caps. Give each such code an entry in `codeParameterScopes` so it advertises only the parameters it governs; codes on one engine must never look like duplicates of each other.
-- A scope must be provable on screen: opening a code from the library highlights exactly the fields it governs, and the highlighted count must equal the library's Parameters column and the number of fields the Company Rules wizard asks for. `scopeKey` on `FieldLabel`/`NumberField`/`Toggle` carries the policy key — do not reuse `helpKey`, which is a help-text id and does not always match (`protectedBase`→`base`, `conflictPriority`→`priorityChoice`, `serviceRounding`→`rounding`, `taxationRule`→`taxExemption`).
+- A scope must be provable on screen: opening a code from the library highlights exactly the fields it governs, and the highlighted count must equal the library's Parameters column and the number of fields the Company Rules wizard asks for. `scopeKey` on `FieldLabel`/`NumberField`/`Toggle`/`SourceMultiSelect` carries the policy key — do not reuse `helpKey`, which is a help-text id and does not always match (`protectedBase`→`base`, `conflictPriority`→`priorityChoice`, `serviceRounding`→`rounding`, `taxationRule`→`taxExemption`).
+- A control that owns several parameters proves them individually: `CheckList` takes a `keys` map from label to parameter key, and a wrapper can call `useFieldScope` directly. One checkbox per governed parameter, never one field standing in for six.
 - The scope split between sibling codes is a product decision, not something the BRD or Annexes specify. It is currently inferred from the code names and the engine rows in `getEngineRows`; confirm it with the business owner before treating it as final.
+
+## Policy engine applicability and transactions
+
+- A policy engine is never assumed to be company-wide. Every engine renders `ApplicabilityPanel` and stores an `assignment` (`All Employees` / `Employee Group` / `Department` / `Specific Employees`), and the employee picker carries employee code, name, group and department.
+- `employeeDirectory` in `src/PolicyApplicability.jsx` is the single roster. The specific-employee picker, the retirement transaction and the final-pay transaction all read it — do not add a second sample roster to an engine.
+- Configuration and transaction stay separate. The engine defines the method, parameters, applicability and hierarchy; the simulator's transaction panel selects employees, chooses the transaction method (engine calculation, manual, upload, override) and triggers the computation. A manual or overridden amount stays visibly marked against the engine-calculated value.
+- A bulk transaction evaluates each employee individually against eligibility, taxability and their own masterfile data. Never present one shared result for a selected batch.
+
+## Deferred and staggered deductions
+
+- Carrying an outstanding amount forward and staggering its recovery are two different decisions. `recoveryPlan` in `src/DeferredDeductions.jsx` only staggers above the configured `staggerThreshold`; below it the balance is recovered in full on the next payroll.
+- A deferred item keeps both its original due date and its revised due date, plus approval status, employee authorization status and an audit trail. Outstanding amounts never disappear.
+- The recovery panel covers everything still owed — items deferred this cutoff *and* balances carried in from an earlier one.
+
+## Retirement and final pay
+
+- Retirement's statutory basis stays on monthly basic pay. Only the company plan may widen the salary basis, and it does so by selecting earnings that Earning Configuration already owns — either every earning classified `Retirement` or an explicit selection. Retirement never redefines an earning.
+- Rehires and breaks in service are a configured rule (`serviceHistoryRule`), not an assumption. Prior service and the break itself are credited only when the rule says so.
+- Reason for Leaving drives computation, not description. `separationRules` maps each reason to its formula, months-per-year, minimum, service rounding and tax treatment; Final Pay resolves each employee's own row, so one bulk run can apply several formulas.
+- Final Pay does not inherit the regular payroll deduction hierarchy unless `hierarchySource` says so, and statutory contributions can be settled in configuration or deferred to the payroll transaction because an earlier payroll may already have collected the month.
+- Final Pay consumes the Retirement engine's result for the same employee rather than taking a re-entered amount. Leave conversion eligibility and caps stay in Leave Configuration.
 
 ## Payroll calculation rules
 

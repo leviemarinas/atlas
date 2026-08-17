@@ -71,6 +71,10 @@ const moduleDefinitions = {
     defaults: { type: 'Normal', employeeGroup: 'Job Level', subEmployeeGroup: 'L2, L3, L4, Regular', frequency: 'Semi-monthly', status: 'Active', cappedEarning: 'Yes', adjustIfAbsent: 'Yes', minimumAbsent: '3', autoCompute: 'Yes', computationBasis: 'Current Variable Allowance', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'Yes', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisThreshold: '0', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance'], ['47218662', 'Night Differential', 'Normal'],
+      // Tagged for retirement so the Retirement engine can resolve its salary
+      // basis from Earning Configuration instead of redefining the earnings.
+      ['47218663', 'Transportation Allowance', 'Allowance', { classification: 'Retirement', taxability: 'Taxable' }],
+      ['47218664', 'Communication Allowance', 'Allowance', { classification: 'Retirement', taxability: 'Taxable' }],
     ],
   },
   bonuses: {

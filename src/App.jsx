@@ -53,6 +53,7 @@ import { StandardComputationAdmin } from './StandardComputationAdmin';
 import { RoleSwitch } from './RoleContext';
 import { BrandRail, Topbar } from './AppChrome';
 import { readPolicies, readPolicyCodes, savePolicyCode } from './PolicyComputations';
+import { describeAssignment } from './PolicyApplicability';
 import { completeParameterSchema, defaultParameterValues, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
 import { getPolicyLinkage } from './policyGovernance';
 import { companyRuleTaxonomy, requirementRuleSeeds } from './requirementsCatalog';
@@ -476,10 +477,20 @@ function DerivedPolicies({ onOpenPolicies }) {
     ['Take-Home Pay', 'Conflict priority when the loan cap and the threshold disagree', takeHome.priorityChoice],
     ['Deduction Hierarchy', 'Adjustment order for controllable loans and deductions', 'Reference table REF-011'],
     ['Deferred Deductions', 'Carry forward with outstanding amount, schedule and balance', takeHome.carryForward ? 'Auto carry-forward' : 'Off'],
+    ['Deferred Deductions', 'Recovery of an outstanding amount above the staggering threshold', takeHome.recovery.method],
+    ['Deferred Deductions', 'Approval and employee authorization before staggering', takeHome.recovery.requiresApproval ? `${takeHome.recovery.approvalRole}; ${takeHome.recovery.authorization.toLowerCase()}` : 'Not required'],
+    ['Take-Home Pay', 'Applicability', describeAssignment(takeHome.assignment)],
+    ['Retirement Pay', 'Applicability', describeAssignment(retirement.assignment)],
     ['Retirement Pay', 'Eligibility', `Age ${retirement.minimumAge}–${retirement.compulsoryAge}; ${retirement.minimumServiceYears} years service`],
     ['Retirement Pay', 'Plan basis', retirement.planType],
+    ['Retirement Pay', 'Salary basis', retirement.salaryBasisSource],
+    ['Retirement Pay', 'Rehire and break in service', retirement.serviceHistoryRule],
     ['Retirement Pay', 'Service rounding', retirement.rounding],
+    ['Final Pay', 'Applicability', describeAssignment(finalPay.assignment)],
     ['Final Pay', 'Retirement pay forms part of final pay', finalPay.components['Retirement pay'] ? 'Included' : 'Excluded'],
+    ['Final Pay', 'Separation pay by reason for leaving', `${finalPay.separationRules.filter(rule => rule.formula !== 'Not applicable').length} of ${finalPay.separationRules.length} reasons pay separation`],
+    ['Final Pay', 'Applicable deduction hierarchy', finalPay.hierarchySource],
+    ['Final Pay', 'Statutory contribution treatment', finalPay.statutoryRule],
     ['Final Pay', 'Net pay rule when negative', finalPay.negativeNetPayRule],
   ];
   return (
@@ -503,7 +514,11 @@ function getEngineRows() {
     { id: 'engine-thp-2', category: 'Pay and Earnings', subcategory: 'Take-Home Pay', rule: 'Maximum controllable deductions after mandatory statutory items', parameter: 'THP-002', enabled: takeHome.enabled, engineOwned: true, setting: takeHome.priorityChoice },
     { id: 'engine-ret-1', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Statutory retirement eligibility and benefit basis', parameter: 'RET-001', enabled: retirement.enabled, engineOwned: true, setting: `Age ${retirement.minimumAge}–${retirement.compulsoryAge}` },
     { id: 'engine-ret-2', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'More beneficial statutory or company retirement plan', parameter: 'RET-002', enabled: retirement.enabled, engineOwned: true, setting: retirement.planType },
-    { id: 'engine-fin-1', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Net final pay from enabled components and authorized offsets', parameter: 'FIN-001', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.negativeNetPayRule },
+    { id: 'engine-def-1', category: 'Loans & Deductions', subcategory: 'Deferred Deductions', rule: 'Carry-forward and staggered recovery of outstanding amounts', parameter: 'DEF-001', enabled: takeHome.carryForward, engineOwned: true, setting: takeHome.recovery.method },
+    { id: 'engine-ret-3', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Retirement salary basis and service history', parameter: 'RET-003', enabled: retirement.enabled, engineOwned: true, setting: retirement.salaryBasisSource },
+    { id: 'engine-fin-1', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Net final pay from enabled components, selected earnings and authorized offsets', parameter: 'FIN-001', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.negativeNetPayRule },
+    { id: 'engine-fin-2', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Separation pay resolved from the employee reason for leaving', parameter: 'FIN-002', enabled: finalPay.enabled && finalPay.components['Separation pay'], engineOwned: true, setting: `${finalPay.separationRules.filter(rule => rule.formula !== 'Not applicable').length} of ${finalPay.separationRules.length} reasons pay separation` },
+    { id: 'engine-fin-3', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Final pay deduction hierarchy and statutory contribution treatment', parameter: 'FIN-003', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.hierarchySource },
   ];
 }
 
