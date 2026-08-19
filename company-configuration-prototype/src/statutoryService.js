@@ -3,17 +3,33 @@
  *
  * Master requirements §7.2: payroll selects the applicable statutory table
  * version by effective date, and §7.4: rates, ceilings and thresholds are
- * versioned data — never constants inside calculation code. Every engine that
- * needs a bracket or a ceiling must come through here rather than embedding
- * its own copy of the numbers.
+ * versioned data — never constants inside calculation code. The numbers and the
+ * bracket arithmetic live in `statutorySchedules.js`; this module is the browser
+ * adapter that resolves them out of the company store and answers the "is this
+ * version locked?" question the register asks.
  */
 
-export const STATUTORY_STORAGE_KEY = 'atlas-statutory-tables-v3';
+import {
+  bracketsForFrequency,
+  deMinimisRules,
+  effectiveVersionIn,
+  graduatedTax,
+  rateContribution,
+  seedStatutoryData,
+  splitDeMinimis,
+  sssContribution,
+} from './statutorySchedules.js';
 
-const number = value => Number(value || 0);
+// v4: the seeded tables are the real SSS / PhilHealth / Pag-IBIG / BIR
+// schedules rather than three sample brackets, so a v3 payload cannot satisfy
+// a payroll computation and must not be carried forward.
+export const STATUTORY_STORAGE_KEY = 'atlas-statutory-tables-v4';
 
 export function readStatutoryData() {
-  try { return JSON.parse(localStorage.getItem(STATUTORY_STORAGE_KEY)) || {}; } catch { return {}; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(STATUTORY_STORAGE_KEY));
+    return saved && Object.keys(saved).length ? saved : seedStatutoryData();
+  } catch { return seedStatutoryData(); }
 }
 
 /**
@@ -22,10 +38,12 @@ export function readStatutoryData() {
  * when the run predates every published table.
  */
 export function effectiveVersion(agency, asOf = new Date().toISOString().slice(0, 10), data = readStatutoryData()) {
-  const versions = (data[agency] || []).filter(item => item.status === 'Active');
-  if (!versions.length) return null;
-  const sorted = [...versions].sort((a, b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)));
-  return sorted.find(item => String(item.effectiveDate) <= String(asOf)) || sorted[sorted.length - 1];
+  return effectiveVersionIn(data, agency, asOf);
+}
+
+/** Every agency's effective version for one date, as the engine consumes them. */
+export function effectiveStatutorySet(asOf, data = readStatutoryData()) {
+  return Object.fromEntries(Object.keys(data).map(agency => [agency, effectiveVersionIn(data, agency, asOf)]));
 }
 
 /**
@@ -38,18 +56,30 @@ export function effectiveVersion(agency, asOf = new Date().toISOString().slice(0
  * editable again.
  */
 export function readPayrollTransactions() {
-  // The transactions register is versioned (`atlas-operational-transactions-v${n}`,
-  // bumped in OperationalWorkspaces.jsx whenever its field set changes) and a
-  // migration does not carry old rows forward under the new key. Reading only
-  // `-v1` meant this silently saw zero transactions the moment the register
-  // moved to v2, which made every statutory table report "not yet used" even
-  // after payroll had posted a run against it — breaking the §7.1 lock this
-  // file exists to enforce. Check the current version first, then fall back.
+  // Two registers can consume a statutory version: the generic operational
+  // transactions register (versioned `atlas-operational-transactions-v${n}`,
+  // bumped whenever its field set changes) and Payroll Processing's own run
+  // store. Reading only one of them silently reports "not yet used" for runs
+  // recorded by the other and breaks the §7.1 lock this file exists to enforce.
+  const rows = [];
+  const push = (key, map) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(key));
+      if (Array.isArray(saved)) saved.forEach(row => rows.push(map(row)));
+    } catch { /* an unreadable store contributes no rows */ }
+  };
+  push('atlas-operational-transactions-v2', row => row);
+  if (!rows.length) push('atlas-operational-transactions-v1', row => row);
+  // Payroll Processing keys its runs per company, so every company's store counts.
   try {
-    return JSON.parse(localStorage.getItem('atlas-operational-transactions-v2'))
-      || JSON.parse(localStorage.getItem('atlas-operational-transactions-v1'))
-      || [];
-  } catch { return []; }
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith('atlas-payroll-runs-v1')) continue;
+      const saved = JSON.parse(localStorage.getItem(key));
+      (Array.isArray(saved) ? saved : []).forEach(run => rows.push({ code: run.transactionNumber, status: run.status, payoutDate: run.payoutDate }));
+    }
+  } catch { /* an unreadable store contributes no rows */ }
+  return rows;
 }
 
 export function versionUsage(agency, version, data = readStatutoryData()) {
@@ -63,36 +93,39 @@ export function versionUsage(agency, version, data = readStatutoryData()) {
 
 /** Graduated withholding brackets for a payroll frequency, low to high. */
 export function taxBrackets(frequency = 'Monthly', asOf) {
-  const version = effectiveVersion('tax', asOf);
-  const rows = (version?.rows || []).filter(row => !row.frequency || row.frequency === frequency);
-  return rows
-    .map(row => ({ minimum: number(row.minimum), maximum: number(row.maximum), fixedTax: number(row.fixedTax), excessRate: number(row.excessRate) }))
-    .sort((a, b) => a.minimum - b.minimum);
+  return bracketsForFrequency(effectiveVersion('tax', asOf), frequency);
 }
 
 /**
- * Graduated withholding tax on a taxable amount.
- *
- * Follows the bracket rule described in §8.3: fixed amount for the bracket plus
- * the configured percentage on the excess over the bracket minimum. Amounts
- * above the highest published bracket continue at that bracket's excess rate.
+ * Graduated withholding tax on a taxable amount, from the table in force.
+ * Follows the bracket rule in §8.3: the bracket's fixed amount plus the
+ * configured percentage on the excess over the bracket minimum.
  */
 export function withholdingTax(taxable, frequency = 'Monthly', asOf) {
-  const amount = number(taxable);
-  const brackets = taxBrackets(frequency, asOf);
-  if (amount <= 0 || !brackets.length) return { tax: 0, bracket: null, brackets };
-  const bracket = [...brackets].reverse().find(row => amount >= row.minimum) || brackets[0];
-  const tax = Math.max(0, bracket.fixedTax + (amount - bracket.minimum) * bracket.excessRate / 100);
-  return { tax, bracket, brackets };
+  return graduatedTax(effectiveVersion('tax', asOf), taxable, frequency);
+}
+
+/** Annualised withholding tax, used by final pay and the year-end run. */
+export function annualTax(taxable, asOf) {
+  return graduatedTax(effectiveVersion('annualTax', asOf), taxable, 'Annual');
+}
+
+/** SSS employee/employer shares, split into regular fund and WISP. */
+export function sssShares(monthlyCompensation, asOf) {
+  return sssContribution(effectiveVersion('sss', asOf), monthlyCompensation);
+}
+
+export function philHealthShares(monthlyCompensation, asOf) {
+  return rateContribution(effectiveVersion('philhealth', asOf), monthlyCompensation);
+}
+
+export function pagIbigShares(monthlyCompensation, asOf) {
+  return rateContribution(effectiveVersion('pagibig', asOf), monthlyCompensation);
 }
 
 /** De Minimis ceilings keyed by benefit name, from the effective version. */
 export function deMinimisCeilings(asOf) {
-  const version = effectiveVersion('deMinimis', asOf);
-  return (version?.rows || []).map(row => ({
-    code: row.benefitCode, name: row.benefitName, ceiling: number(row.ceiling),
-    frequency: row.frequency || 'Annual', excessTreatment: row.excessTreatment || 'Reclassify as Taxable',
-  }));
+  return deMinimisRules(effectiveVersion('deMinimis', asOf));
 }
 
 /**
@@ -101,10 +134,5 @@ export function deMinimisCeilings(asOf) {
  * taxable unless the benefit is configured otherwise.
  */
 export function deMinimisSplit(benefitName, amount, usedToDate = 0, asOf) {
-  const rule = deMinimisCeilings(asOf).find(row => row.name === benefitName || row.code === benefitName);
-  const value = number(amount);
-  if (!rule) return { nonTaxable: value, taxable: 0, ceiling: null, remaining: null, rule: null };
-  const remaining = Math.max(0, rule.ceiling - number(usedToDate));
-  const nonTaxable = Math.min(value, remaining);
-  return { nonTaxable, taxable: Math.max(0, value - nonTaxable), ceiling: rule.ceiling, remaining, rule };
+  return splitDeMinimis(effectiveVersion('deMinimis', asOf), benefitName, amount, usedToDate);
 }

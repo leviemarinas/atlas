@@ -3,6 +3,14 @@
  * - Loan Inquiry (List & View Loan Details with Deduction Matrix)
  * - Leave Balances & Ledger (Admin Roster with Personal Toggle & View Leave Balance)
  * - Attendance Summary (Daily Time Records, Tardiness / Undertime, Worked Hours Per Day, Top KPIs, Cut-off selector)
+ * - Payslips & Payroll History (the employee's own posted payroll lines)
+ *
+ * Payslips belong here rather than in Payroll because Payroll is an
+ * administrator module: not one Phase 2 Payroll row grants an employee a
+ * payroll register, and the employee's own payslip, statutory-contribution and
+ * payroll-history inquiries are BRD rows served by HRM. The payslip is the same
+ * line the payroll transaction computed, rendered by the same component the
+ * administrator sees, so there is no second calculation behind it.
  */
 
 import { useMemo, useState } from 'react';
@@ -57,12 +65,15 @@ import {
 import { downloadFile } from './fileDownload.js';
 import { findEmployee } from './hrmData.js';
 import { acknowledgeAuthorityToDeduct, leaveLedgerFor } from './hrmPosting.js';
+import { employeeRoster } from './employeeRoster.js';
+import { readPayrollRuns } from './payrollRuns.js';
+import { PayslipDocument, peso } from './PayrollLineDetail.jsx';
 
 const toCsv = (headers, rows) => [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
 
 /* ------------------------------------------------------------- 1. Loan Inquiry */
 
-function LoanInquiryScreen({ data, setData, user, onNavigateSelfService, onNotify }) {
+function LoanInquiryScreen({ data, setData, user, access, onNavigateSelfService, onNotify }) {
   const table = useTableState();
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Holding only the id — not the row itself — is what keeps the detail
@@ -70,7 +81,11 @@ function LoanInquiryScreen({ data, setData, user, onNavigateSelfService, onNotif
   // object taken at click time would never see that update.
   const [viewingLoanId, setViewingLoanId] = useState(null);
 
-  const loans = data.loanInquiries || [];
+  // A schedule belongs to one employee, so an employee sees their own and an
+  // approver or administrator sees the people they may see. Showing the whole
+  // company's loans to everyone was the defect an unkeyed seed produced.
+  const visible = new Set(access?.visibleEmployeeIds || [user?.employeeId]);
+  const loans = (data.loanInquiries || []).filter(row => !row.employeeId || visible.has(row.employeeId));
   const viewingLoan = viewingLoanId ? loans.find(row => row.id === viewingLoanId) : null;
 
   const filtered = useMemo(() => {
@@ -916,6 +931,118 @@ function ViewEmployeeAttendanceScreen({ employee, subTab, setSubTab, data, perio
   </div>;
 }
 
+/* ---------------------------------------- 4. Payslips & Payroll History */
+
+/**
+ * The employee's own payroll history.
+ *
+ * Only posted and locked runs appear: a transaction still open, in review or
+ * awaiting approval is not yet the employee's pay, and showing it would let
+ * them read a figure that can still change. Scope follows the rest of the
+ * module - an employee sees their own lines, an approver or administrator sees
+ * the people they may see.
+ */
+function PayslipInquiryScreen({ user, access, companyId, onNotify }) {
+  const table = useTableState();
+  const [openPayslip, setOpenPayslip] = useState(null);
+
+  const visible = useMemo(() => new Set(access?.visibleEmployeeIds || [user?.employeeId]), [access, user]);
+  const rows = useMemo(() => readPayrollRuns(companyId)
+    .filter(run => ['Posted', 'Locked'].includes(run.status) && run.result)
+    .flatMap(run => run.result.lines
+      .filter(line => line.status === 'Computed' && visible.has(line.employeeId))
+      .map(line => ({
+        key: `${run.id}-${line.employeeId}`,
+        run,
+        line,
+        transactionNumber: run.transactionNumber,
+        period: `${run.periodStart} to ${run.periodEnd}`,
+        payoutDate: run.payoutDate,
+        employeeName: line.name,
+        grossPay: peso(line.grossPay),
+        statutory: peso(line.statutory.employeeTotal),
+        tax: peso(line.withholdingTax),
+        deductions: peso(line.totalDeductions - line.statutory.employeeTotal - line.withholdingTax),
+        netPay: peso(line.netPay),
+        status: run.status,
+      })))
+    .sort((left, right) => String(right.payoutDate).localeCompare(String(left.payoutDate))), [companyId, visible]);
+
+  const filtered = useMemo(() => {
+    const term = table.search.trim().toLowerCase();
+    return rows.filter(row => !term || `${row.transactionNumber} ${row.employeeName} ${row.period}`.toLowerCase().includes(term));
+  }, [rows, table.search]);
+
+  const totals = useMemo(() => rows.reduce((sum, row) => ({
+    gross: sum.gross + row.line.grossPay,
+    tax: sum.tax + row.line.withholdingTax,
+    net: sum.net + row.line.netPay,
+  }), { gross: 0, tax: 0, net: 0 }), [rows]);
+
+  const columns = [
+    { key: 'transactionNumber', label: 'Payroll Transaction' },
+    ...(access?.canApproveTeamRequests ? [{ key: 'employeeName', label: 'Employee' }] : []),
+    { key: 'period', label: 'Payroll Period' },
+    { key: 'payoutDate', label: 'Payout Date' },
+    { key: 'grossPay', label: 'Gross Pay', align: 'right' },
+    { key: 'statutory', label: 'Statutory', align: 'right' },
+    { key: 'tax', label: 'Withholding Tax', align: 'right' },
+    { key: 'deductions', label: 'Other Deductions', align: 'right' },
+    { key: 'netPay', label: 'Net Pay', align: 'right' },
+    { key: 'status', label: 'Status' },
+  ];
+
+  return <div className="hrm-ss-screen">
+    <PageHeading title="Payslips & Payroll History" info="Your posted payroll lines. A transaction still open or awaiting approval is not shown, because its figures can still change." />
+
+    <StatCardRow>
+      <StatCard label="Payslips available" value={String(rows.length)} />
+      <StatCard label="Gross pay to date" value={peso(totals.gross)} />
+      <StatCard label="Tax withheld to date" value={peso(totals.tax)} />
+      <StatCard label="Net pay received" value={peso(totals.net)} />
+    </StatCardRow>
+
+    <div className="hrm-toolbar">
+      <div className="hrm-toolbar-left"><SearchInput value={table.search} onChange={table.setSearch} placeholder="Search payslips..." /></div>
+      <div className="hrm-toolbar-right">
+        <ExportMenu
+          disabled={!filtered.length}
+          onExport={() => {
+            downloadFile('my-payroll-history.csv', toCsv(columns.map(column => column.label), filtered.map(row => columns.map(column => row[column.key]))), 'text/csv');
+            onNotify?.('Payroll history exported.');
+          }}
+        />
+      </div>
+    </div>
+
+    <DataTable
+      columns={columns}
+      rows={paginate(filtered, table.page, table.pageSize)}
+      rowKey={row => row.key}
+      page={table.page}
+      pageSize={table.pageSize}
+      onPageChange={table.setPage}
+      onPageSizeChange={table.setPageSize}
+      total={filtered.length}
+      empty="No payroll has been posted for you yet."
+      actions={row => [{ label: 'View payslip', kind: 'view', onSelect: () => setOpenPayslip(row) }]}
+    />
+
+    {openPayslip && <Modal
+      title={`Payslip - ${openPayslip.transactionNumber}`}
+      onClose={() => setOpenPayslip(null)}
+      width="lg"
+      footer={<GhostButton onClick={() => setOpenPayslip(null)}>Close</GhostButton>}
+    >
+      <PayslipDocument
+        line={openPayslip.line}
+        run={openPayslip.run}
+        employee={employeeRoster.find(employee => employee.employeeId === openPayslip.line.employeeId)}
+      />
+    </Modal>}
+  </div>;
+}
+
 /* -------------------------------------------------- Root Workspace & Dispatcher */
 
 export function SelfInquirySidebar({ subView = 'loan-inquiry', onSelectSubView, onBack }) {
@@ -923,6 +1050,7 @@ export function SelfInquirySidebar({ subView = 'loan-inquiry', onSelectSubView, 
     { key: 'loan-inquiry', label: 'Loan Inquiry', icon: Bank },
     { key: 'leave-ledger', label: 'Leave Balances & Ledger', icon: Suitcase },
     { key: 'attendance-summary', label: 'Attendance Summary', icon: Clock },
+    { key: 'payslips', label: 'Payslips & Payroll History', icon: Coins },
   ];
 
   return <aside className="hrm-ss-sidebar">
@@ -948,10 +1076,11 @@ export function SelfInquirySidebar({ subView = 'loan-inquiry', onSelectSubView, 
   </aside>;
 }
 
-export function SelfInquiryWorkspace({ data, setData, requests = [], user, access, subView = 'loan-inquiry', onNavigateSelfService, onBack, onNotify }) {
+export function SelfInquiryWorkspace({ data, setData, requests = [], user, access, companyId, subView = 'loan-inquiry', onNavigateSelfService, onBack, onNotify }) {
   return <div className="hrm-ss-content">
-    {subView === 'loan-inquiry' && <LoanInquiryScreen data={data} setData={setData} user={user} onNavigateSelfService={onNavigateSelfService} onNotify={onNotify} />}
+    {subView === 'loan-inquiry' && <LoanInquiryScreen data={data} setData={setData} user={user} access={access} onNavigateSelfService={onNavigateSelfService} onNotify={onNotify} />}
     {subView === 'leave-ledger' && <LeaveLedgerScreen data={data} requests={requests} user={user} access={access} onNavigateSelfService={onNavigateSelfService} onNotify={onNotify} />}
     {subView === 'attendance-summary' && <AttendanceSummaryScreen data={data} user={user} access={access} onNotify={onNotify} />}
+    {subView === 'payslips' && <PayslipInquiryScreen user={user} access={access} companyId={companyId} onNotify={onNotify} />}
   </div>;
 }

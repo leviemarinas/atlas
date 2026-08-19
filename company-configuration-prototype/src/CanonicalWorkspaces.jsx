@@ -113,12 +113,31 @@ function ApprovalHierarchy({ companyId, notify }) {
   return <section className="canonical-card"><div className="canonical-card-header"><div><h2>Multi-level approval hierarchy</h2><p>Configure up to six levels, with parallel approvers where the policy requires it.</p></div><span className="status-pill active">Company scoped</span></div><div className="table-card canonical-inner-table"><table><thead><tr><th>Level</th><th>Mode</th><th>Approvers</th><th>Action</th></tr></thead><tbody>{levels.map((row, index) => <tr key={row.level}><td><strong>Level {row.level}</strong></td><td><select value={row.mode} onChange={event => setLevels(previous => previous.map((item, i) => i === index ? { ...item, mode: event.target.value } : item))}><option>Sequential</option><option>Parallel</option></select></td><td><input value={row.approvers} onChange={event => setLevels(previous => previous.map((item, i) => i === index ? { ...item, approvers: event.target.value } : item))} /></td><td><button className="icon-button" disabled={levels.length <= 1} onClick={() => setLevels(previous => previous.filter((_, i) => i !== index))}><X /></button></td></tr>)}</tbody></table></div><div className="canonical-actions"><button className="button secondary" disabled={levels.length >= 6} onClick={() => setLevels(previous => [...previous, { level: previous.length + 1, mode: 'Sequential', approvers: '' }])}><Plus /> Add level</button><button className="button primary" onClick={save}><Check /> Save hierarchy</button></div></section>;
 }
 
+/**
+ * A payout calendar carries the whole period, not just the payout date: Annex C
+ * 3.d says selecting a payout fills the frequency, month, year, payroll period
+ * and timekeeping cut-off on the payroll transaction, so the calendar has to be
+ * where those dates are decided rather than re-typed on every run.
+ */
 const calendarSeed = [
-  { id: 'cal-1', calendarCode: 'CAL-AUG2', calendarType: 'Payout', frequency: 'Semi-monthly', effectiveFrom: '2026-01-01', effectiveTo: '', payoutDate: '2026-08-31', processDate: '2026-08-28', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
+  { id: 'cal-p1', calendarCode: 'PAY-2025-11-1', calendarType: 'Payout', frequency: 'First Half', year: '2025', month: 'November', effectiveFrom: '2025-01-01', effectiveTo: '', periodStart: '2025-11-01', periodEnd: '2025-11-15', cutoffStart: '2025-10-16', cutoffEnd: '2025-10-31', payoutDate: '2025-11-15', processDate: '2025-11-12', remarks: 'First half November 2025 payroll', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
+  { id: 'cal-p2', calendarCode: 'PAY-2025-11-2', calendarType: 'Payout', frequency: 'Second Half', year: '2025', month: 'November', effectiveFrom: '2025-01-01', effectiveTo: '', periodStart: '2025-11-16', periodEnd: '2025-11-30', cutoffStart: '2025-11-01', cutoffEnd: '2025-11-15', payoutDate: '2025-11-30', processDate: '2025-11-27', remarks: 'Second half November 2025 payroll', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
+  { id: 'cal-p3', calendarCode: 'PAY-2025-12-1', calendarType: 'Payout', frequency: 'First Half', year: '2025', month: 'December', effectiveFrom: '2025-01-01', effectiveTo: '', periodStart: '2025-12-01', periodEnd: '2025-12-15', cutoffStart: '2025-11-16', cutoffEnd: '2025-11-30', payoutDate: '2025-12-15', processDate: '2025-12-11', remarks: 'First half December 2025 payroll, with 13th month release', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
+  { id: 'cal-1', calendarCode: 'CAL-AUG2', calendarType: 'Payout', frequency: 'Semi-monthly', year: '2026', month: 'August', effectiveFrom: '2026-01-01', effectiveTo: '', periodStart: '2026-08-16', periodEnd: '2026-08-31', cutoffStart: '2026-08-01', cutoffEnd: '2026-08-15', payoutDate: '2026-08-31', processDate: '2026-08-28', remarks: 'Second half August 2026 payroll', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
   { id: 'cal-2', calendarCode: 'BIR-AUG', calendarType: 'Statutory', frequency: 'Monthly', effectiveFrom: '2026-01-01', effectiveTo: '', payoutDate: '', processDate: '2026-09-10', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
   { id: 'cal-3', calendarCode: 'BILL-AUG', calendarType: 'Billing Cutoff', frequency: 'Monthly', effectiveFrom: '2026-01-01', effectiveTo: '', cutoffStart: '2026-08-01', cutoffEnd: '2026-08-31', releaseDate: '2026-09-03', holidayGroup: 'Company', status: 'Active', version: 1 },
   { id: 'cal-4', calendarCode: 'HOL-NINOY', calendarType: 'Holiday', frequency: 'Annual', effectiveFrom: '2026-08-21', effectiveTo: '', processDate: '2026-08-21', holidayName: 'Ninoy Aquino Day', holidayClass: 'Special Non-working Holiday', holidayGroup: 'Philippine National', status: 'Active', version: 1 },
 ];
+
+/**
+ * The company's calendars, for a module that needs them without opening the
+ * screen. The calendar is company-scoped and seeds itself on first read, so
+ * payroll must come through here rather than reading the storage key directly.
+ */
+export function readCalendars(companyId = activeCompanyId(), type) {
+  const rows = readScopedRows('atlas-operational-calendar-v1', calendarSeed, companyId);
+  return type ? rows.filter(row => row.calendarType === type && row.status === 'Active') : rows;
+}
 
 function LegacyCalendarWorkspace({ onBack, notify, companyId = activeCompanyId() }) {
   const [rows, setRows] = useState(() => readScopedRows('atlas-operational-calendar-v1', calendarSeed, companyId));

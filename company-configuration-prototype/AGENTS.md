@@ -208,6 +208,52 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - **One workspace, one name.** Several registers were reachable from two surfaces under two labels, so one screen looked like two features: `accessRights` was "Access Right Configuration" in Core and "Access & Approvals" in Settings; `calendar` was "Payroll Calendar" and "Calendar Settings"; `faq` was "FAQ / Self-Learning" and "FAQ & Help"; `payCodes` was "Paycode Management" and "Pay Code". Each now carries the name its own screen renders. Multiple entry points remain deliberate — a register wearing two names is the defect.
 - The HRM dashboard's scope strip (My Dashboard / Core / Timekeeping / HRM / Payroll) has been removed. It named the rail's own modules, its selection was never read, and no widget carries a module, so the Core and Payroll scopes could only ever have rendered an empty dashboard. If module dashboards are wanted later, give `DASHBOARD_WIDGETS` a module and make the strip filter — do not restore it as decoration.
 
+## One employee roster
+
+- `src/employeeRoster.js` is the **only** roster. Core's Employee Masterfile, HRM, Timekeeping and Payroll are four views of the same people, so they resolve to the same `employeeId`. `PolicyApplicability` re-exports it as `employeeDirectory`, `hrmData.seedEmployees()` projects the HRM/Timekeeping view from it, and `payrollEngine` reads its `payroll` / `government` / `banks` / `ytd` blocks as the 201 file. Two rosters is the defect this module exists to prevent — a payroll line could not read the punch record or the salary record of the employee it was paying.
+- A payroll figure and an HRM figure must not come from two seeds. `seedSalaryInformation` derives every rate from the roster's `payroll` block, and `ytd` is computed from the employee's own rate against the statutory tables rather than typed in, so an opening balance can never contradict the rates the same file publishes.
+- The roster carries the scenarios payroll has to handle rather than describing them: a daily-paid employee, a minimum-wage earner with ECOLA, a new hire inside the period, an employee with Pag-IBIG switched off, one separated inside the period and one on hold. Adding a payroll case means adding the attribute to a roster row, not a branch in the engine.
+
+## Payroll computation
+
+- `src/payrollEngine.js` is pure — it receives every dependency and returns a result — so the same computation runs on screen, in a test and behind an employee's payslip. `src/payrollRuns.js` is the browser adapter that gathers the dependencies; nothing in the engine reads storage.
+- **Every amount is produced by a step, and every step names the Computational Basis code it applied.** Where the library publishes an evaluable expression the step evaluates *that* expression, so editing a formula in the library changes the payroll figure. A step that resolves by table lookup still records its code, its inputs, its detail and the module the values came from. This is what makes the "How it was computed" panel a report of the calculation rather than a description of it.
+- `src/computationCatalog.js` holds the formula catalogue, the mapped field palette and the evaluator, because both `ComputationalBasis.jsx` and the engine need them; `ComputationalBasis.jsx` re-exports them since the rest of the prototype has always imported them from there.
+- `src/statutorySchedules.js` holds the statutory and tax tables *and* their bracket arithmetic. `StatutoryTables.jsx` renders and versions those rows, `statutoryService.js` resolves the effective version out of the company store, the engine computes a contribution from the resolved version, and `hrmData` seeds the employee's contribution record from the same lookup. Nothing re-types a rate. (The file is `statutorySchedules.js`, not `statutoryTables.js`, because Windows would collide it with `StatutoryTables.jsx`.)
+- A run resolves its tables by **payout date**, so a run dated last year computes on last year's schedule after this year's is published. Every published year stays Active for exactly that reason; `Inactive` means superseded, not "past".
+- Timekeeping is read, never copied. The engine filters `timeLogs` for the run's own cut-off, so a corrected punch restates the line the next time the transaction is recalculated. A late or undertime day is a *rendered* day — the minutes are priced separately, and counting the day as unworked would collect twice. A daily- or hourly-paid employee is never deducted for absences, because unworked time is simply unpaid.
+- A switch on the transaction can only ever turn a computation **off**. The employee's own 201 file still decides: `withSss` / `withPhilhealth` / `withHdmf` / `withWithholdingTax`, the exempt/non-exempt classifications, MWE status and the gross-up tag are all checked per employee, so ticking Compute Allowable Deduction never contributes for someone the masterfile excludes.
+- A collection never exceeds its outstanding balance, a settled schedule stops collecting, and a loan whose authority to deduct is unacknowledged is held out of the run with an exception rather than collected silently.
+- Annex C's "0 for all taxable" bonus threshold is a real choice. Read a configured threshold with a finite-number check, never `Number(x) || fallback` — that silently restored ₱90,000 and made the option do nothing.
+
+## Policy engines in payroll
+
+- The Take-Home Pay deferral algorithm lives once, in `payrollEngine.applyTakeHomePolicy`. `PolicyComputations.takeHomeResult` turns the simulator's scenario into that function's item list and presents its result as the engine's ledger, so the policy screen cannot describe a rule the payroll run does not apply.
+- The engine reads the saved policies, the REF-011 deduction hierarchy and the reference tables the same way the policy screens do. Where a policy screen and a payroll line disagree, one of them is reading a second copy — find it.
+
+## Payroll Processing
+
+- `Payroll Processing.docx` is the visual source for the register, the Add Payroll wizard, the per-employee Edit payroll modal, the record-lock warning and the success/failure toasts. Annex C is the source for the *process*: prerequisites, transaction creation, timekeeping and HRM import, entry updates, review, approval, posting, locking and the sub-schedules. The mock is two steps; the work is not, so the wizard is four and the transaction has its own screen.
+- `transactions` is a **delegated** workspace, not an `operationalDefinitions` entry. It had both, and the generic record table was a CRUD form standing in for a payroll run.
+- The status machine is `payrollRuns.applyAction`, and `actionsFor` must only offer actions that machine will accept — there is a test that walks every status and asserts exactly that. Draft locks the figures so reports are stable; a reviewer can still edit, which is what Annex C's "can edit the transaction" means on those rows; a regular transaction can only be re-opened if it is the most recent one, while any special transaction can.
+- Posted payroll is the source for everything downstream. Remittance Monitoring and Journal Entry bind their "Posted Payroll Payout" to the run store, `statutoryService.readPayrollTransactions` counts payroll runs so a consumed statutory version locks, and the Reports module's payroll-category reports build their rows from `payrollReportCatalog` against posted runs. A report the store cannot answer says so rather than producing a convincing empty file.
+- A payroll report is a catalogue entry in `payrollReportCatalog` with its own columns, builder and group. Adding a schedule means adding an entry — never a bespoke screen, and never a second copy of the column list for the export.
+- The screen's dialogs belong to the screen, not to one of its views. Returning the employee drill-down early without them is what made "Edit this line" do nothing.
+- The record lock re-reads the stored run at both ends. Writing back the snapshot the effect captured discarded every recalculation that happened while the screen was open.
+- A register only writes its rows to storage once somebody opens its screen, so payroll reads registers through `readRegisterRows` (`OperationalWorkspaces`), which falls back to the definition's own seed. Reading storage alone made every seeded bonus and deduction invisible to the computation until an administrator happened to visit the register.
+- The payout calendar is where a payroll period is decided, not re-typed. A Payout calendar row carries the frequency, month, year, payroll period *and* timekeeping cut-off, and choosing one in the wizard fills all of them (Annex C 3.d). Payroll reads them through `readCalendars` in `CanonicalWorkspaces`, because the calendar is company-scoped and seeds itself on first read — the raw storage key is empty until then.
+- `OperationalWorkspaces` imports `PayrollProcessing` to register the delegate, so the dependency points one way: the reader is passed in as `readRegister` rather than imported back.
+
+## Where a payroll result is seen
+
+- **Administrator**: Payroll ▸ Payroll Processing ▸ transaction ▸ employee. `PayrollLineDetail` shows the computation trail, earnings and bonuses, statutory and tax, deductions and loans, the timekeeping behind it, the crediting instruction and the year-to-date movement.
+- **Employee**: HRM ▸ Employee Self-Inquiry ▸ Payslips & Payroll History. Payroll is an administrator module — not one Phase 2 Payroll row grants an employee a register — and the employee's payslip, statutory-contribution and payroll-history inquiries are BRD rows served by HRM. It renders the same line through the same `PayslipDocument`, so there is no second calculation.
+- Only **Posted** and **Locked** runs reach the employee. A transaction still open or in review is not yet their pay, and its figures can still change.
+
+## Timekeeping punch density
+
+- `seedTimeLogs` generates every working day for the months a payroll run covers (`FULL_MONTHS`) and keeps the weekly sample for the rest of the year. A payroll cut-off has to have a real working month behind it; a four-day-a-month sample priced a fortnight from two punches.
+
 ## QA sweep findings (2026-08-18)
 
 An end-to-end pass through every module, tile and sub-screen across all four actors surfaced four real defects, now fixed:
