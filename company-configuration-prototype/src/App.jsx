@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,11 +9,10 @@ import {
   CaretDown,
   Check,
   CheckCircle,
-  Clock,
+  ClockCounterClockwise,
   CurrencyCircleDollar,
   Cube,
   DownloadSimple,
-  FileText,
   FirstAid,
   Gear,
   House,
@@ -36,7 +35,6 @@ import {
   Trash,
   UserCircle,
   UserFocus,
-  Users,
   Wrench,
   X,
 } from '@phosphor-icons/react';
@@ -53,26 +51,29 @@ import { StandardComputationAdmin } from './StandardComputationAdmin';
 import { RoleSwitch } from './RoleContext';
 import { BrandRail, Topbar } from './AppChrome';
 import { readPolicies, readPolicyCodes, savePolicyCode } from './PolicyComputations';
+import { describeAssignment } from './PolicyApplicability';
 import { completeParameterSchema, defaultParameterValues, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
 import { getPolicyLinkage } from './policyGovernance';
 import { companyRuleTaxonomy, requirementRuleSeeds } from './requirementsCatalog';
 import { OperationalWorkspace } from './OperationalWorkspaces';
 import { TicketingWorkspace } from './InheritedCapabilities';
-import { EnhancedReportShellWorkspace } from './EnhancedReports';
 import { defaultCompanyRecord, readActiveCompanyId, readCompanies, saveCompany, setActiveCompanyId as persistActiveCompanyId } from './companyRepository';
 import { ModulesFeaturesTab } from './ModulesFeaturesTab';
+import { HRMPortal } from './HRMPortal';
+import { useRole } from './RoleContext';
+import { canAccessScreen, landingScreen } from './moduleAccess';
+import { TimekeepingPortal } from './TimekeepingPortal';
 
 const violet = '#54248f';
 
 const coreModules = [
   { label: 'Company Configuration', icon: Buildings, enabled: true },
   { label: 'Employee Masterfile', icon: IdentificationCard, enabled: true },
-  { label: 'Access Right Configuration', icon: UserFocus, enabled: true },
+  { label: 'Access & Approvals', icon: UserFocus, enabled: true },
   { label: 'Security Configuration', icon: Key, enabled: true },
   { label: 'Reference Table', icon: Table, enabled: true },
   { label: 'Navigation Configuration', icon: SlidersHorizontal, enabled: true },
   { label: 'Tickets', icon: Ticket, enabled: true },
-  { label: 'Reports', icon: FileText, enabled: true },
   { label: 'Others', icon: SquaresFour },
 ];
 
@@ -81,11 +82,12 @@ const sideItems = [
   { label: 'Services Information', icon: Wrench, enabled: true, view: 'services' },
   { label: 'Calendar Settings', icon: CalendarBlank, enabled: true, view: 'workspace:calendar' },
   { label: 'Employee Onboarding', icon: IdentificationCard, enabled: true, view: 'workspace:employeeOnboarding', serviceCode: 'HRM' },
+  { label: 'Employee Requests', icon: ClockCounterClockwise, enabled: true, view: 'workspace:timeCorrections', serviceCode: 'HRM' },
   { label: 'Employee Charge Codes', icon: CurrencyCircleDollar, enabled: true, view: 'workspace:chargeCodes', serviceCode: 'HRM' },
   { label: 'Happiness Meter', icon: CheckCircle, enabled: true, view: 'workspace:happiness', serviceCode: 'HAPPINESS' },
   { label: 'Health & Wellness', icon: FirstAid, enabled: true, view: 'workspace:wellness', serviceCode: 'WELLNESS' },
   { label: 'Notifications', icon: Bell, enabled: true, view: 'workspace:notifications' },
-  { label: 'FAQ & Help', icon: Info, enabled: true, view: 'workspace:faq' },
+  { label: 'FAQ and Self-Learning', icon: Info, enabled: true, view: 'workspace:faq' },
   { label: 'Company Rules', icon: Scales, enabled: true, view: 'rules' },
   { label: 'Connected Systems', icon: PuzzlePiece, enabled: true, view: 'workspace:connectedSystems' },
 ];
@@ -233,7 +235,7 @@ function DisabledHint({ children, disabled }) {
 function CoreHome({ onOpen, onNavigate, company, companies, onSelectCompany }) {
   return (
     <div className="app-shell core-screen">
-      <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
+      <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
       <main className="shell-main">
         <Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />
         <div className="core-content">
@@ -294,7 +296,7 @@ function CompanyLayout({ children, view, setView, onBack, onNavigate, company, c
   const nestedLabel = nestedViewLabels[view] || (view.startsWith('service:') ? 'Services Information detail' : '');
   return (
     <div className="app-shell company-screen">
-      <BrandRail onHome={onBack} onCore={onBack} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
+      <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
       <CompanySidebar view={view} setView={setView} onBack={onBack} company={company} />
       <main className="company-main">
         <Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />
@@ -316,7 +318,7 @@ function CompanyLayout({ children, view, setView, onBack, onNavigate, company, c
 function PlatformLayout({ children, screen, onNavigate, company, companies, onSelectCompany }) {
   const active = screen.includes('settings') || screen.includes('computation-admin') ? 'settings' : 'payroll';
   return <div className="app-shell core-screen platform-screen">
-    <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active={active} />
+    <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active={active} />
     <main className="shell-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />{children}</main>
   </div>;
 }
@@ -476,10 +478,20 @@ function DerivedPolicies({ onOpenPolicies }) {
     ['Take-Home Pay', 'Conflict priority when the loan cap and the threshold disagree', takeHome.priorityChoice],
     ['Deduction Hierarchy', 'Adjustment order for controllable loans and deductions', 'Reference table REF-011'],
     ['Deferred Deductions', 'Carry forward with outstanding amount, schedule and balance', takeHome.carryForward ? 'Auto carry-forward' : 'Off'],
+    ['Deferred Deductions', 'Recovery of an outstanding amount above the staggering threshold', takeHome.recovery.method],
+    ['Deferred Deductions', 'Approval and employee authorization before staggering', takeHome.recovery.requiresApproval ? `${takeHome.recovery.approvalRole}; ${takeHome.recovery.authorization.toLowerCase()}` : 'Not required'],
+    ['Take-Home Pay', 'Applicability', describeAssignment(takeHome.assignment)],
+    ['Retirement Pay', 'Applicability', describeAssignment(retirement.assignment)],
     ['Retirement Pay', 'Eligibility', `Age ${retirement.minimumAge}–${retirement.compulsoryAge}; ${retirement.minimumServiceYears} years service`],
     ['Retirement Pay', 'Plan basis', retirement.planType],
+    ['Retirement Pay', 'Salary basis', retirement.salaryBasisSource],
+    ['Retirement Pay', 'Rehire and break in service', retirement.serviceHistoryRule],
     ['Retirement Pay', 'Service rounding', retirement.rounding],
+    ['Final Pay', 'Applicability', describeAssignment(finalPay.assignment)],
     ['Final Pay', 'Retirement pay forms part of final pay', finalPay.components['Retirement pay'] ? 'Included' : 'Excluded'],
+    ['Final Pay', 'Separation pay by reason for leaving', `${finalPay.separationRules.filter(rule => rule.formula !== 'Not applicable').length} of ${finalPay.separationRules.length} reasons pay separation`],
+    ['Final Pay', 'Applicable deduction hierarchy', finalPay.hierarchySource],
+    ['Final Pay', 'Statutory contribution treatment', finalPay.statutoryRule],
     ['Final Pay', 'Net pay rule when negative', finalPay.negativeNetPayRule],
   ];
   return (
@@ -503,7 +515,11 @@ function getEngineRows() {
     { id: 'engine-thp-2', category: 'Pay and Earnings', subcategory: 'Take-Home Pay', rule: 'Maximum controllable deductions after mandatory statutory items', parameter: 'THP-002', enabled: takeHome.enabled, engineOwned: true, setting: takeHome.priorityChoice },
     { id: 'engine-ret-1', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Statutory retirement eligibility and benefit basis', parameter: 'RET-001', enabled: retirement.enabled, engineOwned: true, setting: `Age ${retirement.minimumAge}–${retirement.compulsoryAge}` },
     { id: 'engine-ret-2', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'More beneficial statutory or company retirement plan', parameter: 'RET-002', enabled: retirement.enabled, engineOwned: true, setting: retirement.planType },
-    { id: 'engine-fin-1', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Net final pay from enabled components and authorized offsets', parameter: 'FIN-001', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.negativeNetPayRule },
+    { id: 'engine-def-1', category: 'Loans & Deductions', subcategory: 'Deferred Deductions', rule: 'Carry-forward and staggered recovery of outstanding amounts', parameter: 'DEF-001', enabled: takeHome.carryForward, engineOwned: true, setting: takeHome.recovery.method },
+    { id: 'engine-ret-3', category: 'Pay and Earnings', subcategory: 'Retirement Pay', rule: 'Retirement salary basis and service history', parameter: 'RET-003', enabled: retirement.enabled, engineOwned: true, setting: retirement.salaryBasisSource },
+    { id: 'engine-fin-1', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Net final pay from enabled components, selected earnings and authorized offsets', parameter: 'FIN-001', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.negativeNetPayRule },
+    { id: 'engine-fin-2', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Separation pay resolved from the employee reason for leaving', parameter: 'FIN-002', enabled: finalPay.enabled && finalPay.components['Separation pay'], engineOwned: true, setting: `${finalPay.separationRules.filter(rule => rule.formula !== 'Not applicable').length} of ${finalPay.separationRules.length} reasons pay separation` },
+    { id: 'engine-fin-3', category: 'Pay and Earnings', subcategory: 'Final Pay', rule: 'Final pay deduction hierarchy and statutory contribution treatment', parameter: 'FIN-003', enabled: finalPay.enabled, engineOwned: true, setting: finalPay.hierarchySource },
   ];
 }
 
@@ -741,7 +757,8 @@ function derivedCompletedSections(company = defaultCompanyRecord) {
 }
 
 export function App() {
-  const [screen, setScreen] = useState('core');
+  const { role } = useRole();
+  const [screen, setScreen] = useState(() => landingScreen(role));
   const [view, setView] = useState('information');
   const [companyRecords, setCompanyRecords] = useState(() => readCompanies());
   const [activeCompanyId, setActiveCompanyId] = useState(() => readActiveCompanyId());
@@ -802,6 +819,21 @@ export function App() {
     setCompleted(derivedCompletedSections(record));
     return record;
   };
+  const previousRole = useRef(role);
+  useEffect(() => {
+    if (previousRole.current === role) return;
+    previousRole.current = role;
+    setScreen(landingScreen(role));
+    setView('information');
+  }, [role]);
+
+  // A screen reached before a rule changed — or restored from a previous
+  // session — must never render for an actor who may not open it.
+  const reachable = canAccessScreen(role, screen);
+  useEffect(() => {
+    if (!reachable) setScreen(landingScreen(role));
+  }, [reachable, role]);
+
   const navigate = destination => {
     if (destination === 'company') {
       const refreshed = readCompanies();
@@ -821,32 +853,34 @@ export function App() {
   if (screen === 'core') return <CoreHome onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} onOpen={(module) => {
     if (module === 'Employee Masterfile') setScreen('employee');
     else if (module === 'Reference Table') setScreen('reference');
-    else if (module === 'Access Right Configuration') setScreen('settings-workspace:accessRights');
+    else if (module === 'Access & Approvals') setScreen('settings-workspace:accessRights');
     else if (module === 'Security Configuration') setScreen('settings-workspace:security');
     else if (module === 'Navigation Configuration') setScreen('settings-workspace:navigation');
     else if (module === 'Tickets') setScreen('ticketing');
-    else if (module === 'Reports') setScreen('reports');
     else { setScreen('company'); setView('information'); }
   }} />;
+  if (screen === 'timekeeping') return <TimekeepingPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenHrm={() => setScreen('hrm')} notify={notify} />;
+  if (screen === 'hrm') return <HRMPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenTimekeeping={() => setScreen('timekeeping')} notify={notify} />;
   if (screen === 'employee') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
     <EmployeeMasterfile onBack={() => setScreen('core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
   if (screen === 'ticketing') return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><TicketingWorkspace onBack={() => setScreen('core')} notify={notify} /></PlatformLayout>;
-  if (screen === 'reports') return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><EnhancedReportShellWorkspace onBack={() => setScreen('core')} notify={notify} /></PlatformLayout>;
   if (screen === 'reference' || screen === 'reference-settings') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
     <ReferenceTables onBack={() => setScreen(screen === 'reference-settings' ? 'settings' : 'core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
-  if (screen === 'settings' || screen === 'payroll' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
+  if (screen === 'settings' || screen === 'payroll' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'tax-settings' || screen === 'tax-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
     <Toast toast={toast} onClose={() => setToast(null)} />
-    {screen === 'settings' && <SettingsHub onOpen={() => setScreen('statutory-settings')} onOpenReference={() => setScreen('reference-settings')} onOpenComputationLibrary={() => setScreen('settings-computation-admin')} onOpenWorkspace={key => setScreen(`settings-workspace:${key}`)} />}
-    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
-    {screen === 'statutory-settings' && <StatutoryTables mode="settings" onBack={() => setScreen('settings')} notify={notify} />}
-    {screen === 'statutory-payroll' && <StatutoryTables mode="payroll" onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen === 'settings' && <SettingsHub onOpen={() => setScreen('statutory-settings')} onOpenTax={() => setScreen('tax-settings')} onOpenReference={() => setScreen('reference-settings')} onOpenComputationLibrary={() => setScreen('settings-computation-admin')} onOpenWorkspace={key => setScreen(`settings-workspace:${key}`)} />}
+    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenTax={() => setScreen('tax-payroll')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
+    {screen === 'statutory-settings' && <StatutoryTables mode="settings" group="statutory" onBack={() => setScreen('settings')} notify={notify} />}
+    {screen === 'statutory-payroll' && <StatutoryTables mode="payroll" group="statutory" onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen === 'tax-settings' && <StatutoryTables mode="settings" group="tax" onBack={() => setScreen('settings')} notify={notify} />}
+    {screen === 'tax-payroll' && <StatutoryTables mode="payroll" group="tax" onBack={() => setScreen('payroll')} notify={notify} />}
     {screen === 'settings-computation-admin' && <StandardComputationAdmin onBack={() => setScreen('settings')} notify={notify} />}
-    {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} />}
-    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
+    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
   </PlatformLayout>;
   return (
     <CompanyLayout view={view} setView={setView} onBack={() => setScreen('core')} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
@@ -861,7 +895,7 @@ export function App() {
       {view === 'services' && <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />}
       {(view === 'computations' || view === 'policies') && <ComputationalBasis key={view} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
       {view.startsWith('service:') && <ServiceConfiguration moduleKey={view.split(':')[1]} onBack={() => setView('services')} notify={notify} />}
-      {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} />}
+      {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
     </CompanyLayout>
   );
 }

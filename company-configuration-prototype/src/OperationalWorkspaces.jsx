@@ -25,6 +25,8 @@ import {
 import { AccessRightsWorkspace, CalendarWorkspace, OvertimeGateway, SecurityWorkspace, SettingsConfigurationWorkspace } from './CanonicalWorkspaces';
 import { ChargeCodesWorkspace, EmployeeOnboardingWorkspace, HappinessWorkspace, NotificationsWorkspace, TicketingWorkspace, WellnessWorkspace } from './InheritedCapabilities';
 import { EnhancedReportShellWorkspace } from './EnhancedReports';
+import { TimeCorrectionWorkspace } from './TimeCorrectionWorkspace';
+import { employeeDirectory } from './PolicyApplicability';
 import { downloadFile } from './fileDownload';
 import { plural } from './textFormat';
 
@@ -32,6 +34,7 @@ const f = (key, label, type = 'text', options = [], required = true) => ({ key, 
 const readOperationalRows = workspaceKey => {
   try { return JSON.parse(localStorage.getItem(`atlas-operational-${workspaceKey}-v2`)) || JSON.parse(localStorage.getItem(`atlas-operational-${workspaceKey}-v1`)) || []; } catch { return []; }
 };
+const employeeOptions = () => employeeDirectory.map(employee => `${employee.code} - ${employee.name}`);
 const postedPayrollOptions = () => {
   const posted = readOperationalRows('transactions').filter(row => ['Posted', 'Locked'].includes(row.status)).map(row => row.code);
   return posted.length ? posted : ['PAY-2026-07-2'];
@@ -59,17 +62,71 @@ export const operationalDefinitions = {
   ...legacyOperationalDefinitions,
   payCodes: {
     version: 2,
-    title: 'Pay Code Library',
+    title: 'Paycode Management',
     description: 'Maintain payroll codes, computation ownership, taxability, and balanced accounting mappings used by payroll and journals.',
     fields: [f('code', 'Pay Code'), f('name', 'Pay Item Name'), f('type', 'Type', 'select', ['Basic Pay', 'Earning', 'Bonus', 'Deduction', 'Loan', 'Statutory']), f('taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable', 'De Minimis', 'Not applicable']), f('computationBasis', 'Computation Basis'), f('debitGl', 'Debit GL Account'), f('creditGl', 'Credit GL Account'), f('allocationDimension', 'Allocation Dimension', 'select', ['Employee', 'Department', 'Cost Center', 'Client / Charge Code']), f('status', 'Status', 'select', ['Active', 'Inactive'])],
     rows: [['PAY-BASIC', 'Basic Pay', 'Basic Pay', 'Taxable', 'Basic monthly rate / factor days', '5100-100', '2100-100', 'Cost Center', 'Active'], ['ERN-DMN', 'De Minimis Benefit', 'Earning', 'De Minimis', 'Effective statutory ceiling', '5200-200', '2100-100', 'Employee', 'Active']],
   },
-  remittance: {
+  earnings: {
     version: 2,
+    title: 'Earning Management',
+    description: 'Assign recurring and one-time earnings to employees with their effectivity window, frequency, basis and payroll period.',
+    statusTabs: ['All', 'Active', 'Inactive', 'Expired'],
+    fields: [f('code', 'Earning Code'), f('name', 'Earning Name', 'select', ['13th Month Pay', 'Allowance', 'Adjustments', 'Bonuses', 'Incentives', 'De Minimis Benefit']), f('employee', 'Employee', 'select', employeeOptions), f('frequency', 'Earning Frequency', 'select', ['One-time', 'Monthly', 'Quarterly', 'Semi-monthly', 'Annual']), f('basis', 'Basis/Unit', 'select', ['Fixed amount', 'Hourly', 'Daily', 'Percentage', 'Current Basic Rate']), f('amount', 'Amount', 'number'), f('effectiveDate', 'Effectivity Date', 'date'), f('periodStart', 'Period Start', 'date'), f('periodEnd', 'Period End', 'date', [], false), f('endDate', 'End Date', 'date', [], false), f('holdDate', 'Hold Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive', 'Expired'])],
+    rows: [
+      ['ERN-2026-050', '13th Month Pay', 'E-1042 - Ana Reyes', 'One-time', 'Fixed amount', '25000', '2026-01-01', '2026-12-01', '2026-12-31', '', '', '', 'Active'],
+      ['ERN-2026-054', 'Allowance', 'E-2288 - Ben Cruz', 'Monthly', 'Fixed amount', '2000', '2026-01-01', '2026-01-01', '', '', '', '', 'Inactive'],
+      ['ERN-2026-058', 'Incentives', 'E-3391 - Carla Lim', 'Quarterly', 'Percentage', '5', '2025-01-01', '2025-01-01', '2025-12-31', '2025-12-31', '', 'Prior plan year', 'Expired'],
+    ],
+  },
+  deductions: {
+    version: 2,
+    title: 'Deduction Management',
+    description: 'Track company deductions against each employee with their frequency, recovery window and outstanding balance.',
+    fields: [f('code', 'Deduction Code'), f('name', 'Deduction Name', 'select', ['Cash Advance', 'Loan Repayment', 'Tax', 'Late Penalty', 'Allotment', 'Other']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Deduction Amount', 'number'), f('frequency', 'Deduction Frequency', 'select', ['Once', 'Monthly', 'Semi-monthly', 'Bi-monthly', 'Quarterly']), f('startDate', 'Start Date', 'date'), f('endDate', 'End Date', 'date', [], false), f('balance', 'Balance', 'number', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Settled', 'On Hold'])],
+    rows: [
+      ['DED-2026-050', 'Cash Advance', 'E-1042 - Ana Reyes', '1837.33', 'Once', '2026-01-01', '2026-12-31', '8662.67', '', 'Active'],
+      ['DED-2026-053', 'Loan Repayment', 'E-2288 - Ben Cruz', '1837.33', 'Bi-monthly', '2026-01-01', '2026-12-31', '14698.64', '', 'Active'],
+      ['DED-2026-058', 'Late Penalty', 'E-3391 - Carla Lim', '500', 'Monthly', '2026-01-01', '', '0', 'Fully recovered', 'Settled'],
+    ],
+  },
+  bonuses: {
+    version: 2,
+    title: 'Bonus Management',
+    description: 'Schedule 13th month, performance and retention bonuses and follow each one from active through processed to completed.',
+    statusTabs: ['All', 'Active', 'Scheduled', 'Processed', 'Completed'],
+    fields: [f('code', 'Bonus Code'), f('name', 'Bonus Name', 'select', ['13th Month Pay', 'Performance Bonus', 'Retention Bonus', 'Signing Bonus', 'Mid-year Bonus']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Bonus Amount', 'number'), f('effectiveDate', 'Effective Date', 'date'), f('taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable up to ceiling']), f('statusDate', 'Status Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Scheduled', 'Processed', 'Completed'])],
+    rows: [
+      ['BON-2026-050', '13th Month Pay', 'E-1042 - Ana Reyes', '2000', '2025-12-01', 'Non-taxable up to ceiling', '2025-12-01', '', 'Active'],
+      ['BON-2026-053', '13th Month Pay', 'E-2288 - Ben Cruz', '2000', '2025-12-01', 'Non-taxable up to ceiling', '2025-12-01', '', 'Scheduled'],
+      ['BON-2026-056', 'Retention Bonus', 'E-4417 - Diego Santos', '2000', '2025-12-01', 'Taxable', '2025-12-01', '', 'Processed'],
+      ['BON-2026-058', 'Retention Bonus', 'E-5502 - Elena Uy', '2000', '2025-12-01', 'Taxable', '2025-12-01', '', 'Completed'],
+    ],
+  },
+  mweRates: {
+    version: 2,
+    title: 'MWE Rate Tables',
+    description: 'Regional minimum wage rates by sector and municipality, with the wage order each rate was issued under.',
+    fields: [f('code', 'Code'), f('effectiveDate', 'Effective Date', 'date'), f('region', 'MWE Region', 'select', ['NCR', 'Region I', 'Region III', 'Region IV-A', 'Region VI', 'Region VII', 'Region XI']), f('sector', 'MWE Sector', 'select', ['Non-agriculture', 'Agriculture (Plantation)', 'Agriculture (Non-plantation)', 'Retail/Service Establishments']), f('municipality', 'Municipality'), f('classification', 'MWE Municipalities Classification', 'select', ['1st', '2nd', '3rd', '4th', '5th', '6th']), f('dailyRate', 'MWE Daily Rate', 'number'), f('wageOrder', 'Wage Order'), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive'])],
+    rows: [
+      ['MWE-2026-001', '2026-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '700', 'Wage Order NCR-25', '', 'Active'],
+      ['MWE-2026-002', '2026-01-01', 'NCR', 'Retail/Service Establishments', 'Marikina', '1st', '663', 'Wage Order NCR-25', '', 'Active'],
+      ['MWE-2025-001', '2025-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '645', 'Wage Order NCR-24', 'Superseded by NCR-25', 'Inactive'],
+    ],
+  },
+  remittance: {
+    // v3: the register now records the filing itself (who filed and paid, the
+    // filing reference, O.R. details), so v2 rows cannot satisfy its fields.
+    version: 3,
     title: 'Remittance Monitoring',
     description: 'Record filing and payment evidence against posted payroll payouts for BIR, SSS, PhilHealth and HDMF.',
-    fields: [f('code', 'Remittance Code'), f('linkedPayout', 'Posted Payroll Payout', 'select', postedPayrollOptions), f('agency', 'Agency', 'select', ['BIR', 'SSS', 'PhilHealth', 'HDMF']), f('remittanceType', 'Remittance Type', 'select', ['Contribution', 'Loan', 'Withholding Tax', 'Expanded Tax', 'Final Tax', 'Other']), f('year', 'Year', 'number'), f('month', 'Remittance Month'), f('filedBy', 'Filed By', 'select', ['P&A', 'Client']), f('modeOfPayment', 'Mode of Payment', 'select', ['Online', 'Bank', 'Check', 'Cash']), f('receipt', 'OR / Reference No.'), f('dateFiled', 'Date Filed / Authorized', 'date', [], false), f('datePaid', 'Date Paid', 'date', [], false), f('datePosted', 'Date Posted', 'date', [], false), f('amount', 'Amount', 'number'), f('status', 'Status', 'select', ['Draft', 'For Payment', 'Paid', 'Posted'])],
-    rows: [['REM-001', 'PAY-2026-07-2', 'SSS', 'Contribution', '2026', 'July', 'P&A', 'Online', 'SSS-OR-00819', '2026-08-08', '2026-08-09', '2026-08-10', '485000', 'Posted']],
+    statusTabs: ['All', 'Pending', 'Draft', 'Verified'],
+    fields: [f('code', 'Remittance Code'), f('year', 'Year', 'number'), f('month', 'Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']), f('linkedPayout', 'Posted Payroll Payout', 'select', postedPayrollOptions), f('filedBy', 'Filed By'), f('paidBy', 'Paid By'), f('transactionMode', 'Transaction Mode', 'select', ['Online', 'Over-the-counter', 'Bank Debit', 'Check', 'Cash']), f('agency', 'Statutory Agency', 'select', ['BIR', 'SSS', 'PhilHealth', 'HDMF']), f('statutoryType', 'Statutory Type', 'select', ['Contribution', 'Loan', 'Tax']), f('remittanceType', 'Remittance Type', 'select', ['Contribution', 'Loan', 'Withholding Tax', 'Expanded Tax', 'Final Tax', 'Other']), f('governmentLoanType', 'Government Loan Type', 'select', ['Not applicable', 'SSS Salary Loan', 'SSS Calamity Loan', 'HDMF Multi-Purpose Loan', 'HDMF Calamity Loan'], false), f('loanName', 'Loan Name', 'text', [], false), f('dateFiled', 'Date Filed / Authorized', 'date'), f('filingReference', 'Filing Reference Number'), f('receipt', 'O.R. Number'), f('orDate', 'O.R. Date', 'date', [], false), f('datePaid', 'Date Paid / Posted', 'date', [], false), f('amount', 'Amount Paid', 'number'), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Pending', 'Draft', 'Verified'])],
+    rows: [
+      ['REM-2026-001', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Online', 'SSS', 'Contribution', 'Contribution', 'Not applicable', '', '2026-08-08', 'SSS-FIL-2026-0731', 'SSS-OR-00819', '2026-08-09', '2026-08-10', '485000', '', 'Verified'],
+      ['REM-2026-002', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Online', 'BIR', 'Tax', 'Withholding Tax', 'Not applicable', '', '2026-08-10', 'BIR-1601C-2026-07', 'BIR-OR-11204', '2026-08-10', '2026-08-10', '612400', '', 'Pending'],
+      ['REM-2026-003', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Bank Debit', 'HDMF', 'Loan', 'Loan', 'HDMF Multi-Purpose Loan', 'MPL Amortization', '2026-08-11', 'HDMF-FIL-2026-0715', 'HDMF-OR-77120', '', '', '96500', 'Awaiting O.R. copy', 'Draft'],
+    ],
   },
   billing: {
     version: 2,
@@ -319,6 +376,7 @@ const delegatedWorkspaces = {
   ticketing: ({ onBack, notify }) => <TicketingWorkspace onBack={onBack} notify={notify} />,
   audit: ({ onBack, notify }) => <AuditLogWorkspace onBack={onBack} notify={notify} />,
   employeeOnboarding: ({ onBack, notify }) => <EmployeeOnboardingWorkspace onBack={onBack} notify={notify} />,
+  timeCorrections: ({ onBack, notify, companyId, company }) => <TimeCorrectionWorkspace onBack={onBack} notify={notify} companyId={companyId} company={company} />,
   chargeCodes: ({ onBack, notify }) => <ChargeCodesWorkspace onBack={onBack} notify={notify} />,
   happiness: ({ onBack, notify }) => <HappinessWorkspace onBack={onBack} notify={notify} />,
   wellness: ({ onBack, notify }) => <WellnessWorkspace onBack={onBack} notify={notify} />,
@@ -339,9 +397,9 @@ function UnknownWorkspace({ workspaceKey, onBack }) {
  * declares its own and switching between a delegated and a record workspace
  * would otherwise change the hook count on a mounted component.
  */
-export function OperationalWorkspace({ workspaceKey, onBack, notify }) {
+export function OperationalWorkspace({ workspaceKey, onBack, notify, companyId, company }) {
   const delegate = delegatedWorkspaces[workspaceKey];
-  if (delegate) return delegate({ onBack, notify });
+  if (delegate) return delegate({ onBack, notify, companyId, company });
   const definition = operationalDefinitions[workspaceKey];
   if (!definition) return <UnknownWorkspace workspaceKey={workspaceKey} onBack={onBack} />;
   return <RecordWorkspace key={workspaceKey} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} />;
@@ -381,11 +439,14 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
     } catch { return seedRows(); }
   });
   const [query, setQuery] = useState('');
+  const [statusTab, setStatusTab] = useState('All');
   const [editing, setEditing] = useState(undefined);
   const [viewing, setViewing] = useState(null);
   const uploadRef = useRef(null);
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(rows)), [rows, storageKey]);
-  const visible = useMemo(() => rows.filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query]);
+  const visible = useMemo(() => rows
+    .filter(row => statusTab === 'All' || row.status === statusTab)
+    .filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query, statusTab]);
   const emitAudit = (action, record, summary) => appendAuditEvent({ companyId: readActiveCompanyId(), actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
 
   const save = draft => {
@@ -396,6 +457,17 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
     if (workspaceKey === 'journal' && Number(draft.debit) !== Number(draft.credit)) return notify({ type: 'error', message: 'Journal debit and credit totals must balance.' });
     if (workspaceKey === 'payCodes' && (!draft.debitGl || !draft.creditGl)) return notify({ type: 'error', message: 'Both debit and credit GL accounts are required for a payroll pay code.' });
     if (workspaceKey === 'transactions' && draft.currency !== 'PHP' && Number(draft.conversionRate) <= 0) return notify({ type: 'error', message: 'A positive conversion rate is required for a non-PHP payroll.' });
+    // An effectivity window that closes before it opens would silently pay or
+    // collect nothing, so it is rejected rather than stored.
+    const window = { earnings: ['periodStart', 'endDate'], deductions: ['startDate', 'endDate'], mweRates: ['effectiveDate', ''] }[workspaceKey];
+    if (window && draft[window[1]] && draft[window[0]] && String(draft[window[1]]) < String(draft[window[0]])) return notify({ type: 'error', message: 'The end date cannot fall before the start date.' });
+    if (['earnings', 'bonuses'].includes(workspaceKey) && Number(draft.amount) <= 0) return notify({ type: 'error', message: 'Enter an amount greater than zero.' });
+    if (workspaceKey === 'deductions' && Number(draft.amount) <= 0) return notify({ type: 'error', message: 'Enter a deduction amount greater than zero.' });
+    if (workspaceKey === 'deductions' && Number(draft.balance) < 0) return notify({ type: 'error', message: 'An outstanding balance cannot be negative — a deduction stops once the balance clears.' });
+    if (workspaceKey === 'mweRates' && Number(draft.dailyRate) <= 0) return notify({ type: 'error', message: 'Enter a minimum wage daily rate greater than zero.' });
+    // One region, sector and municipality can only have one rate in force, or
+    // payroll would have two minimum wages to choose between for the same day.
+    if (workspaceKey === 'mweRates' && draft.status === 'Active' && rows.some(row => row.id !== draft.id && row.status === 'Active' && row.region === draft.region && row.sector === draft.sector && row.municipality === draft.municipality)) return notify({ type: 'error', message: `${draft.municipality} already has an active ${draft.sector} rate. Set the superseded row to Inactive first.` });
     if (rows.some(row => row.id !== draft.id && row.code === draft.code)) return notify({ type: 'error', message: `${draft.code} already exists.` });
 
     let prepared = { ...draft };
@@ -499,6 +571,7 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
   return <div className="page-content operational-workspace">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Back</button>
     <div className="page-heading"><div><p className="breadcrumb">Atlas / {definition.title}</p><h1>{definition.title}</h1><p className="page-description">{definition.description}</p></div></div>
+    {definition.statusTabs && <div className="record-status-tabs" role="tablist">{definition.statusTabs.map(tab => <button key={tab} role="tab" aria-selected={statusTab === tab} className={statusTab === tab ? 'selected' : ''} onClick={() => setStatusTab(tab)}>{tab}<span>{tab === 'All' ? rows.length : rows.filter(row => row.status === tab).length}</span></button>)}</div>}
     <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Template</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /><button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div>
     <div className="table-card"><table><thead><tr>{definition.fields.slice(0, 6).map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => {
       const workflow = workflowAction(row);
