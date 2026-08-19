@@ -10,6 +10,8 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
+    // Honour an assigned PORT so the dev server can start when 5173 is taken.
+    port: Number(process.env.PORT) || 5173,
     allowedHosts: ["terminal.local"],
     warmup: {
       clientFiles: ["./src/main.jsx"],

@@ -71,6 +71,10 @@ const moduleDefinitions = {
     defaults: { type: 'Normal', employeeGroup: 'Job Level', subEmployeeGroup: 'L2, L3, L4, Regular', frequency: 'Semi-monthly', status: 'Active', cappedEarning: 'Yes', adjustIfAbsent: 'Yes', minimumAbsent: '3', autoCompute: 'Yes', computationBasis: 'Current Variable Allowance', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'Yes', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisThreshold: '0', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance'], ['47218662', 'Night Differential', 'Normal'],
+      // Tagged for retirement so the Retirement engine can resolve its salary
+      // basis from Earning Configuration instead of redefining the earnings.
+      ['47218663', 'Transportation Allowance', 'Allowance', { classification: 'Retirement', taxability: 'Taxable' }],
+      ['47218664', 'Communication Allowance', 'Allowance', { classification: 'Retirement', taxability: 'Taxable' }],
     ],
   },
   bonuses: {
@@ -226,7 +230,7 @@ const moduleDefinitions = {
     rows: [['TNA-001', 'Standard Work Hours', 'Work Hours'], ['TNA-002', 'Standard Meal Break', 'Break Hours'], ['TNA-003', 'Makati Core Hours', 'Core Hours'], ['TNA-004', 'Flexible Office Schedule', 'Flexible Time'], ['TNA-005', 'Five-Minute Rounding', 'Rounding']],
   },
   overtime: {
-    title: 'Overtime Configuration',
+    title: 'Overtime Rate Management',
     plural: 'overtime policies',
     description: 'Maintain effective-dated overtime codes, day-type rates, attendance conditions, approval controls and employee/group assignments.',
     table: [['code', 'OT Code'], ['name', 'OT Policy Name'], ['type', 'Day Type'], ['employeeGroup', 'Employee Group'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
@@ -472,7 +476,7 @@ function DeleteDialog({ def, record, onClose, onDelete }) {
   return <div className="modal-backdrop" role="presentation"><section className="modal delete-modal" role="dialog" aria-modal="true"><header><h2>Delete {def.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete “{record.name}”?</h3><p>This removes the configuration from the working list. This action cannot be undone.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
 }
 
-export function ServiceConfiguration({ moduleKey, onBack, notify }) {
+export function ServiceConfiguration({ moduleKey, onBack, notify, backLabel = 'Services Information', breadcrumb = 'Company Information / Services Information / Payroll' }) {
   const def = moduleDefinitions[moduleKey];
   const storageKey = `atlas-service-${moduleKey}`;
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey));
@@ -542,8 +546,8 @@ export function ServiceConfiguration({ moduleKey, onBack, notify }) {
 
   return (
     <div className="page-content service-config-page">
-      <button className="inline-back" onClick={onBack}><ArrowLeft /> Services Information</button>
-      <div className="page-heading"><div><p className="breadcrumb">Company Information / Services Information / Payroll</p><h1>{def.title}</h1><p className="page-description">{def.description}</p></div></div>
+      <button className="inline-back" onClick={onBack}><ArrowLeft /> {backLabel}</button>
+      <div className="page-heading"><div><p className="breadcrumb">{breadcrumb}</p><h1>{def.title}</h1><p className="page-description">{def.description}</p></div></div>
       <div className="config-toolbar">
         <div className="search-box"><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder={`Search ${def.plural}...`} /><MagnifyingGlass /></div>
         <button className={`filter-button ${Object.values(filters).some(Boolean) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>

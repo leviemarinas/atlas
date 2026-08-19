@@ -535,7 +535,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts'];
 
   return <div className="app-shell employee-screen">
-    <BrandRail onHome={onBack} onCore={onBack} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
+    <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
     <main className="employee-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} /><div className="employee-page">
       <div className="employee-module-shortcuts"><button className="button secondary" onClick={() => { setModule('bulk'); setDetailOpen(false); }}><FileCsv /> Bulk Actions</button></div>
       {module === 'bulk' ? <BulkActions employees={employeeList} setEmployees={setEmployeeList} notify={notify} /> : module === 'accounts' ? <AccountSettings notify={notify} /> : !detailOpen ? <EmployeeDirectory employees={employeeList} setEmployees={setEmployeeList} onSelect={selectEmployee} onBulk={() => setModule('bulk')} notify={notify} /> : <>

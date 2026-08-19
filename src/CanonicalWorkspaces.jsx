@@ -237,5 +237,8 @@ export function SettingsConfigurationWorkspace({ kind, onBack, notify, companyId
 }
 
 export function OvertimeGateway({ onBack, notify }) {
-  return <ServiceConfiguration moduleKey="overtime" onBack={onBack} notify={notify} />;
+  // Reached from the Settings hub, not the Company Configuration sidebar that
+  // ServiceConfiguration otherwise renders under — its default back label and
+  // breadcrumb named a path this screen was never opened through.
+  return <ServiceConfiguration moduleKey="overtime" onBack={onBack} notify={notify} backLabel="Settings" breadcrumb="Settings / Overtime Rate Management" />;
 }

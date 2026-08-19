@@ -38,7 +38,18 @@ export function effectiveVersion(agency, asOf = new Date().toISOString().slice(0
  * editable again.
  */
 export function readPayrollTransactions() {
-  try { return JSON.parse(localStorage.getItem('atlas-operational-transactions-v1')) || []; } catch { return []; }
+  // The transactions register is versioned (`atlas-operational-transactions-v${n}`,
+  // bumped in OperationalWorkspaces.jsx whenever its field set changes) and a
+  // migration does not carry old rows forward under the new key. Reading only
+  // `-v1` meant this silently saw zero transactions the moment the register
+  // moved to v2, which made every statutory table report "not yet used" even
+  // after payroll had posted a run against it — breaking the §7.1 lock this
+  // file exists to enforce. Check the current version first, then fall back.
+  try {
+    return JSON.parse(localStorage.getItem('atlas-operational-transactions-v2'))
+      || JSON.parse(localStorage.getItem('atlas-operational-transactions-v1'))
+      || [];
+  } catch { return []; }
 }
 
 export function versionUsage(agency, version, data = readStatutoryData()) {
