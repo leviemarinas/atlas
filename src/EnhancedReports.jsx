@@ -5,6 +5,8 @@ import { readReportProtection } from './securityServices';
 import { publishNotificationEvent } from './notificationServices';
 import { downloadFile } from './fileDownload';
 import { plural } from './textFormat';
+import { buildPayrollContext, payrollReport, readPayrollRuns, reportTotals } from './payrollRuns.js';
+import { readHrmData } from './hrmData.js';
 
 export const phase2ReportCatalog = [
   ['RPT-HC-185', 'Headcount', 'Employee Masterfile', 'PDF, Excel', 'Reports.Employee', 'HTP185'],
@@ -49,6 +51,58 @@ export const phase2ReportCatalog = [
 ].map(([reportKey, name, category, formats, requiredPermission, featureRef]) => ({ reportKey, name, category, formats, requiredPermission, featureRef, status: 'Active' }));
 
 const companyId = () => readActiveCompanyId();
+
+/**
+ * Which catalogue reports the payroll run store can actually answer.
+ *
+ * A report in this map is generated from the posted payroll transactions in the
+ * selected window and downloads its real rows; a report outside it still
+ * records a run, because its data source is not implemented in this prototype
+ * and pretending otherwise would produce a convincing but empty file. The
+ * builders themselves are `payrollReportCatalog` entries, so the schedule the
+ * Reports module produces is the same schedule the transaction produces.
+ */
+const PAYROLL_BACKED_REPORTS = {
+  'RPT-PAY-219': 'register',
+  'RPT-EXC-197': 'exceptions',
+  'RPT-LOAN-188': 'loans',
+  'RPT-GL-226': 'journal',
+  'RPT-1601C-244': 'tax',
+  'RPT-PREM-254': 'statutory',
+  'RPT-PSL-221': 'net-pay',
+  'RPT-ERN-189': 'basic-pay',
+  'RPT-OT-195': 'overtime',
+  'RPT-ATT-192': 'lates-absences',
+};
+
+/**
+ * The posted transactions whose payout date falls inside the report window.
+ * A report never reads an open or rejected run: those figures can still change.
+ */
+function postedRunsIn(scope, from, to) {
+  return readPayrollRuns(scope)
+    .filter(run => ['Posted', 'Locked'].includes(run.status) && run.result)
+    .filter(run => (!from || run.payoutDate >= from) && (!to || run.payoutDate <= to))
+    .sort((left, right) => String(left.payoutDate).localeCompare(String(right.payoutDate)));
+}
+
+/** The rows a payroll-backed report produces across every run in the window. */
+function payrollReportRows(scope, reportKey, from, to) {
+  const definition = payrollReport(PAYROLL_BACKED_REPORTS[reportKey]);
+  const runs = postedRunsIn(scope, from, to);
+  const hrmData = readHrmData(scope);
+  const rows = runs.flatMap(run => {
+    const context = buildPayrollContext({ companyId: scope, run, hrmData });
+    return definition.build(run.result, context).map(row => ({ ...row, transactionNumber: run.transactionNumber, payoutDate: run.payoutDate }));
+  });
+  const columns = [
+    { key: 'transactionNumber', label: 'Payroll Transaction' },
+    { key: 'payoutDate', label: 'Payout Date' },
+    ...definition.columns,
+  ];
+  return { definition, columns, rows, runs, totals: reportTotals(definition, rows) };
+}
+
 const readRuns = scope => { try { const saved = JSON.parse(localStorage.getItem('atlas-report-runs-v2')); return Array.isArray(saved) ? saved.filter(item => item.companyId === scope) : []; } catch { return []; } };
 const writeRuns = (rows, scope) => { let saved = []; try { saved = JSON.parse(localStorage.getItem('atlas-report-runs-v2')) || []; } catch { saved = []; } localStorage.setItem('atlas-report-runs-v2', JSON.stringify([...rows, ...saved.filter(item => item.companyId !== scope)])); };
 const Field = ({ label, value, onChange, type = 'text', options }) => <label className="canonical-form-field">{label}{options ? <select value={value || ''} onChange={event => onChange(event.target.value)}>{options.map(option => <option key={option}>{option}</option>)}</select> : <input type={type} value={value || ''} onChange={event => onChange(event.target.value)} />}</label>;
@@ -66,7 +120,30 @@ export function EnhancedReportShellWorkspace({ onBack, notify }) {
   const filtered = useMemo(() => reports.filter(report => (category === 'All categories' || report.category === category) && `${report.name} ${report.category} ${report.featureRef}`.toLowerCase().includes(query.toLowerCase())), [reports, category, query]);
   const availableFormats = selected?.formats.split(',').map(value => value.trim()) || ['PDF'];
   const chooseReport = report => { setSelected(report); setParams(previous => ({ ...previous, format: report.formats.split(',')[0].trim() })); };
-  const makeRun = (report, index = 0) => ({ id: `run-${Date.now()}-${index}`, companyId: scope, reportKey: report.reportKey, reportVersion: 1, parameters: { ...params, format: report.formats.split(',').map(value => value.trim()).includes(params.format) ? params.format : report.formats.split(',')[0].trim() }, dataAsOf: new Date().toISOString(), status: 'Generated', artifactRef: `artifact://${scope}/${report.reportKey}/${Date.now()}-${index}`, protectionSecretRef: protection.enabled ? protection.defaultSecretRef : '', delivery: params.delivery, createdAt: new Date().toISOString() });
+  // A run records what it actually produced: which posted transactions it read
+  // and how many rows came out, so "Generated" is a claim the row can support.
+  const makeRun = (report, index = 0) => ({ id: `run-${Date.now()}-${index}`, companyId: scope, reportKey: report.reportKey, reportVersion: 1, ...payrollEvidence(report), parameters: { ...params, format: report.formats.split(',').map(value => value.trim()).includes(params.format) ? params.format : report.formats.split(',')[0].trim() }, dataAsOf: new Date().toISOString(), status: 'Generated', artifactRef: `artifact://${scope}/${report.reportKey}/${Date.now()}-${index}`, protectionSecretRef: protection.enabled ? protection.defaultSecretRef : '', delivery: params.delivery, createdAt: new Date().toISOString() });
+  const payrollEvidence = report => {
+    if (!PAYROLL_BACKED_REPORTS[report.reportKey]) return { dataSource: 'Not implemented in this prototype', rowCount: 0, sourceTransactions: [] };
+    const { rows, runs: sourceRuns } = payrollReportRows(scope, report.reportKey, params.dateFrom, params.dateTo);
+    return {
+      dataSource: 'Posted payroll transactions',
+      rowCount: rows.length,
+      sourceTransactions: sourceRuns.map(item => item.transactionNumber),
+    };
+  };
+
+  /** A payroll-backed report downloads its real rows, closed by a grand total. */
+  const downloadPayrollReport = report => {
+    const { columns, rows, totals } = payrollReportRows(scope, report.reportKey, params.dateFrom, params.dateTo);
+    if (!rows.length) return false;
+    const cell = value => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const body = rows.map(row => columns.map(column => cell(row[column.key])).join(','));
+    if (totals) body.push(columns.map(column => cell(column.key === 'transactionNumber' ? 'GRAND TOTAL' : totals[column.key] ?? '')).join(','));
+    downloadFile(`${report.reportKey}-${params.dateFrom}-to-${params.dateTo}.csv`, [columns.map(column => cell(column.label)).join(','), ...body].join('\n'), 'text/csv');
+    return true;
+  };
+
   const persistRuns = generated => { const updated = [...generated, ...runs]; setRuns(updated); writeRuns(updated, scope); };
   const auditRun = (report, item) => { appendAuditEvent({ companyId: scope, actor: 'John Doe', action: 'ReportGenerated', entityType: 'ReportRun', entityId: item.id, correlationId: item.id, summary: `${report.reportKey} generated for ${params.dateFrom} to ${params.dateTo}.` }); if (params.delivery !== 'Download') publishNotificationEvent({ eventKey: 'ReportGenerated', companyId: scope, correlationId: item.id, summary: `${report.name} delivery link queued for authorized contacts.`, actor: 'John Doe' }); };
   const run = event => {
@@ -75,7 +152,12 @@ export function EnhancedReportShellWorkspace({ onBack, notify }) {
     if (!availableFormats.includes(params.format)) return notify({ type: 'error', message: `Choose one of the supported formats: ${availableFormats.join(', ')}.` });
     const item = makeRun(selected);
     persistRuns([item]); auditRun(selected, item);
-    notify({ type: 'success', message: `${selected.name} generated${params.delivery === 'Download' ? '' : ' and queued for secure link delivery'}.` });
+    if (PAYROLL_BACKED_REPORTS[selected.reportKey]) {
+      if (!item.rowCount) return notify({ type: 'error', message: `No posted payroll transaction pays out between ${params.dateFrom} and ${params.dateTo}, so ${selected.name} has nothing to report.` });
+      if (params.delivery === 'Download') downloadPayrollReport(selected);
+      return notify({ type: 'success', message: `${selected.name} generated from ${item.sourceTransactions.join(', ')} — ${item.rowCount} ${plural(item.rowCount, 'row')}${params.delivery === 'Download' ? ' downloaded' : ' queued for secure link delivery'}.` });
+    }
+    notify({ type: 'success', message: `${selected.name} generated${params.delivery === 'Download' ? '' : ' and queued for secure link delivery'}. Its data source is not implemented in this prototype, so the run records the request rather than the rows.` });
   };
   const generateVisible = () => {
     if (!filtered.length) return;
@@ -90,10 +172,10 @@ export function EnhancedReportShellWorkspace({ onBack, notify }) {
     <div className="page-heading"><div><p className="breadcrumb">Atlas / Reports</p><h1>Reports</h1><p className="page-description">Generate Phase 2 payroll, employee, time, accounting, statutory, remittance and billing outputs backed by implemented Atlas data sources.</p></div><span className="controlled-badge"><ShieldCheck /> Phase 2 Report Catalog + Run service</span></div>
     <div className="canonical-toolbar"><div><strong>{reports.length}</strong><span> available {plural(reports.length, 'report')}</span></div><div className="toolbar-spacer" /><button className="button secondary" onClick={generateVisible}><FileText /> Generate visible ({filtered.length})</button><button className="button secondary" onClick={exportRuns}><DownloadSimple /> Export run history</button></div>
     <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search report or HTP feature..." /><MagnifyingGlass /></div><label className="toolbar-select">Category<select value={category} onChange={event => setCategory(event.target.value)}>{categories.map(item => <option key={item}>{item}</option>)}</select></label></div>
-    <div className="canonical-role-grid">{filtered.map(report => <button key={report.reportKey} className={`canonical-role-card ${selected?.reportKey === report.reportKey ? 'selected' : ''}`} onClick={() => chooseReport(report)}><strong>{report.name}</strong><small>{report.category} · {report.formats}</small><span>{report.featureRef} · {report.requiredPermission}</span></button>)}</div>
+    <div className="canonical-role-grid">{filtered.map(report => <button key={report.reportKey} className={`canonical-role-card ${selected?.reportKey === report.reportKey ? 'selected' : ''}`} onClick={() => chooseReport(report)}><strong>{report.name}</strong><small>{report.category} · {report.formats}</small><span>{report.featureRef} · {report.requiredPermission}</span>{PAYROLL_BACKED_REPORTS[report.reportKey] && <em className="status-pill active">Reads posted payroll</em>}</button>)}</div>
     {!filtered.length && <div className="empty-state"><MagnifyingGlass /><h3>No reports found</h3><p>Try a different report name, category or HTP feature number.</p></div>}
     <section className="canonical-card"><div className="canonical-card-header"><div><h2>Run {selected?.name}</h2><p>All outputs use approved parameters, immutable data-as-of metadata and the selected company scope.</p></div><span className="status-pill active">{protection.enabled ? 'Protected artifact' : 'Standard artifact'}</span></div><form onSubmit={run}><div className="canonical-form-grid"><Field label="Date from" type="date" value={params.dateFrom} onChange={value => setParams({ ...params, dateFrom: value })} /><Field label="Date to" type="date" value={params.dateTo} onChange={value => setParams({ ...params, dateTo: value })} /><Field label="Employee group" value={params.employeeGroup} onChange={value => setParams({ ...params, employeeGroup: value })} options={['All Employees', 'Rank and File', 'Managers', 'Custom Group']} /><Field label="Agency" value={params.agency} onChange={value => setParams({ ...params, agency: value })} options={['All agencies', 'BIR', 'SSS', 'PhilHealth', 'HDMF']} /><Field label="Group output by" value={params.grouping} onChange={value => setParams({ ...params, grouping: value })} options={['Employee', 'Department', 'Section', 'Position', 'Cost Center']} /><Field label="Format" value={params.format} onChange={value => setParams({ ...params, format: value })} options={availableFormats} /><Field label="Delivery" value={params.delivery} onChange={value => setParams({ ...params, delivery: value })} options={['Download', 'Authorized Contacts (secure email link)']} /></div><div className="canonical-actions"><button className="button primary"><FileText /> Generate report</button></div></form></section>
-    <section className="canonical-card"><div className="canonical-card-header"><div><h2>Generated artifacts</h2><p>Reruns create new immutable artifacts. Bulk generation retains one row per report in the grouped package.</p></div></div><div className="table-card canonical-inner-table"><table><thead><tr><th>Run</th><th>Report</th><th>Date range</th><th>Format / delivery</th><th>Status</th><th>Protection</th></tr></thead><tbody>{runs.map(item => <tr key={item.id}><td><code>{item.id}</code><small>{String(item.createdAt).replace('T', ' ').slice(0, 16)}</small></td><td>{item.reportKey}</td><td>{item.parameters.dateFrom} to {item.parameters.dateTo}</td><td>{item.parameters.format}<small>{item.delivery}</small></td><td>{item.status}</td><td>{item.protectionSecretRef || 'None'}</td></tr>)}</tbody></table></div></section>
+    <section className="canonical-card"><div className="canonical-card-header"><div><h2>Generated artifacts</h2><p>Reruns create new immutable artifacts. Bulk generation retains one row per report in the grouped package.</p></div></div><div className="table-card canonical-inner-table"><table><thead><tr><th>Run</th><th>Report</th><th>Date range</th><th>Source</th><th>Rows</th><th>Format / delivery</th><th>Status</th><th>Protection</th></tr></thead><tbody>{runs.map(item => <tr key={item.id}><td><code>{item.id}</code><small>{String(item.createdAt).replace('T', ' ').slice(0, 16)}</small></td><td>{item.reportKey}</td><td>{item.parameters.dateFrom} to {item.parameters.dateTo}</td><td>{(item.sourceTransactions || []).join(', ') || item.dataSource || '\u2014'}</td><td>{item.rowCount ?? '\u2014'}</td><td>{item.parameters.format}<small>{item.delivery}</small></td><td>{item.status}</td><td>{item.protectionSecretRef || 'None'}</td></tr>)}</tbody></table></div></section>
   </div>;
 }
 

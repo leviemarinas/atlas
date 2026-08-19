@@ -9,6 +9,8 @@
  */
 
 import { REQUEST_STATUSES, REQUEST_TYPES } from './requestWorkflow.js';
+import { employeeRoster } from './employeeRoster.js';
+import { effectiveVersionIn, rateContribution, seedStatutoryData, sssContribution } from './statutorySchedules.js';
 import {
   seedAnnouncements,
   seedLeaveAccruals,
@@ -107,8 +109,17 @@ export function accessFor(role, data = {}, employeeId = SIGNED_IN_EMPLOYEE_ID) {
   const canViewCompany = isPaAdmin || isClientAdmin;
   const canViewTeam = canViewCompany || isApprover;
 
+  // Whose records this actor may read, resolved once here so every screen that
+  // scopes a list reads the same answer rather than re-deriving it from a role.
+  const everyone = (data.employees || []).map(employee => text(employee.employeeId)).filter(Boolean);
+  const own = [text(employeeId)].filter(Boolean);
+  const visible = canViewCompany ? everyone
+    : canViewTeam ? [...own, ...directReports.map(employee => text(employee.employeeId))].filter(Boolean)
+    : own;
+
   return {
     role,
+    visibleEmployeeIds: visible,
     isPaAdmin,
     isClientAdmin,
     isApprover,
@@ -150,14 +161,7 @@ export function hrmActor(role, data = {}, employeeId = SIGNED_IN_EMPLOYEE_ID) {
 
 /** Employee ids the signed-in user is allowed to read, given their role. */
 export function visibleEmployeeIds(data = {}, role, employeeId = SIGNED_IN_EMPLOYEE_ID) {
-  const access = accessFor(role, data, employeeId);
-  const employees = Array.isArray(data.employees) ? data.employees : [];
-  if (access.canViewCompanyData) return employees.map(employee => text(employee.employeeId)).filter(Boolean);
-  if (access.canViewTeamData) {
-    const reports = employees.filter(employee => text(employee.managerId) === text(employeeId)).map(employee => text(employee.employeeId));
-    return [text(employeeId), ...reports].filter(Boolean);
-  }
-  return [text(employeeId)].filter(Boolean);
+  return accessFor(role, data, employeeId).visibleEmployeeIds;
 }
 
 /** Restrict report rows to what the signed-in user may export. */
@@ -274,15 +278,28 @@ export const SHIFT_CATALOG = Object.freeze([
  * of the rest, which is what gives the Client experience its Manage Approvals
  * queue without a second sign-in.
  */
+/**
+ * The HRM / Timekeeping roster is a projection of the one company roster in
+ * `employeeRoster.js`, so a punch, a leave balance, a salary record and a
+ * payroll line all resolve to the same `employeeId`. Payroll-only attributes
+ * (pay type, statutory switches, YTD balances) stay on the roster row; this
+ * view carries the identity and employment fields the HRM screens render.
+ */
 export function seedEmployees() {
-  return [
-    { employeeId: 'EMP-1001', employeeCode: '0011223345', name: 'John Collins Doe', initials: 'JD', position: 'IT Manager', department: 'IT Department', employmentType: 'Full Time Philippines', shiftId: 'shift-morning', managerId: '', status: 'Active' },
-    { employeeId: 'EMP-1002', employeeCode: '0000112345', name: 'Ethan Collins', initials: 'EC', position: 'Sr. Frontend Developer', department: 'IT Department', employmentType: 'Full Time Philippines', shiftId: 'shift-morning', managerId: 'EMP-1001', status: 'Active' },
-    { employeeId: 'EMP-1003', employeeCode: '0000112346', name: 'Sophia Ramirez', initials: 'SR', position: 'QA Analyst', department: 'IT Department', employmentType: 'Full Time Philippines', shiftId: 'shift-afternoon', managerId: 'EMP-1001', status: 'Active' },
-    { employeeId: 'EMP-1004', employeeCode: '0000112347', name: 'Liam Johnson', initials: 'LJ', position: 'Sr. Backend Developer', department: 'IT Department', employmentType: 'Full Time Philippines', shiftId: 'shift-morning', managerId: 'EMP-1001', status: 'Active' },
-    { employeeId: 'EMP-1005', employeeCode: '0000112348', name: 'John Doe Jr.', initials: 'JJ', position: 'Business Analyst', department: 'IT Department', employmentType: 'Full Time Philippines', shiftId: 'shift-mid', managerId: 'EMP-1001', status: 'Active' },
-    { employeeId: 'EMP-1006', employeeCode: '0000112349', name: 'Olivia Carter', initials: 'OC', position: 'Training Specialist', department: 'Learning & Development', employmentType: 'Full Time Philippines', shiftId: 'shift-morning', managerId: 'EMP-1001', status: 'Active' },
-  ];
+  return employeeRoster.map(employee => ({
+    employeeId: employee.employeeId,
+    employeeCode: employee.employeeCode,
+    name: employee.name,
+    initials: employee.initials,
+    position: employee.position,
+    department: employee.department,
+    division: employee.division,
+    employmentType: employee.employmentType,
+    shiftId: employee.shiftId,
+    managerId: employee.managerId,
+    dateHired: employee.dateHired,
+    status: employee.employmentStatus,
+  }));
 }
 
 /**
@@ -979,7 +996,7 @@ export function seedOnboardingDocuments(employees) {
 
 /* --------------------------------------------------- Self-Inquiry Seeds (Part 5) */
 
-export function seedLoanInquiries(employees) {
+export function seedLoanInquiries(employees = seedEmployees()) {
   const definitions = [
     { code: 'LN-GOV-001', name: 'PAG-IBIG Housing Loan', type: 'Government Loan', principal: 2000000, terms: 60, rate: 5, interest: 100000, total: 2100000, start: '01/01/2025', end: '12/31/2025', deduction: 5000, mode: 'Monthly', freq: 'Every Payroll', manual: 20000, computed: 20000, balance: 2080000, status: 'ACTIVE', statusDate: '04/23/2025' },
     { code: 'LN-COM-001', name: 'Company Loan 1', type: 'Company Loan', principal: 100000, terms: 15, rate: 5, interest: 5000, total: 105000, start: '01/01/2025', end: '12/31/2025', deduction: 1000, mode: 'Quarterly', freq: 'Every Payroll', manual: 12000, computed: 12000, balance: 93000, status: 'ACTIVE', statusDate: '04/23/2025' },
@@ -999,8 +1016,16 @@ export function seedLoanInquiries(employees) {
     '11/30/2025', '12/30/2025', '01/30/2026', '02/28/2026', '03/30/2026'
   ];
 
-  return definitions.map(def => ({
+  // Every schedule belongs to somebody: a loan with no `employeeId` shows on
+  // every employee's inquiry and is invisible to payroll, which is exactly the
+  // per-employee filter defect the other seeds were fixed for.
+  return definitions.map((def, index) => {
+    const owner = employees[index % employees.length] || {};
+    return {
     id: def.code,
+    employeeId: owner.employeeId,
+    employeeCode: owner.employeeCode,
+    employeeName: owner.name,
     applicationDate: '01/01/2025',
     transactionNumber: def.code,
     loanName: def.name,
@@ -1020,11 +1045,14 @@ export function seedLoanInquiries(employees) {
     balance: def.balance,
     status: def.status,
     statusDate: def.statusDate,
-    deductionMatrix: payoutPeriods.map(period => ({
+    // A collection never exceeds the outstanding balance: the schedule stops
+    // once the loan is settled rather than listing periods that collect nothing.
+    deductionMatrix: payoutPeriods.map((period, periodIndex) => ({
       payoutPeriod: period,
-      deductionAmount: def.deduction,
-    })),
-  }));
+      deductionAmount: Math.max(0, Math.min(def.deduction, def.total - def.deduction * periodIndex)),
+    })).filter(row => row.deductionAmount > 0),
+    };
+  });
 }
 
 export function seedAttendanceSummaries() {
@@ -1123,42 +1151,74 @@ export function seedCompanyPolicies() {
   ];
 }
 
+/**
+ * The employee's contribution record, looked up in the statutory version in
+ * force rather than typed in. `payrollEngine` performs the same lookup for the
+ * payslip, so the Benefits screen and the payslip can never disagree.
+ */
+const STATUTORY_SEED_DATE = '2025-01-01';
+function seededStatutory(pay = {}) {
+  const data = seedStatutoryData();
+  const basis = Number(pay.monthlyRate) || Number(pay.monthlyBasic) || 0;
+  const sss = sssContribution(effectiveVersionIn(data, 'sss', STATUTORY_SEED_DATE), basis);
+  const phic = rateContribution(effectiveVersionIn(data, 'philhealth', STATUTORY_SEED_DATE), basis);
+  const hdmf = pay.withHdmf === 'No' ? { employee: 0, employer: 0 } : rateContribution(effectiveVersionIn(data, 'pagibig', STATUTORY_SEED_DATE), basis);
+  return {
+    sssEmployee: sss.regularEmployee, sssEmployer: sss.regularEmployer, ecc: sss.ec,
+    sssMpfEmployee: sss.mpfEmployee, sssMpfEmployer: sss.mpfEmployer,
+    phicEmployee: phic.employee, phicEmployer: phic.employer,
+    hdmfEmployee: hdmf.employee, hdmfEmployer: hdmf.employer,
+  };
+}
+
+/**
+ * Salary information is the employee's own compensation record, and payroll
+ * prices its lines from it. Both this screen and `payrollEngine` therefore read
+ * one source: the roster's `payroll` block supplies the pay type and the
+ * derived annual / monthly / daily / hourly / per-minute rates, so a rate can
+ * never say one thing in Benefits and another on a payslip.
+ */
 export function seedSalaryInformation(employees = seedEmployees()) {
-  return employees.map((emp, idx) => {
-    const basic = 45000 + (idx * 5000);
-    const annual = basic * 12;
-    const daily = Number((annual / 261).toFixed(2));
-    const hourly = Number((daily / 8).toFixed(2));
-    const perMinute = Number((hourly / 60).toFixed(2));
+  return employees.map(emp => {
+    const roster = employeeRoster.find(row => row.employeeId === emp.employeeId);
+    const pay = roster?.payroll || {};
+    const basic = pay.payType === 'Monthly' ? Number(pay.monthlyBasic) || 0 : Number(pay.payType === 'Daily' ? pay.dailyRate : pay.hourlyRate) || 0;
+    const previous = { annual: pay.annualRate * 0.92, monthly: pay.monthlyRate * 0.92 };
+    const money = value => Number((Number(value) || 0).toFixed(2));
 
     return {
       id: `sal-${emp.employeeId}`,
       employeeId: emp.employeeId,
-      employeeCode: emp.employeeCode || `00112233${40 + idx}`,
+      employeeCode: emp.employeeCode,
       employeeName: emp.name,
       department: emp.department || 'IT Department',
       division: emp.division || 'Product Development',
       jobTitle: emp.position || 'Software Developer',
-      employmentType: emp.type || 'Full Time Philippines',
-      employeeGroup: idx % 2 === 0 ? 'Management' : 'Staff',
-      dateHired: '01-Jul-2023',
+      employmentType: emp.employmentType || 'Full Time Philippines',
+      employeeGroup: roster?.group || 'Rank and File',
+      dateHired: roster?.dateHired || '',
       basicPay: [
-        { dateCreated: '01/01/2025', payType: 'Monthly', basicPayAmount: basic, workDays: 261, workDaysType: 'Per Year', annualRate: annual, monthlyRate: basic, dailyRate: daily, hourlyRate: hourly, perMinuteRate: perMinute, mwe: 'No', location: 'Taguig City, Metro Manila', effectivityDate: '01/01/2025', startMonth: 'January', startYear: '2025' },
-        { dateCreated: '01/01/2024', payType: 'Monthly', basicPayAmount: basic - 5000, workDays: 261, workDaysType: 'Per Year', annualRate: (basic - 5000) * 12, monthlyRate: basic - 5000, dailyRate: Number(((basic - 5000) * 12 / 261).toFixed(2)), hourlyRate: Number(((basic - 5000) * 12 / 261 / 8).toFixed(2)), perMinuteRate: Number(((basic - 5000) * 12 / 261 / 8 / 60).toFixed(2)), mwe: 'No', location: 'Taguig City, Metro Manila', effectivityDate: '01/01/2024', startMonth: 'January', startYear: '2024' },
+        { dateCreated: '01/01/2025', payType: pay.payType, basicPayAmount: basic, workDays: pay.factorDays, workDaysType: 'Per Year', annualRate: pay.annualRate, monthlyRate: pay.monthlyRate, dailyRate: pay.dailyRate, hourlyRate: pay.hourlyRate, perMinuteRate: pay.perMinuteRate, mwe: pay.mwe, location: roster?.site || 'Head Office', effectivityDate: '01/01/2025', startMonth: 'January', startYear: '2025' },
+        { dateCreated: '01/01/2024', payType: pay.payType, basicPayAmount: money(basic * 0.92), workDays: pay.factorDays, workDaysType: 'Per Year', annualRate: money(previous.annual), monthlyRate: money(previous.monthly), dailyRate: money(previous.annual / (pay.factorDays || 261)), hourlyRate: money(previous.annual / (pay.factorDays || 261) / (pay.workHoursPerDay || 8)), perMinuteRate: money(previous.annual / (pay.factorDays || 261) / (pay.workHoursPerDay || 8) / 60), mwe: pay.mwe, location: roster?.site || 'Head Office', effectivityDate: '01/01/2024', startMonth: 'January', startYear: '2024' },
       ],
+      // The earning codes and labels are the ones the Part 6 mock prints; the
+      // rows after them are the pay items the payroll engine actually prices,
+      // classified the way Earning Management classifies them.
       earnings: [
-        { dateCreated: '01/01/2025', earningCode: 'EXA-001', earningName: 'Salary', earningsAmount: basic, classification: 'Taxable Basic', frequency: 'Monthly', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
-        { dateCreated: '01/01/2025', earningCode: 'EXA-002', earningName: 'Clothing Allowance', earningsAmount: 500.00, classification: 'De Minimis', frequency: 'Monthly', taxability: 'Non-taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
-        { dateCreated: '01/01/2025', earningCode: 'EXA-003', earningName: '13th-month', earningsAmount: basic, classification: 'Taxable Bonus', frequency: 'Annually', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
-        { dateCreated: '01/01/2025', earningCode: 'EXA-004', earningName: 'Transportation Reimbursement', earningsAmount: 2500.00, classification: 'Taxable Reimbursement', frequency: 'Monthly', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-001', earningName: 'Salary', earningsAmount: pay.monthlyRate, classification: 'Taxable Basic', frequency: 'Monthly', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-002', earningName: 'Uniform and Clothing Allowance', earningsAmount: 700.00, classification: 'De Minimis', frequency: 'Monthly', taxability: 'Non-taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-003', earningName: '13th-month', earningsAmount: pay.monthlyRate, classification: 'Taxable Bonus', frequency: 'Annually', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-004', earningName: 'Transportation Reimbursement', earningsAmount: 2500.00, classification: 'Reimbursement', frequency: 'Monthly', taxability: 'Non-taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-005', earningName: 'Rice Subsidy', earningsAmount: 2000.00, classification: 'De Minimis', frequency: 'Monthly', taxability: 'Non-taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
+        { dateCreated: '01/01/2025', earningCode: 'EXA-006', earningName: 'Meal Allowance', earningsAmount: 1500.00, classification: 'Taxable Allowance', frequency: 'Monthly', taxability: 'Taxable', effectivityDate: '01/01/2025', periodStart: '01/01/2025', periodEnd: '12/31/2025', holdDate: '-' },
       ],
       bonuses: [
-        { name: '13th Month Pay (T)', type: '13th Month Pay', taxability: 'Taxable Bonus', amount: basic },
-        { name: 'Performance Bonus', type: 'Performance Bonus', taxability: 'Non-taxable Bonus', amount: 10000.00 },
+        { name: '13th Month Pay (T)', type: '13th Month Pay', taxability: 'Non-taxable up to ceiling', amount: pay.monthlyRate },
+        { name: 'Performance Bonus', type: 'Performance Bonus', taxability: 'Non-taxable up to ceiling', amount: money((pay.monthlyRate || 0) * 0.5) },
       ],
-      statutoryDeductions: [
-        { payPeriod: '01/01/2025', effectivityDate: '04/30/2025', holdDate: '04/30/2025', sssEmployee: 1350.00, sssEmployer: 2850.00, ecc: 30.00, sssMpfEmployee: 450.00, sssMpfEmployer: 900.00, phicEmployee: 1250.00, phicEmployer: 1250.00, hdmfEmployee: 200.00, hdmfEmployer: 200.00 },
-      ],
+      // Contributions are looked up in the effective statutory version rather
+      // than typed in, so this record can never disagree with the payslip.
+      statutoryDeductions: [{ payPeriod: '01/01/2025', effectivityDate: '01/01/2025', holdDate: '-', ...seededStatutory(pay) }],
       companyDeductions: [
         { deductionName: 'Uniform Deduction', amountOfDeduction: 250.00, startDate: '01/01/2025', endDate: '06/30/2025', numberOfDeductions: 12, totalDeductionAmount: 3000.00, accumulatedAmount: 1500.00, totalBalance: 1500.00 },
         { deductionName: 'HMO Dependent Premium', amountOfDeduction: 800.00, startDate: '01/01/2025', endDate: '12/31/2025', numberOfDeductions: 24, totalDeductionAmount: 19200.00, accumulatedAmount: 9600.00, totalBalance: 9600.00 },
@@ -1167,10 +1227,10 @@ export function seedSalaryInformation(employees = seedEmployees()) {
         { payItem: 'Company Emergency Loan', amount: 2083.33, startDate: '01/01/2025', endDate: '12/31/2025', dateGranted: '12/15/2024', referenceNumber: `LN-${emp.employeeId}-01`, principal: 25000.00, interest: 0.00, totalLoan: 25000.00, accumulatedManual: 0.00, accumulatedComputed: 8333.32, balance: 16666.68, holdDate: '-' },
       ],
       hdmfContributions: [
-        { effectivityDate: '01/01/2025', holdDate: '01/01/2025', employeeContribution: 240.00, employerContribution: 480.00 },
+        { effectivityDate: '01/01/2025', holdDate: '-', employeeContribution: pay.hdmfEmployeeContribution || 0, employerContribution: pay.hdmfEmployerContribution || 0 },
       ],
       variableAllowances: [
-        { dateCreated: '01/01/2026', amount: 35000.00, unitBasis: 'Monthly', workDays: 261, workDaysType: 'Work Days per Year', workHoursPerDay: 8, annualRate: 420000.00, monthlyRate: 35000.00, dailyRate: 1609.20, hourlyRate: 201.15, perMinuteRate: 3.35, effectivityDate: '01/01/2026', startMonth: 'January', startYear: '2026', periodStart: '01/01/2026' },
+        { dateCreated: '01/01/2025', amount: 3000.00, unitBasis: 'Monthly', workDays: pay.factorDays, workDaysType: 'Work Days per Year', workHoursPerDay: pay.workHoursPerDay, annualRate: 36000.00, monthlyRate: 3000.00, dailyRate: money(36000 / (pay.factorDays || 261)), hourlyRate: money(36000 / (pay.factorDays || 261) / (pay.workHoursPerDay || 8)), perMinuteRate: money(36000 / (pay.factorDays || 261) / (pay.workHoursPerDay || 8) / 60), effectivityDate: '01/01/2025', startMonth: 'January', startYear: '2025', periodStart: '01/01/2025' },
       ],
     };
   });

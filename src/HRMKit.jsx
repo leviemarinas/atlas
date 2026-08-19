@@ -8,7 +8,8 @@
  * here once so a new workspace composes them instead of restyling them.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   ArrowsOut,
@@ -162,21 +163,67 @@ export function ExportMenu({ onExport, disabled }) {
 }
 
 /** Row overflow menu: View / Edit / Cancel Application. */
+/**
+ * A table's row-action menu has to escape the table: `.hrm-table-scroll`
+ * scrolls horizontally, and setting `overflow-x` without `overflow-y` computes
+ * `overflow-y: auto` per the CSS spec — so a menu absolutely positioned inside
+ * that container was silently clipped (or scrolled off to the right) on any
+ * table wide enough to need the scrollbar, which every dense register is.
+ * Rendering it through a portal at a screen position computed from the
+ * trigger's own bounding rect sidesteps every ancestor's overflow and stacking
+ * context, rather than only the one table it happened to be reported in.
+ */
 export function RowActions({ actions = [] }) {
   const [open, setOpen] = useState(false);
-  const ref = useOutsideClose(() => setOpen(false));
+  const [position, setPosition] = useState(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const icons = { view: Eye, edit: PencilSimple, cancel: Prohibit };
+
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const menuWidth = menuRef.current?.offsetWidth || 152;
+      const menuHeight = menuRef.current?.offsetHeight || 0;
+      const openUpward = rect.bottom + menuHeight + 8 > window.innerHeight && rect.top - menuHeight - 8 > 0;
+      setPosition({
+        top: openUpward ? rect.top - menuHeight - 5 : rect.bottom + 5,
+        left: Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8),
+      });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place); };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handle = event => {
+      if (triggerRef.current?.contains(event.target) || menuRef.current?.contains(event.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [open]);
+
   if (!actions.length) return null;
-  return <div className="hrm-menu-wrap align-end" ref={ref}>
-    <button type="button" className="hrm-row-menu-trigger" aria-label="Row actions" aria-expanded={open} onClick={() => setOpen(value => !value)}>⋮</button>
-    {open && <div className="hrm-menu" role="menu">
-      {actions.map(action => {
-        const Icon = icons[action.kind] || Eye;
-        return <button key={action.label} type="button" role="menuitem" className={action.kind === 'cancel' ? 'danger' : ''} onClick={() => { setOpen(false); action.onSelect(); }}>
-          <Icon size={15} /> {action.label}
-        </button>;
-      })}
-    </div>}
+  return <div className="hrm-menu-wrap align-end">
+    <button ref={triggerRef} type="button" className="hrm-row-menu-trigger" aria-label="Row actions" aria-expanded={open} onClick={() => setOpen(value => !value)}>⋮</button>
+    {open && createPortal(
+      <div ref={menuRef} className="hrm-menu hrm-menu-portal" role="menu" style={position ? { top: position.top, left: position.left, visibility: 'visible' } : { visibility: 'hidden' }}>
+        {actions.map(action => {
+          const Icon = icons[action.kind] || Eye;
+          return <button key={action.label} type="button" role="menuitem" className={action.kind === 'cancel' ? 'danger' : ''} onClick={() => { setOpen(false); action.onSelect(); }}>
+            <Icon size={15} /> {action.label}
+          </button>;
+        })}
+      </div>,
+      document.body,
+    )}
   </div>;
 }
 
@@ -231,8 +278,11 @@ export function DataTable({
   footerRow,
 }) {
   const selectable = Boolean(onSelectRow);
-  const allSelected = selectable && rows.length > 0 && rows.every(row => selectedKeys?.has(rowKey(row)));
-  const someSelected = selectable && !allSelected && rows.some(row => selectedKeys?.has(rowKey(row)));
+  // `rowKey` is called with the row *and* its index: several sub-tables key off
+  // the index because their rows carry no id of their own, and calling it with
+  // one argument gave every one of them the same `name-undefined` key.
+  const allSelected = selectable && rows.length > 0 && rows.every((row, index) => selectedKeys?.has(rowKey(row, index)));
+  const someSelected = selectable && !allSelected && rows.some((row, index) => selectedKeys?.has(rowKey(row, index)));
 
   return <div className="hrm-table-block">
     <div className="hrm-table-scroll">
@@ -254,8 +304,8 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.length === 0 && <tr><td colSpan={columns.length + (actions ? 1 : 0) + (selectable ? 1 : 0)} className="hrm-table-empty">{empty}</td></tr>}
-          {rows.map(row => {
-            const key = rowKey(row);
+          {rows.map((row, index) => {
+            const key = rowKey(row, index);
             const isChecked = selectedKeys?.has(key);
             return <tr key={key} className={isChecked ? 'is-selected' : ''}>
               {selectable && <td className="hrm-check-col" style={{ width: 44, textAlign: 'center' }}>

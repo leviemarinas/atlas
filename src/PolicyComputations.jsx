@@ -21,6 +21,7 @@ import { getPolicyLinkage, policyCoverageCatalog } from './policyGovernance';
 import { withholdingTax } from './statutoryService';
 import { codeParameterScopes, completeParameterSchema, defaultParameterSchema, defaultParameterValues, hydratePolicyCode, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
 import { configuredCollectionByCode } from './payrollIntegration';
+import { applyTakeHomePolicy } from './payrollEngine';
 import {
   BASE_OPTIONS, baseAmount, EngineScope, FieldHelp, FieldLabel, money, number, NumberField, Toggle,
 } from './PolicyFields';
@@ -367,11 +368,19 @@ export function readPolicies() {
   } catch { return seedPolicies; }
 }
 
+/**
+ * The Take-Home Pay simulator.
+ *
+ * The deferral algorithm itself lives in `payrollEngine.applyTakeHomePolicy`,
+ * because the payroll transaction applies the identical rule to a real line.
+ * This function's job is to turn the simulator's scenario into the item list
+ * that algorithm takes and to present its result as the engine screen's ledger,
+ * so the panel can never describe a policy the payroll run does not apply.
+ */
 export function takeHomeResult(policy, hierarchy) {
   const test = policy.test;
   const gross = number(test.grossPay);
   const protectedBase = baseAmount(policy.base, test);
-  const protectedMinimum = policy.thresholdType === 'Fixed Amount' ? number(policy.threshold) : protectedBase * number(policy.threshold) / 100;
 
   const items = hierarchy
     .filter(entry => entry.group !== 'Statutory')
@@ -381,8 +390,6 @@ export function takeHomeResult(policy, hierarchy) {
       return {
         ...entry,
         due,
-        deducted: due,
-        deferred: 0,
         priorDeferred: number(scenario.priorDeferred),
         outstanding: scenario.outstanding === undefined ? number(entry.outstanding) || due : number(scenario.outstanding),
         // The date the amount was originally due stays on the record even after
@@ -392,68 +399,28 @@ export function takeHomeResult(policy, hierarchy) {
     })
     .sort((a, b) => a.rank - b.rank);
 
-  // Rank 1 is adjusted first, so deferrals walk the hierarchy in ascending rank.
-  const deferFrom = (candidates, requested) => {
-    let remaining = Math.max(0, requested);
-    [...candidates].filter(item => item.canAdjust !== false).sort((a, b) => a.rank - b.rank).forEach(item => {
-      if (remaining <= 0) return;
-      const amount = Math.min(item.deducted, remaining);
-      item.deducted -= amount; item.deferred += amount; remaining -= amount;
-    });
-    return remaining;
-  };
-  const capAmount = (type, base, value, fallback) => {
-    if (type === 'Fixed Amount') return number(value);
-    if (type === 'Percentage') return baseAmount(base, test) * number(value) / 100;
-    return fallback;
-  };
+  const applied = applyTakeHomePolicy({
+    policy,
+    items,
+    gross,
+    statutory: number(test.statutory),
+    protectedBase,
+    attendanceDays: number(test.attendanceDays),
+    baseFor: base => baseAmount(base, test),
+  });
 
-  const loans = items.filter(item => item.group === 'Loan');
-  const attendance = items.filter(item => item.kind === 'Attendance');
-  const otherDeductions = items.filter(item => item.group === 'Deduction' && item.kind !== 'Attendance');
-
-  if (policy.deductionCapEnabled) {
-    const capped = [...otherDeductions, ...attendance];
-    const total = capped.reduce((sum, item) => sum + item.deducted, 0);
-    deferFrom(capped, total - capAmount(policy.deductionCapType, policy.deductionCapBase, policy.deductionCap, total));
-  }
-
-  const loanTotal = loans.reduce((sum, item) => sum + item.deducted, 0);
-  deferFrom(loans, loanTotal - capAmount(policy.loanCapType, policy.loanCapBase, policy.loanCap, loanTotal));
-
-  if (attendance.length) {
-    const attendanceDue = attendance.reduce((sum, item) => sum + item.deducted, 0);
-    let cap = attendanceDue;
-    if (policy.attendanceCapType === 'Number of Days') {
-      const days = number(test.attendanceDays);
-      if (days > number(policy.attendanceCap)) cap = attendanceDue * number(policy.attendanceCap) / Math.max(1, days);
-    } else {
-      cap = capAmount(policy.attendanceCapType, policy.attendanceCapBase, policy.attendanceCap, attendanceDue);
-    }
-    deferFrom(attendance, attendanceDue - cap);
-  }
-
-  const mandatory = number(test.statutory);
-  const preliminaryNet = gross - mandatory - items.reduce((sum, item) => sum + item.deducted, 0);
-  // Conflict rule: protecting the loan cap means loans keep collecting and the
-  // shortfall becomes an exception instead of a deeper loan deferral.
-  const adjustable = policy.priorityChoice === 'Loan Deduction Cap' ? items.filter(item => item.group !== 'Loan') : items;
-  if (policy.enabled && policy.autoDefer && preliminaryNet < protectedMinimum) deferFrom(adjustable, protectedMinimum - preliminaryNet);
-
-  const deducted = items.reduce((sum, item) => sum + item.deducted, 0);
-  const finalNet = gross - mandatory - deducted;
-  const deferred = items.reduce((sum, item) => sum + item.deferred, 0);
-  const ledger = items.map(item => ({
-    ...item,
-    accumulated: item.priorDeferred + item.deferred,
-    remaining: Math.max(0, item.outstanding - item.deducted),
-  }));
   return {
-    protectedBase, protectedMinimum, mandatory, ledger, finalNet, deferred, deducted,
-    originalDeductions: items.reduce((sum, item) => sum + item.due, 0),
-    exception: finalNet + 0.005 < protectedMinimum,
-    shortfall: Math.max(0, protectedMinimum - finalNet),
-    capBlocked: policy.priorityChoice === 'Loan Deduction Cap' && finalNet + 0.005 < protectedMinimum,
+    protectedBase,
+    protectedMinimum: applied.protectedMinimum,
+    mandatory: number(test.statutory),
+    ledger: applied.items,
+    finalNet: applied.netPay,
+    deferred: applied.deferred,
+    deducted: applied.deducted,
+    originalDeductions: applied.originalDeductions,
+    exception: applied.exception,
+    shortfall: applied.shortfall,
+    capBlocked: applied.capBlocked,
   };
 }
 

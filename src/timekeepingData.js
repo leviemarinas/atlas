@@ -73,14 +73,34 @@ function isoDate(year, month, day) {
 
 /* --------------------------------------------------------------- the punches */
 
-const CURRENT_YEAR = 2025;
+export const TK_CURRENT_YEAR = 2025;
+const CURRENT_YEAR = TK_CURRENT_YEAR;
 const PRIOR_YEAR = 2024;
-const CURRENT_YEAR_DAYS = [3, 10, 17, 24];
+const SAMPLED_DAYS = [3, 10, 17, 24];
 const PRIOR_YEAR_DAYS = [8, 22];
 const CURRENT_YEAR_MONTHS = 11;
+/**
+ * Payroll prices a cutoff from the punch record, so the months a payroll run
+ * covers need a complete one — every working day, not a weekly sample. The
+ * sampled pattern stays for the rest of the year because the year-to-date tabs
+ * only need a shape, and a full year for every employee would be a large store
+ * to carry for no extra meaning.
+ */
+const FULL_MONTHS = [10, 11];
+
+/** Weekdays of a month, as ISO dates. Rest days never carry a scheduled punch. */
+function workingDaysOf(year, month) {
+  const days = [];
+  const total = new Date(year, month, 0).getDate();
+  for (let day = 1; day <= total; day += 1) {
+    const weekday = new Date(year, month - 1, day).getDay();
+    if (weekday !== 0 && weekday !== 6) days.push(isoDate(year, month, day));
+  }
+  return days;
+}
 
 /**
- * One punch row per employee per sampled date.  The shape of a day — present,
+ * One punch row per employee per planned date.  The shape of a day — present,
  * late, undertime, absent or on leave — is a deterministic function of the
  * employee and the date, so the roster always tells the same story and a
  * filter can be checked against what the table shows.
@@ -88,9 +108,12 @@ const CURRENT_YEAR_MONTHS = 11;
 export function seedTimeLogs(employees = []) {
   const rows = [];
   employees.forEach(employee => {
-    const plan = [];
-    for (let month = 1; month <= CURRENT_YEAR_MONTHS; month += 1) CURRENT_YEAR_DAYS.forEach(day => plan.push(isoDate(CURRENT_YEAR, month, day)));
-    for (let month = 1; month <= 12; month += 1) PRIOR_YEAR_DAYS.forEach(day => plan.push(isoDate(PRIOR_YEAR, month, day)));
+    const plan = new Set();
+    for (let month = 1; month <= CURRENT_YEAR_MONTHS; month += 1) {
+      if (FULL_MONTHS.includes(month)) workingDaysOf(CURRENT_YEAR, month).forEach(date => plan.add(date));
+      else SAMPLED_DAYS.forEach(day => plan.add(isoDate(CURRENT_YEAR, month, day)));
+    }
+    for (let month = 1; month <= 12; month += 1) PRIOR_YEAR_DAYS.forEach(day => plan.add(isoDate(PRIOR_YEAR, month, day)));
     plan.forEach(date => rows.push(buildTimeLog(employee, date)));
   });
   return rows.sort((left, right) => (left.date < right.date ? 1 : -1));

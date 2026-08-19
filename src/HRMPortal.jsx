@@ -269,7 +269,7 @@ export function HRMPortal({ company, companies = [], companyId, onSelectCompany,
   const inOffboarding = route.view === 'offboarding';
   const openTile = moduleTiles.find(tile => tile.key === route.view);
 
-  const workspaceProps = { data, setData, requests, user, access, onBack: goHome, onNotify: flash };
+  const workspaceProps = { data, setData, requests, user, access, companyId, onBack: goHome, onNotify: flash };
 
   return <div className="app-shell core-screen hrm-shell">
     <BrandRail onHome={onExit} onCore={onExit} onHrm={goHome} onTime={onOpenTimekeeping} onPayroll={() => onExit?.()} onSettings={() => onExit?.()} active="hrm" />

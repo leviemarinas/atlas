@@ -34,81 +34,18 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { STATUTORY_STORAGE_KEY, versionUsage } from './statutoryService';
+import { agencyDefinitions, agencyGroups, seedStatutoryData as seedData } from './statutorySchedules';
 import { useRole } from './RoleContext';
 import { visibleTiles } from './moduleAccess';
 
 const STORAGE_KEY = STATUTORY_STORAGE_KEY;
 
-const agencyDefinitions = {
-  sss: {
-    name: 'Social Security System', short: 'SSS', prefix: 'SSS',
-    fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'],
-      ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['totalMsc', 'Total Monthly Salary Credit'],
-      ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'], ['ecEr', 'EC - ER'], ['totalRegular', 'Total Regular SS & EC'],
-      ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER'], ['totalMpf', 'Total MPF'],
-      ['totalEe', 'Total EE'], ['totalEr', 'Total ER'], ['overallTotal', 'Overall Total'],
-    ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['totalEe', 'Total EE'], ['totalEr', 'Total ER'], ['overallTotal', 'Overall Total']],
-  },
-  philhealth: {
-    name: 'PhilHealth', short: 'PhilHealth', prefix: 'PHIC',
-    fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'],
-      ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'],
-      ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate'],
-    ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share']],
-  },
-  pagibig: {
-    name: 'Pag-IBIG', short: 'Pag-IBIG', prefix: 'HDMF',
-    fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'],
-      ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'],
-      ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate'],
-    ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share']],
-  },
-  tax: {
-    name: 'BIR Compensation Tax Table', short: 'Compensation Tax', prefix: 'BIR',
-    fields: [['minimum', 'Minimum Taxable Compensation'], ['maximum', 'Maximum Taxable Compensation'], ['fixedTax', 'Fixed Tax'], ['excessRate', 'Rate on Excess (%)'], ['frequency', 'Payroll Frequency', 'select', ['Weekly', 'Semi-monthly', 'Monthly', 'Annual']]],
-    columns: [['minimum', 'Minimum Taxable Compensation'], ['maximum', 'Maximum Taxable Compensation'], ['fixedTax', 'Fixed Tax'], ['excessRate', 'Excess Rate'], ['frequency', 'Frequency']],
-  },
-  annualTax: {
-    name: 'BIR Annual Tax Table', short: 'Annual Tax', prefix: 'WTA',
-    fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate on Excess (%)'], ['fixedTax', 'Fixed Tax']],
-    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate on Excess (%)'], ['fixedTax', 'Fixed Tax']],
-  },
-  expandedTax: {
-    name: 'BIR Expanded Withholding Tax Table', short: 'Expanded Tax', prefix: 'WTE',
-    fields: [['incomePayment', 'Nature of Income Payment', 'text'], ['atcCode', 'ATC Code', 'text'], ['excessRate', 'Withholding Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['incomePayment', 'Nature of Income Payment'], ['atcCode', 'ATC Code'], ['excessRate', 'Withholding Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-  },
-  finalTax: {
-    name: 'BIR Final Tax Table', short: 'Final Tax', prefix: 'WTF',
-    fields: [['incomePayment', 'Nature of Income Payment', 'text'], ['atcCode', 'ATC Code', 'text'], ['excessRate', 'Final Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['incomePayment', 'Nature of Income Payment'], ['atcCode', 'ATC Code'], ['excessRate', 'Final Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-  },
-  deMinimis: {
-    name: 'De Minimis Benefits', short: 'De Minimis', prefix: 'DMN',
-    fields: [['benefitCode', 'Benefit Code', 'text'], ['benefitName', 'Benefit Name', 'text'], ['ceiling', 'Non-Taxable Ceiling'], ['frequency', 'Ceiling Frequency', 'select', ['Per Payroll', 'Monthly', 'Annual']], ['excessTreatment', 'Excess Treatment', 'select', ['Reclassify as Taxable', 'Stop Payment', 'Allow with Warning']]],
-    columns: [['benefitCode', 'Benefit Code'], ['benefitName', 'Benefit Name'], ['ceiling', 'Ceiling'], ['frequency', 'Frequency'], ['excessTreatment', 'Excess Treatment']],
-  },
-};
-
 /**
- * `Statutory Table` and `Tax Tables` are two tiles over one versioned store.
- * The split follows the P&A Payroll mocks, which show them as separate tiles in
- * both Settings and Payroll; keeping one component means neither tile becomes a
- * second register for the same numbers, and `withholdingTax()` keeps reading
- * the `tax` agency it always read.
+ * The tables themselves live in `statutoryTables.js` so the payroll engine
+ * computes a contribution from the very rows this register publishes. They are
+ * re-exported here because this module is the register's screen.
  */
-export const agencyGroups = {
-  statutory: { title: 'Statutory Tables', agencies: ['sss', 'philhealth', 'pagibig', 'deMinimis'] },
-  tax: { title: 'Tax Tables', agencies: ['annualTax', 'tax', 'expandedTax', 'finalTax'] },
-};
+export { agencyDefinitions, agencyGroups };
 
 const php = value => `₱ ${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fieldType = (agency, key) => (agencyDefinitions[agency]?.fields || []).find(([fieldKey]) => fieldKey === key)?.[2] || 'number';
@@ -123,59 +60,6 @@ const fieldValue = (agency, row, key) => {
   if (/Rate/i.test(key)) return `${Number(row[key] || 0).toFixed(2)}%`;
   return php(row[key]);
 };
-
-function contributionRow(id, minimum, maximum, eeRate, erRate) {
-  return { id, minimum, maximum, unit: 'Percentage (%)', eeRate, erRate, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 };
-}
-
-function sssRow(id, minimum, maximum, mscRegular, mscMpf, regularEe, regularEr, ecEr, mpfEe, mpfEr) {
-  const totalMsc = mscRegular + mscMpf;
-  const totalRegular = regularEe + regularEr + ecEr;
-  const totalMpf = mpfEe + mpfEr;
-  return { id, minimum, maximum, mscRegular, mscMpf, totalMsc, regularEe, regularEr, ecEr, totalRegular, mpfEe, mpfEr, totalMpf, totalEe: regularEe + mpfEe, totalEr: regularEr + ecEr + mpfEr, overallTotal: totalRegular + totalMpf };
-}
-
-function seedVersion(agency, year, index, active = false) {
-  const def = agencyDefinitions[agency];
-  const rows = agency === 'sss'
-    ? [sssRow(1, 0, 5249.99, 5000, 0, 250, 500, 10, 0, 0), sssRow(2, 5250, 5749.99, 5500, 0, 275, 550, 10, 0, 0), sssRow(3, 5750, 6249.99, 6000, 0, 300, 600, 10, 0, 0)]
-    : agency === 'philhealth'
-      ? [
-          { ...contributionRow(1, 0, 9999.99, 0, 0), unit: 'Amount (₱)', minimumEmployeeShare: 250, maximumEmployeeShare: 250, minimumEmployerShare: 250, maximumEmployerShare: 250 },
-          contributionRow(2, 10000, 99999.99, 2.5, 2.5),
-          { ...contributionRow(3, 100000, 999999, 0, 0), unit: 'Amount (₱)', minimumEmployeeShare: 2500, maximumEmployeeShare: 2500, minimumEmployerShare: 2500, maximumEmployerShare: 2500 },
-        ]
-      : agency === 'pagibig'
-        ? [contributionRow(1, 0, 1500, 1, 2), contributionRow(2, 1500.01, 999999, 2, 2), { ...contributionRow(3, 0, 999999, 0, 0), unit: 'Amount (₱)', minimumEmployeeShare: 2500, maximumEmployeeShare: 2500, minimumEmployerShare: 2500, maximumEmployerShare: 2500 }]
-        : agency === 'tax'
-          ? [{ id: 1, minimum: 0, maximum: 20833, fixedTax: 0, excessRate: 0, frequency: 'Monthly' }, { id: 2, minimum: 20833.01, maximum: 33332, fixedTax: 0, excessRate: 15, frequency: 'Monthly' }, { id: 3, minimum: 33333, maximum: 66666, fixedTax: 1875, excessRate: 20, frequency: 'Monthly' }]
-        : agency === 'annualTax'
-          ? [{ id: 1, minimum: 0, maximum: 249999, excessRate: 0, fixedTax: 0 }, { id: 2, minimum: 250000, maximum: 399999, excessRate: 15, fixedTax: 0 }, { id: 3, minimum: 400000, maximum: 799999, excessRate: 20, fixedTax: 22500 }, { id: 4, minimum: 800000, maximum: 1999999, excessRate: 25, fixedTax: 102500 }, { id: 5, minimum: 2000000, maximum: 7999999, excessRate: 30, fixedTax: 402500 }, { id: 6, minimum: 8000000, maximum: 100000000, excessRate: 35, fixedTax: 2202500 }]
-        : agency === 'expandedTax'
-          ? [{ id: 1, incomePayment: 'Professional fees (individual)', atcCode: 'WI010', excessRate: 5, minimum: 0, maximum: 3000000 }, { id: 2, incomePayment: 'Professional fees (individual, above threshold)', atcCode: 'WI011', excessRate: 10, minimum: 3000000.01, maximum: 100000000 }, { id: 3, incomePayment: 'Rentals', atcCode: 'WI100', excessRate: 5, minimum: 0, maximum: 100000000 }]
-        : agency === 'finalTax'
-          ? [{ id: 1, incomePayment: 'Interest on bank deposits', atcCode: 'WI170', excessRate: 20, minimum: 0, maximum: 100000000 }, { id: 2, incomePayment: 'Cash dividends (individual)', atcCode: 'WI180', excessRate: 10, minimum: 0, maximum: 100000000 }, { id: 3, incomePayment: 'Fringe benefit tax (grossed-up)', atcCode: 'WI360', excessRate: 35, minimum: 0, maximum: 100000000 }]
-          : [{ id: 1, benefitCode: 'DM-RICE', benefitName: 'Rice Subsidy', ceiling: 24000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' }, { id: 2, benefitCode: 'DM-UNIFORM', benefitName: 'Uniform and Clothing Allowance', ceiling: 7000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' }, { id: 3, benefitCode: 'DM-MED', benefitName: 'Medical Cash Allowance to Dependents', ceiling: 3000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' }];
-  return {
-    id: `${agency}-${year}-${index}`,
-    code: `${def.prefix}-${year}-${String(index).padStart(3, '0')}`,
-    name: `${def.name} ${year}`,
-    effectiveDate: `${year}-${index === 1 ? '01-01' : '07-01'}`,
-    status: active ? 'Active' : 'Inactive',
-    createdBy: index % 2 ? 'Ethan Collins' : 'Mark Santos',
-    createdAt: `01/02/${year} 09:12:04 AM`,
-    updatedBy: index % 2 ? 'Ethan Collins' : 'Mark Santos',
-    updatedAt: `08/08/${year} 10:00:29 PM`,
-    rows,
-  };
-}
-
-function seedData() {
-  return Object.fromEntries(Object.keys(agencyDefinitions).map(agency => [agency, [
-    seedVersion(agency, 2026, 1, true), seedVersion(agency, 2025, 1), seedVersion(agency, 2024, 1),
-    seedVersion(agency, 2023, 1), seedVersion(agency, 2022, 1), seedVersion(agency, 2021, 1),
-  ]]));
-}
 
 function readData() {
   try {
