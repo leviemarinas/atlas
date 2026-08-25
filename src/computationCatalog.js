@@ -169,14 +169,35 @@ export function seedComputations() {
   return [...known, ...generated];
 }
 
+/**
+ * A `{{token}}` is either an approved field (`monthly_basic`) or another
+ * computation's code (`BAS-001`). Codes carry a hyphen and a numeric suffix,
+ * which is what tells the two apart everywhere below.
+ */
+export function isComputationToken(code) {
+  return /^[a-z]{2,5}-\d{2,4}$/i.test(String(code || ''));
+}
+
 function lexExpression(expression) {
   const cleaned = expression.replace(/\s+/g, '');
-  const matches = cleaned.match(/\{\{[a-z0-9_]+\}\}|\d+(?:\.\d+)?|MAX|MIN|ROUND|[()+\-*/,]/gi) || [];
-  if (matches.join('').toUpperCase() !== cleaned.toUpperCase()) throw new Error('Only mapped fields, numbers, parentheses, and available operators are allowed.');
+  const matches = cleaned.match(/\{\{[a-z0-9_-]+\}\}|\d+(?:\.\d+)?|MAX|MIN|ROUND|[()+\-*/,]/gi) || [];
+  if (matches.join('').toUpperCase() !== cleaned.toUpperCase()) throw new Error('Only mapped fields, published computations, numbers, parentheses, and available operators are allowed.');
   return matches;
 }
 
-export function evaluateExpression(expression, values) {
+/**
+ * Evaluate an expression.
+ *
+ * `options.library` lets a `{{BAS-001}}` token resolve to that computation's
+ * own result, so a formula can build on a published one instead of repeating
+ * its arithmetic. `options.trail` carries the codes already being resolved, so
+ * a reference that loops back on itself is reported rather than hanging.
+ *
+ * A value supplied in `values` always wins, which is how the test tab can pin a
+ * referenced computation to a chosen figure.
+ */
+export function evaluateExpression(expression, values, options = {}) {
+  const { library = null, trail = [] } = options;
   const tokens = lexExpression(expression);
   let position = 0;
   const peek = () => tokens[position];
@@ -202,8 +223,14 @@ export function evaluateExpression(expression, values) {
     }
     if (/^\{\{/.test(token)) {
       const code = token.slice(2, -2);
-      if (!(code in values)) throw new Error(`No test value is mapped for ${code}.`);
-      return Number(values[code]) || 0;
+      if (code in values) return Number(values[code]) || 0;
+      if (isComputationToken(code)) {
+        const referenced = computationByCode(code.toUpperCase(), library || []);
+        if (!referenced) throw new Error(`${code.toUpperCase()} is not a published computation.`);
+        if (trail.includes(referenced.code)) throw new Error(`${referenced.code} refers back to itself through ${trail.join(' → ')}.`);
+        return evaluateExpression(referenced.expression, values, { library, trail: [...trail, referenced.code] });
+      }
+      throw new Error(`No test value is mapped for ${code}.`);
     }
     if (/^\d/.test(token)) return Number(token);
     throw new Error(`Unexpected token ${token}.`);
@@ -234,8 +261,79 @@ export function evaluateExpression(expression, values) {
 }
 
 
+function allTokens(expression) {
+  return [...new Set([...String(expression || '').matchAll(/\{\{([a-z0-9_-]+)\}\}/gi)].map(match => match[1]))];
+}
+
+/** Approved-field tokens used directly by this expression. */
 export function usedFields(expression) {
-  return [...new Set([...String(expression || '').matchAll(/\{\{([a-z0-9_]+)\}\}/gi)].map(match => match[1]))];
+  return allTokens(expression).filter(code => !isComputationToken(code));
+}
+
+/** Computation codes this expression references directly. */
+export function usedComputations(expression) {
+  return allTokens(expression).filter(isComputationToken).map(code => code.toUpperCase());
+}
+
+/**
+ * Every approved field the expression needs once referenced computations are
+ * followed through. This is the list the test tab asks for values for: pull in
+ * Daily Rate and you are asked for monthly basic and factor days, not for a
+ * daily rate you would otherwise have to work out by hand.
+ */
+export function resolvedFields(expression, library = [], trail = []) {
+  const direct = usedFields(expression);
+  const nested = usedComputations(expression).flatMap(code => {
+    if (trail.includes(code)) return [];
+    const referenced = computationByCode(code, library);
+    return referenced ? resolvedFields(referenced.expression, library, [...trail, code]) : [];
+  });
+  return [...new Set([...direct, ...nested])];
+}
+
+/**
+ * The referenced computations, with everything the mapped-field table shows:
+ * whether the code resolves, whether it is still active, and whether following
+ * it would loop back to where it started.
+ */
+export function computationDependencies(expression, library = [], selfCode = '', trail = []) {
+  return usedComputations(expression).map(code => {
+    const referenced = computationByCode(code, library);
+    const circular = code === String(selfCode).toUpperCase() || trail.includes(code);
+    return {
+      code,
+      name: referenced?.name || '',
+      expression: referenced?.expression || '',
+      category: referenced?.category || '',
+      version: referenced?.version || '',
+      status: referenced?.status || '',
+      missing: !referenced,
+      inactive: Boolean(referenced) && referenced.status === 'Inactive',
+      circular,
+    };
+  });
+}
+
+/**
+ * Why an expression cannot be published yet, in the words a finance user needs.
+ * Returns an empty array when the references are all sound.
+ */
+export function referenceProblems(expression, library = [], selfCode = '') {
+  const problems = [];
+  for (const dependency of computationDependencies(expression, library, selfCode)) {
+    if (dependency.circular) problems.push(`${dependency.code} cannot refer to itself.`);
+    else if (dependency.missing) problems.push(`${dependency.code} is not a published computation.`);
+    else if (dependency.inactive) problems.push(`${dependency.code} is inactive, so it cannot be used in a new formula.`);
+    else {
+      try {
+        resolvedFields(expression, library);
+        evaluateExpression(expression, Object.fromEntries(fields.map(([code, , sample]) => [code, sample])), { library });
+      } catch (error) {
+        problems.push(error.message);
+      }
+    }
+  }
+  return [...new Set(problems)];
 }
 
 /** One library record by code, from the seeded catalogue or a saved library. */

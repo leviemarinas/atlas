@@ -125,7 +125,9 @@ function makeStepper(library) {
     let error = '';
     if (evaluate && formula?.expression && formula.status !== 'Inactive') {
       try {
-        value = round2(evaluateExpression(formula.expression, inputs));
+        // `library` lets a published formula that builds on another one resolve
+        // its references the same way the expression builder previewed it.
+        value = round2(evaluateExpression(formula.expression, inputs, { library }));
         evaluated = true;
       } catch (cause) {
         // A formula whose mapped fields this step does not supply falls back to

@@ -16,6 +16,21 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Rule parameters are governed through reusable policy-engine codes. Policy Engines must support creating codes, and newly created codes must become immediately available in the Company Rules wizard.
 - “Enable rule” belongs with rule metadata in Step 1. It is a deliberate toggle, not a validation blocker.
 
+## Computational Basis formula composition
+
+- A formula may reference another published computation by its code (`{{BAS-002}}`) alongside approved fields. A token with a hyphen and a numeric suffix is a computation code; a lowercase token is an approved field. `isComputationToken` in `computationCatalog.js` is the single place that distinction is made.
+- `evaluateExpression(expression, values, { library, trail })` resolves a referenced code by evaluating that record's own expression. A value supplied in `values` always wins, so a test can pin a referenced computation to a chosen figure. `trail` carries the codes being resolved so a loop is reported rather than hanging.
+- The payroll engine passes its library into `evaluateExpression`, so a composed formula produces the same figure at run time that the expression builder previewed.
+- The test tab asks for `resolvedFields` — the transitive field set — not the directly mapped ones. Reference the hourly rate and the user is asked for a daily rate and hours per workday, never for a figure they would have to derive first.
+- Four things are refused before a composed formula saves: a self-reference, a loop, an unpublished code, and an inactive computation. `referenceProblems` returns them in the words a finance user needs; the editor shows them and returns to Formula setup.
+- The mapped-field table carries a Kind column so an approved field and a referenced computation are never confused. The record drawer lists references under "Builds on".
+
+## CSV templates
+
+- Every CSV upload offers a template beside it. Computations: "Download template" in the register toolbar. Reference sources: "Template" on each source card, next to Upload version.
+- A template is generated from live data, not hard-coded: the real header row, up to three rows from the company's own records, then commented lines listing what each column accepts and every approved field code. A template that drifts from the importer is worse than none.
+- The computation importer requires Code and Expression; Name, Category, Status and Effective Date are optional and applied only when present. Import updates existing formulas by code — it does not create records.
+
 ## Payroll requirements synchronization
 
 - Treat the Phase 2 BRD Audit Summary and Annex B Employee Masterfile Payroll Data Tables as the source catalogue for this prototype. Apply requirements that belong to the modules present in Atlas; do not recreate deleted requirements or unrelated infrastructure work as UI.
