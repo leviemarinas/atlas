@@ -40,6 +40,8 @@ import { cancelRequest, submitRequest, updateRequestDetails } from './requestSer
 import { findEmployee, leaveBalancesFor, shiftById, SHIFT_CATALOG } from './hrmData.js';
 import { syncRequestIntoRegisters } from './hrmPosting.js';
 import { downloadFile } from './fileDownload.js';
+import { readPolicies } from './PolicyComputations.jsx';
+import { installmentsForOption, staggeredEligibility, staggeredPaymentOptions } from './staggeredPayments.js';
 import {
   ApprovalLogModal,
   Breadcrumbs,
@@ -90,6 +92,12 @@ const applicationIcons = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+const payrollWindow = () => {
+  const start = new Date();
+  const end = new Date(start);
+  end.setDate(end.getDate() + 14);
+  return `${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)}`;
+};
 
 /**
  * Approvals route to the subject employee's line manager.  Someone with no
@@ -191,6 +199,7 @@ function validateForm(definition, values, context) {
   if (values.leaveStart && values.leaveEnd && values.leaveEnd < values.leaveStart) errors.leaveEnd = 'Leave end cannot precede leave start.';
   if (values.effectiveDateStart && values.effectiveDateEnd && values.effectiveDateEnd < values.effectiveDateStart) errors.effectiveDateEnd = 'The end date cannot precede the start date.';
   if (values.startDate && values.endDate && values.endDate < values.startDate) errors.endDate = 'The end date cannot precede the start date.';
+  if (definition.key === 'staggered-payment' && !context.staggeredPreview.isEligible) errors.eligibleDeduction = 'A request is available only when projected take-home pay is below the configured minimum.';
   return errors;
 }
 
@@ -393,6 +402,11 @@ export function ApplicationWorkspace({
       && row.status === REQUEST_STATUSES.APPROVED
       && !settled.has(row.transactionNo));
   }, [data.cashAdvances, requests, user.employeeId]);
+  const staggeredPreview = useMemo(() => staggeredEligibility({
+    salaryRecord: (data.salaryInformation || []).find(row => row.employeeId === user.employeeId),
+    loanSchedules: (data.loanInquiries || []).filter(row => row.employeeId === user.employeeId),
+    takeHomePolicy: readPolicies(companyId).takeHome,
+  }), [data.salaryInformation, data.loanInquiries, user.employeeId, companyId]);
 
   const context = {
     employee,
@@ -401,7 +415,12 @@ export function ApplicationWorkspace({
     leaveBalances,
     subordinates,
     openCashAdvances,
-    options: { openCashAdvances: openCashAdvances.map(row => row.transactionNo) },
+    staggeredPreview,
+    options: {
+      openCashAdvances: openCashAdvances.map(row => row.transactionNo),
+      staggeredDeductions: staggeredPreview.deductions.map(row => `${row.id} · ${row.name}`),
+      staggeredPaymentOptions: staggeredPaymentOptions.map(option => option.label),
+    },
   };
 
   const filtered = useMemo(() => {
@@ -429,6 +448,10 @@ export function ApplicationWorkspace({
   ];
 
   function openApply() {
+    if (definition.key === 'staggered-payment' && !staggeredPreview.isEligible) {
+      onNotify('No request is available because projected take-home pay is not below the configured minimum.', 'bad');
+      return;
+    }
     const values = { applicationDate: today(), attachments: [] };
     definition.fields.forEach(field => {
       if (field.default) values[field.key] = field.default;
@@ -441,6 +464,14 @@ export function ApplicationWorkspace({
       values.currentAssignment = employee?.department || '';
       values.currentJobTitle = employee?.position || '';
     }
+    if (definition.key === 'staggered-payment') {
+      values.projectedTakeHome = staggeredPreview.projectedTakeHome.toFixed(2);
+      values.minimumTakeHome = staggeredPreview.minimum.toFixed(2);
+      values.eligibleDeduction = staggeredPreview.deductions[0] ? `${staggeredPreview.deductions[0].id} · ${staggeredPreview.deductions[0].name}` : '';
+      values.staggerOption = staggeredPaymentOptions[0].label;
+      values.installments = installmentsForOption(values.staggerOption);
+      values.applicablePayroll = payrollWindow();
+    }
     setFormState({ mode: 'apply', values, errors: {}, step: 1, request: null });
   }
 
@@ -449,7 +480,7 @@ export function ApplicationWorkspace({
   }
 
   function changeField(key, value) {
-    setFormState(current => ({ ...current, values: { ...current.values, [key]: value }, errors: { ...current.errors, [key]: undefined } }));
+    setFormState(current => ({ ...current, values: { ...current.values, [key]: value, ...(key === 'staggerOption' ? { installments: installmentsForOption(value) } : {}) }, errors: { ...current.errors, [key]: undefined } }));
   }
 
   function submitForm() {
@@ -558,6 +589,7 @@ export function ApplicationWorkspace({
   return <div className="hrm-ss-content">
     <Breadcrumbs trail={[{ label: groupByKey(definition.group)?.label, onClick: onBackToGroup }, { label: definition.title }]} />
     <PageHeading title={definition.title} />
+    {definition.key === 'staggered-payment' && <div className={`canonical-callout ${staggeredPreview.isEligible ? 'warning' : ''}`}><span><strong>Take-home projection:</strong> PHP {staggeredPreview.projectedTakeHome.toLocaleString('en-PH', { minimumFractionDigits: 2 })} against a minimum of PHP {staggeredPreview.minimum.toLocaleString('en-PH', { minimumFractionDigits: 2 })}. {staggeredPreview.isEligible ? 'You may request an approved staggered option for an eligible deduction.' : 'No staggered request is needed for the current projection.'}</span></div>}
     <StatusTabs tabs={APPLICATION_STATUS_TABS} value={statusTab} onChange={value => { setStatusTab(value); table.setPage(1); }} />
     <div className="hrm-toolbar">
       <div className="hrm-toolbar-left">
@@ -565,7 +597,7 @@ export function ApplicationWorkspace({
         <FilterButton onClick={() => setDrawerOpen(true)} active={Object.values(table.filters).some(Boolean)} />
       </div>
       <div className="hrm-toolbar-right">
-        <PrimaryButton onClick={openApply}>{definition.applyLabel}</PrimaryButton>
+        <PrimaryButton onClick={openApply} disabled={definition.key === 'staggered-payment' && !staggeredPreview.isEligible}>{definition.applyLabel}</PrimaryButton>
         <ExportMenu onExport={exportRows} disabled={filtered.length === 0} />
       </div>
     </div>

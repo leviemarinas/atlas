@@ -85,7 +85,7 @@ export function landingScreen(role) {
 export function moduleForScreen(screen) {
   if (screen === 'hrm') return 'hrm';
   if (screen === 'timekeeping') return 'timekeeping';
-  if (screen === 'payroll' || screen.startsWith('payroll-workspace:') || screen === 'statutory-payroll' || screen === 'tax-payroll') return 'payroll';
+  if (screen === 'payroll' || screen === 'payroll-policy-management' || screen.startsWith('payroll-workspace:') || screen === 'statutory-payroll' || screen === 'tax-payroll') return 'payroll';
   if (screen === 'settings' || screen.startsWith('settings-workspace:') || screen === 'statutory-settings' || screen === 'tax-settings' || screen === 'reference-settings' || screen === 'settings-computation-admin') return 'settings';
   // Core and everything reached from it — company configuration, the employee
   // masterfile, reference tables, ticketing — is one administrator surface.
@@ -94,6 +94,7 @@ export function moduleForScreen(screen) {
 
 /** True when this actor may stand on this screen. */
 export function canAccessScreen(role, screen) {
+  if (screen === 'scenarios') return true;
   return canAccessModule(role, moduleForScreen(screen));
 }
 

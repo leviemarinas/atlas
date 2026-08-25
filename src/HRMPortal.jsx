@@ -217,7 +217,7 @@ function NotificationsWorkspace({ events, onBack, onNavigateSelfService }) {
 
 /* -------------------------------------------------------------- the module */
 
-export function HRMPortal({ company, companies = [], companyId, onSelectCompany, onExit, onOpenTimekeeping, notify }) {
+export function HRMPortal({ company, companies = [], companyId, onSelectCompany, onExit, onOpenCore, onOpenTimekeeping, onOpenPayroll, onOpenSettings, notify }) {
   const { role } = useRole();
   // `route` is { view, group?, application? } so self-service can restore the
   // exact application screen a breadcrumb or a tile navigated to.
@@ -272,7 +272,7 @@ export function HRMPortal({ company, companies = [], companyId, onSelectCompany,
   const workspaceProps = { data, setData, requests, user, access, companyId, onBack: goHome, onNotify: flash };
 
   return <div className="app-shell core-screen hrm-shell">
-    <BrandRail onHome={onExit} onCore={onExit} onHrm={goHome} onTime={onOpenTimekeeping} onPayroll={() => onExit?.()} onSettings={() => onExit?.()} active="hrm" />
+    <BrandRail onHome={onExit} onCore={onOpenCore || onExit} onHrm={goHome} onTime={onOpenTimekeeping} onPayroll={onOpenPayroll} onSettings={onOpenSettings} active="hrm" />
     {inSelfService && <SelfServiceSidebar
       group={route.group}
       onSelectGroup={group => setRoute({ view: 'self-service', group })}

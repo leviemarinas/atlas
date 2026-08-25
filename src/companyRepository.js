@@ -82,6 +82,91 @@ export const defaultCompanyRecord = {
   updatedAt: '2026-01-01T09:05:00.000Z',
 };
 
+/** Second fully entitled demo tenant used by the multi-company scenario. */
+export const defaultNorthstarCompanyRecord = {
+  companyId: 'cmp-northstar-001',
+  companyCode: 'NSR-PH-001',
+  legalName: 'Northstar Retail Corporation',
+  displayName: 'Northstar Retail',
+  tradeName: 'Northstar Retail',
+  industry: 'Retail',
+  businessType: 'Corporation',
+  tin: '000-987-654-000',
+  lifecycleStatus: 'Active',
+  activationDate: '2026-01-01',
+  offboardingStatus: 'Not scheduled',
+  profile: {
+    registrationStatus: 'Verified', address: 'Quezon City, Metro Manila', zip: '1100',
+    email: 'payroll@northstar.example', payrollContact: 'Retail People Operations',
+  },
+  bankAccounts: [],
+  authorizedContacts: [],
+  signatories: [],
+  documents: [],
+  serviceEnrollments: serviceCatalog.map(service => ({ ...service, enabled: true, effectiveFrom: '2026-01-01' })),
+  updatedAt: '2026-01-01T09:05:00.000Z',
+};
+
+export const simulatorSandboxCompanyRecord = {
+  companyId: 'cmp-atlas-sandbox-001',
+  companyCode: 'SIM-PH-001',
+  legalName: 'Atlas Simulator Sandbox Inc.',
+  displayName: 'Atlas Simulator Sandbox',
+  tradeName: 'Atlas Sandbox',
+  industry: 'Software demonstration',
+  businessType: 'Corporation',
+  tin: '000-000-001-000',
+  lifecycleStatus: 'Active',
+  activationDate: '2026-01-01',
+  offboardingStatus: 'Not scheduled',
+  tenantKind: 'simulator',
+  sampleDataNotice: 'Resettable synthetic data for Scenario Studio. Never use for production processing.',
+  profile: {
+    registrationStatus: 'Demo verified', address: 'Atlas Demo Center, Metro Manila', zip: '1000',
+    telephone: '+63 2 8000 0001', mobile: '+63 917 000 0001', email: 'sandbox@atlas.demo',
+    payrollContact: 'Scenario Payroll Operator', billingContact: 'Scenario Billing Operator', remittanceContact: 'Scenario Treasury Operator',
+  },
+  bankAccounts: [{ bankAccountId: 'bank-sim-001', bankReference: 'SIM-BANK', bankName: 'Atlas Demo Bank', accountName: 'Atlas Simulator Sandbox Inc.', accountNumber: '•••• 0001', branch: 'Demo Branch', accountType: 'Payroll', bankCompanyCode: 'SIM-PAY', paymentMode: 'Bank Transfer', isDefault: true, status: 'Active', effectiveFrom: '2026-01-01', effectiveTo: '' }],
+  authorizedContacts: [{ contactPersonId: 'contact-sim-001', person: 'Scenario Client Admin', role: 'HR & Payroll', responsibility: 'Full simulation', email: 'client-admin@atlas.demo', mobile: '+63 917 000 0002', effectiveFrom: '2026-01-01', effectiveTo: '', status: 'Active' }],
+  signatories: [{ signatoryId: 'signatory-sim-001', person: 'Scenario P&A Admin', title: 'Authorized Demo Approver', approvalRole: 'Final payroll approver', email: 'pa-admin@atlas.demo', signatureDocumentId: 'atlas-demo-signature.png', effectiveFrom: '2026-01-01', effectiveTo: '', status: 'Active' }],
+  documents: [{ documentId: 'doc-sim-001', documentType: 'Simulation data notice', filename: 'atlas-sandbox-notice.pdf', status: 'Validated', expiryDate: '', uploadedAt: '2026-01-01T09:00:00.000Z' }],
+  serviceEnrollments: serviceCatalog.map(service => ({ ...service, enabled: true, effectiveFrom: '2026-01-01' })),
+  updatedAt: '2026-01-01T09:05:00.000Z',
+};
+
+export const productionSampleCompanyRecord = {
+  companyId: 'cmp-meridian-sample-001',
+  companyCode: 'MCP-PH-001',
+  legalName: 'Meridian Consumer Products Philippines, Inc.',
+  displayName: 'Meridian Consumer Products',
+  tradeName: 'Meridian',
+  industry: 'Consumer goods manufacturing and distribution',
+  businessType: 'Corporation',
+  tin: '000-246-810-000',
+  lifecycleStatus: 'Active',
+  activationDate: '2025-01-01',
+  offboardingStatus: 'Not scheduled',
+  tenantKind: 'production-sample',
+  sampleDataNotice: 'Production-like but synthetic Philippine company data. No real individual or bank data is used.',
+  profile: {
+    logo: 'Meridian sample logo', registrationStatus: 'Verified sample', secDtiNumber: 'CS202500246', birRdo: '044',
+    sssBranchCode: 'SSS-NCR-EAST', philHealthBranchCode: 'PHIC-NCR-CENTRAL', hdmfBranchCode: 'HDMF-NCR-EAST',
+    address: 'Ortigas Center, Pasig City, Metro Manila', zip: '1605', telephone: '+63 2 8555 2400', mobile: '+63 917 555 2400',
+    email: 'peopleops@meridian.example', website: 'https://meridian.example', payrollContact: 'Camille Navarro', billingContact: 'Finance Shared Services', remittanceContact: 'Treasury Operations',
+  },
+  bankAccounts: [{ bankAccountId: 'bank-mcp-001', bankReference: 'MCP-PAY-01', bankName: 'Sample Commercial Bank', accountName: 'Meridian Consumer Products Philippines, Inc.', accountNumber: '•••• 6240', branch: 'Ortigas', accountType: 'Payroll', bankCompanyCode: 'MCP-PAY', paymentMode: 'Bank Transfer', isDefault: true, status: 'Active', effectiveFrom: '2025-01-01', effectiveTo: '' }],
+  authorizedContacts: [{ contactPersonId: 'contact-mcp-001', person: 'Camille Navarro', role: 'People Operations Director', responsibility: 'HRM and payroll governance', email: 'camille.navarro@meridian.example', mobile: '+63 917 555 2411', effectiveFrom: '2025-01-01', effectiveTo: '', status: 'Active' }],
+  signatories: [{ signatoryId: 'signatory-mcp-001', person: 'Miguel de Vera', title: 'Finance Director', approvalRole: 'Final payroll approver', email: 'miguel.devera@meridian.example', signatureDocumentId: 'meridian-sample-esignature.png', effectiveFrom: '2025-01-01', effectiveTo: '', status: 'Active' }],
+  documents: [
+    { documentId: 'doc-mcp-001', documentType: 'SEC registration sample', filename: 'meridian-sec-sample.pdf', status: 'Validated', expiryDate: '', uploadedAt: '2025-01-01T08:00:00.000Z' },
+    { documentId: 'doc-mcp-002', documentType: 'BIR registration sample', filename: 'meridian-bir-sample.pdf', status: 'Validated', expiryDate: '', uploadedAt: '2025-01-01T08:05:00.000Z' },
+  ],
+  serviceEnrollments: serviceCatalog.map(service => ({ ...service, enabled: true, effectiveFrom: '2025-01-01' })),
+  updatedAt: '2026-08-20T08:00:00.000Z',
+};
+
+const seededCompanionCompanies = [defaultNorthstarCompanyRecord, simulatorSandboxCompanyRecord, productionSampleCompanyRecord];
+
 const readJson = (key, fallback) => {
   try {
     const saved = JSON.parse(localStorage.getItem(key));
@@ -92,8 +177,14 @@ const readJson = (key, fallback) => {
 const writeJson = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 
 export function readCompanies() {
-  const companies = readJson(COMPANY_STORAGE_KEY, [defaultCompanyRecord]);
-  const source = Array.isArray(companies) && companies.length ? companies : [defaultCompanyRecord];
+  const companies = readJson(COMPANY_STORAGE_KEY, [defaultCompanyRecord, defaultNorthstarCompanyRecord]);
+  const stored = Array.isArray(companies) && companies.length ? companies : [defaultCompanyRecord, defaultNorthstarCompanyRecord];
+  // Local previews created before Scenario Studio had only ABC persisted.
+  // Add Northstar only to that known demo repository; never inject it into an
+  // unrelated customer repository that does not contain the seeded ABC id.
+  const source = stored.some(company => company.companyId === defaultCompanyRecord.companyId)
+    ? seededCompanionCompanies.reduce((rows, sample) => rows.some(company => company.companyId === sample.companyId) ? rows : [...rows, sample], stored)
+    : stored;
   // The reference app ships with these two inherited capabilities enabled for
   // the demo company. Existing local previews may already have a stored
   // company record from before the capabilities were added, so normalize only
@@ -279,17 +370,25 @@ export function companyReadiness(company, lifecycleCase, imports = []) {
   const latestImport = imports.filter(item => item.companyId === company?.companyId).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
   const checklist = lifecycleCase?.checklist || onboardingChecklist();
   const ready = itemCode => checklist.find(item => item.itemCode === itemCode)?.status === 'Complete';
+  const owns = item => item?.companyId === company?.companyId || (!item?.companyId && company?.companyId === defaultCompanyRecord.companyId);
+  const operationalReady = (workspaceKey, predicate) => [3, 2, 1]
+    .some(version => readJson(`atlas-operational-${workspaceKey}-v${version}`, []).some(item => owns(item) && predicate(item)));
+  const serviceReady = moduleKey => {
+    const scoped = readJson(`atlas-service-${moduleKey}:${company?.companyId || 'default'}`, []);
+    const legacy = company?.companyId === defaultCompanyRecord.companyId ? readJson(`atlas-service-${moduleKey}`, []) : [];
+    return [...scoped, ...legacy].some(item => item.status === 'Active');
+  };
   const derived = {
     COMPANY_IDENTITY: Boolean(company?.companyCode && company?.legalName && company?.tin && company?.industry),
     EMPLOYER_REGISTRATIONS: Boolean(company?.profile?.registrationStatus === 'Verified' && company?.documents?.some(item => item.status === 'Validated')),
     CONTACT_BANK: Boolean(company?.profile?.email && company?.profile?.address && company?.bankAccounts?.some(item => item.status === 'Active' && item.isDefault)),
     AUTHORIZED_PEOPLE: Boolean(company?.authorizedContacts?.some(item => item.status === 'Active') && company?.signatories?.some(item => item.status === 'Active')),
     SERVICES: Boolean(company?.serviceEnrollments?.some(item => item.enabled) && company?.serviceEnrollments?.filter(item => item.enabled).every(item => ['Ready', 'Connected'].includes(item.status))),
-    CALENDAR: Boolean(readJson('atlas-operational-calendar-v1', []).some(item => item.status === 'Active') || readJson('atlas-service-payrollControls', []).some(item => item.status === 'Active')),
+    CALENDAR: Boolean(operationalReady('calendar', item => item.status === 'Active') || serviceReady('payrollControls')),
     STARTUP_YTD: Boolean(latestImport && ['Validated', 'Completed'].includes(latestImport.status) && Number(latestImport.accepted || 0) > 0 && !latestImport.rejected),
-    BILLING: Boolean(readJson('atlas-operational-billing-v1', []).some(item => ['Approved', 'Generated'].includes(item.status))),
+    BILLING: Boolean(operationalReady('billing', item => ['Approved', 'Generated'].includes(item.status))),
     CONNECTED_SYSTEMS: Boolean(company?.serviceEnrollments?.filter(item => item.enabled && ['HRM', 'TIMEKEEPING'].includes(item.serviceCode)).every(item => ['Ready', 'Connected'].includes(item.status))),
-    SECURITY_ACCESS: Boolean(readJson('atlas-operational-accessRights-v1', []).some(item => item.status === 'Active')),
+    SECURITY_ACCESS: Boolean(readJson('atlas-security-grants-v1', []).some(item => owns(item) && item.status === 'Active')),
   };
   const preliminaryReady = checklist.filter(item => item.required && item.itemCode !== 'FINAL_REVIEW').every(item => derived[item.itemCode] || item.status === 'Complete');
   const nextChecklist = checklist.map(item => ({ ...item, status: item.itemCode === 'FINAL_REVIEW' && preliminaryReady ? 'Complete' : (derived[item.itemCode] ? 'Complete' : item.status) }));

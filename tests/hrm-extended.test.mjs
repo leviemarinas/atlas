@@ -127,8 +127,10 @@ test('Part 4 management screens are properly registered in employee-requests-man
     'resignation-approval',
     'coe-request-approval',
     'onboarding-documents-approval',
+    'staggered-payment-approval',
     'resignation-management',
     'coe-request-management',
+    'staggered-payment-management',
   ];
 
   const screenKeys = managementScreens.map(s => s.key);
@@ -137,7 +139,7 @@ test('Part 4 management screens are properly registered in employee-requests-man
   });
 
   const groupScreens = screensForGroup('employee-requests-management');
-  assert.equal(groupScreens.length, 5, 'Group employee-requests-management must have exactly 5 screens');
+  assert.equal(groupScreens.length, 7, 'Group employee-requests-management must include the staggered approval and management screens');
 
   const columns = screenColumnsForGroup('employee-requests-management');
   assert.equal(columns.length, 2, 'Group employee-requests-management must split into 2 columns (Approvals and Management)');
@@ -146,8 +148,8 @@ test('Part 4 management screens are properly registered in employee-requests-man
   const managementCol = columns.find(c => c.name === 'Management');
   assert.ok(approvalsCol, 'Approvals column must exist');
   assert.ok(managementCol, 'Management column must exist');
-  assert.equal(approvalsCol.screens.length, 3, 'Approvals column must have 3 cards');
-  assert.equal(managementCol.screens.length, 2, 'Management column must have 2 cards');
+  assert.equal(approvalsCol.screens.length, 4, 'Approvals column must have 4 cards');
+  assert.equal(managementCol.screens.length, 3, 'Management column must have 3 cards');
 });
 
 test('Part 4 domain seeds (resignations, coeRequests, onboardingDocuments) are populated', () => {

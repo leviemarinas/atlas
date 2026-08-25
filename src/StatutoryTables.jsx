@@ -131,7 +131,7 @@ export function SettingsHub({ onOpen, onOpenTax, onOpenReference, onOpenComputat
   </div>;
 }
 
-export function PayrollHub({ onOpen, onOpenTax, onOpenWorkspace }) {
+export function PayrollHub({ onOpen, onOpenTax, onOpenPolicyManagement, onOpenWorkspace }) {
   const { role } = useRole();
   const cards = [
     { icon: Money, label: 'Earning Management', detail: 'Assign recurring and one-time earnings per employee', handler: () => onOpenWorkspace('earnings') },
@@ -140,6 +140,7 @@ export function PayrollHub({ onOpen, onOpenTax, onOpenWorkspace }) {
     { icon: Hash, label: 'Paycode Management', detail: 'Payroll code library, classifications and GL mapping', handler: () => onOpenWorkspace('payCodes') },
     { icon: PaperPlaneTilt, label: 'Remittance Monitoring', detail: 'Track government filings and receipts against posted payouts', handler: () => onOpenWorkspace('remittance') },
     { icon: Receipt, label: 'Payroll Processing', detail: 'Create, recalculate, approve, post and lock payroll', handler: () => onOpenWorkspace('transactions') },
+    { icon: Scales, label: 'Policy Management', detail: 'Manage effective-dated policies, versions, applicability and payroll usage locks', handler: onOpenPolicyManagement },
     { icon: Envelope, label: 'Payslip Designer', detail: 'Configure branded payslip presentation', handler: () => onOpenWorkspace('payslip') },
     { icon: Buildings, label: 'Journal Entry', detail: 'Review balanced payroll accounting entries', handler: () => onOpenWorkspace('journal') },
     { icon: ChartLine, label: 'Reports', detail: 'Generate payroll, statutory, YTD and audit reports', handler: () => onOpenWorkspace('reports') },

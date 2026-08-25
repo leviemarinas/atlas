@@ -18,6 +18,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { downloadFile } from './fileDownload';
+import { defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
 
 const groupOptions =['All Employees', 'Job Level', 'Employee Type', 'Date Hired', 'Location'];
 const subGroupOptions = ['L2, L3, L4, Regular', 'Rank and File', 'Managers', 'Makati Office'];
@@ -300,20 +301,26 @@ const moduleDefinitions = {
   },
 };
 
-const hubItems = [
-  { key: 'computations', short: 'Computational Basis', detail: 'Standard formulas, client assignments, test calculations and reference tables' },
-  { key: 'basicPay', short: 'Basic Pay & Pay Rates', detail: 'Pay types, factor days, MWE, ECOLA and effective-dated rates' },
-  { key: 'timeAttendance', short: 'Time & Attendance', detail: 'Work hours, breaks, core hours, shifts, flexible time and rounding' },
-  { key: 'overtime', short: 'Overtime', detail: 'Day-type rates, attendance conditions, approvals and effective periods' },
-  { key: 'leaveBenefits', short: 'Benefits & Leave', detail: 'Eligibility, accrual, carryover, forfeiture and cash conversion' },
-  { key: 'earnings', short: 'Earnings', detail: 'Earning types, taxability, computation and GL setup' },
-  { key: 'allowances', short: 'Variable Allowances', detail: 'Allowance basis, derived rates and timekeeping integration' },
-  { key: 'deductions', short: 'Deductions', detail: 'Deduction basis, recurring schedules and GL setup' },
-  { key: 'bonuses', short: 'Bonuses', detail: 'Bonus schedules, thresholds, taxability and GL setup' },
-  { key: 'loans', short: 'Company Loans', detail: 'Principal, interest, terms, amortization and balances' },
-  { key: 'governmentLoans', short: 'Government Loans', detail: 'SSS and HDMF loan references, collection schedules and priority' },
-  { key: 'payrollControls', short: 'Payroll Controls', detail: 'Calendars, currencies, deduction order, approvals and payslips' },
-];
+const serviceTabs = Object.freeze({
+  HRM: [
+    { key: 'leaveBenefits', short: 'Benefits & Leave', detail: 'Eligibility, accrual, carryover, forfeiture and cash conversion' },
+  ],
+  Timekeeping: [
+    { key: 'timeAttendance', short: 'Time & Attendance', detail: 'Work hours, breaks, core hours, shifts, flexible time and rounding' },
+    { key: 'overtime', short: 'Overtime', detail: 'Day-type rates, attendance conditions, approvals and effective periods' },
+  ],
+  Payroll: [
+    { key: 'computations', short: 'Computational Basis', detail: 'Standard formulas, client assignments, test calculations and reference tables' },
+    { key: 'basicPay', short: 'Basic Pay & Pay Rates', detail: 'Pay types, factor days, MWE, ECOLA and effective-dated rates' },
+    { key: 'earnings', short: 'Earnings', detail: 'Earning types, taxability, computation and GL setup' },
+    { key: 'allowances', short: 'Variable Allowances', detail: 'Allowance basis, derived rates and timekeeping integration' },
+    { key: 'deductions', short: 'Deductions', detail: 'Deduction basis, recurring schedules and GL setup' },
+    { key: 'bonuses', short: 'Bonuses', detail: 'Bonus schedules, thresholds, taxability and GL setup' },
+    { key: 'loans', short: 'Company Loans', detail: 'Principal, interest, terms, amortization and balances' },
+    { key: 'governmentLoans', short: 'Government Loans', detail: 'SSS and HDMF loan references, collection schedules and priority' },
+    { key: 'payrollControls', short: 'Payroll Controls', detail: 'Calendars, currencies, deduction order, approvals and payslips' },
+  ],
+});
 
 export function initialRows(def) {
   return def.rows.map((row, index) => ({
@@ -326,18 +333,24 @@ export function initialRows(def) {
   }));
 }
 
-export function readServiceConfiguration(moduleKey) {
+export const serviceStorageKey = (moduleKey, companyId) => `atlas-service-${moduleKey}:${companyId || 'default'}`;
+
+export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
   const def = moduleDefinitions[moduleKey];
   if (!def) return [];
   try {
-    const saved = JSON.parse(localStorage.getItem(`atlas-service-${moduleKey}`));
-    const seeded = initialRows(def);
+    const scoped = JSON.parse(localStorage.getItem(serviceStorageKey(moduleKey, companyId)));
+    const legacy = companyId === defaultCompanyRecord.companyId
+      ? JSON.parse(localStorage.getItem(`atlas-service-${moduleKey}`))
+      : null;
+    const saved = Array.isArray(scoped) ? scoped : legacy;
+    const seeded = initialRows(def).map(record => ({ ...record, companyId }));
     if (!Array.isArray(saved)) return seeded;
     const savedByCode = new Map(saved.map(record => [record.code, record]));
-    const reconciled = seeded.map(record => ({ ...record, ...(savedByCode.get(record.code) || {}) }));
+    const reconciled = seeded.map(record => ({ ...record, ...(savedByCode.get(record.code) || {}), companyId }));
     const seedCodes = new Set(seeded.map(record => record.code));
-    return [...reconciled, ...saved.filter(record => !seedCodes.has(record.code)).map(record => ({ ...def.defaults, ...record }))];
-  } catch { return initialRows(def); }
+    return [...reconciled, ...saved.filter(record => !seedCodes.has(record.code)).map(record => ({ ...def.defaults, ...record, companyId }))];
+  } catch { return initialRows(def).map(record => ({ ...record, companyId })); }
 }
 
 function csvEscape(value) {
@@ -365,13 +378,18 @@ function exportRecords(def, records, format) {
 }
 
 export function ServicesHub({ onOpen, companyName = 'ABC Company Ltd' }) {
+  const [tab, setTab] = useState('HRM');
+  const items = serviceTabs[tab];
   return (
     <div className="page-content services-hub">
       <div className="page-heading">
-        <div><p className="breadcrumb">Company Information / Services Information</p><h1>Services Information</h1><p className="page-description">Configure the pay items used by {companyName}. Each policy remains effective-dated and owned by its service module.</p></div>
+        <div><p className="breadcrumb">Company Info / Services Information</p><h1>Services Information</h1><p className="page-description">Configure HRM, Timekeeping, and Payroll services for {companyName}. Each policy remains effective-dated and owned by its module.</p></div>
       </div>
-      <section className="service-grid" aria-label="Payroll configuration modules">
-        {hubItems.map((item, index) => {
+      <div className="tabs service-tabs" role="tablist" aria-label="Service modules">
+        {Object.keys(serviceTabs).map(name => <button type="button" role="tab" aria-selected={tab === name} key={name} className={tab === name ? 'active' : ''} onClick={() => setTab(name)}>{name}<span>{serviceTabs[name].length}</span></button>)}
+      </div>
+      <section className="service-grid" aria-label={`${tab} service configuration`}>
+        {items.map((item, index) => {
           return (
             <button key={item.key} className="service-card" onClick={() => onOpen(item.key)}>
               <span className="service-number">{String(index + 1).padStart(2, '0')}</span>
@@ -476,10 +494,10 @@ function DeleteDialog({ def, record, onClose, onDelete }) {
   return <div className="modal-backdrop" role="presentation"><section className="modal delete-modal" role="dialog" aria-modal="true"><header><h2>Delete {def.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete “{record.name}”?</h3><p>This removes the configuration from the working list. This action cannot be undone.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
 }
 
-export function ServiceConfiguration({ moduleKey, onBack, notify, backLabel = 'Services Information', breadcrumb = 'Company Information / Services Information / Payroll' }) {
+export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyId(), onBack, notify, backLabel = 'Services Information', breadcrumb = 'Company Information / Services Information / Payroll' }) {
   const def = moduleDefinitions[moduleKey];
-  const storageKey = `atlas-service-${moduleKey}`;
-  const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey));
+  const storageKey = serviceStorageKey(moduleKey, companyId);
+  const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState({});
   const [filterOpen, setFilterOpen] = useState(false);
@@ -515,8 +533,8 @@ export function ServiceConfiguration({ moduleKey, onBack, notify, backLabel = 'S
       });
       if (overlap) { notify({ type: 'error', message: 'This active policy overlaps an existing effective period for the same type and employee group.' }); return; }
     }
-    if (draft.id) setRecords(previous => previous.map(record => record.id === draft.id ? draft : record));
-    else setRecords(previous => [{ ...draft, id: Math.max(0, ...previous.map(record => record.id)) + 1, dateCreated: new Date().toLocaleDateString('en-US') }, ...previous]);
+    if (draft.id) setRecords(previous => previous.map(record => record.id === draft.id ? { ...draft, companyId } : record));
+    else setRecords(previous => [{ ...draft, companyId, id: Math.max(0, ...previous.map(record => record.id)) + 1, dateCreated: new Date().toLocaleDateString('en-US') }, ...previous]);
     setEditing(null);
     notify({ type: 'success', message: `${def.title} ${draft.id ? 'updated' : 'added'} successfully.` });
   };

@@ -8,9 +8,11 @@ When implementing from a selected generated mock, treat that image as the source
 
 Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs`, and `tests/sites-worker.test.mjs` intact so the same local prototype can be handed to Sites. Before a Sites handoff, run `npm run build` and `npm run test:sites`; the build must leave `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
 
-## Company rules workflow decisions
+## Payroll policy management workflow decisions
 
-- Keep Company Rules as one unified register. Policy-engine-owned rows may appear in the same table but remain locked and must be edited in Policy Engines.
+- Company Rules has been replaced by **Payroll ▸ Policy Management**. Keep one versioned policy register; policy-engine-owned rows may appear in the same table but remain locked and must be edited in Policy Engines.
+- A policy can be edited only while it is Active and no non-cancelled Payroll Transaction references its policy id. Any later change is a new effective-dated version that retains `supersedesPolicyId`.
+- Payroll Transaction may snapshot multiple policy ids/codes/versions. Versions of the same code are rejected when their effective periods and employee applicability overlap; complementary codes may coexist.
 - Applying a rule is a three-step flow: rule details and activation, mapped policy-engine code selection or inline code creation, then review.
 - Sub-category is always a controlled dropdown derived from the available Atlas modules; do not return to free-text sub-categories.
 - Rule parameters are governed through reusable policy-engine codes. Policy Engines must support creating codes, and newly created codes must become immediately available in the Company Rules wizard.
@@ -71,6 +73,13 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - Carrying an outstanding amount forward and staggering its recovery are two different decisions. `recoveryPlan` in `src/DeferredDeductions.jsx` only staggers above the configured `staggerThreshold`; below it the balance is recovered in full on the next payroll.
 - A deferred item keeps both its original due date and its revised due date, plus approval status, employee authorization status and an audit trail. Outstanding amounts never disappear.
 - The recovery panel covers everything still owed — items deferred this cutoff *and* balances carried in from an earlier one.
+- A Staggered Payment Request is an Employee Self-service request reviewed through Management & Approvals. It is offered only for a projected take-home breach, uses company-defined installment options, and an approved request reduces the matching eligible deduction in the applicable payroll computation without erasing the outstanding balance.
+- The minimum-take-home warning is a configurable notification rule (`MinimumTakeHomePayRisk`) measured in days before the payroll/timekeeping cutoff. Its copy must point the employee to the Staggered Payment Request.
+
+## Services Information placement
+
+- Services Information is opened from the Services Information section inside Company Information; it is not a separate Company Configuration sidebar item.
+- The Services Information screen has HRM, Timekeeping, and Payroll tabs. Computational Basis belongs under Payroll at Company Info ▸ Services Information ▸ Payroll ▸ Computational Basis.
 
 ## Retirement and final pay
 
@@ -264,6 +273,55 @@ Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts
 - **Administrator**: Payroll ▸ Payroll Processing ▸ transaction ▸ employee. `PayrollLineDetail` shows the computation trail, earnings and bonuses, statutory and tax, deductions and loans, the timekeeping behind it, the crediting instruction and the year-to-date movement.
 - **Employee**: HRM ▸ Employee Self-Inquiry ▸ Payslips & Payroll History. Payroll is an administrator module — not one Phase 2 Payroll row grants an employee a register — and the employee's payslip, statutory-contribution and payroll-history inquiries are BRD rows served by HRM. It renders the same line through the same `PayslipDocument`, so there is no second calculation.
 - Only **Posted** and **Locked** runs reach the employee. A transaction still open or in review is not yet their pay, and its figures can still change.
+
+## Scenario Studio
+
+- The shared top bar owns the entry to Atlas Scenario Studio so all four actor experiences can reach the same guided walkthrough catalog without weakening module access rules.
+- The catalog storyboard is explanatory and non-mutating. The separately labeled Full end-to-end mode may write only to the resettable `Atlas Simulator Sandbox`; it must never mutate the production-like sample or another company. Its visible runner must show human-paced cursor movement, hover, scroll, field entry, modal decisions, and actor handoffs before the matching sandbox-domain effect is committed.
+- Keep user stories and simulated steps in `src/scenarioCatalog.js`; the catalog is the single source for role counts, filters, story text, and playback steps. New Atlas workflows should add or update the matching catalog entry rather than hand-writing counts or cards in the page.
+
+### One planned action per step
+
+- `stepPlanFor` in `src/scenarioLivePlans.js` returns exactly one planned action for every catalog step, and the player runs that array. A story can no longer start its live run at step 2 on the assumption that the entry path "covered" step 1, and no step can be silently skipped.
+- Each step ends in one of three recorded outcomes — `done` (a planned control was found and used), `simulated` (no planned control existed, so Atlas highlighted the nearest live element) or `blocked` (the screen offered nothing). The step ledger shows all of them. Approximating a step is allowed; reporting an approximation as a real action is not.
+- A step's kind is derived from its own wording, so editing the catalog updates the live run with it. `Select` and `Choose` classify as `open`, not `form`: in this catalog they name a screen or record ("Select Payslips & Payroll History") far more often than a field, and treating them as data entry made Atlas type into read-only inquiry screens.
+- A `commit` step never fires its control — Atlas stops on it and the viewer decides. This is what keeps the catalog walkthrough non-mutating while still reaching the real decision. Only the Full end-to-end tab writes, and only to the sandbox.
+- Screen-specific knowledge belongs in a plan override (`planWith`), not in a bespoke runner branch keyed off a scenario id. The three hand-written runners this replaced could not be reused, tested, or counted.
+
+### Prepared demonstration data
+
+- A story cannot demonstrate anything against a screen with no records. An audit of all 56 stories found eleven landing on an empty register, every one of them for the same reason: the tenant had never run payroll. `src/scenarioSeed.js` lets a story declare what it needs (`SCENARIO_DATA_NEEDS`) and creates it before the run.
+- Preparation writes to the resettable `Atlas Simulator Sandbox` and points the embedded frame there — never to a client company. Adding invented payroll to a tenant somebody is configuring is worse than an empty screen. Stories with no declared need keep running against the active company; only the eleven switch.
+- Providers are idempotent and the panel says what was created, so a viewer is never silently handed different data than they expected.
+- Seed the state the steps actually name. "Open Draft transaction" needs a run advanced to Draft, not left at Open; "Review payroll exceptions" needs a run that *carries* exceptions, which is the deferral case, not one merely awaiting approval. Matching the story's own wording is the check.
+- A register row must use the register's field names, not the form's labels. Deduction Management stores `code`, `name`, `employee` (as `"<code> - <name>"`), `amount` and `balance`, and the engine matches with `row.employee.startsWith(employee.code)`. A row keyed `deductionCode`/`employeeId` saves fine and is then silently never collected — which is exactly how the first take-home-protection seed produced no deferral at all.
+- The sandbox has an employee with no effective compensation who still accrues statutory deductions, so their line computes negative and blocks the whole run from posting. That is the engine being right. A prepared run recomputes with those employees excluded and records the exclusion in its remarks, rather than posting a negative net or disabling the check.
+- Navigating the embedded frame must await its `load` event (`reloadLiveFrame`). Polling for an element instead races the navigation — the frame answers with the *previous* document during the swap, and the driver binds to a page about to be discarded.
+
+### A control has to be a control
+
+- A clickable `<div onClick>` is invisible to the walkthrough driver, unreachable by keyboard, and silent to assistive technology. The Employee Clearance & Checklist hub used them for the only route into its four sub-screens, which is why three of that story's four steps could find nothing and fell back to the page heading. Both offenders in `HRMOffboarding` are now real `<button>`s with their styling in `styles.css`.
+- Treat a walkthrough step that keeps landing on the page heading as a signal about the *screen*, not the plan. It usually means the control it wants is not exposed as one.
+- A hub screen is not a destination. `Employee Clearance & Checklist` lists four sub-screens; an entry path that stops at the hub leaves every later step with nothing to act on. The path has to name the sub-screen the story is actually about.
+
+### Reading the audit
+
+- Counting `tbody tr` finds empty registers but says nothing about card-based screens. Company Configuration, Reports, Reference Tables and the Add Payroll wizard all report zero rows and are perfectly populated. Confirm a suspected empty screen by looking at its controls before treating it as a defect.
+
+### Driving the embedded app
+
+- Control matching resolves every candidate as an exact label before any is tried as a substring, rejects a loose match more than three times longer than the label sought, and skips `.brand-rail`, `.role-switch` and `.top-actions`. Without those three rules "Download payslip" resolved to the *Payslips & Payroll History* nav entry and "Click Approve" resolved to the topbar's *Approver* role button.
+- An open `[role="dialog"]` is searched before the page behind it, and a `commit` step excludes `[role="tab"]` status filters — an approval register shows both an `Approve` action and an `Approved` filter tab.
+- A register's decisions live behind `Row actions`, not on the record's read-only view. A step that opens a record goes through the row menu, and a decision that is not on screen re-opens that menu before reporting failure.
+- Read a control's label *before* clicking it. A wizard reuses one Next button across its steps, so reading afterwards reported the next step's label as the one that was used.
+- Fill only a form Atlas actually opened. Sweeping every visible input typed into an approval queue's filter dropdowns and then reported them as the step's data entry.
+- `?atlasLiveScenario=1` marks the embedded frame (`isEmbeddedScenarioFrame` in `AppChrome`). It withholds the Scenario Studio launcher there, so a viewer cannot open a Scenario Studio inside the simulation that is already driving one. The parameter existed before but was never read.
+
+### Layout
+
+- The studio has one type scale: ~10px labels, ~12px body, 13–15px titles. The catalog half previously ran at 7–9px against the end-to-end half's 10–14px, so one page read as two unrelated products.
+- The storyboard and the live app are alternatives, not a stack. Showing both at once doubled the page height and mounted two full copies of Atlas in view at the same time.
+- Stage and impact grids are `auto-fit`. Hard-coding seven stage columns left a phantom empty column on every six-stage journey — the same hand-written-count problem the rest of this file already forbids.
 
 ## Timekeeping punch density
 

@@ -187,7 +187,7 @@ function TimekeepingDashboard({ data, user, onOpen }) {
 
 /* ----------------------------------------------------------------- module */
 
-export function TimekeepingPortal({ company, companies = [], companyId, onSelectCompany, onExit, onOpenHrm, notify }) {
+export function TimekeepingPortal({ company, companies = [], companyId, onSelectCompany, onExit, onOpenCore, onOpenHrm, onOpenPayroll, onOpenSettings, notify }) {
   const { role } = useRole();
   const [route, setRoute] = useState({ view: 'home' });
   const [data, setDataState] = useState(() => readHrmData(companyId));
@@ -223,7 +223,7 @@ export function TimekeepingPortal({ company, companies = [], companyId, onSelect
   const openTile = moduleTiles.find(tile => tile.key === route.view);
 
   return <div className="app-shell core-screen hrm-shell">
-    <BrandRail onHome={onExit} onCore={onExit} onHrm={onOpenHrm} onTime={goHome} onPayroll={() => onExit?.()} onSettings={() => onExit?.()} active="time" />
+    <BrandRail onHome={onExit} onCore={onOpenCore || onExit} onHrm={onOpenHrm} onTime={goHome} onPayroll={onOpenPayroll} onSettings={onOpenSettings} active="time" />
     {inChargeCodes && <ChargeCodesSidebar
       subView={route.subView || 'time-report-application'}
       access={access}

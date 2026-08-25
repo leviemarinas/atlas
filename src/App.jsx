@@ -19,6 +19,7 @@ import {
   IdentificationCard,
   Info,
   Key,
+  Lock,
   MagnifyingGlass,
   PencilSimple,
   Phone,
@@ -63,6 +64,9 @@ import { HRMPortal } from './HRMPortal';
 import { useRole } from './RoleContext';
 import { canAccessScreen, landingScreen } from './moduleAccess';
 import { TimekeepingPortal } from './TimekeepingPortal';
+import { ScenarioStudio } from './ScenarioStudio';
+import { readPayrollRuns } from './payrollRuns';
+import { canEditPolicy, createPolicyVersion, normalizePolicy, policyUsage, readManagedPolicies } from './policyManagement';
 
 const violet = '#54248f';
 
@@ -79,7 +83,6 @@ const coreModules = [
 
 const sideItems = [
   { label: 'Company Information', icon: Buildings, enabled: true, view: 'information' },
-  { label: 'Services Information', icon: Wrench, enabled: true, view: 'services' },
   { label: 'Calendar Settings', icon: CalendarBlank, enabled: true, view: 'workspace:calendar' },
   { label: 'Employee Onboarding', icon: IdentificationCard, enabled: true, view: 'workspace:employeeOnboarding', serviceCode: 'HRM' },
   { label: 'Employee Requests', icon: ClockCounterClockwise, enabled: true, view: 'workspace:timeCorrections', serviceCode: 'HRM' },
@@ -88,7 +91,6 @@ const sideItems = [
   { label: 'Health & Wellness', icon: FirstAid, enabled: true, view: 'workspace:wellness', serviceCode: 'WELLNESS' },
   { label: 'Notifications', icon: Bell, enabled: true, view: 'workspace:notifications' },
   { label: 'FAQ and Self-Learning', icon: Info, enabled: true, view: 'workspace:faq' },
-  { label: 'Company Rules', icon: Scales, enabled: true, view: 'rules' },
   { label: 'Connected Systems', icon: PuzzlePiece, enabled: true, view: 'workspace:connectedSystems' },
 ];
 
@@ -536,6 +538,8 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
   const perPage = 10;
   const engineRows = useMemo(getEngineRows, []);
   const registerRows = useMemo(() => [...engineRows, ...rules], [engineRows, rules]);
+  const companyId = rules[0]?.companyId || readActiveCompanyId();
+  const payrollRuns = useMemo(() => readPayrollRuns(companyId), [companyId]);
   const filtered = useMemo(() => registerRows.filter(r => {
     const text = `${r.category} ${r.subcategory} ${r.rule} ${r.parameter} ${r.setting || ''}`.toLowerCase();
     return text.includes(query.toLowerCase()) && (category === 'All categories' || r.category === category) && (subcategory === 'All sub-categories' || r.subcategory === subcategory) && (!enabledOnly || r.enabled);
@@ -549,8 +553,9 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
       setToast({ type: 'error', message: 'A similar rule already exists. Please review and try again.' });
       return false;
     }
-    if (rule.id) setRules(prev => prev.map(r => r.id === rule.id ? rule : r));
-    else setRules(prev => [{ ...rule, id: Math.max(...prev.map(r => r.id), 0) + 1 }, ...prev]);
+    const prepared = normalizePolicy({ ...rule, status: rule.enabled ? 'Active' : 'Inactive' }, 0, companyId);
+    if (rule.id) setRules(prev => prev.map(r => r.id === rule.id ? prepared : r));
+    else setRules(prev => [{ ...prepared, id: Math.max(...prev.map(r => Number(r.id) || 0), 0) + 1 }, ...prev]);
     setEditing(null);
     setToast({ type: 'success', message: rule.id ? 'Rule updated successfully.' : 'Rule added successfully.' });
     return true;
@@ -558,30 +563,30 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
 
   return (
     <div className="page-content rules-page">
-      <div className="page-heading"><div><p className="breadcrumb">Core / Company Configuration</p><h1>Company Rules</h1></div></div>
+      <div className="page-heading"><div><p className="breadcrumb">Payroll / Policy Management</p><h1>Policy Management</h1><p className="page-description">Manage effective-dated payroll policies and preserve the exact versions used by payroll transactions.</p></div></div>
       <div className="tabs" role="tablist">
         {['Rules', 'Enable / Disable Fields', 'Modules & Features', 'Preferences'].map(item => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}
       </div>
       {tab === 'Rules' ? (
         <>
-          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>One rule register</strong><span>Company rules and policy-engine-owned rules are combined below. Engine-owned rows stay locked here to prevent configuration drift.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
+          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>Versioned policy register</strong><span>An Active policy stays editable until a payroll transaction uses it. Used policies are locked; create a new version to change future payroll.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
           <div className="rules-toolbar">
             <div className="search-box"><input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Search rules..." /><MagnifyingGlass /></div>
             <button className={`filter-button ${(category !== 'All categories' || subcategory !== 'All sub-categories' || enabledOnly) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
             <div className="toolbar-spacer" />
-            <button className="button primary" onClick={() => setEditing({ category: 'Pay and Earnings', subcategory: 'Basic Pay', rule: '', parameter: '', policyCode: '', enabled: true, groupBy: 'All Employees', groupValue: 'ABC Company Ltd' })}><Plus /> Apply New Rule</button>
+            <button className="button primary" onClick={() => setEditing({ category: 'Pay and Earnings', subcategory: 'Basic Pay', rule: '', parameter: '', policyCode: '', enabled: true, status: 'Active', version: '1.0', effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: '', groupBy: 'All Employees', groupValue: 'ABC Company Ltd' })}><Plus /> Add Policy</button>
             <button className="button secondary" onClick={() => exportRules(filtered)}><DownloadSimple /> Export</button>
           </div>
           <div className="table-card">
             <table>
-              <thead><tr><th>Category</th><th>Sub-Category</th><th>Specific Rule</th><th>Policy engine / setting</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>Category</th><th>Sub-Category</th><th>Policy</th><th>Code / Version</th><th>Effective Period</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {shown.length ? shown.map(row => (
                   <tr key={row.id}>
-                    <td>{row.category}</td><td>{row.subcategory}</td><td className="rule-cell">{row.rule.split('\n').map((line, i) => <span key={i}>{line}</span>)}{row.engineOwned && <small className="engine-owned-label"><ShieldCheck weight="fill" /> Policy engine owned</small>}</td><td><span className="policy-code-chip">{row.policyCode || row.parameter || 'Not assigned'}</span>{row.setting && <small className="engine-setting">{row.setting}</small>}{row.parameterValues && <small className="engine-setting">{Object.keys(row.parameterValues).length} configured parameter{Object.keys(row.parameterValues).length === 1 ? '' : 's'}</small>}</td>
-                    <td><div className="row-actions">{row.engineOwned ? <button onClick={onOpenPolicies} aria-label="Open policy engine"><ShieldCheck /></button> : <><button onClick={() => setEditing(row)} aria-label="Edit rule"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete rule"><Trash /></button></>}</div></td>
+                    <td>{row.category}</td><td>{row.subcategory}</td><td className="rule-cell">{row.rule.split('\n').map((line, i) => <span key={i}>{line}</span>)}{row.engineOwned && <small className="engine-owned-label"><ShieldCheck weight="fill" /> Policy engine owned</small>}{!row.engineOwned && policyUsage(row, payrollRuns).length > 0 && <small className="engine-owned-label"><Lock weight="fill" /> Used in {policyUsage(row, payrollRuns).length} payroll transaction{policyUsage(row, payrollRuns).length === 1 ? '' : 's'}</small>}</td><td><span className="policy-code-chip">{row.policyCode || row.parameter || 'Not assigned'}</span><small className="engine-setting">Version {row.version || '1.0'}</small>{row.setting && <small className="engine-setting">{row.setting}</small>}{row.parameterValues && <small className="engine-setting">{Object.keys(row.parameterValues).length} configured parameter{Object.keys(row.parameterValues).length === 1 ? '' : 's'}</small>}</td><td>{row.engineOwned ? 'Governed in engine' : `${row.effectiveFrom || '2026-01-01'} – ${row.effectiveTo || 'Open-ended'}`}</td><td><span className={`status-pill ${(row.status || (row.enabled ? 'Active' : 'Inactive')).toLowerCase()}`}>{row.status || (row.enabled ? 'Active' : 'Inactive')}</span></td>
+                    <td><div className="row-actions">{row.engineOwned ? <button onClick={onOpenPolicies} aria-label="Open policy engine"><ShieldCheck /></button> : canEditPolicy(row, payrollRuns) ? <><button onClick={() => setEditing(row)} aria-label="Edit policy"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete unused policy"><Trash /></button></> : <button onClick={() => setEditing(createPolicyVersion(row, rules))} aria-label="Create new policy version" title="Create new version"><Plus /></button>}</div></td>
                   </tr>
-                )) : <tr><td colSpan="5"><div className="empty-state"><MagnifyingGlass /><h3>No rules found</h3><p>Try changing your search or filter.</p></div></td></tr>}
+                )) : <tr><td colSpan="7"><div className="empty-state"><MagnifyingGlass /><h3>No policies found</h3><p>Try changing your search or filter.</p></div></td></tr>}
               </tbody>
             </table>
           </div>
@@ -590,7 +595,7 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
       ) : <SettingsTab key={tab} tab={tab} setToast={setToast} onOpenModule={onOpenModule} />}
       {filterOpen && <FilterPanel category={category} setCategory={value => { setCategory(value); setSubcategory('All sub-categories'); }} subcategory={subcategory} setSubcategory={setSubcategory} enabledOnly={enabledOnly} setEnabledOnly={setEnabledOnly} onClose={() => setFilterOpen(false)} onReset={() => { setCategory('All categories'); setSubcategory('All sub-categories'); setEnabledOnly(false); }} />}
       {editing && <RuleForm rule={editing} onClose={() => setEditing(null)} onSave={saveRule} onOpenPolicies={() => { setEditing(null); onOpenPolicies(); }} />}
-      {deleting && <DeleteDialog rule={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRules(prev => prev.filter(r => r.id !== deleting.id)); setDeleting(null); setToast({ type: 'success', message: 'Rule deleted successfully.' }); }} />}
+      {deleting && <DeleteDialog rule={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRules(prev => prev.filter(r => r.id !== deleting.id)); setDeleting(null); setToast({ type: 'success', message: 'Unused policy deleted successfully.' }); }} />}
     </div>
   );
 }
@@ -601,7 +606,7 @@ function exportRules(rules) {
   const csv = [header, ...rows].map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  link.download = 'company-rules.csv'; link.click(); URL.revokeObjectURL(link.href);
+  link.download = 'payroll-policies.csv'; link.click(); URL.revokeObjectURL(link.href);
 }
 
 function FilterPanel({ category, setCategory, subcategory, setSubcategory, enabledOnly, setEnabledOnly, onClose, onReset }) {
@@ -674,7 +679,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
   const changeCategory = category => setDraft(previous => ({ ...previous, category, subcategory: moduleSubcategories[category][0], policyCode: '', parameter: '', parameterValues: {} }));
   const changeSubcategory = subcategory => setDraft(previous => ({ ...previous, subcategory, policyCode: '', parameter: '', parameterValues: {} }));
   return (
-    <Modal title={draft.id ? 'Edit Rule' : 'Apply New Rule'} onClose={onClose} width="860px">
+    <Modal title={draft.id ? 'Edit Policy' : draft.supersedesPolicyId ? 'Create New Policy Version' : 'Add Policy'} onClose={onClose} width="860px">
       <form className="rule-form rule-wizard" onSubmit={e => { e.preventDefault(); if (step < 3) goNext(); else onSave({ ...draft, parameter: draft.policyCode, parameterValues: configuredValues }); }}>
         <div className="wizard-steps" aria-label="Rule creation progress">
           {ruleWizardSteps.map((label, index) => <div key={label} className={`${step === index + 1 ? 'active' : ''} ${step > index + 1 ? 'complete' : ''}`}><span>{step > index + 1 ? <Check weight="bold" /> : index + 1}</span><strong>{label}</strong></div>)}
@@ -686,6 +691,9 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
             <label>{draft.groupBy}<span className="required">*</span><input value={draft.groupValue} onChange={e => update('groupValue', e.target.value)} required /></label>
             <label>Category<span className="required">*</span><select value={draft.category} onChange={e => changeCategory(e.target.value)}>{Object.keys(moduleSubcategories).map(item => <option key={item}>{item}</option>)}</select></label>
             <label>Sub-category<span className="required">*</span><select value={draft.subcategory} onChange={e => changeSubcategory(e.target.value)}>{moduleSubcategories[draft.category].map(item => <option key={item}>{item}</option>)}</select></label>
+            <label>Version<input value={draft.version || '1.0'} readOnly /></label>
+            <label>Effective From<span className="required">*</span><input type="date" value={draft.effectiveFrom || ''} onChange={e => update('effectiveFrom', e.target.value)} required /></label>
+            <label>Effective To<input type="date" min={draft.effectiveFrom || undefined} value={draft.effectiveTo || ''} onChange={e => update('effectiveTo', e.target.value)} /></label>
             <label className="wide">Specific rule<span className="required">*</span><textarea value={draft.rule} onChange={e => update('rule', e.target.value)} placeholder="Describe the business rule in plain language" required /></label>
           </div>
           <div className="rule-activation-card"><div><strong>Enable rule after creation</strong><span>Keep this on to activate the rule immediately. Turn it off to save the rule without applying it.</span></div><button type="button" className={`switch ${draft.enabled ? 'on' : ''}`} onClick={() => update('enabled', !draft.enabled)} aria-label="Enable rule"><span /></button></div>
@@ -712,7 +720,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
           <div className="review-ready"><CheckCircle weight="fill" /><div><strong>Ready to {draft.id ? 'save' : 'apply'}</strong><span>The rule will be linked to {draft.policyCode} and {draft.enabled ? 'enabled immediately' : 'kept disabled'}.</span></div></div>
         </div>}
         {error && <p className="wizard-error">{error}</p>}
-        <div className="modal-actions wizard-actions"><button type="button" className="button secondary" onClick={step === 1 ? onClose : () => { setError(''); setStep(current => current - 1); }}>{step === 1 ? 'Cancel' : 'Back'}</button><button className="button primary">{step < 3 ? <>Continue <ArrowRight /></> : draft.id ? 'Save rule' : 'Apply rule'}</button></div>
+        <div className="modal-actions wizard-actions"><button type="button" className="button secondary" onClick={step === 1 ? onClose : () => { setError(''); setStep(current => current - 1); }}>{step === 1 ? 'Cancel' : 'Back'}</button><button className="button primary">{step < 3 ? <>Continue <ArrowRight /></> : draft.id ? 'Save policy' : draft.supersedesPolicyId ? 'Create version' : 'Add policy'}</button></div>
       </form>
     </Modal>
   );
@@ -720,8 +728,8 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
 
 function DeleteDialog({ rule, onClose, onDelete }) {
   return (
-    <Modal title="Delete Rule" onClose={onClose} width="440px">
-      <div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete this company rule?</h3><p>“{rule.rule.slice(0, 95)}{rule.rule.length > 95 ? '…' : ''}”</p><p>This action is irreversible.</p></div></div>
+    <Modal title="Delete Policy" onClose={onClose} width="440px">
+      <div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete this unused policy?</h3><p>“{rule.rule.slice(0, 95)}{rule.rule.length > 95 ? '…' : ''}”</p><p>Policies referenced by payroll are locked and cannot reach this action.</p></div></div>
       <div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div>
     </Modal>
   );
@@ -756,20 +764,18 @@ function derivedCompletedSections(company = defaultCompanyRecord) {
   ].filter(Boolean);
 }
 
+const companyRulesKey = companyId => `atlas-company-rules-v3:${companyId || 'default'}`;
+function readCompanyRules(companyId) {
+  return readManagedPolicies(companyId);
+}
+
 export function App() {
   const { role } = useRole();
   const [screen, setScreen] = useState(() => landingScreen(role));
   const [view, setView] = useState('information');
   const [companyRecords, setCompanyRecords] = useState(() => readCompanies());
   const [activeCompanyId, setActiveCompanyId] = useState(() => readActiveCompanyId());
-  const [rules, setRules] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('atlas-company-rules-v3'));
-      if (!Array.isArray(saved)) return requirementRuleSeeds;
-      const missing = requirementRuleSeeds.filter(seed => !saved.some(rule => (rule.policyCode || rule.parameter) === seed.policyCode));
-      return [...missing, ...saved];
-    } catch { return requirementRuleSeeds; }
-  });
+  const [rules, setRules] = useState(() => readCompanyRules(readActiveCompanyId()));
   const [companyData, setCompanyData] = useState(() => {
     const initialId = readActiveCompanyId();
     const repositoryData = companyRecordToData(readCompanies().find(company => company.companyId === initialId) || defaultCompanyRecord);
@@ -803,9 +809,14 @@ export function App() {
   const pathname = window.location.pathname.toLowerCase();
   const experience = pathname.startsWith('/wireframe') ? 'wireframe' : pathname.startsWith('/monochrome') ? 'monochrome' : 'original';
   useEffect(() => { document.documentElement.dataset.experience = experience; }, [experience]);
-  useEffect(() => { localStorage.setItem('atlas-company-rules-v3', JSON.stringify(rules)); }, [rules]);
+  useEffect(() => { localStorage.setItem(companyRulesKey(activeCompanyId), JSON.stringify(rules)); }, [rules, activeCompanyId]);
   useEffect(() => { localStorage.setItem('atlas-company-data-v3', JSON.stringify(companyData)); }, [companyData]);
   useEffect(() => { localStorage.setItem('atlas-company-completed-v3', JSON.stringify(completed)); }, [completed]);
+  useEffect(() => {
+    const openScenarios = () => setScreen('scenarios');
+    window.addEventListener('atlas:open-scenarios', openScenarios);
+    return () => window.removeEventListener('atlas:open-scenarios', openScenarios);
+  }, []);
 
   const notify = (value) => { setToast(value); window.setTimeout(() => setToast(null), 4200); };
   /** Single entry point for changing the company every module reads from. */
@@ -815,6 +826,7 @@ export function App() {
     const record = refreshed.find(company => company.companyId === resolvedId) || refreshed[0] || defaultCompanyRecord;
     setCompanyRecords(refreshed);
     setActiveCompanyId(record.companyId);
+    setRules(readCompanyRules(record.companyId));
     setCompanyData(companyRecordToData(record));
     setCompleted(derivedCompletedSections(record));
     return record;
@@ -859,8 +871,9 @@ export function App() {
     else if (module === 'Tickets') setScreen('ticketing');
     else { setScreen('company'); setView('information'); }
   }} />;
-  if (screen === 'timekeeping') return <TimekeepingPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenHrm={() => setScreen('hrm')} notify={notify} />;
-  if (screen === 'hrm') return <HRMPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenTimekeeping={() => setScreen('timekeeping')} notify={notify} />;
+  if (screen === 'scenarios') return <ScenarioStudio onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />;
+  if (screen === 'timekeeping') return <TimekeepingPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenCore={() => setScreen('core')} onOpenHrm={() => setScreen('hrm')} onOpenPayroll={() => setScreen('payroll')} onOpenSettings={() => setScreen('settings')} notify={notify} />;
+  if (screen === 'hrm') return <HRMPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenCore={() => setScreen('core')} onOpenTimekeeping={() => setScreen('timekeeping')} onOpenPayroll={() => setScreen('payroll')} onOpenSettings={() => setScreen('settings')} notify={notify} />;
   if (screen === 'employee') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
     <EmployeeMasterfile onBack={() => setScreen('core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
@@ -870,10 +883,11 @@ export function App() {
     <Toast toast={toast} onClose={() => setToast(null)} />
     <ReferenceTables onBack={() => setScreen(screen === 'reference-settings' ? 'settings' : 'core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
-  if (screen === 'settings' || screen === 'payroll' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'tax-settings' || screen === 'tax-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
+  if (screen === 'settings' || screen === 'payroll' || screen === 'payroll-policy-management' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'tax-settings' || screen === 'tax-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
     <Toast toast={toast} onClose={() => setToast(null)} />
     {screen === 'settings' && <SettingsHub onOpen={() => setScreen('statutory-settings')} onOpenTax={() => setScreen('tax-settings')} onOpenReference={() => setScreen('reference-settings')} onOpenComputationLibrary={() => setScreen('settings-computation-admin')} onOpenWorkspace={key => setScreen(`settings-workspace:${key}`)} />}
-    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenTax={() => setScreen('tax-payroll')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
+    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenTax={() => setScreen('tax-payroll')} onOpenPolicyManagement={() => setScreen('payroll-policy-management')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
+    {screen === 'payroll-policy-management' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => { setScreen('company'); setView('policies'); }} onOpenModule={target => { const [scope, ...parts] = target.split(':'); const destination = parts.join(':'); if (scope === 'view') { setScreen('company'); setView(destination); } if (scope === 'screen') setScreen(destination); }} />}
     {screen === 'statutory-settings' && <StatutoryTables mode="settings" group="statutory" onBack={() => setScreen('settings')} notify={notify} />}
     {screen === 'statutory-payroll' && <StatutoryTables mode="payroll" group="statutory" onBack={() => setScreen('payroll')} notify={notify} />}
     {screen === 'tax-settings' && <StatutoryTables mode="settings" group="tax" onBack={() => setScreen('settings')} notify={notify} />}
@@ -886,15 +900,15 @@ export function App() {
     <CompanyLayout view={view} setView={setView} onBack={() => setScreen('core')} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
       <Toast toast={toast} onClose={() => setToast(null)} />
       {view === 'information' && <CompanyInformation data={companyData} setData={setCompanyData} completed={completed} setCompleted={setCompleted} setToast={notify} onOpenServices={() => setView('services')} company={activeCompany} onSaveCompany={persistCompany} />}
-      {view === 'rules' && <RulesPage rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
+      {view === 'rules' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
         const [scope, ...parts] = target.split(':');
         const destination = parts.join(':');
         if (scope === 'view') setView(destination);
         if (scope === 'screen') setScreen(destination);
       }} />}
       {view === 'services' && <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />}
-      {(view === 'computations' || view === 'policies') && <ComputationalBasis key={view} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
-      {view.startsWith('service:') && <ServiceConfiguration moduleKey={view.split(':')[1]} onBack={() => setView('services')} notify={notify} />}
+      {(view === 'computations' || view === 'policies') && <ComputationalBasis key={`${view}:${activeCompanyId}`} companyId={activeCompanyId} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
+      {view.startsWith('service:') && <ServiceConfiguration key={`${view}:${activeCompanyId}`} moduleKey={view.split(':')[1]} companyId={activeCompanyId} onBack={() => setView('services')} notify={notify} />}
       {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
     </CompanyLayout>
   );

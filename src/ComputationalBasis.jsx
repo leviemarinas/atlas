@@ -413,7 +413,7 @@ function ReferenceEditor({ table: reference, onClose, onSave, onExport }) {
   </Modal>;
 }
 
-export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
+export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
   const { isAdmin } = useRole();
   const [computations, setComputations] = useState(() => readStored(STORAGE.computations, seedComputations()).map(item => ({ ...item, isBuiltIn: item.isBuiltIn !== false })));
   const [assignments, setAssignments] = useState(() => readStored(STORAGE.assignments, initialAssignments));
@@ -660,7 +660,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
 
   return <div className="page-content computational-page">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Services Information</button>
-    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Information / Services Information / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">Manage Atlas standard formulas, client assignments, policy scenarios, and linked reference sources used by automatic payroll calculation.</p></div><span className="controlled-badge"><Check weight="bold" /> Controlled standard library</span></div>
+    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Info / Services Information / Payroll / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">Manage Atlas standard formulas, client assignments, policy scenarios, and linked reference sources used by automatic payroll calculation.</p></div><span className="controlled-badge"><Check weight="bold" /> Controlled standard library</span></div>
     <SummaryCards computations={computations} references={references} assignments={assignments} />
     <div className="basis-tabs" role="tablist">
       <button className={tab === 'computations' ? 'active' : ''} onClick={() => setTab('computations')}>Computations <span>{computations.length}</span></button>
@@ -700,7 +700,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
       </tbody></table></div>
     </>}
 
-    {tab === 'policies' && <PolicyComputations notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
+    {tab === 'policies' && <PolicyComputations companyId={companyId} notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
 
     {tab === 'references' && <>
       <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Formula reference sources</h2><p>Maintain formula reference sources. Statutory contribution versions are linked here but managed in Settings, then consumed read-only in Payroll.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>

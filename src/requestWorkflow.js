@@ -23,6 +23,7 @@ export const REQUEST_TYPES = Object.freeze({
   COE_REQUEST: 'COE_REQUEST',
   DOCUMENT_REQUEST: 'DOCUMENT_REQUEST',
   RESIGNATION: 'RESIGNATION',
+  STAGGERED_PAYMENT: 'STAGGERED_PAYMENT',
 });
 
 export const REQUEST_TYPE_LABELS = Object.freeze({
@@ -43,6 +44,7 @@ export const REQUEST_TYPE_LABELS = Object.freeze({
   [REQUEST_TYPES.COE_REQUEST]: 'Certificate of Employment Request',
   [REQUEST_TYPES.DOCUMENT_REQUEST]: 'Document Request',
   [REQUEST_TYPES.RESIGNATION]: 'Employee Resignation',
+  [REQUEST_TYPES.STAGGERED_PAYMENT]: 'Staggered Payment Request',
 });
 
 export const REQUEST_STATUSES = Object.freeze({

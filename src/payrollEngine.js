@@ -37,6 +37,7 @@
  */
 
 import { computationByCode, evaluateExpression, seedComputations } from './computationCatalog.js';
+import { requestAppliesToTransaction, staggeredDue } from './staggeredPayments.js';
 import {
   bracketFor,
   graduatedTax,
@@ -307,7 +308,7 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
  * cleared or passed its end date stops collecting, so a settled item cannot
  * reappear on a later payroll.
  */
-export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [] }) {
+export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [], staggeredRequests = [] }) {
   const rankOf = (name, group) => {
     const entry = hierarchy.find(row => row.name === name)
       || hierarchy.find(row => row.group === group && row.kind && name.toLowerCase().includes(row.kind.toLowerCase()));
@@ -349,18 +350,26 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
   const loans = loanSchedules
     .filter(row => (row.status || 'ACTIVE') === 'ACTIVE' && number(row.balance) > 0)
     .filter(row => !row.periodEndDate || toIsoDate(row.periodEndDate) >= payoutDate)
-    .map(row => ({
-      code: row.transactionNumber || row.id,
-      name: row.loanName,
-      group: 'Loan',
-      kind: row.loanType === 'Government Loan' ? 'Government' : 'Company',
-      due: round2(Math.min(number(row.deductionAmount), number(row.balance))),
-      outstanding: number(row.balance),
-      rank: rankOf(row.loanName, 'Loan'),
-      canAdjust: true,
-      authorised: row.authorityToDeduct ? row.authorityToDeduct.acknowledged !== false : true,
-      source: row.loanType === 'Government Loan' ? 'Government Loan Management' : 'Company Loan Management',
-    }));
+    .map(row => {
+      const request = staggeredRequests.find(item => item.employeeId === employee.employeeId
+        && String(item.requestDetails?.eligibleDeduction || '').startsWith(row.transactionNumber || row.id)
+        && requestAppliesToTransaction(item, transaction));
+      const originalDue = round2(Math.min(number(row.deductionAmount), number(row.balance)));
+      return {
+        code: row.transactionNumber || row.id,
+        name: row.loanName,
+        group: 'Loan',
+        kind: row.loanType === 'Government Loan' ? 'Government' : 'Company',
+        due: request ? staggeredDue(originalDue, request) : originalDue,
+        originalDue,
+        outstanding: number(row.balance),
+        rank: rankOf(row.loanName, 'Loan'),
+        canAdjust: true,
+        authorised: row.authorityToDeduct ? row.authorityToDeduct.acknowledged !== false : true,
+        source: request ? `Approved Staggered Payment Request ${request.requestId}` : row.loanType === 'Government Loan' ? 'Government Loan Management' : 'Company Loan Management',
+        staggeredRequestId: request?.requestId || '',
+      };
+    });
 
   return [...loans, ...companyDeductions, ...assigned, ...manual]
     .filter(item => item.due > 0)
@@ -521,7 +530,9 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     basicPay = 0;
     record({ code: 'ERN-001', category: 'Basic Pay', amount: 0, evaluate: false, detail: 'Zero Basic Pay is set for this run — basic pay is not computed', source: 'Transaction configuration' });
   } else if (pay.payType === 'Daily') {
-    const days = attendance.daysCovered ? attendance.daysWorked + attendance.paidLeaveDays : number(config.daysInPeriod);
+    const days = Number.isFinite(Number(override.daysInPeriod))
+      ? Number(override.daysInPeriod)
+      : attendance.daysCovered ? attendance.daysWorked + attendance.paidLeaveDays : number(config.daysInPeriod);
     basicPay = round2(dailyRate * days);
     record({
       code: 'MWE-001', label: pay.mwe === 'Yes' ? 'MWE Pay with ECOLA' : 'Daily-paid basic pay', category: 'Basic Pay',
@@ -531,7 +542,9 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     });
     if (pay.mwe === 'Yes') basicPay = round2(basicPay + number(pay.ecolaPerDay) * days);
   } else if (pay.payType === 'Hourly') {
-    const hours = attendance.hoursWorked || number(config.hoursInPeriod);
+    const hours = Number.isFinite(Number(override.hoursInPeriod))
+      ? Number(override.hoursInPeriod)
+      : attendance.hoursWorked || number(config.hoursInPeriod);
     basicPay = round2(hourlyRate * hours);
     record({ code: 'PRT-001', category: 'Basic Pay', inputs: { part_time_hours: hours, hourly_rate: hourlyRate }, detail: `${hours} rendered hours × hourly rate`, source: 'Timekeeping punch record' });
   } else {
@@ -785,13 +798,24 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     withholdingTax = 0;
   }
 
+  if (transaction.payrollType === 'Override' && Number.isFinite(Number(override.withholdingTax))) {
+    withholdingTax = round2(Math.max(0, Number(override.withholdingTax)));
+    taxBasis = 'Manual override transaction';
+    record({
+      code: 'TAX-002', label: 'Withholding tax override', category: 'Tax', amount: withholdingTax, evaluate: false,
+      inputs: { withholding_tax_override: withholdingTax },
+      detail: 'Authorized amount entered on an Override payroll transaction',
+      source: 'Payroll transaction override',
+    });
+  }
+
   /* 11 — deductions and loans --------------------------------------------- */
   const collections = collectionItemsFor({
     salary,
     loanSchedules: (context.loanSchedules || []).filter(row => row.employeeId === employee.employeeId),
     registerDeductions: (context.registers?.deductions) || [],
     manual: override.deductions || [],
-    transaction, employee, hierarchy: context.hierarchy || [],
+    transaction, employee, hierarchy: context.hierarchy || [], staggeredRequests: context.staggeredRequests || [],
   });
   collections.filter(item => item.authorised === false).forEach(item => {
     exceptions.push({ severity: 'Warning', message: `${item.name} has no acknowledged authority to deduct; it is held out of this run.` });
@@ -891,8 +915,25 @@ export function computeEmployeeLine({ employee, transaction, context }) {
  * for the batch.
  */
 export function runPayroll({ transaction, context }) {
+  const currency = transaction.currency || 'PHP';
+  const conversionRate = currency === 'PHP' ? 1 : Number(transaction.conversionRate);
+  if (!Number.isFinite(conversionRate) || conversionRate <= 0) {
+    throw new Error(`A positive ${currency}-to-PHP conversion rate is required for this payroll transaction.`);
+  }
   const employees = context.employees || [];
-  const lines = employees.map(employee => computeEmployeeLine({ employee, transaction, context }));
+  const baseLines = employees.map(employee => computeEmployeeLine({ employee, transaction, context }));
+  const convert = value => round2(number(value) / conversionRate);
+  const lines = baseLines.map(line => (line.status !== 'Computed' ? line : {
+    ...line,
+    settlement: {
+      currency,
+      conversionRate,
+      basicPay: convert(line.basicPay),
+      grossPay: convert(line.grossPay),
+      totalDeductions: convert(line.totalDeductions),
+      netPay: convert(line.netPay),
+    },
+  }));
   const computed = lines.filter(line => line.status === 'Computed');
   const totals = {
     headcount: computed.length,
@@ -911,7 +952,15 @@ export function runPayroll({ transaction, context }) {
     employerCost: round2(sum(computed, line => line.grossPay + line.statutory.employerTotal)),
   };
   const exceptions = lines.flatMap(line => (line.exceptions || []).map(item => ({ ...item, employeeId: line.employeeId, name: line.name })));
-  return { lines, totals, exceptions, calculatedAt: new Date().toISOString() };
+  const settlementTotals = Object.fromEntries(Object.entries(totals).map(([key, value]) => [
+    key,
+    ['headcount', 'excluded'].includes(key) ? value : convert(value),
+  ]));
+  return {
+    lines, totals, exceptions,
+    baseCurrency: 'PHP', currency, conversionRate, settlementTotals,
+    calculatedAt: new Date().toISOString(),
+  };
 }
 
 /* -------------------------------------------------------------- journals */
@@ -942,13 +991,16 @@ export function journalFor(result, payCodes = []) {
  * instruction, which is per bank account and not per employee.
  */
 export function bankFileFor(result) {
+  const currency = result.currency || 'PHP';
+  const conversionRate = currency === 'PHP' ? 1 : Number(result.conversionRate) || 1;
+  const convert = value => round2(number(value) / conversionRate);
   return result.lines.filter(line => line.status === 'Computed').flatMap(line => (line.bankSplits.length
     ? line.bankSplits
     : [{ bankName: 'Unassigned', accountNumber: '', percentOfNetPay: 100, amount: line.netPay }])
     .map(split => ({
       employeeCode: line.employeeCode, name: line.name,
       bankName: split.bankName, accountNumber: split.accountNumber,
-      amount: split.amount, share: `${split.percentOfNetPay}%`,
+      currency, amount: convert(split.amount), baseAmount: round2(split.amount), share: `${split.percentOfNetPay}%`,
     })));
 }
 

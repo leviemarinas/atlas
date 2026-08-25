@@ -44,15 +44,20 @@ import {
 } from './HRMKit.jsx';
 import { MiniTable, PayrollLineDetail, peso } from './PayrollLineDetail.jsx';
 import { downloadFile } from './fileDownload.js';
+import { applyPayrollBatch, parsePayrollBatch, rollbackPayrollBatch } from './payrollBatch.js';
+import { simpleTablePdf, spreadsheetXml } from './payrollExports.js';
 import { readHrmData } from './hrmData.js';
 import { readCalendars } from './CanonicalWorkspaces';
 import { readActiveCompany, readActiveCompanyId, appendAuditEvent } from './companyRepository';
 import { employeeRoster } from './employeeRoster.js';
 import { readHierarchy, readPolicies } from './PolicyComputations';
 import { seedComputations } from './computationCatalog.js';
-import { publishNotificationEvent } from './notificationServices';
+import { minimumTakeHomeNotifications, notificationEventKeys, publishNotificationEvent, readNotificationRules } from './notificationServices';
+import { readRequests } from './requestService.js';
+import { REQUEST_STATUSES, REQUEST_TYPES } from './requestWorkflow.js';
 import { useRole } from './RoleContext';
 import { plural } from './textFormat';
+import { policyAppliesToRun, policySelectionConflicts, policySnapshot, readManagedPolicies } from './policyManagement';
 import {
   MONTHS,
   PAYROLL_STATUS_TABS,
@@ -61,8 +66,10 @@ import {
   applyAction,
   buildPayrollContext,
   capabilitiesOf,
+  defaultLockDate,
   lockHeldBy,
   newPayrollRun,
+  nextTransactionNumber,
   payrollReportCatalog,
   readPayrollRuns,
   releaseLock,
@@ -74,6 +81,15 @@ import {
 
 const toCsv = (headers, rows) => [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
 const sessionId = `payroll-session-${Math.random().toString(36).slice(2, 9)}`;
+const money = (amount, currency = 'PHP') => new Intl.NumberFormat('en-PH', { style: 'currency', currency, minimumFractionDigits: 2 }).format(Number(amount) || 0);
+
+function downloadTable(format, filename, title, columns, rows) {
+  if (format === 'PDF') {
+    downloadFile(`${filename}.pdf`, simpleTablePdf(title, columns, rows), 'application/pdf');
+  } else {
+    downloadFile(`${filename}.xls`, spreadsheetXml(title, columns, rows), 'application/vnd.ms-excel');
+  }
+}
 
 function readReferenceEntries() {
   try { return JSON.parse(localStorage.getItem('atlas-computational-basis-references-v3')) || []; } catch { return []; }
@@ -114,6 +130,7 @@ const REGISTER_COLUMNS = [
   { key: 'frequency', label: 'Frequency' },
   { key: 'payrollType', label: 'Transaction Type' },
   { key: 'paymentMode', label: 'Payment Mode' },
+  { key: 'currency', label: 'Currency' },
   { key: 'period', label: 'Payroll Period' },
   { key: 'timekeeping', label: 'Timekeeping Cut-off' },
   { key: 'payoutDate', label: 'Payout Date' },
@@ -137,12 +154,15 @@ function RegisterScreen({ runs, onOpen, onCreate, onAction, onNotify, canCreate 
     frequency: run.frequency,
     payrollType: run.payrollType,
     paymentMode: run.paymentMode,
+    currency: run.currency || 'PHP',
     period: run.periodStart ? `${run.periodStart} – ${run.periodEnd}` : '—',
     timekeeping: run.timekeepingStart ? `${run.timekeepingStart} – ${run.timekeepingEnd}` : '—',
     payoutDate: run.payoutDate || '—',
     remarks: run.remarks || '—',
     headcount: run.result?.totals.headcount ?? 0,
-    netPay: peso(run.result?.totals.netPay || 0),
+    netPay: run.result?.currency && run.result.currency !== 'PHP'
+      ? `${money(run.result.settlementTotals?.netPay, run.result.currency)} (PHP ${peso(run.result.totals.netPay)})`
+      : peso(run.result?.totals.netPay || 0),
     status: run.status,
   })), [runs]);
 
@@ -165,11 +185,7 @@ function RegisterScreen({ runs, onOpen, onCreate, onAction, onNotify, canCreate 
   }), [filtered]);
 
   const exportRows = format => {
-    downloadFile(
-      `payroll-transactions.${format === 'PDF' ? 'txt' : 'csv'}`,
-      toCsv(REGISTER_COLUMNS.map(column => column.label), filtered.map(row => REGISTER_COLUMNS.map(column => row[column.key]))),
-      'text/csv',
-    );
+    downloadTable(format, 'payroll-transactions', 'Payroll Transactions', REGISTER_COLUMNS.map(column => column.label), filtered.map(row => REGISTER_COLUMNS.map(column => row[column.key])));
     onNotify(`${filtered.length} ${plural(filtered.length, 'transaction')} exported.`);
   };
 
@@ -207,7 +223,7 @@ function RegisterScreen({ runs, onOpen, onCreate, onAction, onNotify, canCreate 
       empty="No payroll transaction has been created yet. Create one to begin the payroll process."
       renderCell={(row, column) => (column.key === 'status' ? <StatusBadge status={row.status} /> : row[column.key])}
       actions={row => [
-        { label: 'Update Entry', kind: 'view', onSelect: () => onOpen(row.run) },
+        { label: capabilitiesOf(row.run).edit ? 'Update Entry' : 'View Transaction', kind: 'view', onSelect: () => onOpen(row.run) },
         ...actionsFor(row.run, runs, { canReopen: true })
           .filter(action => !['updateEntry'].includes(action.key))
           .map(action => ({
@@ -240,10 +256,15 @@ const WIZARD_STEPS = ['Payroll details', 'Payroll computation', 'Employees', 'Re
 const BONUS_TYPES = ['13th Month Pay', '14th Month Pay', 'Performance Bonus', 'Retention Bonus', 'Mid-year Bonus', 'Signing Bonus'];
 const LEAVE_TYPES = ['Vacation Leave', 'Sick Leave', 'Service Incentive Leave'];
 
-function CreateWizard({ runs, calendars, onCancel, onCreate }) {
+function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, onCreate }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
   const [draft, setDraft] = useState(() => newPayrollRun({ runs, companyId: readActiveCompanyId() }));
+  const monthNumber = MONTHS.indexOf(draft.month) + 1 || 1;
+  const transactionNumber = nextTransactionNumber(runs, draft.year, monthNumber);
+  const availablePolicies = useMemo(() => managedPolicies.filter(policy => draft.periodStart && draft.periodEnd ? policyAppliesToRun(policy, draft) : policy.status === 'Active'), [managedPolicies, draft.periodStart, draft.periodEnd, draft.payoutDate]);
+  const selectedPolicies = useMemo(() => availablePolicies.filter(policy => (draft.appliedPolicies || []).some(applied => applied.policyId === policy.id)), [availablePolicies, draft.appliedPolicies]);
+  const policyConflicts = useMemo(() => policySelectionConflicts(selectedPolicies), [selectedPolicies]);
 
   const set = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
   const setConfig = (key, value) => setDraft(previous => ({ ...previous, config: { ...previous.config, [key]: value } }));
@@ -268,6 +289,7 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
       timekeepingStart: calendar.cutoffStart || previous.timekeepingStart,
       timekeepingEnd: calendar.cutoffEnd || previous.timekeepingEnd,
       payoutDate: calendar.payoutDate || previous.payoutDate,
+      lockDate: calendar.lockDate || defaultLockDate(calendar.payoutDate || previous.payoutDate),
       remarks: previous.remarks || calendar.remarks || '',
     }));
   };
@@ -282,7 +304,10 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
       if (draft.periodEnd < draft.periodStart) return 'The payroll period end cannot fall before its start.';
       if (!draft.timekeepingStart || !draft.timekeepingEnd) return 'A timekeeping cut-off is required — the run prices attendance from it.';
       if (!draft.payoutDate) return 'A payout date is required; it selects the statutory version the run computes on.';
+      if (draft.lockDate && draft.lockDate < draft.payoutDate) return 'The transaction lock date cannot fall before its payout date.';
+      if (draft.currency !== 'PHP' && (!Number.isFinite(Number(draft.conversionRate)) || Number(draft.conversionRate) <= 0)) return `A positive ${draft.currency}-to-PHP conversion rate is required.`;
       if (!draft.remarks.trim()) return 'Remarks are required.';
+      if (policyConflicts.length) return `${policyConflicts[0][0].policyCode} has overlapping active versions. Remove one policy or correct its effective period before continuing.`;
       if (draft.payrollType === 'Regular') {
         const openRegular = runs.find(run => run.payrollType === 'Regular' && !['Posted', 'Locked', 'Cancelled'].includes(run.status));
         if (openRegular) return `${openRegular.transactionNumber} is still ${openRegular.status}. The previous regular transaction must be posted before a new one is created.`;
@@ -301,12 +326,19 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
     if (message) { setError(message); return; }
     setError('');
     if (step < WIZARD_STEPS.length - 1) setStep(step + 1);
-    else onCreate(draft);
+    else onCreate({ ...draft, transactionNumber, multiCurrency: draft.currency !== 'PHP' });
   };
 
   const toggleExcluded = (employeeId, exclude) => setPopulation('excluded', exclude
     ? [...new Set([...draft.population.excluded, employeeId])]
     : draft.population.excluded.filter(id => id !== employeeId));
+
+  const togglePolicy = policy => setDraft(previous => ({
+    ...previous,
+    appliedPolicies: (previous.appliedPolicies || []).some(item => item.policyId === policy.id)
+      ? previous.appliedPolicies.filter(item => item.policyId !== policy.id)
+      : [...(previous.appliedPolicies || []), policySnapshot(policy)],
+  }));
 
   return <div className="payroll-wizard">
     <div className="wizard-steps">
@@ -356,7 +388,7 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
               {['First Half', 'Second Half', 'Every Payroll', 'Weekly', 'Monthly'].map(value => <option key={value}>{value}</option>)}
             </select>
           </FieldRow>
-          <FieldRow label="Payout / payment date" required hint="Selects the effective statutory and tax version"><input type="date" value={draft.payoutDate} onChange={event => set('payoutDate', event.target.value)} /></FieldRow>
+          <FieldRow label="Payout / payment date" required hint="Selects the effective statutory and tax version"><input type="date" value={draft.payoutDate} onChange={event => setDraft(previous => ({ ...previous, payoutDate: event.target.value, lockDate: previous.lockDate || defaultLockDate(event.target.value) }))} /></FieldRow>
           <FieldRow label="Payroll period start" required><input type="date" value={draft.periodStart} onChange={event => set('periodStart', event.target.value)} /></FieldRow>
           <FieldRow label="Payroll period end" required><input type="date" value={draft.periodEnd} onChange={event => set('periodEnd', event.target.value)} /></FieldRow>
           <FieldRow label="Timekeeping cut-off start" required hint="Attendance is priced from the punches inside this window"><input type="date" value={draft.timekeepingStart} onChange={event => set('timekeepingStart', event.target.value)} /></FieldRow>
@@ -370,6 +402,17 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
           </FieldRow>}
           <FieldRow label="Remarks" required><textarea value={draft.remarks} onChange={event => set('remarks', event.target.value)} placeholder="Describe this payout" /></FieldRow>
         </div>
+        <fieldset className="payroll-fieldset policy-selection-fieldset">
+          <legend>Applicable policies</legend>
+          <p className="payroll-note">Select any number of Active policies. Atlas blocks overlapping versions of the same policy code and stores the selected versions on this transaction.</p>
+          <div className="payroll-policy-list">
+            {availablePolicies.map(policy => <label key={policy.id} className={(draft.appliedPolicies || []).some(item => item.policyId === policy.id) ? 'selected' : ''}>
+              <input type="checkbox" checked={(draft.appliedPolicies || []).some(item => item.policyId === policy.id)} onChange={() => togglePolicy(policy)} />
+              <span><strong>{policy.policyCode} · v{policy.version}</strong><small>{policy.subcategory} · {policy.effectiveFrom} – {policy.effectiveTo || 'Open-ended'}</small></span>
+            </label>)}
+          </div>
+          {policyConflicts.length > 0 && <div className="wizard-error">Conflicting policy versions: {policyConflicts.map(([left, right]) => `${left.policyCode} v${left.version} / v${right.version}`).join(', ')}</div>}
+        </fieldset>
       </>}
 
       {step === 1 && <>
@@ -549,7 +592,7 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
             <MiniTable
               columns={[{ key: 'label', label: 'Field' }, { key: 'value', label: 'Value' }]}
               rows={[
-                { key: 'r1', label: 'Transaction number', value: draft.transactionNumber },
+                { key: 'r1', label: 'Transaction number', value: transactionNumber },
                 { key: 'r2', label: 'Type / mode', value: `${draft.payrollType} · ${draft.transactionMode} · ${draft.paymentMode}` },
                 { key: 'r3', label: 'Period', value: `${draft.periodStart} to ${draft.periodEnd}` },
                 { key: 'r4', label: 'Timekeeping cut-off', value: `${draft.timekeepingStart} to ${draft.timekeepingEnd}` },
@@ -557,6 +600,7 @@ function CreateWizard({ runs, calendars, onCancel, onCreate }) {
                 { key: 'r6', label: 'Lock date', value: draft.lockDate || 'Not set' },
                 { key: 'r7', label: 'Currency', value: `${draft.currency}${draft.currency === 'PHP' ? '' : ` at ${draft.conversionRate}`}` },
                 { key: 'r8', label: 'Remarks', value: draft.remarks },
+                { key: 'r9', label: 'Policies', value: draft.appliedPolicies?.length ? draft.appliedPolicies.map(policy => `${policy.code} v${policy.version}`).join(', ') : 'No optional policies selected' },
               ]}
             />
           </section>
@@ -633,6 +677,7 @@ function EditLineModal({ line, run, onClose, onSave }) {
     zeroBasicPay: existing.zeroBasicPay ?? run.config.zeroBasicPay,
     computeAllowableDeduction: existing.computeAllowableDeduction ?? run.config.computeAllowableDeduction,
     computeFinalPay: existing.computeFinalPay ?? run.config.computeFinalPay,
+    withholdingTax: existing.withholdingTax,
     earnings: existing.earnings || [],
     deductions: existing.deductions || [],
     bonuses: existing.bonuses || [],
@@ -678,6 +723,13 @@ function EditLineModal({ line, run, onClose, onSave }) {
         <Switch label="Compute allowable deduction" hint="Statutory contributions for this employee" checked={draft.computeAllowableDeduction} onChange={value => setDraft({ ...draft, computeAllowableDeduction: value })} />
         <Switch label="Compute final pay" hint="Puts this employee on the annualised tax table" checked={draft.computeFinalPay} onChange={value => setDraft({ ...draft, computeFinalPay: value })} />
       </fieldset>
+
+      {run.payrollType === 'Override' && <fieldset className="payroll-fieldset">
+        <legend>Override transaction tax</legend>
+        <FieldRow label="Withholding tax" hint="Annex C permits this field only on an Override transaction">
+          <input type="number" min="0" step="0.01" value={draft.withholdingTax ?? ''} onChange={event => setDraft({ ...draft, withholdingTax: event.target.value === '' ? undefined : Number(event.target.value) })} />
+        </FieldRow>
+      </fieldset>}
 
       {[
         { group: 'earnings', title: 'One-time earnings and allowances', blank: { code: 'MAN-ERN', name: '', classification: 'Taxable Allowance', amount: 0, frequency: 'One-time' }, classes: ['Taxable Allowance', 'Non-taxable', 'De Minimis', 'Reimbursement'] },
@@ -753,12 +805,8 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
   const reportRows = useMemo(() => (result ? report.build(result, context) : []), [result, report, context]);
   const reportTotalRow = useMemo(() => reportTotals(report, reportRows), [report, reportRows]);
 
-  const exportReport = () => {
-    downloadFile(
-      `${run.transactionNumber}-${report.key}.csv`,
-      toCsv(report.columns.map(column => column.label), reportRows.map(row => report.columns.map(column => row[column.key]))),
-      'text/csv',
-    );
+  const exportReport = format => {
+    downloadTable(format, `${run.transactionNumber}-${report.key}`, `${report.label} — ${run.transactionNumber}`, report.columns.map(column => column.label), reportRows.map(row => report.columns.map(column => row[column.key])));
     onNotify(`${report.label} exported for ${run.transactionNumber}.`);
   };
 
@@ -767,18 +815,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const lines = String(reader.result || '').split(/\r?\n/).filter(Boolean);
-      const headers = (lines.shift() || '').split(',').map(value => value.replace(/"/g, '').trim());
-      const required = ['Employee Code', 'Pay Item', 'Amount'];
-      const missing = required.filter(header => !headers.some(value => value.toLowerCase() === header.toLowerCase()));
-      const parsed = lines.map((row, index) => {
-        const values = row.split(',').map(value => value.replace(/^"|"$/g, '').trim());
-        return { row: index + 2, code: values[headers.findIndex(h => h.toLowerCase() === 'employee code')], item: values[headers.findIndex(h => h.toLowerCase() === 'pay item')], amount: Number(values[headers.findIndex(h => h.toLowerCase() === 'amount')]) };
-      });
-      const errors = missing.length
-        ? [`Missing required columns: ${missing.join(', ')}`]
-        : parsed.filter(entry => !employeeRoster.some(employee => employee.code === entry.code) || !Number.isFinite(entry.amount))
-          .map(entry => `Row ${entry.row}: employee code "${entry.code}" is not in the roster, or the amount is not a number.`);
+      const { entries: parsed, errors } = parsePayrollBatch(String(reader.result || ''), { employees: employeeRoster, payrollType: run.payrollType });
       onSaveOverride({
         batch: {
           id: `batch-${Date.now()}`,
@@ -846,6 +883,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
           <StatusBadge status={run.status} />
           <span className="status-pill">{run.payrollType}</span>
           <span className="status-pill">{run.paymentMode}</span>
+          <span className="status-pill">{run.currency || 'PHP'}</span>
         </div>
         <p className="page-description">
           {run.month} {run.year} · {run.frequency} · payroll period {run.periodStart} to {run.periodEnd} · timekeeping cut-off {run.timekeepingStart} to {run.timekeepingEnd} · payout {run.payoutDate}
@@ -859,7 +897,10 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
           className={`hrm-btn ${action.tone === 'danger' ? 'danger' : action.key === 'recalculate' ? 'primary' : 'outline'}`}
           title={action.hint}
           disabled={action.disabled}
-          onClick={() => (['reject', 'cancel', 'submitReview', 'submitApproval', 'approve'].includes(action.key) ? setRemarksFor(action) : onAction(run, action.key))}
+          onClick={() => {
+            if (['reject', 'cancel', 'submitReview', 'submitApproval', 'approve'].includes(action.key)) { setRemarksFor(action); return; }
+            onAction(run, action.key);
+          }}
         >
           {action.key === 'recalculate' && <ArrowClockwise size={14} />}{action.label}
         </button>)}
@@ -872,7 +913,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
       <div className="tk-kpi-card"><span>Statutory (EE)</span><strong>{peso(result.totals.statutoryEmployee)}</strong><small>employer {peso(result.totals.statutoryEmployer)}</small></div>
       <div className="tk-kpi-card"><span>Withholding tax</span><strong>{peso(result.totals.withholdingTax)}</strong></div>
       <div className="tk-kpi-card"><span>Deductions & loans</span><strong>{peso(result.totals.deductions + result.totals.loans)}</strong><small>{peso(result.totals.deferred)} deferred</small></div>
-      <div className="tk-kpi-card"><span>Net pay</span><strong className="tone-up">{peso(result.totals.netPay)}</strong><small>employer cost {peso(result.totals.employerCost)}</small></div>
+      <div className="tk-kpi-card"><span>Net pay</span><strong className="tone-up">{result.currency !== 'PHP' ? money(result.settlementTotals.netPay, result.currency) : peso(result.totals.netPay)}</strong><small>{result.currency !== 'PHP' ? `PHP base ${peso(result.totals.netPay)} · rate ${result.conversionRate}` : `employer cost ${peso(result.totals.employerCost)}`}</small></div>
     </div>}
 
     {!result && <EmptyState title="This transaction has not been computed yet" icon={Warning}>Use Recalculate to compute it against the current masterfile, timekeeping and configuration.</EmptyState>}
@@ -883,8 +924,8 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
       <div className="hrm-toolbar">
         <div className="hrm-toolbar-left"><SearchInput value={table.search} onChange={table.setSearch} placeholder="Search employees..." /></div>
         <div className="hrm-toolbar-right">
-          <ExportMenu onExport={() => {
-            downloadFile(`${run.transactionNumber}-employees.csv`, toCsv(EMPLOYEE_COLUMNS.map(column => column.label), filtered.map(row => EMPLOYEE_COLUMNS.map(column => row[column.key]))), 'text/csv');
+          <ExportMenu onExport={format => {
+            downloadTable(format, `${run.transactionNumber}-employees`, `${run.transactionNumber} Employee Payroll Lines`, EMPLOYEE_COLUMNS.map(column => column.label), filtered.map(row => EMPLOYEE_COLUMNS.map(column => row[column.key])));
             onNotify('Employee list exported.');
           }} />
         </div>
@@ -949,7 +990,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
         <div className="hrm-toolbar-left"><h3 className="hrm-section-title">Batch uploads</h3></div>
         <div className="hrm-toolbar-right">
           <GhostButton onClick={() => {
-            downloadFile('payroll-batch-template.csv', 'Employee Code,Pay Item,Amount\n', 'text/csv');
+            downloadFile('payroll-batch-template.csv', 'Employee Code,Pay Item Type,Pay Item,Amount\n0011223345,Earning,Sample allowance,0\n', 'text/csv');
             onNotify('Batch template downloaded.');
           }}>Download template</GhostButton>
           <button type="button" className="hrm-btn outline" disabled={!capability.edit} onClick={() => uploadRef.current?.click()}>Upload batch</button>
@@ -973,7 +1014,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
             label: 'Actions',
             render: row => <span className="payroll-batch-actions">
               {row.status === 'Validated' && capability.edit && <button type="button" className="hrm-btn outline" onClick={() => onSaveOverride({ commitBatch: row.id })}>Commit</button>}
-              {row.status === 'Committed' && capability.edit && <button type="button" className="hrm-btn outline" onClick={() => onSaveOverride({ rollbackBatch: row.id })}>Rollback</button>}
+              {row.status === 'Committed' && capability.edit && row.uploadedBy === actor && <button type="button" className="hrm-btn outline" onClick={() => onSaveOverride({ rollbackBatch: row.id })}>Rollback</button>}
               {row.errors?.length > 0 && <button type="button" className="hrm-btn outline" onClick={() => downloadFile(`${row.name}-errors.txt`, row.errors.join('\n'), 'text/plain')}>Download errors</button>}
             </span>,
           },
@@ -1053,7 +1094,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
           <div className="hrm-toolbar-right">
             <GhostButton onClick={() => {
               const file = bankFileFor(result);
-              downloadFile(`${run.transactionNumber}-bank-file.csv`, toCsv(['Employee Code', 'Name', 'Bank', 'Account Number', 'Share', 'Amount'], file.map(row => [row.employeeCode, row.name, row.bankName, row.accountNumber, row.share, row.amount])), 'text/csv');
+              downloadFile(`${run.transactionNumber}-bank-file.csv`, toCsv(['Employee Code', 'Name', 'Bank', 'Account Number', 'Share', 'Currency', 'Amount', 'PHP Base Amount'], file.map(row => [row.employeeCode, row.name, row.bankName, row.accountNumber, row.share, row.currency, row.amount, row.baseAmount])), 'text/csv');
               onNotify('Bank file generated.');
             }}>Download bank file</GhostButton>
           </div>
@@ -1066,7 +1107,9 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
             { key: 'bankName', label: 'Bank' },
             { key: 'accountNumber', label: 'Account number' },
             { key: 'share', label: 'Share' },
-            { key: 'amount', label: 'Amount', align: 'right', render: row => peso(row.amount) },
+            { key: 'currency', label: 'Currency' },
+            { key: 'amount', label: 'Amount', align: 'right', render: row => money(row.amount, row.currency) },
+            ...(result.currency !== 'PHP' ? [{ key: 'baseAmount', label: 'PHP Base Amount', align: 'right', render: row => peso(row.baseAmount) }] : []),
           ]}
           rows={bankFileFor(result).map((row, index) => ({ ...row, key: `bank-${index}` }))}
         />
@@ -1133,9 +1176,9 @@ function RemarksModal({ action, onClose, onConfirm }) {
  * `OperationalWorkspaces` already imports this component to register it — taking
  * the reader as a prop keeps the dependency pointing one way.
  */
-export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () => [] }) {
+export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack, notify, readRegister = () => [] }) {
   const { role } = useRole();
-  const companyId = readActiveCompanyId();
+  const companyId = scopedCompanyId || readActiveCompanyId();
   const company = readActiveCompany();
   const { toasts, push, dismiss } = useToasts();
   const [runs, setRuns] = useState(() => readPayrollRuns(companyId));
@@ -1148,20 +1191,22 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
   const hrmData = useMemo(() => readHrmData(companyId), [companyId]);
   const calendars = useMemo(() => readCalendars(companyId, 'Payout'), [companyId]);
   const registers = useMemo(() => ({
-    earnings: readRegister('earnings'),
-    deductions: readRegister('deductions'),
-    bonuses: readRegister('bonuses'),
-    payCodes: readRegister('payCodes'),
-  }), []);
+    earnings: readRegister('earnings', companyId),
+    deductions: readRegister('deductions', companyId),
+    bonuses: readRegister('bonuses', companyId),
+    payCodes: readRegister('payCodes', companyId),
+  }), [companyId, readRegister]);
   const hierarchy = useMemo(() => readHierarchy(readReferenceEntries()), []);
-  const policies = useMemo(() => readPolicies(), []);
+  const policies = useMemo(() => readPolicies(companyId), [companyId]);
+  const managedPolicies = useMemo(() => readManagedPolicies(companyId), [companyId]);
+  const staggeredRequests = useMemo(() => readRequests(companyId, { activeCompanyId: companyId }).filter(request => request.requestType === REQUEST_TYPES.STAGGERED_PAYMENT && request.status === REQUEST_STATUSES.APPROVED), [companyId]);
   const computations = useMemo(() => {
     try { return JSON.parse(localStorage.getItem('atlas-computational-basis-library-v3')) || seedComputations(); }
     catch { return seedComputations(); }
   }, []);
 
   const openRun = runs.find(run => run.id === openRunId) || null;
-  const contextFor = run => buildPayrollContext({ companyId, run, hrmData, registers, hierarchy, policies, computations });
+  const contextFor = run => buildPayrollContext({ companyId, run, hrmData, registers, hierarchy, policies, computations, staggeredRequests });
 
   // Holding the transaction open takes the record lock the mock warns about,
   // and leaving the screen releases it. Both ends re-read the stored run rather
@@ -1183,15 +1228,21 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
   const toast = (message, tone = 'ok') => { push(message, tone); notify?.({ type: tone === 'ok' ? 'success' : 'error', message }); };
 
   const commit = next => { setRuns(savePayrollRun(companyId, next).slice()); return next; };
+  const publishTakeHomeWarnings = run => minimumTakeHomeNotifications({ run, result: run.result, rules: readNotificationRules(companyId) }).forEach(event => publishNotificationEvent({ eventKey: notificationEventKeys.MinimumTakeHomePayRisk, companyId, actor: 'Payroll Engine', ...event }));
 
   const handleAction = (run, actionKey, remarks = '') => {
     const outcome = applyAction(run, actionKey, { actor, remarks, runs, context: contextFor(run) });
     if (outcome.error) { toast(outcome.error, 'bad'); return; }
+    if (actionKey === 'generateBankFile') {
+      const file = bankFileFor(outcome.run.result);
+      downloadFile(`${run.transactionNumber}-bank-file.csv`, toCsv(['Employee Code', 'Name', 'Bank', 'Account Number', 'Share', 'Currency', 'Amount', 'PHP Base Amount'], file.map(row => [row.employeeCode, row.name, row.bankName, row.accountNumber, row.share, row.currency, row.amount, row.baseAmount])), 'text/csv');
+    }
     commit(outcome.run);
+    if (actionKey === 'recalculate') publishTakeHomeWarnings(outcome.run);
     toast(outcome.message);
     appendAuditEvent?.({ entity: 'Payroll Transaction', entityId: run.transactionNumber, action: actionKey, actor, detail: outcome.message });
     if (actionKey === 'post') {
-      publishNotificationEvent?.({ event: 'PAYROLL_POSTED', subject: run.transactionNumber, detail: outcome.message });
+      publishNotificationEvent?.({ eventKey: 'PayrollPosted', companyId, correlationId: run.id, summary: outcome.message, actor });
     }
   };
 
@@ -1200,6 +1251,7 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
     const outcome = applyAction(created, 'recalculate', { actor, runs, context: contextFor(created) });
     const stored = outcome.error ? created : outcome.run;
     commit(stored);
+    if (!outcome.error) publishTakeHomeWarnings(stored);
     setOpenRunId(stored.id);
     setView('run');
     toast(outcome.error ? `${stored.transactionNumber} created, but it could not be computed: ${outcome.error}` : `${stored.transactionNumber} created and computed. ${outcome.message}`, outcome.error ? 'bad' : 'ok');
@@ -1214,13 +1266,8 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
     if (payload.batch) next = { ...next, batches: [payload.batch, ...(next.batches || [])] };
     if (payload.commitBatch) {
       const batch = (next.batches || []).find(row => row.id === payload.commitBatch);
-      const overrides = { ...(next.overrides || {}) };
-      (batch?.entries || []).forEach(entry => {
-        const employee = employeeRoster.find(row => row.code === entry.code);
-        if (!employee) return;
-        const current = overrides[employee.employeeId] || {};
-        overrides[employee.employeeId] = { ...current, earnings: [...(current.earnings || []), { code: 'BATCH', name: entry.item, classification: 'Taxable Allowance', amount: entry.amount, source: `Batch ${batch.name}` }] };
-      });
+      if (!batch) { toast('The selected batch no longer exists.', 'bad'); return; }
+      const overrides = applyPayrollBatch(next.overrides || {}, batch.entries || [], employeeRoster, batch.name);
       next = {
         ...next,
         overrides,
@@ -1230,10 +1277,9 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
     }
     if (payload.rollbackBatch) {
       const batch = (next.batches || []).find(row => row.id === payload.rollbackBatch);
-      const overrides = Object.fromEntries(Object.entries(next.overrides || {}).map(([employeeId, override]) => [
-        employeeId,
-        { ...override, earnings: (override.earnings || []).filter(row => row.source !== `Batch ${batch?.name}`) },
-      ]));
+      if (!batch) { toast('The selected batch no longer exists.', 'bad'); return; }
+      if (batch.uploadedBy !== actor) { toast(`Only ${batch.uploadedBy} can roll back this uploaded batch.`, 'bad'); return; }
+      const overrides = rollbackPayrollBatch(next.overrides || {}, batch.name);
       next = {
         ...next,
         overrides,
@@ -1269,6 +1315,7 @@ export function PayrollProcessingWorkspace({ onBack, notify, readRegister = () =
     {view === 'wizard' && <CreateWizard
       runs={runs}
       calendars={calendars}
+      policies={managedPolicies}
       onCancel={() => setView('register')}
       onCreate={handleCreate}
     />}

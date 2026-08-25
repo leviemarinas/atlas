@@ -67,7 +67,7 @@ export const defaultRoles = [
 ];
 
 export const defaultGrants = [
-  { id: 'grant-001', user: 'John Doe', role: 'Client Admin', companyId: 'cmp-abc-001', module: 'Company Rules', feature: 'Policy assignment', permission: 'Create, Edit, Approve', approvalLevel: 'Final', status: 'Active' },
+  { id: 'grant-001', user: 'John Doe', role: 'Client Admin', companyId: 'cmp-abc-001', module: 'Policy Management', feature: 'Policy assignment', permission: 'Create, Edit, Approve', approvalLevel: 'Final', status: 'Active' },
   { id: 'grant-002', user: 'Maria Santos', role: 'Reviewer', companyId: 'cmp-abc-001', module: 'Payroll Transaction', feature: 'Payroll approval', permission: 'Review, Approve', approvalLevel: 'Level 2', status: 'Active' },
 ];
 
