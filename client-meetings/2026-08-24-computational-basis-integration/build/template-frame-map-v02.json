@@ -1,0 +1,1428 @@
+{
+  "outputSlides": [
+    {
+      "outputSlide": 1,
+      "sourceSlide": 1,
+      "narrativeRole": "opening",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/547294r6",
+            "sh/k3yl0zql",
+            "sh/7qp4be9c",
+            "sh/ts7md4r2",
+            "sh/fu94fe98",
+            "sh/wn6dc7eh",
+            "sh/ul4vaxgb",
+            "sh/vmdcj2xw"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 2,
+      "sourceSlide": 2,
+      "narrativeRole": "agenda",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/9072xkry",
+            "sh/ozy1ofad",
+            "sh/a10jqpsj",
+            "sh/x4r21kru",
+            "sh/w3i1sfa9",
+            "sh/q5wjelsz",
+            "sh/ove9o7yd",
+            "sh/9wnqhczy",
+            "sh/nu58f2hs",
+            "sh/wjy9sry9",
+            "sh/xk7qlczu",
+            "sh/bip8jmho",
+            "sh/cnupgny5",
+            "sh/do3q9szq",
+            "sh/s72xofmh",
+            "sh/76twva5c",
+            "sh/65kfmpor"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 3,
+      "sourceSlide": 3,
+      "narrativeRole": "overall lifecycle",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/cza94vmx",
+            "sh/d0jax03i",
+            "sh/obq90bml",
+            "sh/pcjqtg36",
+            "sh/m5cra54z",
+            "sh/943mhgre",
+            "sh/83ulovat",
+            "sh/v6l4jq94",
+            "sh/ja54na9g",
+            "sh/i9w3u58v",
+            "sh/e10f2twf",
+            "sh/6d0fytg3",
+            "sh/re9g7yxo",
+            "sh/sfix03y9",
+            "sh/l4fi9cza",
+            "sh/k3m1g7yp",
+            "sh/z2d07mh4",
+            "sh/y14jehgj",
+            "sh/czmhc7id"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 4,
+      "sourceSlide": 4,
+      "narrativeRole": "location",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/1cj2d8b6",
+            "sh/0ba143al",
+            "sh/ql8jytsj",
+            "sh/doj29oba",
+            "sh/sna103ap",
+            "sh/3ihk3et8",
+            "sh/ih8ju9sn",
+            "sh/kbm987y5",
+            "sh/5cva1cfq",
+            "sh/jadsz2xk"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/7ad43q1c"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 5,
+      "sourceSlide": 58,
+      "narrativeRole": "plain-language concepts",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/9wb6x87y",
+            "sh/8v2p43qt",
+            "sh/zqtorypw",
+            "sh/yp07yt8b",
+            "sh/lsb6to72",
+            "sh/0r2p03qh",
+            "sh/jmd83ipg",
+            "sh/il47adov",
+            "sh/4fm10fmh",
+            "sh/pgf2tkn2",
+            "sh/2d4jyp4b",
+            "sh/3edkra5w",
+            "sh/gbm1wfm5",
+            "sh/hcv2pknq",
+            "sh/u94ju54f",
+            "sh/fadkna5k",
+            "sh/8n21svm9",
+            "sh/t8b2l0nu",
+            "sh/9s3q9sb6",
+            "sh/oru90nul"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 6,
+      "sourceSlide": 10,
+      "narrativeRole": "workspace",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/xc3mho32",
+            "sh/cbu58j2h",
+            "sh/ydcnatkn",
+            "sh/l036l83y",
+            "sh/kzu5c32t",
+            "sh/725onyl4",
+            "sh/m1cnetkj",
+            "sh/s7yt4b21",
+            "sh/d87uxg3m",
+            "sh/r6pcv6lw"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/7e50vel0"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 7,
+      "sourceSlide": 50,
+      "narrativeRole": "computation register",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/ofq943e5",
+            "sh/pgzax8vq",
+            "sh/fqhsrydo",
+            "sh/gbq90jet",
+            "sh/1czatove",
+            "sh/6loru9wr",
+            "sh/rmx8nedc",
+            "sh/r2tobip8",
+            "sh/q1072xon",
+            "sh/s32p4n6t"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/oneho7up"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 8,
+      "sourceSlide": 20,
+      "narrativeRole": "register field guide 1",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/qpwjmh8n",
+            "sh/rq50vmp8",
+            "sh/7ax4bapg",
+            "sh/y5ony58z",
+            "sh/j6x47ap4",
+            "sh/43q5cz69",
+            "sh/za50r2ds",
+            "sh/0beh07ud",
+            "sh/ny50v2d4",
+            "sh/mdwz2xcj",
+            "sh/8zeh47up",
+            "sh/ulwz6d4b",
+            "sh/vmp0zilg",
+            "sh/gnyh8nm1",
+            "sh/ipgzadk7",
+            "sh/5s7i5s3y",
+            "sh/qdgzexk3",
+            "sh/re9072lo",
+            "sh/07214r6l",
+            "sh/9cb21gn2",
+            "sh/ob2l8bmh",
+            "sh/natkz65w"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/xw7qdwbe"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 9,
+      "sourceSlide": 21,
+      "narrativeRole": "register field guide 2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/1gbmxs7a",
+            "sh/0f2lon6p",
+            "sh/9sze58rq",
+            "sh/nm9cru18",
+            "sh/2l0vypkn",
+            "sh/1kru5kj2",
+            "sh/fi9c3a1c",
+            "sh/kf2d8zi1",
+            "sh/ipcjmhw7",
+            "sh/jqlkfmds",
+            "sh/5c32hcvy",
+            "sh/wnu1k7e1",
+            "sh/ho3idcvm",
+            "sh/ehwje1cf",
+            "sh/zalgjyhg",
+            "sh/0buxc3y1",
+            "sh/b61gfeh4",
+            "sh/q5sf6tgj"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/mt0r21gv"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 10,
+      "sourceSlide": 11,
+      "narrativeRole": "computation demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/xcryxg7y",
+            "sh/wbih4b6d",
+            "sh/250zy18b",
+            "sh/98rytw72",
+            "sh/o7ih0r6h",
+            "sh/61kzalof"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/bq5ovmlw"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 11,
+      "sourceSlide": 22,
+      "narrativeRole": "creation field guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/6987itcr",
+            "sh/7a18rydc",
+            "sh/al0zepkb",
+            "sh/907ylkjq",
+            "sh/rup0va5s",
+            "sh/qtwz2547",
+            "sh/cvy14fmx",
+            "sh/1k7i1knu",
+            "sh/0jy18fm9",
+            "sh/nm903u5k",
+            "sh/65836tcb",
+            "sh/tsz218b2",
+            "sh/ut83adcn",
+            "sh/vuhk3it8",
+            "sh/hwz258by",
+            "sh/ds36xcv6",
+            "sh/sru54rel",
+            "sh/rqlovmdg",
+            "sh/1gn61wvi",
+            "sh/etcn6hwr",
+            "sh/hkjmpsvy",
+            "sh/gza5wnet",
+            "sh/tg7e1w76",
+            "sh/gjyxwbqx",
+            "sh/hk7e5g7i",
+            "sh/uhgfu18r"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/cvah0jet"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 12,
+      "sourceSlide": 23,
+      "narrativeRole": "expression field guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/90vqdczq",
+            "sh/8zm9k7y5",
+            "sh/oji9832t",
+            "sh/wze9cjud",
+            "sh/by58jeds",
+            "sh/axwratc7",
+            "sh/k3y9g3u9",
+            "sh/183qd4vq",
+            "sh/07u94ze5",
+            "sh/qds7e5sn",
+            "sh/szapgfat",
+            "sh/f2lorutk",
+            "sh/03upkfa5",
+            "sh/1436tkba",
+            "sh/v6hofqt0",
+            "sh/xs7upszy",
+            "sh/wrydwnid",
+            "sh/ju9wr2ho"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/dkvmhgz2"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 13,
+      "sourceSlide": 28,
+      "narrativeRole": "mapped-field guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/q9cz6xkv",
+            "sh/ralgf21g",
+            "sh/0jex4fq5",
+            "sh/zi5wba9k",
+            "sh/o7yx8zqh",
+            "sh/987eh4rm",
+            "sh/n6pwfu9w",
+            "sh/76t0byt0",
+            "sh/65kz2tsf",
+            "sh/t8bid8b6",
+            "sh/j2907yt4",
+            "sh/k3ih03ap",
+            "sh/3yd0jit8",
+            "sh/ix4zaxsn",
+            "sh/rmt47mpc",
+            "sh/2h03ahov",
+            "sh/3i9k32pg",
+            "sh/4jilc761"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/650buxkr"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 14,
+      "sourceSlide": 29,
+      "narrativeRole": "test guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/tk36hwby",
+            "sh/8jup8rad",
+            "sh/p4jal432",
+            "sh/218rq9kr",
+            "sh/x8japo3e",
+            "sh/c7a9wj2t",
+            "sh/a5sru9kn",
+            "sh/i54fy1wb",
+            "sh/j6dg76xg",
+            "sh/k7mx0be1",
+            "sh/694f21w7",
+            "sh/twvydgfy",
+            "sh/uxof6lw3",
+            "sh/fyxgfqxo",
+            "sh/2tkfqlon",
+            "sh/bitg3q54",
+            "sh/ahkfuloj",
+            "sh/xkvy50na"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/fe5wri50"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 15,
+      "sourceSlide": 30,
+      "narrativeRole": "change-details guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/po72d8nm",
+            "sh/o3yl4361",
+            "sh/907mhc7m",
+            "sh/mxw36xob",
+            "sh/h47mlc7y",
+            "sh/w3ylc76d",
+            "sh/u1g3aho7",
+            "sh/2dsjat4r",
+            "sh/3e10jy5c",
+            "sh/ofa1cjmx",
+            "sh/a1cjet43",
+            "sh/x43ip8ne",
+            "sh/y5cjid4z",
+            "sh/z6l0ri5k",
+            "sh/6l8z2dw3",
+            "sh/vq10zix0",
+            "sh/upsj6dwf",
+            "sh/hsji1sfq"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/7mh8b290"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 16,
+      "sourceSlide": 31,
+      "narrativeRole": "record-and-action guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/dgja98fe",
+            "sh/cfa903yt",
+            "sh/832l8nad",
+            "sh/8zu1cj21",
+            "sh/nylkjelg",
+            "sh/mxcja9kv",
+            "sh/wnulgj2d",
+            "sh/5sn2to3u",
+            "sh/krelk329",
+            "sh/ilory1wf",
+            "sh/4n690bel",
+            "sh/rqx8v6xc",
+            "sh/sr694beh",
+            "sh/dszqxgf2",
+            "sh/fuh8zqx8",
+            "sh/9cvqlgni",
+            "sh/8bm9sb6x",
+            "sh/vex8nq5o"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/lgbqtk7q"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 17,
+      "sourceSlide": 6,
+      "narrativeRole": "governance boundary",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/yhg7epsj",
+            "sh/zi98nu94",
+            "sh/98rqt4r6",
+            "sh/ml07i9sv",
+            "sh/7m98ru9g",
+            "sh/oryp8fah",
+            "sh/pc76hkr2",
+            "sh/h4bupgn6",
+            "sh/w32twb6l",
+            "sh/u1kbu1ov"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/y9sbm9c3"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 18,
+      "sourceSlide": 25,
+      "narrativeRole": "assignment demo",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/xg7axgf2",
+            "sh/cfyt4beh",
+            "sh/pc7atgf6",
+            "sh/obyt0bel",
+            "sh/fm5snmx4",
+            "sh/elwbu1wj",
+            "sh/wza9cbqp",
+            "sh/h0jalgra",
+            "sh/vy1sj694"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/vap0v2lo"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 19,
+      "sourceSlide": 13,
+      "narrativeRole": "assignment register",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/q50nydsj",
+            "sh/bq9orito",
+            "sh/21gnuts7",
+            "sh/32ponyts",
+            "sh/gzy5s3a1",
+            "sh/1076lobm",
+            "sh/hcfy9k3u",
+            "sh/gb6x0zm9",
+            "sh/u9ofyp43"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/m98jmlcv"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 20,
+      "sourceSlide": 36,
+      "narrativeRole": "assignment columns guide 1",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/5s3atkbq",
+            "sh/4rut0fa5",
+            "sh/m10n6xkr",
+            "sh/h8b65cje",
+            "sh/5o76pcbi",
+            "sh/4ny5w7ux",
+            "sh/i1wnuxcr",
+            "sh/rqpormt8",
+            "sh/qpgnyhc3",
+            "sh/twnmhsva",
+            "sh/y1s3ytsn",
+            "sh/l432t8ry",
+            "sh/65c32tsj",
+            "sh/76lkvy94"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/faxczyxg"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 21,
+      "sourceSlide": 37,
+      "narrativeRole": "assignment columns guide 2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/61c7md0r",
+            "sh/7m58vyhw",
+            "sh/43qtofql",
+            "sh/2lgvi9gr",
+            "sh/36pcbexc",
+            "sh/gjetgzyl",
+            "sh/uhwbe9gf",
+            "sh/tgnu54fu",
+            "sh/valcvu1w",
+            "sh/a9cvmp0b",
+            "sh/wbudozih",
+            "sh/5gne14jy",
+            "sh/kfedszid",
+            "sh/7i5w3e14",
+            "sh/qxo7mhcr",
+            "sh/d0f6hcbi",
+            "sh/e1o7qhc3",
+            "sh/zmxojmto"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/7ep4jehs"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 22,
+      "sourceSlide": 38,
+      "narrativeRole": "assignment form guide 1",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/kvy1kbep",
+            "sh/lw7idgva",
+            "sh/a5o3qloj",
+            "sh/x8z2l07a",
+            "sh/y983u5ov",
+            "sh/jahknqpg",
+            "sh/lczmp07m",
+            "sh/h43ed8vq",
+            "sh/g3ux43u5",
+            "sh/f2lwbyd0",
+            "sh/p8neh8v2",
+            "sh/25wf6dcb",
+            "sh/5cje5ovi",
+            "sh/kbadwjed",
+            "sh/9sridwf6",
+            "sh/03yh07ep",
+            "sh/14ri9cfa",
+            "sh/e1gzyxwj"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/onm5ori9"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 23,
+      "sourceSlide": 39,
+      "narrativeRole": "assignment form guide 2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/50769kvu",
+            "sh/4ze50fu9",
+            "sh/1ofq1sje",
+            "sh/gr2pg32p",
+            "sh/hsbqp8ja",
+            "sh/xcjex072",
+            "sh/ba1wvqpw",
+            "sh/kfux8fqd",
+            "sh/zelwzaps",
+            "sh/ydcf658n",
+            "sh/83uxcfqp",
+            "sh/sb6tsr6x",
+            "sh/dcfu1wni",
+            "sh/edobuho3"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/4ji1oj6t"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 24,
+      "sourceSlide": 59,
+      "narrativeRole": "conflict checks",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/udcri1kn",
+            "sh/velsb618",
+            "sh/43e9ob25",
+            "sh/ihwrm1kz",
+            "sh/ji5sf61k",
+            "sh/k7a9c72l",
+            "sh/l8ja5cj6",
+            "sh/szmhw7ex",
+            "sh/7ydgn2xc",
+            "sh/6x4zuxw7",
+            "sh/hofytcfu",
+            "sh/fmxgr2xo",
+            "sh/ul4zyxw3",
+            "sh/psfixwfq",
+            "sh/4r6h4re5",
+            "sh/987apkre",
+            "sh/m5grep8n",
+            "sh/n6psnu98",
+            "sh/wbitkzqp",
+            "sh/a9grip8j",
+            "sh/va9srup4",
+            "sh/cfe98vql",
+            "sh/dgnah0r6"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 25,
+      "sourceSlide": 49,
+      "narrativeRole": "reference sources",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/0ra1w7al",
+            "sh/1sj2psbq",
+            "sh/rmhkjito",
+            "sh/cnq1snu9",
+            "sh/doz2lsbu",
+            "sh/ahc3mhsn",
+            "sh/vilkvmt8",
+            "sh/jyxcj6ts",
+            "sh/ixoba1c7",
+            "sh/kz6tcbad"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/8zud4nil"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 26,
+      "sourceSlide": 44,
+      "narrativeRole": "reference guide 1",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/tozulw3e",
+            "sh/s3qdcr2t",
+            "sh/dw7ydgnm",
+            "sh/qtwf2lob",
+            "sh/lk7yh0ny",
+            "sh/0jyx8v6d",
+            "sh/yxgf6lo7",
+            "sh/6h83qd0f",
+            "sh/7ih4jyh0",
+            "sh/8jals3il",
+            "sh/uls3ud0r",
+            "sh/hojmpsz2",
+            "sh/ips3yx0n",
+            "sh/3ql4r2h8",
+            "sh/q5832dsr",
+            "sh/zah4f29o",
+            "sh/e9836x83",
+            "sh/1czmhcre"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/f2dcb2hw"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 27,
+      "sourceSlide": 45,
+      "narrativeRole": "reference guide 2",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/lsz2dofy",
+            "sh/0rq1kjed",
+            "sh/18jixozy",
+            "sh/e58j2907",
+            "sh/9wj21ozu",
+            "sh/ova18jip",
+            "sh/mtsj6t0j",
+            "sh/u54f65g3",
+            "sh/f6xgzaxo",
+            "sh/g76x8vy9",
+            "sh/29oza5gz",
+            "sh/pcfy5kfq",
+            "sh/ydkfylgv",
+            "sh/jetgr6xg",
+            "sh/y9cvmx8j",
+            "sh/ny5wzmpg",
+            "sh/mxwvqh8v",
+            "sh/90ne1w76"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/vy98fu9g"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 28,
+      "sourceSlide": 48,
+      "narrativeRole": "change history",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/94va1sf2",
+            "sh/83m9snyx",
+            "sh/yxkrmdgf",
+            "sh/l0vaxsf6",
+            "sh/kzm9onyl",
+            "sh/juxs7mxk",
+            "sh/itoryhgz",
+            "sh/cvyxkbi5",
+            "sh/dw7etgzq",
+            "sh/bupwr6hk"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/fip4bypk"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 29,
+      "sourceSlide": 46,
+      "narrativeRole": "history field guide",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/a9s3uhcv",
+            "sh/va14nmtg",
+            "sh/8nilwra5",
+            "sh/psn2tcr6",
+            "sh/orelk7a1",
+            "sh/gbil07ih",
+            "sh/u903yx0r",
+            "sh/pgbmdcze",
+            "sh/2d032h0n",
+            "sh/3e94bmh8",
+            "sh/d4bmhwza",
+            "sh/9czypknu",
+            "sh/8bqxwf69",
+            "sh/zmxwjaps"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/pgraxgbm"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 30,
+      "sourceSlide": 47,
+      "narrativeRole": "saved versus executed",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/503e9ora",
+            "sh/4zadgjap",
+            "sh/rmlwby90",
+            "sh/6lcvitsf",
+            "sh/snudk3al",
+            "sh/mp8v6psb",
+            "sh/d07mpgv2",
+            "sh/ryp4n6dw",
+            "sh/14rmtgvy",
+            "sh/f2p4rqd8",
+            "sh/h8nmhwvu",
+            "sh/wn6lsn6x",
+            "sh/a1ojqdo7",
+            "sh/kr6lwn69",
+            "sh/ipo3udo3",
+            "sh/svql0765"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 31,
+      "sourceSlide": 47,
+      "narrativeRole": "module dependency matrix",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/503e9ora",
+            "sh/4zadgjap",
+            "sh/rmlwby90",
+            "sh/6lcvitsf",
+            "sh/snudk3al",
+            "sh/mp8v6psb",
+            "sh/d07mpgv2",
+            "sh/ryp4n6dw",
+            "sh/14rmtgvy",
+            "sh/f2p4rqd8",
+            "sh/h8nmhwvu",
+            "sh/wn6lsn6x",
+            "sh/a1ojqdo7",
+            "sh/kr6lwn69",
+            "sh/ipo3udo3",
+            "sh/svql0765"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 32,
+      "sourceSlide": 53,
+      "narrativeRole": "HRM examples",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 33,
+      "sourceSlide": 53,
+      "narrativeRole": "timekeeping examples",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 34,
+      "sourceSlide": 53,
+      "narrativeRole": "payroll setup examples",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 35,
+      "sourceSlide": 53,
+      "narrativeRole": "payroll processing examples",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 36,
+      "sourceSlide": 53,
+      "narrativeRole": "output examples",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 37,
+      "sourceSlide": 17,
+      "narrativeRole": "worked example CUS-900",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/1c7e50ni",
+            "sh/gbedwfmx",
+            "sh/t8ne10n6",
+            "sh/snedsvml",
+            "sh/jilcvq54",
+            "sh/ihcvml4j",
+            "sh/4by9or6l",
+            "sh/pc7qhwn6",
+            "sh/29grm1of",
+            "sh/3ap8fm50",
+            "sh/gnepkr69",
+            "sh/honqdwnu",
+            "sh/ulw7ihoj",
+            "sh/fm58bm54",
+            "sh/0ji9wb6t",
+            "sh/90nq9gfi"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/fy1czy50",
+            "im/gzats365"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 38,
+      "sourceSlide": 47,
+      "narrativeRole": "worked example overtime",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/503e9ora",
+            "sh/4zadgjap",
+            "sh/rmlwby90",
+            "sh/6lcvitsf",
+            "sh/snudk3al",
+            "sh/mp8v6psb",
+            "sh/d07mpgv2",
+            "sh/ryp4n6dw",
+            "sh/14rmtgvy",
+            "sh/f2p4rqd8",
+            "sh/h8nmhwvu",
+            "sh/wn6lsn6x",
+            "sh/a1ojqdo7",
+            "sh/kr6lwn69",
+            "sh/ipo3udo3",
+            "sh/svql0765"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 39,
+      "sourceSlide": 47,
+      "narrativeRole": "worked example loan protection",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/503e9ora",
+            "sh/4zadgjap",
+            "sh/rmlwby90",
+            "sh/6lcvitsf",
+            "sh/snudk3al",
+            "sh/mp8v6psb",
+            "sh/d07mpgv2",
+            "sh/ryp4n6dw",
+            "sh/14rmtgvy",
+            "sh/f2p4rqd8",
+            "sh/h8nmhwvu",
+            "sh/wn6lsn6x",
+            "sh/a1ojqdo7",
+            "sh/kr6lwn69",
+            "sh/ipo3udo3",
+            "sh/svql0765"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 40,
+      "sourceSlide": 50,
+      "narrativeRole": "transaction trace",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/ofq943e5",
+            "sh/pgzax8vq",
+            "sh/fqhsrydo",
+            "sh/gbq90jet",
+            "sh/1czatove",
+            "sh/6loru9wr",
+            "sh/rmx8nedc",
+            "sh/r2tobip8",
+            "sh/q1072xon",
+            "sh/s32p4n6t"
+          ]
+        },
+        {
+          "action": "replace",
+          "sourceElementIds": [
+            "im/oneho7up"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 41,
+      "sourceSlide": 51,
+      "narrativeRole": "end-to-end map",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/l8rat03a",
+            "sh/07yt0vmp",
+            "sh/na9sval0",
+            "sh/9craxk36",
+            "sh/8bit4fml",
+            "sh/2dwrql4b",
+            "sh/54ju10vm",
+            "sh/j21czqdw",
+            "sh/pw72h836",
+            "sh/ovy1832l",
+            "sh/nupkfyl0",
+            "sh/czi1cn2x",
+            "sh/by9kjilc",
+            "sh/axgjadkr",
+            "sh/i9czap0b",
+            "sh/3ulgju1w",
+            "sh/4vuhczih",
+            "sh/rylgnu1s",
+            "sh/szehgzid",
+            "sh/d0nyp4jy",
+            "sh/e1wzi90j",
+            "sh/f25gre14",
+            "sh/ni1gvet8",
+            "sh/mhsz29sn",
+            "sh/bmlgzet4",
+            "sh/alcz69sj",
+            "sh/xo3y1ora",
+            "sh/rqhgnut0",
+            "sh/qp8fupsf",
+            "sh/hwfexgry",
+            "sh/vuxwvq9s",
+            "sh/tsvutgrm",
+            "sh/6p4vy18b",
+            "sh/cnqdcfql",
+            "sh/doze50r6",
+            "sh/07250bed",
+            "sh/z6t476ds",
+            "sh/d4bm5wvm",
+            "sh/s32lwreh",
+            "sh/q103u1wb",
+            "sh/50rm1wfq",
+            "sh/4zilsre5"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 42,
+      "sourceSlide": 59,
+      "narrativeRole": "integration decisions",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/udcri1kn",
+            "sh/velsb618",
+            "sh/43e9ob25",
+            "sh/ihwrm1kz",
+            "sh/ji5sf61k",
+            "sh/k7a9c72l",
+            "sh/l8ja5cj6",
+            "sh/szmhw7ex",
+            "sh/7ydgn2xc",
+            "sh/6x4zuxw7",
+            "sh/hofytcfu",
+            "sh/fmxgr2xo",
+            "sh/ul4zyxw3",
+            "sh/psfixwfq",
+            "sh/4r6h4re5",
+            "sh/987apkre",
+            "sh/m5grep8n",
+            "sh/n6psnu98",
+            "sh/wbitkzqp",
+            "sh/a9grip8j",
+            "sh/va9srup4",
+            "sh/cfe98vql",
+            "sh/dgnah0r6"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 43,
+      "sourceSlide": 53,
+      "narrativeRole": "evidence",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/m9kfqxo3",
+            "sh/natwz2po",
+            "sh/1obexs7i",
+            "sh/elkfmx87",
+            "sh/zmtwv2ps",
+            "sh/dkbets7m",
+            "sh/98vu5grq",
+            "sh/o7mdwbq5",
+            "sh/m54vu18f",
+            "sh/1kvu1wru",
+            "sh/0j2tsrq9",
+            "sh/ehkbq183",
+            "sh/dgbuxwri",
+            "sh/cf2torqx"
+          ]
+        }
+      ]
+    },
+    {
+      "outputSlide": 44,
+      "sourceSlide": 60,
+      "narrativeRole": "close",
+      "reuseMode": "duplicate-slide",
+      "editTargets": [
+        {
+          "action": "rewrite",
+          "sourceElementIds": [
+            "sh/6t4ze9cf",
+            "sh/krmxcjup",
+            "sh/5svy5obu",
+            "sh/jqdg3et4",
+            "sh/on6ho3ut",
+            "sh/d07qdo3a",
+            "sh/czy9kj2p",
+            "sh/qxwritkj",
+            "sh/pwnq9o3y"
+          ]
+        }
+      ]
+    }
+  ],
+  "omittedSourceSlides": [
+    {
+      "sourceSlide": "other",
+      "reason": "The revision reuses the reference deck's field-guide, screen, matrix, map and appendix layouts."
+    }
+  ]
+}

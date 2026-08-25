@@ -1,0 +1,24 @@
+Source: ATLAS_Phase2_Computational_Basis_Demo_v2.pptx (60 slides, 16:9).
+
+Reusable structure selected for this deck:
+- Slide 1 cover: ATLAS eyebrow, large title/subtitle, four topic markers, prototype disclaimer.
+- Slide 2 agenda: five numbered learning outcomes.
+- Slide 3 five-stage horizontal lifecycle.
+- Slides 4, 6, 7-14, 18: live-product screenshot and animated-demo frames with right-side explanation.
+- Slides 15-16: read/produce dependency rows.
+- Slide 17: worked example with finance figures and live evidence.
+- Slide 19: end-to-end system map with setup path, lifecycle cards, and guardrails.
+- Slide 20: five decision/integration-boundary cards.
+- Slides 21-22: source appendix and closing proof points.
+
+Brand and typography contract:
+- Preserve the inherited ATLAS master, theme, 16:9 canvas, dark navy headings, blue accent, rounded cards, and footer styling.
+- Retain inherited text/image frames and edit them in place; do not overlay a parallel layout.
+- Keep headings sentence-length and explanatory copy short enough to remain presentation-readable.
+
+Evidence contract:
+- All app screenshots and GIF frames come from the live local ATLAS prototype captured on 24 August 2026.
+- Worked-example values are explicitly labelled as demonstration inputs.
+- Current integration behavior is separated from proposed/required consuming-module behavior.
+- Each slide receives a [Sources] block in speaker notes.
+

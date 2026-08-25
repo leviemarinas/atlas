@@ -30,6 +30,7 @@ import { DeferredRecoveryPanel, seedRecovery } from './DeferredDeductions';
 import { RetirementEngine, retirementResult } from './RetirementEngine';
 import { FinalPayEngine, finalPayResult, HIERARCHY_SOURCES, statutoryRules } from './FinalPayEngine';
 import { seedSeparationRules } from './SeparationRules';
+import { defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
 
 export { retirementResult, finalPayResult };
 export { roundServiceYears } from './PolicyFields';
@@ -38,6 +39,12 @@ export { roundServiceYears } from './PolicyFields';
 // mapping and a final-pay hierarchy, so a v3 record is not shape-compatible.
 const STORAGE_KEY = 'atlas-payroll-policy-engines-v4';
 const CODE_STORAGE_KEY = 'atlas-policy-engine-codes-v1';
+const scopedPolicyKey = (key, companyId) => `${key}:${companyId || 'default'}`;
+const readCompanyValue = (key, companyId) => {
+  const scoped = JSON.parse(localStorage.getItem(scopedPolicyKey(key, companyId)) || 'null');
+  if (scoped !== null) return scoped;
+  return companyId === defaultCompanyRecord.companyId ? JSON.parse(localStorage.getItem(key) || 'null') : null;
+};
 
 const baseSeedPolicyCodes = [
   { code: 'THP-001', name: 'Minimum Take-Home Pay', category: 'Pay and Earnings', subcategory: 'Take-Home Pay', engine: 'Take-Home Pay', description: 'Protects the configured minimum net pay after mandatory deductions.', status: 'Active' },
@@ -116,8 +123,8 @@ const supplementalPolicyCodes = [
 
 const seedPolicyCodes = [...baseSeedPolicyCodes, ...supplementalPolicyCodes];
 
-function currentEngineParameterValues(item) {
-  const policies = readPolicies();
+function currentEngineParameterValues(item, companyId = readActiveCompanyId()) {
+  const policies = readPolicies(companyId);
   const policy = item.subcategory === 'Take-Home Pay'
     ? policies.takeHome
     : item.subcategory === 'Retirement Pay'
@@ -152,26 +159,26 @@ function currentEngineParameterValues(item) {
   }));
 }
 
-export function readPolicyCodes() {
+export function readPolicyCodes(companyId = readActiveCompanyId()) {
   try {
-    const saved = JSON.parse(localStorage.getItem(CODE_STORAGE_KEY));
-    const seeds = seedPolicyCodes.map(item => ({ ...hydratePolicyCode({ ...item, isBuiltIn: true }), isBuiltIn: true, parameterValues: currentEngineParameterValues(item) }));
+    const saved = readCompanyValue(CODE_STORAGE_KEY, companyId);
+    const seeds = seedPolicyCodes.map(item => ({ ...hydratePolicyCode({ ...item, isBuiltIn: true }), isBuiltIn: true, parameterValues: currentEngineParameterValues(item, companyId) }));
     if (!Array.isArray(saved)) return seeds;
     return [...seeds, ...saved.filter(item => !seedPolicyCodes.some(seed => seed.code === item.code)).map(item => ({ ...hydratePolicyCode(item), isBuiltIn: false }))];
-  } catch { return seedPolicyCodes.map(item => ({ ...hydratePolicyCode({ ...item, isBuiltIn: true }), isBuiltIn: true, parameterValues: currentEngineParameterValues(item) })); }
+  } catch { return seedPolicyCodes.map(item => ({ ...hydratePolicyCode({ ...item, isBuiltIn: true }), isBuiltIn: true, parameterValues: currentEngineParameterValues(item, companyId) })); }
 }
 
-export function savePolicyCode(record) {
-  const custom = readPolicyCodes().filter(item => !seedPolicyCodes.some(seed => seed.code === item.code));
+export function savePolicyCode(record, companyId = readActiveCompanyId()) {
+  const custom = readPolicyCodes(companyId).filter(item => !seedPolicyCodes.some(seed => seed.code === item.code));
   const next = [...custom.filter(item => item.code !== record.code), record];
-  localStorage.setItem(CODE_STORAGE_KEY, JSON.stringify(next));
-  return readPolicyCodes();
+  localStorage.setItem(scopedPolicyKey(CODE_STORAGE_KEY, companyId), JSON.stringify(next));
+  return readPolicyCodes(companyId);
 }
 
-export function deletePolicyCode(code) {
-  const custom = readPolicyCodes().filter(item => !item.isBuiltIn && item.code !== code);
-  localStorage.setItem(CODE_STORAGE_KEY, JSON.stringify(custom));
-  return readPolicyCodes();
+export function deletePolicyCode(code, companyId = readActiveCompanyId()) {
+  const custom = readPolicyCodes(companyId).filter(item => !item.isBuiltIn && item.code !== code);
+  localStorage.setItem(scopedPolicyKey(CODE_STORAGE_KEY, companyId), JSON.stringify(custom));
+  return readPolicyCodes(companyId);
 }
 
 /** Reference table that owns the deduction and loan adjustment order (BRD row 47). */
@@ -360,12 +367,18 @@ const mergeSection = (seed, saved = {}) => ({
   ...(seed.separationRules ? { separationRules: saved.separationRules?.length ? saved.separationRules : seed.separationRules } : {}),
 });
 
-export function readPolicies() {
+export function readPolicies(companyId = readActiveCompanyId()) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = readCompanyValue(STORAGE_KEY, companyId);
     if (!saved) return seedPolicies;
     return Object.fromEntries(Object.entries(seedPolicies).map(([key, seed]) => [key, mergeSection(seed, saved[key])]));
   } catch { return seedPolicies; }
+}
+
+/** Persist a complete company-scoped policy set for cross-module workflows. */
+export function writePolicies(companyId = readActiveCompanyId(), policies = {}) {
+  localStorage.setItem(scopedPolicyKey(STORAGE_KEY, companyId), JSON.stringify(policies));
+  return policies;
 }
 
 /**
@@ -819,7 +832,7 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
   return <>
     <section className="policy-code-library">
       <header>
-        <div><span className="policy-code-icon"><Table weight="duotone" /></span><div><h2>Policy engine codes</h2><p>Create reusable codes once, then assign them to Company Rules by sub-category.</p></div></div>
+        <div><span className="policy-code-icon"><Table weight="duotone" /></span><div><h2>Policy engine codes</h2><p>Create reusable codes once, then assign them in Payroll Policy Management by sub-category.</p></div></div>
         <button className="button primary" onClick={() => openCreator()}><Plus /> Create policy code</button>
       </header>
       <div className="policy-code-summary">
@@ -828,7 +841,7 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
         <span><strong>{new Set(codes.map(item => item.subcategory)).size}</strong><small>Mapped sub-categories</small></span>
         <span className={coverageComplete ? 'coverage-complete' : 'coverage-gap'}><strong>{mappedSubcategories.size}/{policyCoverageCatalog.length}</strong><small>Template coverage</small></span>
       </div>
-      <div className={`policy-coverage-notice ${coverageComplete ? 'complete' : 'gap'}`}><CheckCircle weight="fill" /><div><strong>{coverageComplete ? 'Every Company Rules sub-category has a governed template.' : 'Template coverage needs attention.'}</strong><span>Codes inherit the full approved parameter schema; arithmetic formulas and reference sources remain versioned in Computational Basis.</span></div></div>
+      <div className={`policy-coverage-notice ${coverageComplete ? 'complete' : 'gap'}`}><CheckCircle weight="fill" /><div><strong>{coverageComplete ? 'Every Policy Management sub-category has a governed template.' : 'Template coverage needs attention.'}</strong><span>Codes inherit the full approved parameter schema; arithmetic formulas and reference sources remain versioned in Computational Basis.</span></div></div>
       <div className="policy-library-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search code, sub-category, computation, or reference..." /><MagnifyingGlass /></div><select className="compact-select" value={category} onChange={event => setCategory(event.target.value)}><option>All categories</option>{Object.keys(codeSubcategories).map(value => <option key={value}>{value}</option>)}</select><span>{filteredCodes.length} code{filteredCodes.length === 1 ? '' : 's'}</span></div>
       <div className="policy-code-table-wrap"><table className="policy-code-table">
         <thead><tr><th>Code</th><th>Policy code</th><th>Applies to</th><th>Governs</th><th>Status</th><th>Action</th></tr></thead>
@@ -864,15 +877,15 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
   </>;
 }
 
-export function PolicyComputations({ notify, addHistory, references, onManageHierarchy, onOpenService, initialTab = 'take-home' }) {
-  const [policies, setPolicies] = useState(readPolicies);
-  const [codes, setCodes] = useState(readPolicyCodes);
+export function PolicyComputations({ companyId = readActiveCompanyId(), notify, addHistory, references, onManageHierarchy, onOpenService, initialTab = 'take-home' }) {
+  const [policies, setPolicies] = useState(() => readPolicies(companyId));
+  const [codes, setCodes] = useState(() => readPolicyCodes(companyId));
   const [tab, setTab] = useState(initialTab);
   const [openedFrom, setOpenedFrom] = useState('');
   const [showWholeEngine, setShowWholeEngine] = useState(false);
 
   const engineSectionRef = useRef(null);
-  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(policies)), [policies]);
+  useEffect(() => localStorage.setItem(scopedPolicyKey(STORAGE_KEY, companyId), JSON.stringify(policies)), [policies, companyId]);
 
   const hierarchyTable = references?.find(item => item.code === HIERARCHY_REFERENCE_CODE);
   const hierarchy = useMemo(() => readHierarchy(references), [references]);
@@ -887,15 +900,15 @@ export function PolicyComputations({ notify, addHistory, references, onManageHie
 
   const createCode = record => {
     const exists = codes.some(item => item.code === record.code && !item.isBuiltIn);
-    setCodes(savePolicyCode(record));
+    setCodes(savePolicyCode(record, companyId));
     addHistory?.({ item: record.name, type: 'Policy code', action: `${record.code} ${exists ? 'updated' : 'created'} for ${record.subcategory}`, version: exists ? '1.1' : '1.0' });
-    notify({ type: 'success', message: `${record.code} ${exists ? 'updated and remains' : 'is now'} available when applying Company Rules.` });
+    notify({ type: 'success', message: `${record.code} ${exists ? 'updated and remains' : 'is now'} available in Payroll Policy Management.` });
   };
   const removeCode = record => {
     let rules = [];
     try { rules = JSON.parse(localStorage.getItem('atlas-company-rules-v3')) || []; } catch { /* no saved rules */ }
     if (rules.some(rule => (rule.policyCode || rule.parameter) === record.code)) { notify({ type: 'error', message: `${record.code} is assigned to a company rule and cannot be deleted.` }); return; }
-    setCodes(deletePolicyCode(record.code));
+    setCodes(deletePolicyCode(record.code, companyId));
     addHistory?.({ item: record.name, type: 'Policy code', action: `${record.code} deleted`, version: '—' });
     notify({ type: 'success', message: `${record.code} deleted from the policy-code library.` });
   };

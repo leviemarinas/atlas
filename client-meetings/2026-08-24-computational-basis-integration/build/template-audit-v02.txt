@@ -1,0 +1,10 @@
+ATLAS Computational Basis Integration deck v02
+
+- Reference: ATLAS_Phase2_Computational_Basis_Demo_v2.pptx (60 slides)
+- Output: 44 slides
+- Reused visual system: cover, agenda, live-screen explainers, numbered field guides, matrices, worked examples, end-to-end map, appendix and close
+- Detailed guides added for: computation register, computation creation metadata, expression builder, mapped fields, test calculation, change details, saved record controls, assignment register, assignment form, reference sources and change history
+- Live evidence: two animated GIF walkthroughs plus current ATLAS screenshots and a posted payroll computation trail
+- Template fidelity check: pass, 0 issues
+- Overflow check: pass, 0 issues
+- Retained PPT theme parts restored from the reference deck before delivery

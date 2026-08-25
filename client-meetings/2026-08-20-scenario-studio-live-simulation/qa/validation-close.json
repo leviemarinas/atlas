@@ -1,0 +1,12 @@
+{
+  "cycleDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-20-scenario-studio-live-simulation",
+  "stage": "close",
+  "ok": false,
+  "errors": [
+    "source-register.csv row 2: missing authority",
+    "premeeting gate: deck traceability is empty",
+    "premeeting gate: no premeeting deck traceability rows",
+    "premeeting gate: premeeting_deck artifact is missing"
+  ],
+  "warnings": []
+}

@@ -1,0 +1,3 @@
+decision_id,origin,locator,date,module,decision,rationale,owner,status,supersedes,affected_feedback_ids,affected_source_ids,notes
+DEC-20260820-001,audit,"localStorage legacy migration",2026-08-20,Cross Module Integrity,"Treat historical unscoped prototype records as belonging to cmp-abc-001.","Prevents legacy demo data from appearing in every subsequently created company while preserving existing ABC records.",Codex,accepted,,FB-20260820-001,SRC-20260820-001,
+DEC-20260820-002,audit,"delivery boundary",2026-08-20,Cross Module Integrity,"Verify locally and do not deploy.","The request authorized repair and testing but not publication; ATLAS workflow requires separate deployment authorization.",Codex,accepted,,FB-20260820-001,SRC-20260820-001,

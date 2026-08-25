@@ -25,6 +25,7 @@ export const notificationEventCatalog = Object.freeze([
   { key: 'HrmRequestRejected', label: 'HRM request rejected', defaultRecipient: 'Employee' },
   { key: 'WellnessCheckinSubmitted', label: 'Wellness check-in submitted', defaultRecipient: 'Administrator' },
   { key: 'MdoEnrollmentUpdated', label: 'MDO enrollment updated', defaultRecipient: 'Employee' },
+  { key: 'MinimumTakeHomePayRisk', label: 'Minimum take-home pay risk detected', defaultRecipient: 'Employee' },
 ]);
 
 export const notificationEventKeys = Object.freeze(Object.fromEntries(notificationEventCatalog.map(event => [event.key, event.key])));
@@ -43,7 +44,23 @@ export const defaultNotificationRules = [
   { id: 'not-010', name: 'HRM request rejected', eventKey: notificationEventKeys.HrmRequestRejected, channel: 'Email and Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Employee', template: 'HRM request rejected', status: 'Active' },
   { id: 'not-011', name: 'Wellness check-in submitted', eventKey: notificationEventKeys.WellnessCheckinSubmitted, channel: 'Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Administrator', template: 'Wellness check-in submitted', status: 'Active' },
   { id: 'not-012', name: 'MDO enrollment updated', eventKey: notificationEventKeys.MdoEnrollmentUpdated, channel: 'Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Employee', template: 'MDO enrollment updated', status: 'Active' },
+  { id: 'not-013', name: 'Minimum take-home pay warning', eventKey: notificationEventKeys.MinimumTakeHomePayRisk, channel: 'Email and Dashboard', frequency: 'Once per payroll cutoff', leadTime: '5 days before', leadTimeDays: 5, recipient: 'Employee', template: 'Your projected take-home pay is below the company minimum. You may submit a Staggered Payment Request for eligible deductions.', status: 'Active' },
 ];
+
+export function minimumTakeHomeNotifications({ run, result, rules = [], today = new Date().toISOString().slice(0, 10) } = {}) {
+  const rule = rules.find(item => item.eventKey === notificationEventKeys.MinimumTakeHomePayRisk && item.status === 'Active');
+  if (!rule) return [];
+  const cutoff = run?.timekeepingEnd || run?.periodEnd;
+  if (!cutoff) return [];
+  const daysUntil = Math.ceil((new Date(`${cutoff}T00:00:00Z`) - new Date(`${today}T00:00:00Z`)) / 86400000);
+  if (daysUntil < 0 || daysUntil > Number(rule.leadTimeDays ?? 5)) return [];
+  return (result?.lines || []).filter(line => line.takeHome?.deferred > 0 || line.takeHome?.exception).map(line => ({
+    employeeId: line.employeeId,
+    recipientEmployeeId: line.employeeId,
+    correlationId: `${run.id}:${line.employeeId}:minimum-take-home`,
+    summary: `${line.name}'s projected take-home pay of PHP ${Number(line.netPay || 0).toLocaleString('en-PH')} is below or protected at the configured minimum of PHP ${Number(line.takeHome?.protectedMinimum || 0).toLocaleString('en-PH')}. A Staggered Payment Request is available for eligible deductions such as Company Loan payments.`,
+  }));
+}
 
 /**
  * Stored rules for the company, falling back to the shipped defaults so the

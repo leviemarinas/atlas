@@ -111,7 +111,20 @@ const storageKey = companyId => `${PAYROLL_RUNS_KEY}:${companyId || 'default'}`;
 export function readPayrollRuns(companyId, storage = globalThis.localStorage) {
   try {
     const saved = JSON.parse(storage?.getItem(storageKey(companyId)) || 'null');
-    return Array.isArray(saved) ? saved : [];
+    if (!Array.isArray(saved)) return [];
+    const currentDate = today();
+    let changed = false;
+    const normalized = saved.map(run => {
+      if (run.status !== 'Posted' || !run.lockDate || run.lockDate > currentDate) return run;
+      changed = true;
+      return withAudit({ ...run, status: 'Locked' }, {
+        action: 'Automatically locked',
+        actor: 'System',
+        detail: `Configured lock date ${run.lockDate} reached`,
+      });
+    });
+    if (changed) storage?.setItem(storageKey(companyId), JSON.stringify(normalized));
+    return normalized;
   } catch { return []; }
 }
 
@@ -139,6 +152,26 @@ export function nextTransactionNumber(runs, year, month) {
   const prefix = `PR-${year}-${String(month).padStart(2, '0')}`;
   const used = runs.filter(row => String(row.transactionNumber || '').startsWith(prefix)).length;
   return `${prefix}-${String(used + 1).padStart(3, '0')}`;
+}
+
+/** The BRD default is one calendar day after payout unless a calendar supplies one. */
+export function defaultLockDate(payoutDate, daysAfter = 1) {
+  const iso = String(payoutDate || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+  const date = new Date(`${iso}T00:00:00`);
+  date.setDate(date.getDate() + Number(daysAfter || 0));
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+export function blockingPayrollExceptions(run) {
+  return (run?.result?.exceptions || []).filter(item => item.severity === 'Error');
+}
+
+function blockingExceptionMessage(run) {
+  const errors = blockingPayrollExceptions(run);
+  if (!errors.length) return '';
+  const first = errors[0];
+  return `Resolve ${errors.length} blocking payroll ${errors.length === 1 ? 'error' : 'errors'} before continuing. ${first.name ? `${first.name}: ` : ''}${first.message}`;
 }
 
 /* -------------------------------------------------------------- the record */
@@ -197,6 +230,7 @@ export function newPayrollRun({ runs = [], companyId, year = 2025, month = 'Nove
       payslipTemplate: 'Standard Atlas Payslip',
     },
     population: { mode: 'Active/Inactive in 201', includeOnHold: false, included: [], excluded: [] },
+    appliedPolicies: [],
     overrides: {},
     result: null,
     batches: [],
@@ -253,11 +287,18 @@ export function releaseLock(run, sessionId) {
 export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', runs = [], context } = {}) {
   const capability = capabilitiesOf(run);
   const refuse = error => ({ run, error });
+  const forwardActions = ['postDraft', 'submitReview', 'submitApproval', 'approve', 'post'];
+  if (forwardActions.includes(action)) {
+    const blocking = blockingExceptionMessage(run);
+    if (blocking) return refuse(blocking);
+  }
 
   switch (action) {
     case 'recalculate': {
       if (!capability.recalculate) return refuse(`${run.transactionNumber} is ${run.status} and can no longer be recalculated.`);
-      const result = runPayroll({ transaction: run, context });
+      let result;
+      try { result = runPayroll({ transaction: run, context }); }
+      catch (error) { return refuse(error.message || 'Payroll computation failed.'); }
       return {
         run: withAudit({ ...run, result }, { action: 'Recalculated', actor, detail: `${result.totals.headcount} employees, net pay ₱${result.totals.netPay.toLocaleString()}` }),
         message: `${run.transactionNumber} recalculated — ${result.totals.headcount} employees, net pay ₱${result.totals.netPay.toLocaleString()}.`,
@@ -292,6 +333,15 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
         run: withAudit({ ...run, status: 'Open', approvals: [...(run.approvals || []), { level: run.status, actor, at: stamp(), decision: 'Rejected', remarks }] }, { action: 'Rejected', actor, detail: remarks }),
         message: `${run.transactionNumber} returned to Open.`,
       };
+    case 'generateBankFile': {
+      if (run.status !== 'Approved') return refuse('The bank file is generated only after payroll approval.');
+      if (!run.result) return refuse('This transaction has no computed result for a bank file.');
+      const rows = bankFileFor(run.result);
+      return {
+        run: withAudit(run, { action: 'Bank file generated', actor, detail: `${rows.length} crediting instructions in ${run.result.currency || 'PHP'}` }),
+        message: `${run.transactionNumber} bank file generated — ${rows.length} crediting instructions in ${run.result.currency || 'PHP'}.`,
+      };
+    }
     case 'post': {
       if (run.status !== 'Approved') return refuse('Only an approved transaction can be posted.');
       if (!run.result) return refuse('This transaction has no computed result to post.');
@@ -328,7 +378,7 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
  * `asOf` is the run's payout date, so a run dated last year computes on last
  * year's statutory tables even after this year's are published.
  */
-export function buildPayrollContext({ companyId, run, hrmData, registers = {}, hierarchy = [], policies = {}, computations, storage } = {}) {
+export function buildPayrollContext({ companyId, run, hrmData, registers = {}, hierarchy = [], policies = {}, computations, staggeredRequests = [], storage } = {}) {
   const data = hrmData || readHrmData(companyId, storage);
   const asOf = run?.payoutDate || today();
   return {
@@ -345,6 +395,7 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     },
     statutory: effectiveStatutorySet(asOf),
     policies,
+    staggeredRequests,
     hierarchy,
     computations: computations || seedComputations(),
     bonusCeiling: 90000,

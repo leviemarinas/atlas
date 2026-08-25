@@ -1,0 +1,53 @@
+deck_kind,slide_number,narrative_role,asset,source_ids,app_revision,capture_company,verification_status,notes
+premeeting,1,opening thesis,,SRC-20260824-002,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,2,learning outcomes,,SRC-20260824-002,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,3,evidence legend,,SRC-20260824-002,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,4,conceptual model,shots/policy-chain.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,5,product orientation,shots/cb-overview.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,6,library contents,,SRC-20260824-004;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,7,workspace tabs,shots/cb-tabs.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,8,concept glossary,,SRC-20260824-003;SRC-20260824-004,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,9,execution classes,,SRC-20260824-005;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,10,section divider,,,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,11,register field guide,shots/cb-register.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,12,register columns 1,shots/cb-columns.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,13,register columns 2,shots/cb-columns.png,SRC-20260824-003;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,14,csv import template,shots/import-toolbar.png,SRC-20260824-003;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,15,creation animated demo,evidence/computation-creation-walkthrough.gif,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,16,create field guide 1,shots/create-details.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,17,create field guide 2,shots/create-expression.png,SRC-20260824-004;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,18,formula references another computation,shots/formula-reference.png,SRC-20260824-004;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,19,create field guide 3,shots/create-mapped.png,SRC-20260824-004;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,20,create field guide 4,shots/create-test.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,21,testing a reference chain,shots/reference-test.png,SRC-20260824-004;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,22,create field guide 5,shots/create-change.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,23,saved record,shots/cus900-record.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,24,two test surfaces,,SRC-20260824-003,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,25,section divider,,,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,26,assignment animated demo,evidence/client-assignment-walkthrough.gif,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,27,assignment register field guide,shots/assign-register.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,28,assignment form field guide,shots/assign-form.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,29,what the assignment captures,,SRC-20260824-003;SRC-20260824-005,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,30,scope rules to agree,,SRC-20260824-003,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,31,section divider,,,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,32,two reference registers,,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,33,reference source field guide,shots/reference-sources.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,34,change history,shots/change-history.png,SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,35,section divider,,,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,36,posted payroll header,shots/trail-header.png,SRC-20260824-006;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,37,source trail 1-5,shots/trail-sources-a.png,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,38,source trail 8-11,shots/trail-sources-b.png,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,39,source trail 14-18,shots/trail-sources-c.png,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,40,calculation ledger 1-10,shots/trail-ledger-a.png,SRC-20260824-005;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,41,calculation ledger 11-19,shots/trail-ledger-b.png,SRC-20260824-005;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,42,ledger row detail,shots/trail-step-open.png,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Captured live 24 Aug 2026; callouts placed from DOM rectangles
+premeeting,43,library drives the figure,,SRC-20260824-005;SRC-20260824-009,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,44,consumer contract,,SRC-20260824-005;SRC-20260824-006,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,45,section divider,,,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,46,input contract matrix,,SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,47,worked example overtime,,SRC-20260824-005;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,48,worked example take-home,,SRC-20260824-005;SRC-20260824-008,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,49,go-live decisions,,SRC-20260824-003;SRC-20260824-005,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,50,current-state summary,,SRC-20260824-005;SRC-20260824-009,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,51,evidence appendix,,SRC-20260824-001;SRC-20260824-002;SRC-20260824-010,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources
+premeeting,52,closing proof points,,SRC-20260824-002,3999f64+working-tree,Atlas Simulator Sandbox,verified,Narrative page; claims traced to the listed sources

@@ -1,0 +1,6 @@
+Slides 1-22 intentionally replace the earlier policy-engine-led story with a computation-and-assignment-led story requested by the user.
+Slides 7 and 12 replace inherited animated walkthrough media with new live-app GIFs showing computation creation and client assignment.
+Slides 15-16 reuse the wiring pattern for integration contracts and a module dependency matrix.
+Slide 20 uses the decisions pattern to disclose current product boundaries and finance-owner decisions; this avoids implying that saving an arbitrary custom computation automatically executes it in payroll.
+Policy engines remain in scope only as an existing consumer/context, not the primary subject.
+

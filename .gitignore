@@ -23,3 +23,23 @@ Thumbs.db
 
 # Generated skills / artifacts
 skill-output/
+
+# Headless-browser automation scratch (deck-building capture sessions)
+chrome-profile/
+
+# Deck-build intermediate scratch (raw captures, probes, previews, template dumps) —
+# only outputs/, evidence/ and the reusable build scripts are kept.
+client-meetings/*/build/gif-*/
+client-meetings/*/build/probe/
+client-meetings/*/build/shots/
+client-meetings/*/build/preview/
+client-meetings/*/build/deck-assets/
+client-meetings/*/build/*-inspect/
+client-meetings/*/build/template-starter*-preview/
+client-meetings/*/build/template-starter*-layout/
+client-meetings/*/build/v02-crops/
+client-meetings/*/build/__pycache__/
+client-meetings/*/build/*.pptx
+client-meetings/*/build/*.pptx.inspect.ndjson
+client-meetings/*/build/*-montage.png
+client-meetings/*/build/*-contact-sheet.png

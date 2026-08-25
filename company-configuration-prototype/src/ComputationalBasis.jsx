@@ -22,11 +22,15 @@ import {
 import { downloadFile } from './fileDownload';
 import {
   categoryCycle,
+  computationDependencies,
   coreComputations,
   evaluateExpression,
   fieldMap,
   fields,
+  referenceProblems,
+  resolvedFields,
   seedComputations,
+  usedComputations,
   usedFields,
 } from './computationCatalog';
 import { PolicyComputations, policyEngines } from './PolicyComputations';
@@ -39,7 +43,7 @@ import { useRole } from './RoleContext';
  * re-exported here because this module is the library's screen and the rest of
  * the prototype has always imported them from it.
  */
-export { categoryCycle, coreComputations, evaluateExpression, fields, seedComputations, usedFields };
+export { categoryCycle, coreComputations, evaluateExpression, fields, seedComputations, usedComputations, usedFields };
 
 /**
  * Built-in standard formulas are maintained in Settings > Standard Computation
@@ -234,11 +238,15 @@ function SummaryCards({ computations, references, assignments }) {
   </section>;
 }
 
-function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
+function FormulaEditor({ record, library = [], onClose, onSave, onTestHistory }) {
   const isCreating = record.isNew === true;
   const [draft, setDraft] = useState({ ...record });
   const [tab, setTab] = useState('formula');
   const [fieldCode, setFieldCode] = useState(fields[0][0]);
+  // A formula may build on an already published one. Only active computations
+  // are offered, and never the record being edited.
+  const referenceable = library.filter(item => item.status === 'Active' && item.code !== draft.code);
+  const [referenceCode, setReferenceCode] = useState(referenceable[0]?.code || '');
   const [testValues, setTestValues] = useState(() => Object.fromEntries(fields.map(([code, , sample]) => [code, sample])));
   const [testResult, setTestResult] = useState(null);
   const [error, setError] = useState('');
@@ -246,7 +254,7 @@ function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
   const append = token => setDraft(previous => ({ ...previous, expression: `${previous.expression}${previous.expression && !/[ (]$/.test(previous.expression) ? ' ' : ''}${token}` }));
   const runTest = () => {
     try {
-      const value = evaluateExpression(draft.expression, testValues);
+      const value = evaluateExpression(draft.expression, testValues, { library });
       setTestResult(value);
       setError('');
       onTestHistory?.(draft, value);
@@ -257,12 +265,19 @@ function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
   };
   const submit = event => {
     event.preventDefault();
+    const problems = referenceProblems(draft.expression, library, draft.code);
+    if (problems.length) { setError(problems.join(' ')); setTab('formula'); return; }
     try {
-      evaluateExpression(draft.expression, testValues);
+      evaluateExpression(draft.expression, testValues, { library });
       onSave({ ...draft, changeNote });
     } catch (saveError) { setError(saveError.message); setTab('formula'); }
   };
   const mapped = usedFields(draft.expression);
+  const dependencies = computationDependencies(draft.expression, library, draft.code);
+  // A referenced computation brings its own inputs, so the test tab asks for the
+  // fields the whole chain needs rather than a figure the user would otherwise
+  // have to work out by hand.
+  const testable = resolvedFields(draft.expression, library);
   return <Modal title={isCreating ? 'Create company computation' : `Edit computation · ${record.code}`} onClose={onClose} className="basis-editor-modal">
     <form onSubmit={submit}>
       <div className="basis-editor-tabs">
@@ -287,16 +302,29 @@ function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
               <button type="button" className="button secondary" onClick={() => append(`{{${fieldCode}}}`)}><Plus /> Insert field</button>
               <div className="operator-palette" aria-label="Available operators">{['+', '−', '×', '÷', '(', ')', 'MIN(', 'MAX('].map(operator => <button type="button" key={operator} onClick={() => append(operator.replace('−', '-').replace('×', '*').replace('÷', '/'))}>{operator}</button>)}</div>
             </div>
+            <div className="formula-insert-row formula-reference-row">
+              <select value={referenceCode} onChange={event => setReferenceCode(event.target.value)} aria-label="Published computation" disabled={!referenceable.length}>{referenceable.map(item => <option value={item.code} key={item.code}>{item.code} · {item.name}</option>)}</select>
+              <button type="button" className="button secondary" onClick={() => append(`{{${referenceCode}}}`)} disabled={!referenceCode}><Function /> Insert computation</button>
+              <p className="formula-insert-hint">Build on a published formula instead of repeating its arithmetic. Its own inputs are collected for you.</p>
+            </div>
             <div className="mapping-table-wrap">
-              <table className="mapping-table"><thead><tr><th>Mapped field</th><th>Atlas source</th><th>Sample value</th></tr></thead><tbody>
-                {mapped.map(code => <tr key={code}><td><code>{`{{${code}}}`}</code></td><td>{fieldMap[code]?.label || 'Unrecognized field'}</td><td>{fieldMap[code]?.sample?.toLocaleString?.() ?? '—'}</td></tr>)}
+              <table className="mapping-table"><thead><tr><th>Mapped field</th><th>Kind</th><th>Atlas source</th><th>Sample value</th></tr></thead><tbody>
+                {mapped.map(code => <tr key={code}><td><code>{`{{${code}}}`}</code></td><td><span className="mapping-kind field">Approved field</span></td><td>{fieldMap[code]?.label || 'Unrecognized field'}</td><td>{fieldMap[code]?.sample?.toLocaleString?.() ?? '—'}</td></tr>)}
+                {dependencies.map(dependency => <tr key={dependency.code} className={dependency.missing || dependency.circular || dependency.inactive ? 'mapping-problem' : ''}>
+                  <td><code>{`{{${dependency.code}}}`}</code></td>
+                  <td><span className="mapping-kind computation"><Function weight="duotone" /> Computation</span></td>
+                  <td>{dependency.circular ? 'A formula cannot refer to itself' : dependency.missing ? 'Not a published computation' : <>{dependency.name}{dependency.inactive ? ' · inactive' : ''}<small className="block-caption">{dependency.expression}</small></>}</td>
+                  <td>{dependency.missing || dependency.circular ? '—' : `Version ${dependency.version}`}</td>
+                </tr>)}
+                {!mapped.length && !dependencies.length && <tr className="mapping-empty"><td colSpan={4}>Insert an approved field or a published computation to begin.</td></tr>}
               </tbody></table>
             </div>
           </section>
         </>}
         {tab === 'test' && <div className="test-workspace">
           <div className="test-copy"><Flask weight="duotone" /><div><h3>Test calculation</h3><p>Run the draft formula with controlled values before saving it.</p></div></div>
-          <div className="test-input-grid">{mapped.map(code => <label key={code}>{fieldMap[code]?.label || code}<input type="number" step="any" value={testValues[code] ?? 0} onChange={event => setTestValues({ ...testValues, [code]: event.target.value })} /></label>)}</div>
+          {Boolean(dependencies.length) && <p className="test-reference-note"><Function weight="duotone" /> This formula builds on {dependencies.map(item => item.code).join(', ')}. The inputs below cover the whole chain.</p>}
+          <div className="test-input-grid">{testable.map(code => <label key={code}>{fieldMap[code]?.label || code}<input type="number" step="any" value={testValues[code] ?? 0} onChange={event => setTestValues({ ...testValues, [code]: event.target.value })} /></label>)}</div>
           <div className="test-result-row"><button type="button" className="button primary" onClick={runTest}><Flask /> Run test</button>{testResult !== null && <div className="test-result passed"><Check weight="bold" /><span><small>Formula passed</small><strong>₱ {testResult.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></span></div>}</div>
         </div>}
         {tab === 'change' && <div className="change-workspace">
@@ -312,10 +340,11 @@ function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
   </Modal>;
 }
 
-function ComputationDrawer({ record, onClose, onEdit, canEdit }) {
+function ComputationDrawer({ record, library = [], onClose, onEdit, canEdit }) {
   const mapped = usedFields(record.expression);
+  const dependencies = computationDependencies(record.expression, library, record.code);
   let result = null;
-  try { result = evaluateExpression(record.expression, Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { /* validated on edit */ }
+  try { result = evaluateExpression(record.expression, Object.fromEntries(fields.map(([code, , sample]) => [code, sample])), { library }); } catch { /* validated on edit */ }
   return <div className="modal-backdrop view-drawer-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
     <aside className="record-drawer basis-record-drawer" role="dialog" aria-modal="true" aria-label={record.name}>
       <header><div><p>{record.code} · Version {record.version}</p><h2>{record.name}</h2></div><button className="icon-button" onClick={onClose}><X /></button></header>
@@ -323,7 +352,8 @@ function ComputationDrawer({ record, onClose, onEdit, canEdit }) {
         <section><div className="detail-grid"><div><strong>Category</strong><span>{record.category}</span></div><div><strong>Source</strong><span className={`computation-source ${record.isBuiltIn !== false ? 'built-in' : 'admin-defined'}`}><Function weight="duotone" />{record.isBuiltIn !== false ? 'Built-in standard' : 'Admin-defined'}</span></div><div><strong>Status</strong><span className={`status-pill ${record.status.toLowerCase()}`}>{record.status}</span></div><div><strong>Effective date</strong><span>{record.effectiveDate}</span></div><div><strong>Updated by</strong><span>{record.updatedBy}</span></div></div></section>
         <section><h3>Description</h3><p className="drawer-paragraph">{record.description}</p></section>
         <section><h3>Formula expression</h3><div className="formula-preview">{record.expression}</div></section>
-        <section><h3>Mapped fields</h3><div className="mapped-chip-list">{mapped.map(code => <span key={code}>{fieldMap[code]?.label || code}</span>)}</div></section>
+        <section><h3>Mapped fields</h3><div className="mapped-chip-list">{mapped.map(code => <span key={code}>{fieldMap[code]?.label || code}</span>)}{!mapped.length && <span className="mapped-chip-empty">Supplied through the computations below</span>}</div></section>
+        {Boolean(dependencies.length) && <section><h3>Builds on</h3><div className="dependency-list">{dependencies.map(dependency => <div key={dependency.code} className="dependency-row"><span className="dependency-code"><Function weight="duotone" />{dependency.code}</span><div><strong>{dependency.name || 'Not a published computation'}</strong>{dependency.expression && <small>{dependency.expression}</small>}</div></div>)}</div></section>}
         <section><h3>Standard test result</h3><div className="drawer-test"><Check weight="bold" /><span><small>Passed using sample values</small><strong>₱ {result?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? '—'}</strong></span></div></section>
       </div>
       <footer><button className="button secondary" onClick={onClose}>Close</button>{canEdit
@@ -383,7 +413,7 @@ function ReferenceEditor({ table: reference, onClose, onSave, onExport }) {
   </Modal>;
 }
 
-export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
+export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
   const { isAdmin } = useRole();
   const [computations, setComputations] = useState(() => readStored(STORAGE.computations, seedComputations()).map(item => ({ ...item, isBuiltIn: item.isBuiltIn !== false })));
   const [assignments, setAssignments] = useState(() => readStored(STORAGE.assignments, initialAssignments));
@@ -525,7 +555,12 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
       const headers = parseCsvLine(lines.shift() || '').map(value => value.trim().toLowerCase());
       const codeIndex = headers.indexOf('code');
       const expressionIndex = headers.indexOf('expression');
-      if (codeIndex < 0 || expressionIndex < 0) { notify({ type: 'error', message: 'Use the Atlas template with Code and Expression columns.' }); return; }
+      // Optional columns from the template. Anything absent is left as it was.
+      const nameIndex = headers.indexOf('name');
+      const categoryIndex = headers.indexOf('category');
+      const statusIndex = headers.indexOf('status');
+      const effectiveIndex = headers.indexOf('effective date');
+      if (codeIndex < 0 || expressionIndex < 0) { notify({ type: 'error', message: 'Use the Atlas template — Code and Expression columns are required. Download template to start from the right headers.' }); return; }
       let updated = 0;
       let skipped = 0;
       let locked = 0;
@@ -537,9 +572,15 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
         const values = incoming.get(item.code);
         if (!values) return item;
         if (!canEditComputation(item, isAdmin)) { locked += 1; return item; }
-        try { evaluateExpression(values[expressionIndex], Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { skipped += 1; return item; }
+        if (referenceProblems(values[expressionIndex], previous, item.code).length) { skipped += 1; return item; }
+        try { evaluateExpression(values[expressionIndex], Object.fromEntries(fields.map(([code, , sample]) => [code, sample])), { library: previous }); } catch { skipped += 1; return item; }
         updated += 1;
-        return { ...item, expression: values[expressionIndex], version: (Number(item.version) + 0.1).toFixed(1), updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US') };
+        const optional = {};
+        if (nameIndex >= 0 && values[nameIndex]) optional.name = values[nameIndex];
+        if (categoryIndex >= 0 && categoryCycle.includes(values[categoryIndex])) optional.category = values[categoryIndex];
+        if (statusIndex >= 0 && ['Active', 'Inactive'].includes(values[statusIndex])) optional.status = values[statusIndex];
+        if (effectiveIndex >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(values[effectiveIndex] || '')) optional.effectiveDate = values[effectiveIndex];
+        return { ...item, ...optional, expression: values[expressionIndex], version: (Number(item.version) + 0.1).toFixed(1), updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US') };
       }));
       const lockedNote = locked ? ` ${locked} built-in formulas were left unchanged.` : '';
       addHistory({ item: file.name, type: 'Computation', action: `Bulk update · ${updated} matched, ${skipped} invalid, ${locked} locked`, version: 'Multiple' });
@@ -547,6 +588,42 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
     };
     reader.readAsText(file);
     event.target.value = '';
+  };
+
+  /**
+   * The import template: the real headers, three worked example rows built from
+   * this company's own library, and a commented key so nobody has to guess what
+   * a column accepts.
+   */
+  const downloadComputationTemplate = () => {
+    const samples = computations.filter(item => item.status === 'Active').slice(0, 3);
+    const rows = samples.length ? samples : [{ code: 'CUS-901', name: 'Example computation', category: 'Earnings', expression: '{{allowance_units}} * {{allowance_unit_rate}}', status: 'Active', effectiveDate: new Date().toISOString().slice(0, 10) }];
+    const csv = [
+      ['Code', 'Name', 'Category', 'Expression', 'Status', 'Effective Date'].join(','),
+      ...rows.map(item => [item.code, item.name, item.category, item.expression, item.status, item.effectiveDate].map(csvCell).join(',')),
+      '',
+      csvCell('# Code and Expression are required. Name, Category, Status and Effective Date are optional and are only applied when present.'),
+      csvCell('# Code must match an existing computation; import updates formulas, it does not create new ones.'),
+      csvCell('# Expression uses {{approved_field}} tokens, or {{CODE-000}} to build on a published computation.'),
+      csvCell(`# Category accepts: ${categoryCycle.join(' | ')}`),
+      csvCell('# Status accepts: Active | Inactive. Effective Date uses YYYY-MM-DD.'),
+      csvCell(`# Approved fields: ${fields.map(([code]) => code).join(' | ')}`),
+    ].join('\n');
+    downloadFile('atlas-computation-import-template.csv', csv, 'text/csv');
+    notify({ type: 'success', message: 'Computation import template downloaded.' });
+  };
+
+  const downloadReferenceTemplate = target => {
+    const rows = (target?.entries || []).slice(0, 3);
+    const csv = [
+      ['Key', 'Value', 'Note'].join(','),
+      ...(rows.length ? rows : [{ key: 'Example key', value: '0.00', note: 'Optional note' }]).map(item => [item.key, item.value, item.note].map(csvCell).join(',')),
+      '',
+      csvCell('# Key and Value are required on every row. Note is optional.'),
+      csvCell('# Uploading replaces the rows of this source and publishes a new version; earlier versions stay available to past payrolls.'),
+    ].join('\n');
+    downloadFile(`atlas-${(target?.code || 'reference').toLowerCase()}-template.csv`, csv, 'text/csv');
+    notify({ type: 'success', message: `${target?.name || 'Reference'} template downloaded.` });
   };
 
   const uploadReferenceVersion = event => {
@@ -583,7 +660,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
 
   return <div className="page-content computational-page">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Services Information</button>
-    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Information / Services Information / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">Manage Atlas standard formulas, client assignments, policy scenarios, and linked reference sources used by automatic payroll calculation.</p></div><span className="controlled-badge"><Check weight="bold" /> Controlled standard library</span></div>
+    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Info / Services Information / Payroll / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">Manage Atlas standard formulas, client assignments, policy scenarios, and linked reference sources used by automatic payroll calculation.</p></div><span className="controlled-badge"><Check weight="bold" /> Controlled standard library</span></div>
     <SummaryCards computations={computations} references={references} assignments={assignments} />
     <div className="basis-tabs" role="tablist">
       <button className={tab === 'computations' ? 'active' : ''} onClick={() => setTab('computations')}>Computations <span>{computations.length}</span></button>
@@ -600,6 +677,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
         <select className="compact-select" value={status} onChange={event => setStatus(event.target.value)}><option>All statuses</option><option>Active</option><option>Inactive</option></select>
         <div className="toolbar-spacer" />
         <div className="basis-toolbar-actions"><button className="button primary" onClick={createComputation}><Plus /> Create computation</button>
+          <button className="button secondary" onClick={downloadComputationTemplate}><FileCsv /> Download template</button>
           <button className="button secondary" onClick={() => computationUploadRef.current?.click()}><UploadSimple /> Import CSV</button>
           <input ref={computationUploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={updateComputationList} />
           <ReportMenu onCsv={() => { exportCsv('atlas-computational-basis.csv', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis CSV report downloaded.' }); }} onPdf={() => { printReport('Atlas Computational Basis', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis print report prepared.' }); }} /></div>
@@ -622,7 +700,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
       </tbody></table></div>
     </>}
 
-    {tab === 'policies' && <PolicyComputations notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
+    {tab === 'policies' && <PolicyComputations companyId={companyId} notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
 
     {tab === 'references' && <>
       <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Formula reference sources</h2><p>Maintain formula reference sources. Statutory contribution versions are linked here but managed in Settings, then consumed read-only in Payroll.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>
@@ -631,7 +709,7 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
         <header><span className="reference-icon"><Table weight="duotone" /></span><button className={`switch ${item.enabled ? 'on' : ''}`} onClick={() => toggleReference(item)} aria-label={`${item.enabled ? 'Disable' : 'Enable'} ${item.name}`}><span /></button></header>
         <div><small>{item.code} · {item.category}</small><h3>{item.name}</h3><p>{item.entries.length} configured rows</p></div>
         <dl><div><dt>Version</dt><dd>{item.version}</dd></div><div><dt>Effective</dt><dd>{item.effectiveDate}</dd></div><div><dt>Company</dt><dd className={item.enabled ? 'enabled-copy' : 'disabled-copy'}>{item.enabled ? 'Enabled' : 'Disabled'}</dd></div></dl>
-        <footer>{item.category === 'Linked Statutory' ? <button onClick={onOpenStatutory}><Table /> Manage in Settings</button> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> Manage</button><button onClick={() => { setUploadTarget(item); window.setTimeout(() => referenceUploadRef.current?.click(), 0); }}><UploadSimple /> Upload version</button></>}</footer>
+        <footer>{item.category === 'Linked Statutory' ? <button onClick={onOpenStatutory}><Table /> Manage in Settings</button> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> Manage</button><button onClick={() => downloadReferenceTemplate(item)}><FileCsv /> Template</button><button onClick={() => { setUploadTarget(item); window.setTimeout(() => referenceUploadRef.current?.click(), 0); }}><UploadSimple /> Upload version</button></>}</footer>
       </article>)}</div>
     </>}
 
@@ -640,9 +718,9 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
       <div className="history-list">{history.map(item => <article key={item.id}><span className="history-dot"><ClockCounterClockwise /></span><div><header><strong>{item.item}</strong><span>{item.type}</span></header><p>{item.action}</p><small>{item.date} · {item.user} · Version {item.version}</small></div></article>)}</div>
     </>}
 
-    {editing && <FormulaEditor record={editing} onClose={() => setEditing(null)} onSave={saveComputation} onTestHistory={(draft) => addHistory({ item: draft.name, type: 'Computation', action: 'Test calculation passed', version: draft.version })} />}
+    {editing && <FormulaEditor record={editing} library={computations} onClose={() => setEditing(null)} onSave={saveComputation} onTestHistory={(draft) => addHistory({ item: draft.name, type: 'Computation', action: 'Test calculation passed', version: draft.version })} />}
     {deleting && <Modal title="Delete company computation" onClose={() => setDeleting(null)} className="delete-computation-modal"><div className="modal-body"><p>Delete <strong>{deleting.code} · {deleting.name}</strong> from this company’s computation library?</p><small>It will no longer be available for new assignments. Atlas standard computations are not affected.</small></div><div className="modal-actions"><button className="button secondary" onClick={() => setDeleting(null)}>Cancel</button><button className="button danger" onClick={confirmDeleteComputation}><Trash /> Delete computation</button></div></Modal>}
-    {viewing && <ComputationDrawer record={viewing} canEdit={canEditComputation(viewing, isAdmin)} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
+    {viewing && <ComputationDrawer record={viewing} library={computations} canEdit={canEditComputation(viewing, isAdmin)} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
     {assignmentEditing !== undefined && <AssignmentModal record={assignmentEditing} computations={computations} references={references} onClose={() => setAssignmentEditing(undefined)} onSave={saveAssignment} />}
     {referenceEditing && <ReferenceEditor table={referenceEditing} onClose={() => setReferenceEditing(null)} onSave={saveReference} onExport={table => exportCsv(`${table.code.toLowerCase()}-${table.version}.csv`, table.entries, [['key', 'Key'], ['value', 'Value'], ['note', 'Note']])} />}
   </div>;

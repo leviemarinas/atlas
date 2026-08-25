@@ -1,0 +1,7 @@
+Intentional deviations from the retained reference deck
+
+1. The narrative is centered on computational variables and client assignments; policy engines appear only as surrounding context.
+2. Company Rules is not presented as the destination. The path shown is Company Info → Services Information → Payroll → Computational Basis.
+3. Field-guide screenshots use the current ATLAS prototype and demonstration record CUS-900.
+4. The deck states the current integration boundary plainly: a saved computation and assignment do not automatically execute until a consuming module resolves the assignment, supplies mapped inputs and invokes the code.
+5. Assignment conflict checks and immutability after payroll use are described as required operating rules where the prototype does not yet enforce the full behavior.

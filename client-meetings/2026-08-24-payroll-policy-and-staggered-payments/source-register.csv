@@ -1,0 +1,3 @@
+source_id,type,path_or_url,sha256,modified_at,effective_date,authority,module,locator,notes
+SRC-20260824-001,client-feedback,conversation,,2026-08-24T00:00:00+08:00,2026-08-24,client-decision,Payroll Policy and Staggered Payments,"User message sections 1-7","Primary authority for the requested navigation, policy, transaction, notification, and approval behavior."
+SRC-20260824-002,application,C:\Users\josrp\OneDrive\Documents\Atlas\company-configuration-prototype,,2026-08-24T00:00:00+08:00,,implementation,Payroll Policy and Staggered Payments,3999f64+working-tree,"Verified local application revision; workspace contained pre-existing uncommitted work and no deployment was performed."

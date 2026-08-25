@@ -30,39 +30,21 @@ import { TimeCorrectionWorkspace } from './TimeCorrectionWorkspace';
 import { employeeDirectory } from './PolicyApplicability';
 import { downloadFile } from './fileDownload';
 import { plural } from './textFormat';
+import {
+  operationalStorageKey,
+  postedPayrollOptionsForCompany,
+  readOperationalRowsForCompany,
+  writeOperationalRowsForCompany,
+} from './operationalStore';
 
 const f = (key, label, type = 'text', options = [], required = true) => ({ key, label, type, options, required });
-const readOperationalRows = workspaceKey => {
-  // A register bumps its storage version when its field set or its seed rows
-  // change, and a bump does not migrate old rows forward — read the newest key
-  // that has rows, newest first.
-  try {
-    for (const version of [3, 2, 1]) {
-      const saved = JSON.parse(localStorage.getItem(`atlas-operational-${workspaceKey}-v${version}`));
-      if (Array.isArray(saved) && saved.length) return saved;
-    }
-    return [];
-  } catch { return []; }
-};
 const employeeOptions = () => employeeDirectory.map(employee => `${employee.code} - ${employee.name}`);
 /**
  * Posted payroll payouts, read from Payroll Processing's own run store — the
  * register that actually posts a payroll. Remittance and Journal bind to this,
  * so a remittance can only be recorded against a payout that really exists.
  */
-const postedPayrollOptions = () => {
-  const posted = [];
-  try {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
-      if (!key || !key.startsWith('atlas-payroll-runs-v1')) continue;
-      (JSON.parse(localStorage.getItem(key)) || []).forEach(run => {
-        if (['Posted', 'Locked'].includes(run.status)) posted.push(run.transactionNumber);
-      });
-    }
-  } catch { /* an unreadable store contributes no options */ }
-  return posted.length ? posted : ['No posted payroll transaction yet'];
-};
+const postedPayrollOptions = () => postedPayrollOptionsForCompany(readActiveCompanyId());
 const calendarOptions = (type, fallback) => {
   try {
     const rows = JSON.parse(localStorage.getItem('atlas-operational-calendar-v1')) || [];
@@ -178,7 +160,7 @@ export const operationalDefinitions = {
   },
 };
 
-const recordFromRow = (definition, row, index) => ({ id: index + 1, ...Object.fromEntries(definition.fields.map((field, fieldIndex) => [field.key, row[fieldIndex] ?? ''])) });
+const recordFromRow = (definition, row, index, companyId) => ({ companyId, id: index + 1, ...Object.fromEntries(definition.fields.map((field, fieldIndex) => [field.key, row[fieldIndex] ?? ''])) });
 
 /**
  * A register's rows, for a module that needs them without opening the screen.
@@ -189,12 +171,12 @@ const recordFromRow = (definition, row, index) => ({ id: index + 1, ...Object.fr
  * Falling back to the definition's own seed is what makes the register the
  * single source whether or not its screen has been mounted.
  */
-export function readRegisterRows(workspaceKey) {
-  const stored = readOperationalRows(workspaceKey);
-  if (stored.length) return stored;
+export function readRegisterRows(workspaceKey, companyId = readActiveCompanyId()) {
   const definition = operationalDefinitions[workspaceKey];
   if (!definition) return [];
-  return (definition.rows || []).map((row, index) => recordFromRow(definition, row, index));
+  const stored = readOperationalRowsForCompany(workspaceKey, companyId, globalThis.localStorage, [definition.version || 1]);
+  if (stored.length) return stored;
+  return (definition.rows || []).map((row, index) => recordFromRow(definition, row, index, companyId));
 }
 
 function EntryModal({ definition, record, onClose, onSave }) {
@@ -408,10 +390,10 @@ const delegatedWorkspaces = {
   // Payroll Processing is the payroll transaction itself, not a record table:
   // it computes, reviews, approves, posts and locks a run, so it owns its own
   // screen rather than an entry in `operationalDefinitions`.
-  transactions: ({ onBack, notify }) => <PayrollProcessingWorkspace onBack={onBack} notify={notify} readRegister={readRegisterRows} />,
-  security: ({ onBack, notify }) => <SecurityWorkspace onBack={onBack} notify={notify} />,
-  accessRights: ({ onBack, notify }) => <AccessRightsWorkspace onBack={onBack} notify={notify} />,
-  calendar: ({ onBack, notify }) => <CalendarWorkspace onBack={onBack} notify={notify} />,
+  transactions: ({ onBack, notify, companyId }) => <PayrollProcessingWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} readRegister={readRegisterRows} />,
+  security: ({ onBack, notify, companyId }) => <SecurityWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  accessRights: ({ onBack, notify, companyId }) => <AccessRightsWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  calendar: ({ onBack, notify, companyId }) => <CalendarWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
   overtime: ({ onBack, notify }) => <OvertimeGateway onBack={onBack} notify={notify} />,
   reports: ({ onBack, notify }) => <EnhancedReportShellWorkspace onBack={onBack} notify={notify} />,
   ticketing: ({ onBack, notify }) => <TicketingWorkspace onBack={onBack} notify={notify} />,
@@ -443,30 +425,28 @@ export function OperationalWorkspace({ workspaceKey, onBack, notify, companyId, 
   if (delegate) return delegate({ onBack, notify, companyId, company });
   const definition = operationalDefinitions[workspaceKey];
   if (!definition) return <UnknownWorkspace workspaceKey={workspaceKey} onBack={onBack} />;
-  return <RecordWorkspace key={workspaceKey} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} />;
+  return <RecordWorkspace key={`${workspaceKey}:${companyId}`} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} companyId={companyId} />;
 }
 
-function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
-  const storageKey = `atlas-operational-${workspaceKey}-v${definition.version || 1}`;
-  const seedRows = () => definition.rows.map((row, index) => recordFromRow(definition, row, index));
+function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }) {
+  const storageKey = operationalStorageKey(workspaceKey, definition.version || 1);
+  const seedRows = () => definition.rows.map((row, index) => recordFromRow(definition, row, index, companyId));
   const [rows, setRows] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      if (!Array.isArray(saved)) return seedRows();
-      const empty = Object.fromEntries(definition.fields.map(field => [field.key, '']));
-      return saved.map(row => ({ ...empty, ...row }));
-    } catch { return seedRows(); }
+    const saved = readOperationalRowsForCompany(workspaceKey, companyId, globalThis.localStorage, [definition.version || 1]);
+    if (!saved.length) return seedRows();
+    const empty = Object.fromEntries(definition.fields.map(field => [field.key, '']));
+    return saved.map(row => ({ ...empty, ...row, companyId }));
   });
   const [query, setQuery] = useState('');
   const [statusTab, setStatusTab] = useState('All');
   const [editing, setEditing] = useState(undefined);
   const [viewing, setViewing] = useState(null);
   const uploadRef = useRef(null);
-  useEffect(() => localStorage.setItem(storageKey, JSON.stringify(rows)), [rows, storageKey]);
+  useEffect(() => { writeOperationalRowsForCompany(storageKey, companyId, rows); }, [rows, storageKey, companyId]);
   const visible = useMemo(() => rows
     .filter(row => statusTab === 'All' || row.status === statusTab)
     .filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query, statusTab]);
-  const emitAudit = (action, record, summary) => appendAuditEvent({ companyId: readActiveCompanyId(), actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
+  const emitAudit = (action, record, summary) => appendAuditEvent({ companyId, actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
 
   const save = draft => {
     const existing = rows.find(row => row.id === draft.id);

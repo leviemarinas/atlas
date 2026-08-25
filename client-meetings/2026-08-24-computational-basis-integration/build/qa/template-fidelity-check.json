@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "checkedAt": "2026-08-23T18:40:54.424Z",
+  "workspace": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build",
+  "finalPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\outputs\\ATLAS_2026-08-24_Computational_Basis_Integration_PreMeeting_v02.pptx",
+  "starterPptx": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build\\template-starter-v02.pptx",
+  "mapPath": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build\\template-frame-map-v02.json",
+  "starterLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build\\template-starter-v02-layout",
+  "finalLayoutDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build\\final-v02-layout",
+  "editDir": "C:\\Users\\josrp\\OneDrive\\Documents\\Atlas\\client-meetings\\2026-08-24-computational-basis-integration\\build",
+  "issueCount": 0,
+  "issues": []
+}

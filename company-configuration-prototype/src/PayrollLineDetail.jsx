@@ -26,6 +26,7 @@ import {
   SegmentedTabs,
 } from './HRMKit.jsx';
 import { downloadFile } from './fileDownload.js';
+import { buildPayrollAuditTrail, traceabilityForStep } from './payrollTraceability.js';
 
 export const peso = amount => `₱${(Number(amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const signed = amount => (Number(amount) < 0 ? `(${peso(Math.abs(amount))})` : peso(amount));
@@ -63,10 +64,12 @@ export function ComputationTrail({ steps = [] }) {
   if (!steps.length) return <EmptyState title="Nothing computed yet">Recalculate the transaction to produce this employee's line.</EmptyState>;
   return <>
     <div className="payroll-trail">
-      {steps.map(step => <button
+      {steps.map(step => {
+        const trace = traceabilityForStep(step);
+        return <button
         key={`${step.seq}-${step.code}`}
         type="button"
-        className={`payroll-trail-step ${openStep === step.seq ? 'open' : ''}`}
+        className={`payroll-trail-step ${openStep === step.seq ? 'open' : ''} ${trace.policyApplied ? 'policy-applied' : ''}`}
         onClick={() => setOpenStep(openStep === step.seq ? null : step.seq)}
       >
         <span className="payroll-trail-seq">{step.seq}</span>
@@ -89,12 +92,38 @@ export function ComputationTrail({ steps = [] }) {
               {step.evaluated ? 'Evaluated from the Computational Basis library' : 'Resolved by lookup'} · Source: {step.source}
               {step.fallbackReason && ` · Library expression not used: ${step.fallbackReason}`}
             </span>
+            <span className="payroll-trail-references">
+              <b>{trace.policyApplied ? 'Policy and UI audit references' : 'UI audit references'}</b>
+              {trace.references.map(reference => <span key={`${reference.role}-${reference.path.join('-')}`}>
+                <em>{reference.role}</em>
+                <strong>{reference.feature}</strong>
+                <code>{reference.path.join(' › ')}</code>
+              </span>)}
+            </span>
           </span>}
         </span>
-        <span className="payroll-trail-amount">{peso(step.amount)}</span>
-      </button>)}
+        <span className="payroll-trail-result"><small>{trace.kind}</small><strong>{peso(step.amount)}</strong></span>
+      </button>;
+      })}
     </div>
   </>;
+}
+
+export function SourcePolicyTrail({ line, run }) {
+  const nodes = buildPayrollAuditTrail(line, run);
+  return <div className="payroll-source-trail" aria-label="Payroll source and policy audit trail">
+    {nodes.map((node, index) => <article key={node.id} className={node.type.includes('Policy') ? 'policy' : ''}>
+      <div className="payroll-source-order"><span>{index + 1}</span>{index < nodes.length - 1 && <i />}</div>
+      <div className="payroll-source-card">
+        <header><span>{node.type}</span><strong>{node.title}</strong><em>{node.status}</em></header>
+        <code className="payroll-ui-path">{node.path.join(' › ')}</code>
+        <div><span><b>Reads</b>{node.reads}</span><span><b>Produces</b>{node.produces}</span></div>
+        {/* One source can be read by several steps, so the same code appears
+            more than once in a node's list and cannot key on its own value. */}
+        {!!node.codes.length && <footer>{node.codes.map((code, position) => <code key={`${code}-${position}`}>{code}</code>)}</footer>}
+      </div>
+    </article>)}
+  </div>;
 }
 
 /* ---------------------------------------------------------------- payslip */
@@ -284,8 +313,11 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
     </div>}
 
     {tab === 'computation' && <section className="hrm-section">
-      <h3 className="hrm-section-title">Computation trail</h3>
-      <p className="page-description">Every step names the Computational Basis code it applied. Open a step to see the published formula, the values substituted into it, and the module the values came from.</p>
+      <h3 className="hrm-section-title">Source, policy, and output trail</h3>
+      <p className="page-description">Follow the exact Atlas UI path from transaction settings, employee configuration, time, registers, references, and policy engines to this payroll line, payslip, and company report.</p>
+      <SourcePolicyTrail line={line} run={run} />
+      <h3 className="hrm-section-title payroll-execution-heading">Calculation execution</h3>
+      <p className="page-description">Every amount names the Computational Basis code it applied. Open a step to see its formula or lookup, captured inputs, owning feature, policy references, and reproducible UI paths.</p>
       <ComputationTrail steps={line.steps} />
     </section>}
 

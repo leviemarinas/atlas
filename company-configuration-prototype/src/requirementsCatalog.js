@@ -40,6 +40,7 @@ export const companyRuleTaxonomy = {
 
 const rule = (id, category, subcategory, text, policyCode, enabled = true) => ({
   id, category, subcategory, rule: text, policyCode, parameter: policyCode, enabled,
+  status: enabled ? 'Active' : 'Inactive', version: '1.0', effectiveFrom: '2026-01-01', effectiveTo: '',
   groupBy: 'All Employees', groupValue: 'ABC Company Ltd', source: 'BRD / Annex B',
 });
 

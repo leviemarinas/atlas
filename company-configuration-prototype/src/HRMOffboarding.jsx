@@ -129,32 +129,18 @@ function ClearanceChecklistDashboard({ access, onNavigate }) {
   return <div className="hrm-ss-content">
     <PageHeading title="Employee Clearance &amp; Checklist" />
 
-    <div style={{ display: 'grid', gridTemplateColumns: isEmployee ? '1fr' : 'repeat(2, 1fr)', gap: 20, marginTop: 10 }}>
+    {/* Real buttons, not clickable divs: these tiles are the only way into the
+        clearance sub-screens, and as bare <div onClick> they were unreachable
+        by keyboard and invisible to assistive technology. */}
+    <div className={`hrm-hub-grid ${isEmployee ? 'single' : ''}`}>
       {cards.map(c => (
-        <div
-          key={c.key}
-          onClick={() => onNavigate(c.key)}
-          style={{
-            background: '#fff',
-            border: '1px solid var(--border-color)',
-            borderRadius: 10,
-            padding: '24px 28px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            transition: 'all .15s ease',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-          }}
-          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--violet)'}
-          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
-        >
-          <div>
-            <h3 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{c.title}</h3>
-            <p style={{ margin: 0, fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>{c.description}</p>
-          </div>
-          <ArrowRight size={20} color="var(--violet)" />
-        </div>
+        <button type="button" className="hrm-hub-card" key={c.key} onClick={() => onNavigate(c.key)}>
+          <span>
+            <h3>{c.title}</h3>
+            <p>{c.description}</p>
+          </span>
+          <ArrowRight size={20} />
+        </button>
       ))}
     </div>
   </div>;
@@ -428,37 +414,17 @@ function ClearanceChecklistScreen({ clearance, onBack, onUpdateChecklist, onNoti
     {/* Checklist items */}
     <div style={{ background: '#fff', border: '1px solid var(--border-color)', borderRadius: 10, overflow: 'hidden' }}>
       {items.map((item, idx) => (
-        <div
+        <button
+          type="button"
+          className={`hrm-checklist-row ${item.done ? 'done' : ''}`}
           key={item.id || idx}
+          aria-pressed={Boolean(item.done)}
           onClick={() => toggleItem(item.id)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            padding: '14px 20px',
-            borderBottom: idx < items.length - 1 ? '1px solid #f1f5f9' : 'none',
-            cursor: 'pointer',
-            background: item.done ? '#faf5ff' : '#fff',
-            transition: 'background .12s ease',
-          }}
+          style={{ borderBottom: idx < items.length - 1 ? '1px solid #f1f5f9' : 'none' }}
         >
-          <div style={{
-            width: 22,
-            height: 22,
-            borderRadius: '50%',
-            border: item.done ? 'none' : '2px solid #cbd5e1',
-            background: item.done ? 'var(--violet)' : 'transparent',
-            display: 'grid',
-            placeItems: 'center',
-            color: '#fff',
-            flexShrink: 0,
-          }}>
-            {item.done && <Check size={13} weight="bold" />}
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 500, color: item.done ? '#1e293b' : '#475569' }}>
-            {item.title}
-          </span>
-        </div>
+          <span className="hrm-checklist-mark">{item.done && <Check size={13} weight="bold" />}</span>
+          <span className="hrm-checklist-title">{item.title}</span>
+        </button>
       ))}
     </div>
 
