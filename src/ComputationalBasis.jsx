@@ -94,12 +94,12 @@ export function computationCategoryCatalogue() {
 
 
 const initialAssignments = [
-  { id: 1, type: 'Government deduction', table: 'SSS Contribution Table 2026', computationCode: 'GOV-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 2, type: 'Government deduction', table: 'PhilHealth Contribution Table 2026', computationCode: 'GOV-002', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 3, type: 'Government deduction', table: 'HDMF Contribution Table 2026', computationCode: 'GOV-003', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 4, type: 'Tax computation', table: 'BIR Withholding Tax Table 2026', computationCode: 'TAX-002', employeeGroup: 'Monthly', frequency: 'Every payroll', status: 'Active' },
-  { id: 5, type: 'Take-home protection', table: 'Deduction and Loan Hierarchy', computationCode: 'THP-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 6, type: 'Retirement benefit', table: 'Employee Groups', computationCode: 'RET-002', employeeGroup: 'All Employees', frequency: 'On retirement', status: 'Active' },
+  { id: 1, type: 'Government deduction', table: 'SSS Contribution Table 2026', computationCode: 'GOV-001', status: 'Active' },
+  { id: 2, type: 'Government deduction', table: 'PhilHealth Contribution Table 2026', computationCode: 'GOV-002', status: 'Active' },
+  { id: 3, type: 'Government deduction', table: 'HDMF Contribution Table 2026', computationCode: 'GOV-003', status: 'Active' },
+  { id: 4, type: 'Tax computation', table: 'BIR Withholding Tax Table 2026', computationCode: 'TAX-002', status: 'Active' },
+  { id: 5, type: 'Take-home protection', table: 'Deduction and Loan Hierarchy', computationCode: 'THP-001', status: 'Active' },
+  { id: 6, type: 'Retirement benefit', table: 'Employee Groups', computationCode: 'RET-002', status: 'Active' },
 ];
 
 const initialHistory = [
@@ -182,7 +182,7 @@ function SummaryCards({ computations, references, assignments }) {
     <div><Function weight="duotone" /><span><strong>{computations.length}</strong><small>governed computations</small></span></div>
     <div><Table weight="duotone" /><span><strong>{references.length}</strong><small>formula reference sources</small></span></div>
     <div><Check weight="bold" /><span><strong>{active}</strong><small>active computations</small></span></div>
-    <div><ClockCounterClockwise weight="duotone" /><span><strong>{assignments.length}</strong><small>client assignments</small></span></div>
+    <div><ClockCounterClockwise weight="duotone" /><span><strong>{assignments.length}</strong><small>pipeline assignments</small></span></div>
   </section>;
 }
 
@@ -461,25 +461,41 @@ function ComputationDrawer({ record, library = [], versions = [], usage = null, 
   </div>;
 }
 
-const ASSIGNMENT_DEFAULTS = { type: 'Government deduction', computationCode: 'GOV-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' };
+/**
+ * The computations the payroll pipeline runs that own no configuration record.
+ *
+ * Earnings, deductions, bonuses, allowances and loans each have a Services
+ * Information configuration, and that configuration is where their formula and
+ * their applicability are now set. These four do not: statutory contributions
+ * and withholding tax are computed from the effective statutory tables,
+ * take-home protection comes from the Take-Home Pay policy, and the retirement
+ * benefit from the Retirement engine. They still need somewhere to say which
+ * published formula applies — and this is it.
+ */
+const PIPELINE_ASSIGNMENT_TYPES = ['Government deduction', 'Tax computation', 'Take-home protection', 'Retirement benefit'];
+
+const ASSIGNMENT_DEFAULTS = { type: 'Government deduction', computationCode: 'GOV-001', status: 'Active' };
 
 function AssignmentModal({ record, computations, references, onClose, onSave }) {
   const enabledReferences = references.filter(item => item.enabled);
   const [draft, setDraft] = useState(record || { ...ASSIGNMENT_DEFAULTS, table: enabledReferences[0]?.name, effectiveDate: new Date().toISOString().slice(0, 10) });
   const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
-  return <Modal title={record ? 'Edit computation assignment' : 'Add computation assignment'} onClose={onClose} className="assignment-modal">
+  return <Modal title={record ? 'Edit pipeline assignment' : 'Add pipeline assignment'} onClose={onClose} className="assignment-modal">
     <form onSubmit={event => { event.preventDefault(); onSave(draft); }}>
       <div className="modal-body basis-form-grid">
-        <label>Assignment type<select value={draft.type} onChange={event => update('type', event.target.value)}><option>Government deduction</option><option>Tax computation</option><option>Bonus computation</option><option>Earnings computation</option><option>Take-home protection</option><option>Retirement benefit</option></select></label>
+        <label>Assignment type<select value={draft.type} onChange={event => update('type', event.target.value)}>{PIPELINE_ASSIGNMENT_TYPES.map(type => <option key={type}>{type}</option>)}</select></label>
         <label>Reference table<select value={draft.table} onChange={event => update('table', event.target.value)}>{enabledReferences.map(item => <option key={item.id}>{item.name}</option>)}</select></label>
         <label className="wide">Basis of computation<select value={draft.computationCode} onChange={event => update('computationCode', event.target.value)}>{computations.filter(item => item.status === 'Active').map(item => <option value={item.code} key={item.code}>{item.code} · {item.name}</option>)}</select></label>
-        <label>Employee group<select value={draft.employeeGroup} onChange={event => update('employeeGroup', event.target.value)}><option>All Employees</option><option>Monthly</option><option>Rank and File</option><option>Managers</option><option>Retirement Eligible</option></select></label>
-        <label>Frequency<select value={draft.frequency} onChange={event => update('frequency', event.target.value)}><option>Every payroll</option><option>Monthly</option><option>Quarterly</option><option>Annually</option><option>On retirement</option></select></label>
         {/* An assignment is effective-dated: payroll resolves the assignment in
-            force on the payout date, so changing scope mid-year does not
-            restate the cutoffs that ran before the change. */}
+            force on the payout date, so a change mid-year does not restate the
+            cutoffs that ran before it. */}
         <label>Effective date<input type="date" value={draft.effectiveDate || ''} onChange={event => update('effectiveDate', event.target.value)} required /></label>
         <label>Status<select value={draft.status} onChange={event => update('status', event.target.value)}><option>Active</option><option>Inactive</option></select></label>
+        <p className="field-hint wide">
+          These computations apply to every employee the run includes — the transaction decides who is paid, and the
+          statutory tables and policies decide the amounts. Employee group and frequency are set on the Services
+          Information configuration for everything that has one.
+        </p>
       </div>
       <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">Save assignment</button></div>
     </form>
@@ -756,7 +772,7 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
   const saveAssignment = draft => {
     if (draft.id) setAssignments(previous => previous.map(item => item.id === draft.id ? draft : item));
     else setAssignments(previous => [{ ...draft, id: Math.max(0, ...previous.map(item => item.id)) + 1 }, ...previous]);
-    addHistory({ item: `${draft.type} · ${draft.employeeGroup}`, type: 'Assignment', action: `${draft.id ? 'Assignment updated' : 'Assignment created'} · effective ${draft.effectiveDate}`, version: '—' });
+    addHistory({ item: `${draft.type} · ${draft.computationCode}`, type: 'Assignment', action: `${draft.id ? 'Assignment updated' : 'Assignment created'} · effective ${draft.effectiveDate}`, version: '—' });
     setAssignmentEditing(undefined);
     notify({ type: 'success', message: `Computation assignment ${draft.id ? 'updated' : 'added'}, effective ${draft.effectiveDate}.` });
   };
@@ -945,18 +961,18 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
   };
 
   const computationColumns = [['code', 'Code'], ['name', 'Computation'], ['category', 'Category'], ['expression', 'Formula'], ['version', 'Version'], ['status', 'Status']];
-  const assignmentColumns = [['type', 'Assignment Type'], ['table', 'Reference Table'], ['computationCode', 'Computation'], ['employeeGroup', 'Employee Group'], ['frequency', 'Frequency'], ['effectiveDate', 'Effective Date'], ['status', 'Status']];
+  const assignmentColumns = [['type', 'Assignment Type'], ['table', 'Reference Table'], ['computationCode', 'Computation'], ['effectiveDate', 'Effective Date'], ['status', 'Status']];
   const referenceColumns = [['code', 'Code'], ['name', 'Reference Table'], ['category', 'Category'], ['version', 'Version'], ['effectiveDate', 'Effective Date']];
   const historyColumns = [['date', 'Date'], ['item', 'Item'], ['type', 'Type'], ['action', 'Action'], ['version', 'Version'], ['user', 'User'], ['detail', 'Before → after']];
   const historyRows = history.map(item => ({ ...item, detail: (item.changes || []).map(change => `${change.field}: ${change.from || '—'} → ${change.to || '—'}`).join(' · ') }));
 
   return <div className="page-content computational-page">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Services Information</button>
-    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Info / Services Information / Payroll / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">The computations this company runs payroll with: the Atlas standards applied to it, its own company-defined formulas, client assignments, policy scenarios, and versioned reference sources.</p></div><span className="controlled-badge"><Check weight="bold" /> Company-scoped controlled library</span></div>
+    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Info / Services Information / Payroll / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">The computations this company runs payroll with: the Atlas standards applied to it, its own company-defined formulas, pipeline assignments, policy scenarios, and versioned reference sources.</p></div><span className="controlled-badge"><Check weight="bold" /> Company-scoped controlled library</span></div>
     <SummaryCards computations={computations} references={references} assignments={assignments} />
     <div className="basis-tabs" role="tablist">
       <button className={tab === 'computations' ? 'active' : ''} onClick={() => setTab('computations')}>Computations <span>{computations.length}</span></button>
-      <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Client assignments <span>{assignments.length}</span></button>
+      <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Pipeline assignments <span>{assignments.length}</span></button>
       <button className={tab === 'policies' ? 'active' : ''} onClick={() => setTab('policies')}>Policy engines <span>{policyEngines.length}</span></button>
       <button className={tab === 'references' ? 'active' : ''} onClick={() => setTab('references')}>Reference sources <span>{references.length}</span></button>
       <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Change history</button>
@@ -1028,9 +1044,9 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
     </>}
 
     {tab === 'assignments' && <>
-      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Client computation assignments</h2><p>Connect a computation and reference table to an employee group, payroll frequency and effective date.</p></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setAssignmentEditing(null)}><Plus /> Add assignment</button><ReportMenu onCsv={() => exportCsv('atlas-computation-assignments.csv', assignments, assignmentColumns)} onPdf={() => printReport('Atlas Computation Assignments', assignments, assignmentColumns)} /></div>
-      <div className="table-card config-table-card"><table className="config-table"><thead><tr><th>Assignment type</th><th>Reference table</th><th>Basis of computation</th><th>Employee group</th><th>Frequency</th><th>Effective date</th><th>Status</th><th>Action</th></tr></thead><tbody>
-        {assignments.map(item => <tr key={item.id}><td>{item.type}</td><td>{item.table}</td><td><strong>{item.computationCode}</strong><small className="block-caption">{computations.find(record => record.code === item.computationCode)?.name}</small></td><td>{item.employeeGroup}</td><td>{item.frequency}</td><td>{item.effectiveDate || '—'}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setAssignmentEditing(item)} aria-label="Edit assignment"><PencilSimple /></button></div></td></tr>)}
+      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Pipeline computation assignments</h2><p>The formula each pipeline computation applies — statutory contributions, withholding tax, take-home protection and the retirement benefit. Everything with a Services Information configuration sets its formula and its applicability there instead.</p></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setAssignmentEditing(null)}><Plus /> Add assignment</button><ReportMenu onCsv={() => exportCsv('atlas-computation-assignments.csv', assignments, assignmentColumns)} onPdf={() => printReport('Atlas Computation Assignments', assignments, assignmentColumns)} /></div>
+      <div className="table-card config-table-card"><table className="config-table"><thead><tr><th>Assignment type</th><th>Reference table</th><th>Basis of computation</th><th>Effective date</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        {assignments.map(item => <tr key={item.id}><td>{item.type}</td><td>{item.table}</td><td><strong>{item.computationCode}</strong><small className="block-caption">{computations.find(record => record.code === item.computationCode)?.name}</small></td><td>{item.effectiveDate || '—'}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setAssignmentEditing(item)} aria-label="Edit assignment"><PencilSimple /></button></div></td></tr>)}
       </tbody></table></div>
     </>}
 

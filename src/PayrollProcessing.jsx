@@ -51,7 +51,10 @@ import { readCalendars } from './CanonicalWorkspaces';
 import { readActiveCompany, readActiveCompanyId, appendAuditEvent } from './companyRepository';
 import { employeeRoster } from './employeeRoster.js';
 import { readHierarchy, readPolicies } from './PolicyComputations';
-import { readComputationLibrary, readReferences } from './computationGovernance.js';
+import { readComputationLibrary, readReferences, resolveReferenceVersion } from './computationGovernance.js';
+import { BINDABLE_MODULES } from './computationBindings.js';
+import { toIsoDate } from './payrollEngine.js';
+import { readServiceConfiguration } from './serviceModules.jsx';
 import { synchronizePayrollReference } from './payrollIntegration.js';
 import { minimumTakeHomeNotifications, notificationEventKeys, publishNotificationEvent, readNotificationRules } from './notificationServices';
 import { readRequests } from './requestService.js';
@@ -79,6 +82,29 @@ import {
   bankFileFor,
   journalFor,
 } from './payrollRuns.js';
+
+/** The Services Information modules whose records may bind a formula. */
+const BINDABLE_MODULE_KEYS = Object.keys(BINDABLE_MODULES);
+
+/**
+ * Reference sources flattened to the version effective on a payout date.
+ *
+ * A binding resolves a row, not a source, so it needs the rows as they stood
+ * when the run was paid — an August transaction must keep reading August's
+ * ceiling after a new version is published in October.
+ */
+function referencesAsOf(references, payoutDate) {
+  const asOf = toIsoDate(payoutDate);
+  return references.map(item => {
+    const version = resolveReferenceVersion(item, asOf || undefined) || item;
+    return {
+      code: item.code,
+      name: item.name,
+      version: version.version || item.version || '',
+      entries: version.entries || item.entries || [],
+    };
+  });
+}
 
 const toCsv = (headers, rows) => [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
 const sessionId = `payroll-session-${Math.random().toString(36).slice(2, 9)}`;
@@ -1212,9 +1238,21 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
   // The company's own Computational Basis: the Atlas standards applied to this
   // company with its own activation decisions, plus its company-defined codes.
   const computations = useMemo(() => readComputationLibrary(companyId), [companyId]);
+  // The Services Information configurations that bind one of those formulas —
+  // an earning type, an allowance, a deduction, a bonus or a loan that says
+  // which computation produces its amount and where each variable comes from.
+  const serviceConfig = useMemo(() => Object.fromEntries(BINDABLE_MODULE_KEYS
+    .map(key => [key, readServiceConfiguration(key, companyId)])), [companyId]);
+  // Bindings resolve reference rows at the version effective on the payout
+  // date, so the sources travel with their whole version history.
+  const references = useMemo(() => readReferences(companyId).filter(item => item.enabled !== false), [companyId]);
 
   const openRun = runs.find(run => run.id === openRunId) || null;
-  const contextFor = run => buildPayrollContext({ companyId, run, hrmData, registers, hierarchy, policies, computations, staggeredRequests });
+  const contextFor = run => buildPayrollContext({
+    companyId, run, hrmData, registers, hierarchy, policies, computations, staggeredRequests,
+    serviceConfig,
+    references: referencesAsOf(references, run?.payoutDate),
+  });
 
   // Holding the transaction open takes the record lock the mock warns about,
   // and leaving the screen releases it. Both ends re-read the stored run rather

@@ -310,6 +310,41 @@ textarea { min-height: 72px; resize: vertical; }
 .config-form-grid > label { grid-column: 1 / -1; display: block; color: #4e4954; font-size: 10px; font-weight: 500; margin-bottom: 12px; }
 .config-form-grid > label.half { grid-column: auto; }
 .config-form-grid input, .config-form-grid select { margin-top: 5px; }
+
+/* Computation binding — the Services Information step that names the formula a
+   configuration computes with and where each of its variables comes from. */
+.binding-computation-field { margin-top: 5px; }
+.binding-formula-preview { margin-top: 7px; padding: 9px 11px; border: 1px solid var(--line); border-left: 3px solid var(--violet); border-radius: 5px; background: #faf8fc; }
+.binding-formula-preview code { display: block; color: var(--violet); font-family: Consolas, monospace; font-size: 9.5px; word-break: break-word; }
+.binding-formula-preview small { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 6px; color: var(--muted); font-size: 8px; font-weight: 400; }
+.binding-editor { margin-top: 5px; }
+.binding-table { min-width: 720px; }
+.binding-table select, .binding-table input { min-height: 28px; margin: 0; padding: 3px 6px; font-size: 8.5px; }
+.binding-reference-pair { display: grid; gap: 4px; }
+.binding-resolved { display: block; font-weight: 600; color: #2f6b45; }
+.binding-problem { display: inline-flex; align-items: flex-start; gap: 4px; color: #b23c17; font-weight: 500; line-height: 1.35; }
+.binding-problem svg { flex: none; margin-top: 1px; }
+.binding-preview-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 11px; }
+.binding-empty { display: flex; align-items: center; gap: 7px; margin: 7px 0 0; padding: 13px; border: 1px dashed var(--line); border-radius: 5px; color: var(--muted); font-size: 9px; font-weight: 400; }
+.binding-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9px; color: var(--violet); background: #f2ecfa; font-size: 8px; font-weight: 600; white-space: nowrap; }
+.binding-chip.none { color: var(--muted); background: #f1f0f3; font-weight: 500; }
+
+/* Applicability — the one scope model, shared by the policy engines and the
+   Services Information configurations the payroll engine now enforces. */
+.service-applicability { margin-top: 5px; }
+.service-applicability-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.service-applicability-row select { margin: 0; min-width: 160px; }
+.service-applicability-row .applicability-count { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 9px; color: #4b4155; background: #f1eef3; font-size: 8.5px; font-weight: 600; white-space: nowrap; }
+.service-applicability-picker { margin-top: 9px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+.service-applicability-picker > input { margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.service-applicability-list { max-height: 190px; overflow-y: auto; }
+.service-applicability-list label { display: flex; align-items: flex-start; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--line); font-size: 9px; font-weight: 500; cursor: pointer; }
+.service-applicability-list label:last-child { border-bottom: 0; }
+.service-applicability-list label:hover { background: #faf8fc; }
+.service-applicability-list input { min-height: 13px; width: 13px; margin: 1px 0 0; padding: 0; accent-color: var(--violet); }
+.service-applicability-list span { display: block; }
+.service-applicability-list small { display: block; margin-top: 1px; color: var(--muted); font-size: 7.5px; font-weight: 400; }
+.scope-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9px; color: #4b4155; background: #f1eef3; font-size: 8px; font-weight: 600; }
 .radio-group { min-height: 39px; display: flex; align-items: center; gap: 20px; margin-top: 5px; }
 .radio-group label { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 400; }
 .radio-group input { min-height: 14px; width: 14px; padding: 0; margin: 0; accent-color: var(--violet); }

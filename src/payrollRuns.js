@@ -402,7 +402,7 @@ export function libraryForRun(run, current = []) {
   return [...frozen, ...current.filter(item => !known.has(item.code))];
 }
 
-export function buildPayrollContext({ companyId, run, hrmData, registers = {}, hierarchy = [], policies = {}, computations, staggeredRequests = [], storage } = {}) {
+export function buildPayrollContext({ companyId, run, hrmData, registers = {}, hierarchy = [], policies = {}, computations, serviceConfig = {}, references = [], staggeredRequests = [], storage } = {}) {
   const data = hrmData || readHrmData(companyId, storage);
   const asOf = run?.payoutDate || today();
   const library = libraryForRun(run, computations || seedComputations());
@@ -423,6 +423,12 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     staggeredRequests,
     hierarchy,
     computations: library,
+    // The Services Information configurations that bind a formula, and the
+    // reference sources those bindings resolve rows from. Both travel with the
+    // context so the engine stays pure: it applies a binding, it never goes
+    // looking for one.
+    serviceConfig,
+    references,
     bonusCeiling: 90000,
   };
 }
