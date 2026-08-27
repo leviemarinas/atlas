@@ -59,6 +59,40 @@ function MiniTable({ columns, rows, empty = 'Nothing on this line.' }) {
  * A step whose code carries an evaluable expression is marked as evaluated, so
  * it is visible which figures the library computed and which were table lookups.
  */
+/**
+ * The formula versions this transaction was computed with.
+ *
+ * Captured when the run was calculated, so the transaction keeps explaining
+ * itself with the versions it applied even after the library moves on. A run
+ * calculated before versions were captured says so rather than showing a
+ * version it cannot prove.
+ */
+export function FormulaVersionsApplied({ run }) {
+  const snapshot = run?.result?.computationSnapshot;
+  if (!snapshot?.entries?.length) {
+    return <section className="hrm-section">
+      <h3 className="hrm-section-title">Formula versions applied</h3>
+      <EmptyState title="No version snapshot was captured">Recalculate this transaction to capture the exact computation version behind every figure.</EmptyState>
+    </section>;
+  }
+  return <section className="hrm-section">
+    <h3 className="hrm-section-title">Formula versions applied</h3>
+    <p className="page-description">Captured on {new Date(snapshot.capturedAt).toLocaleString()}. {run?.transactionNumber || 'This transaction'} resolves these versions, not the versions the library publishes today.</p>
+    <MiniTable
+      columns={[
+        { key: 'code', label: 'Code' },
+        { key: 'name', label: 'Computation' },
+        { key: 'version', label: 'Version', render: row => (row.version ? `v${row.version}` : 'Not recorded') },
+        { key: 'effectiveDate', label: 'Effective', render: row => row.effectiveDate || '—' },
+        { key: 'owner', label: 'Owner' },
+        { key: 'expression', label: 'Expression as applied', render: row => <code className="table-formula">{row.expression || 'Table lookup'}</code> },
+      ]}
+      rows={snapshot.entries.map(entry => ({ ...entry, key: entry.code }))}
+      empty="No computation was applied to this transaction."
+    />
+  </section>;
+}
+
 export function ComputationTrail({ steps = [] }) {
   const [openStep, setOpenStep] = useState(null);
   if (!steps.length) return <EmptyState title="Nothing computed yet">Recalculate the transaction to produce this employee's line.</EmptyState>;
@@ -76,6 +110,10 @@ export function ComputationTrail({ steps = [] }) {
         <span className="payroll-trail-body">
           <span className="payroll-trail-head">
             <code className="policy-code-chip">{step.code}</code>
+            {/* The version this line actually applied. Payroll must stay
+                explainable with the formula that was in force when it ran, not
+                with whatever the library publishes today. */}
+            {step.version && <code className="version-code-chip" title={`Computation version applied by this payroll line${step.effectiveDate ? `, effective ${step.effectiveDate}` : ''}`}>v{step.version}</code>}
             <strong>{step.label}</strong>
             <em>{step.category}</em>
           </span>
@@ -90,6 +128,7 @@ export function ComputationTrail({ steps = [] }) {
             </span>
             <span className="payroll-trail-source">
               {step.evaluated ? 'Evaluated from the Computational Basis library' : 'Resolved by lookup'} · Source: {step.source}
+              {step.version && ` · ${step.code} version ${step.version}${step.effectiveDate ? ` effective ${step.effectiveDate}` : ''}${step.formulaOwner ? ` · ${step.formulaOwner}` : ''}`}
               {step.fallbackReason && ` · Library expression not used: ${step.fallbackReason}`}
             </span>
             <span className="payroll-trail-references">
@@ -317,8 +356,9 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
       <p className="page-description">Follow the exact Atlas UI path from transaction settings, employee configuration, time, registers, references, and policy engines to this payroll line, payslip, and company report.</p>
       <SourcePolicyTrail line={line} run={run} />
       <h3 className="hrm-section-title payroll-execution-heading">Calculation execution</h3>
-      <p className="page-description">Every amount names the Computational Basis code it applied. Open a step to see its formula or lookup, captured inputs, owning feature, policy references, and reproducible UI paths.</p>
+      <p className="page-description">Every amount names the Computational Basis code it applied and the version it applied it at. Open a step to see its formula or lookup, captured inputs, owning feature, policy references, and reproducible UI paths.</p>
       <ComputationTrail steps={line.steps} />
+      <FormulaVersionsApplied run={run} />
     </section>}
 
     {tab === 'earnings' && <>

@@ -51,7 +51,8 @@ import { readCalendars } from './CanonicalWorkspaces';
 import { readActiveCompany, readActiveCompanyId, appendAuditEvent } from './companyRepository';
 import { employeeRoster } from './employeeRoster.js';
 import { readHierarchy, readPolicies } from './PolicyComputations';
-import { seedComputations } from './computationCatalog.js';
+import { readComputationLibrary, readReferences } from './computationGovernance.js';
+import { synchronizePayrollReference } from './payrollIntegration.js';
 import { minimumTakeHomeNotifications, notificationEventKeys, publishNotificationEvent, readNotificationRules } from './notificationServices';
 import { readRequests } from './requestService.js';
 import { REQUEST_STATUSES, REQUEST_TYPES } from './requestWorkflow.js';
@@ -91,8 +92,16 @@ function downloadTable(format, filename, title, columns, rows) {
   }
 }
 
-function readReferenceEntries() {
-  try { return JSON.parse(localStorage.getItem('atlas-computational-basis-references-v3')) || []; } catch { return []; }
+/**
+ * The company's formula reference sources, with the module-owned rows (the
+ * REF-011 deduction order, deduction and loan codes) resolved from the active
+ * service modules rather than from a stale copy.
+ */
+function readReferenceEntries(companyId) {
+  return readReferences(companyId).map(reference => ({
+    ...reference,
+    entries: synchronizePayrollReference(reference.code, reference.entries),
+  }));
 }
 
 /* ------------------------------------------------------------------ shared */
@@ -1196,14 +1205,13 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     bonuses: readRegister('bonuses', companyId),
     payCodes: readRegister('payCodes', companyId),
   }), [companyId, readRegister]);
-  const hierarchy = useMemo(() => readHierarchy(readReferenceEntries()), []);
+  const hierarchy = useMemo(() => readHierarchy(readReferenceEntries(companyId)), [companyId]);
   const policies = useMemo(() => readPolicies(companyId), [companyId]);
   const managedPolicies = useMemo(() => readManagedPolicies(companyId), [companyId]);
   const staggeredRequests = useMemo(() => readRequests(companyId, { activeCompanyId: companyId }).filter(request => request.requestType === REQUEST_TYPES.STAGGERED_PAYMENT && request.status === REQUEST_STATUSES.APPROVED), [companyId]);
-  const computations = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('atlas-computational-basis-library-v3')) || seedComputations(); }
-    catch { return seedComputations(); }
-  }, []);
+  // The company's own Computational Basis: the Atlas standards applied to this
+  // company with its own activation decisions, plus its company-defined codes.
+  const computations = useMemo(() => readComputationLibrary(companyId), [companyId]);
 
   const openRun = runs.find(run => run.id === openRunId) || null;
   const contextFor = run => buildPayrollContext({ companyId, run, hrmData, registers, hierarchy, policies, computations, staggeredRequests });
