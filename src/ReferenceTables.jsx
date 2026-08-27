@@ -26,6 +26,9 @@ import {
 import { RoleSwitch, useRole } from './RoleContext';
 import { BrandRail, Topbar } from './AppChrome';
 import { readPayrollCollectionDefinitions, synchronizePayrollReference } from './payrollIntegration';
+import { categoryPrefixes } from './computationCatalog';
+import { readReferences } from './computationGovernance';
+import { readActiveCompanyId } from './companyRepository';
 
 const groups = [
   { id: 'generic', label: 'Generic', description: 'Shared reference values maintained by P&A Administration.' },
@@ -73,6 +76,7 @@ const seedTables = [
   { id: 'de-minimis-ceilings', group: 'specific', scope: 'specific', name: 'De Minimis Ceiling', description: 'Annual and periodic non-taxable ceilings used by earning classification and tax annualization.', columns: [['code', 'Benefit Code'], ['name', 'Benefit Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'DM-RICE', name: 'Rice Subsidy', ceiling: '24000', status: 'Active' }, { code: 'DM-UNIFORM', name: 'Uniform and Clothing Allowance', ceiling: '7000', status: 'Active' }, { code: 'DM-MED', name: 'Medical Cash Allowance to Dependents', ceiling: '3000', status: 'Active' }]) },
   { id: 'bonus-ceilings', group: 'specific', scope: 'specific', name: 'Bonus Ceiling', description: 'Non-taxable 13th month pay and other benefit ceilings used per transaction and year to date.', columns: [['code', 'Bonus Ceiling Code'], ['name', 'Ceiling Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'BON-NT', name: '13th Month Pay and Other Benefits', ceiling: '90000', status: 'Active' }]) },
   { id: 'deduction-hierarchy', group: 'specific', scope: 'specific', name: 'Deduction Hierarchy', description: 'Priority order for statutory, loan, and company deductions when net pay is constrained.', columns: [['code', 'Priority Code'], ['name', 'Deduction Group'], ['priority', 'Priority'], ['status', 'Status']], rows: tableRows([{ code: 'DH-001', name: 'Statutory Deductions', priority: '1', status: 'Active' }, { code: 'DH-002', name: 'Government Loans', priority: '2', status: 'Active' }, { code: 'DH-003', name: 'Company Deductions', priority: '3', status: 'Active' }]) },
+  { id: 'computation-category', group: 'generic', scope: 'generic', name: 'Computation Category', description: 'Controlled categories for Computational Basis formulas. The prefix drives the computation code Atlas generates (Earnings → ERN-001).', columns: [['code', 'Code Prefix'], ['name', 'Computation Category'], ['status', 'Status']], rows: tableRows(categoryPrefixes.map(([name, code]) => ({ code, name }))) },
   { id: 'document-types', group: 'others', scope: 'specific', name: 'Document Type', description: 'Document labels available to employee records.', mode: 'list', columns: [['name', 'Document Type']], rows: listRows(['Birth Certificate', 'Employment Contract', 'Government ID', 'Medical Certificate']) },
   { id: 'license-types', group: 'others', scope: 'specific', name: 'License Type', description: 'Professional license types used in Employee Record.', mode: 'list', columns: [['name', 'License Type']], rows: listRows(['Professional License', 'Driver License', 'Safety Accreditation']) },
   { id: 'training-types', group: 'others', scope: 'specific', name: 'Training Type', description: 'Training classifications used in Employee Record.', mode: 'list', columns: [['name', 'Training Type']], rows: listRows(['Orientation', 'Compliance', 'Technical', 'Leadership']) },
@@ -106,7 +110,7 @@ function loadTables() {
     };
     if (table.id === 'deduction-hierarchy') {
       let basisEntries = [];
-      try { basisEntries = (JSON.parse(localStorage.getItem('atlas-computational-basis-references-v3')) || []).find(item => item.code === 'REF-011')?.entries || []; } catch { /* use module priorities */ }
+      try { basisEntries = readReferences(readActiveCompanyId()).find(item => item.code === 'REF-011')?.entries || []; } catch { /* use module priorities */ }
       const entries = synchronizePayrollReference('REF-011', basisEntries);
       return { ...table, rows: entries.map((entry, index) => ({ id: index + 1, code: String(entry.note).split(/\s*(?:·|Â·)\s*/)[2] || `DH-${String(index + 1).padStart(3, '0')}`, name: entry.key, priority: entry.value, status: 'Active' })) };
     }
@@ -119,8 +123,17 @@ function loadTables() {
  * to the canonical Reference Table module instead of drifting hard-coded lists.
  */
 export function referenceValues(tableId, column = 'name') {
+  return referenceRows(tableId).map(row => row[column]).filter(Boolean);
+}
+
+/**
+ * The active rows of a reference table, for callers that need more than one
+ * column of the same row. Computational Basis reads the Computation Category
+ * table this way so a category and the code prefix it generates stay paired.
+ */
+export function referenceRows(tableId) {
   const table = loadTables().find(item => item.id === tableId);
-  return (table?.rows || []).filter(row => (row.status || 'Active') === 'Active').map(row => row[column]).filter(Boolean);
+  return (table?.rows || []).filter(row => (row.status || 'Active') === 'Active');
 }
 
 function csvEscape(value) {

@@ -143,6 +143,13 @@ function makeStepper(library) {
       label: label || formula?.name || code,
       category: category || formula?.category || 'Payroll Result',
       expression: formula?.expression || '',
+      // The exact published version this step applied. A payroll line must stay
+      // reproducible against the formula that was in force when it was computed,
+      // so the version travels with the step rather than being looked up later
+      // against whatever the library says today.
+      version: formula?.version || '',
+      effectiveDate: formula?.effectiveDate || '',
+      formulaOwner: formula ? (formula.isBuiltIn === false ? 'Company-defined' : 'Atlas standard') : '',
       description: formula?.description || '',
       inputs,
       amount: round2(value ?? 0),
@@ -959,7 +966,39 @@ export function runPayroll({ transaction, context }) {
   return {
     lines, totals, exceptions,
     baseCurrency: 'PHP', currency, conversionRate, settlementTotals,
+    computationSnapshot: computationSnapshotFor(lines, context),
     calculatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * The immutable record of which formula version produced this run.
+ *
+ * Without it, re-opening an August transaction after `ERN-002` moves from v1.3
+ * to v1.4 would explain August's figures with July's formula. The snapshot is
+ * captured at calculation time and travels with the transaction, so a posted
+ * payroll keeps pointing at the version it actually applied.
+ */
+export function computationSnapshotFor(lines = [], context = {}) {
+  const library = context.computations || [];
+  const used = new Map();
+  lines.forEach(line => (line.steps || []).forEach(step => {
+    if (used.has(step.code)) return;
+    const formula = computationByCode(step.code, library);
+    used.set(step.code, {
+      code: step.code,
+      name: step.label,
+      category: step.category,
+      version: step.version || formula?.version || '',
+      expression: step.expression || formula?.expression || '',
+      effectiveDate: step.effectiveDate || formula?.effectiveDate || '',
+      owner: step.formulaOwner || (formula?.isBuiltIn === false ? 'Company-defined' : 'Atlas standard'),
+      evaluated: Boolean(step.evaluated),
+    });
+  }));
+  return {
+    capturedAt: new Date().toISOString(),
+    entries: [...used.values()].sort((left, right) => left.code.localeCompare(right.code)),
   };
 }
 

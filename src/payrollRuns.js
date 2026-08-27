@@ -378,9 +378,34 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
  * `asOf` is the run's payout date, so a run dated last year computes on last
  * year's statutory tables even after this year's are published.
  */
+/**
+ * The formula library a transaction must be explained with.
+ *
+ * A run that can still be recalculated computes against the current library —
+ * that is the point of recalculating. A run that can no longer be recalculated
+ * has already fixed its figures, so it resolves its codes through the snapshot
+ * it captured. August payroll keeps showing `ERN-002 v1.3` after the live
+ * formula becomes v1.4, instead of being re-explained with a formula that did
+ * not exist when it ran.
+ */
+export function libraryForRun(run, current = []) {
+  const entries = run?.result?.computationSnapshot?.entries || run?.computationSnapshot?.entries;
+  if (!entries?.length || capabilitiesOf(run).recalculate) return current;
+  const frozen = entries.map(entry => ({
+    ...entry,
+    id: entry.code,
+    status: 'Active',
+    isBuiltIn: entry.owner !== 'Company-defined',
+    description: entry.description || `Version ${entry.version} as applied by ${run.transactionNumber}.`,
+  }));
+  const known = new Set(frozen.map(item => item.code));
+  return [...frozen, ...current.filter(item => !known.has(item.code))];
+}
+
 export function buildPayrollContext({ companyId, run, hrmData, registers = {}, hierarchy = [], policies = {}, computations, staggeredRequests = [], storage } = {}) {
   const data = hrmData || readHrmData(companyId, storage);
   const asOf = run?.payoutDate || today();
+  const library = libraryForRun(run, computations || seedComputations());
   return {
     employees: employeeRoster,
     salaryInformation: data.salaryInformation || [],
@@ -397,7 +422,7 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     policies,
     staggeredRequests,
     hierarchy,
-    computations: computations || seedComputations(),
+    computations: library,
     bonusCeiling: 90000,
   };
 }

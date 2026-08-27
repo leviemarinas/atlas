@@ -10,72 +10,133 @@
  * publishes, rather than a label copied into calculation code.
  */
 
-export const fields = [
-  ['basic_pay', 'Current basic pay', 30000],
-  ['monthly_basic', 'Monthly basic pay', 30000],
-  ['factor_days', 'Factor days', 261],
-  ['work_hours', 'Hours per workday', 8],
-  ['ecola_amount', 'ECOLA amount', 30],
-  ['basic_pay_adjustment', 'Effective basic pay adjustment', 2500],
-  ['days_worked', 'Days worked', 20],
-  ['absent_days', 'Absent days', 1],
-  ['late_minutes', 'Late minutes', 25],
-  ['undertime_minutes', 'Undertime minutes', 40],
-  ['ot_hours', 'Overtime hours', 6],
-  ['ot_rate', 'Overtime multiplier', 1.25],
-  ['holiday_hours', 'Holiday hours', 8],
-  ['holiday_rate', 'Holiday multiplier', 2],
-  ['allowance_units', 'Allowance units', 20],
-  ['allowance_unit_rate', 'Allowance unit rate', 150],
-  ['taxable_earnings', 'Taxable earnings', 4500],
-  ['non_taxable_earnings', 'Non-taxable earnings', 2000],
-  ['other_bonus', 'Other bonus', 12000],
-  ['basic_earnings_ytd', 'Basic earnings YTD', 300000],
-  ['statutory_deductions', 'Statutory deductions', 2500],
-  ['other_deductions', 'Other deductions', 1200],
-  ['loan_amortizations', 'Loan amortizations', 1800],
-  ['tax_rate', 'Tax table rate', 0.2],
-  ['tax_offset', 'Tax table offset', 2083.33],
-  ['sss_rate', 'SSS employee rate', 0.05],
-  ['sss_ceiling', 'SSS compensation ceiling', 35000],
-  ['philhealth_rate', 'PhilHealth employee rate', 0.025],
-  ['philhealth_ceiling', 'PhilHealth compensation ceiling', 100000],
-  ['hdmf_rate', 'HDMF employee rate', 0.02],
-  ['hdmf_ceiling', 'HDMF compensation ceiling', 10000],
-  ['bonus_tax_ceiling', '13th month and bonus tax ceiling', 90000],
-  ['bonus_paid_ytd', '13th month and bonuses paid YTD', 50000],
-  ['de_minimis_ceiling', 'De Minimis annual ceiling', 24000],
-  ['de_minimis_paid_ytd', 'De Minimis paid YTD', 12000],
-  ['minimum_take_home_rate', 'Minimum take-home percentage', 0.2],
-  ['take_home_base', 'Protected take-home basis', 34500],
-  ['target_net_pay', 'Target net pay', 30000],
-  ['years_service', 'Years of service', 8],
-  ['forecasted_annual_income', 'Forecasted annual income', 720000],
-  ['previous_employer_taxable', 'Previous-employer taxable income', 180000],
-  ['previous_employer_tax_withheld', 'Previous-employer tax withheld', 18000],
-  ['tax_schedule_periods', 'Remaining tax collection periods', 4],
-  ['provident_rate', 'Provident fund rate', 0.05],
-  ['pension_rate', 'Pension fund rate', 0.03],
-  ['sickness_days', 'Approved sickness reimbursement days', 7],
-  ['maternity_days', 'Approved maternity benefit days', 105],
-  ['rounded_years_service', 'Rounded years of service', 8],
-  ['retirement_days_per_year', 'Retirement days per service year', 22.5],
-  ['retirement_company_value', 'Company retirement plan value', 300000],
-  ['daily_rate', 'Daily rate', 1379.31],
-  ['hourly_rate', 'Hourly rate', 172.41],
-  ['piece_units', 'Completed piece-rate units', 120],
-  ['piece_unit_rate', 'Piece rate per unit', 35],
-  ['ojt_days', 'OJT days rendered', 20],
-  ['ojt_daily_allowance', 'OJT daily allowance', 300],
-  ['part_time_hours', 'Part-time hours rendered', 60],
-  ['unused_leave_days', 'Unused leave days', 5],
-  ['gross_pay', 'Gross pay', 36500],
-  ['taxable_income', 'Taxable income', 34000],
-  ['withholding_tax', 'Withholding tax', 4716.67],
+export const FIELD_OWNERS = Object.freeze([
+  'Employee Masterfile',
+  'Payroll Transaction',
+  'Timekeeping',
+  'HRM Benefits',
+  'Company Configuration',
+  'Reference Source',
+  'Statutory Reference',
+  'Policy Engine',
+  'Another Computation',
+  'System-generated',
+  'External API',
+]);
+
+export const MISSING_VALUE_BEHAVIOURS = Object.freeze([
+  'Treat as zero',
+  'Required — block payroll',
+  'Use default',
+  'Use latest available value',
+  'Not applicable',
+]);
+
+/**
+ * The approved field palette, with the metadata a payroll reviewer needs to
+ * know where a runtime value comes from and what happens when it is absent.
+ *
+ *   [code, label, sample, owner, dataType, unit, timing, missingBehaviour]
+ *
+ * `owner` answers "which module produces this at run time" — the question the
+ * meeting kept returning to. `missingBehaviour` is what the engine does when
+ * the owning module supplies nothing: a value that may legitimately be absent
+ * is treated as zero, one payroll cannot be computed without blocks the run.
+ */
+const fieldCatalog = [
+  ['basic_pay', 'Current basic pay', 30000, 'Employee Masterfile', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['monthly_basic', 'Monthly basic pay', 30000, 'Employee Masterfile', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['factor_days', 'Factor days', 261, 'Company Configuration', 'Decimal', 'days per year', 'Static — configured', 'Use default'],
+  ['work_hours', 'Hours per workday', 8, 'Company Configuration', 'Decimal', 'hours', 'Static — configured', 'Use default'],
+  ['ecola_amount', 'ECOLA amount', 30, 'Reference Source', 'Currency', '₱ per day', 'Effective on payout date', 'Treat as zero'],
+  ['basic_pay_adjustment', 'Effective basic pay adjustment', 2500, 'Employee Masterfile', 'Currency', '₱', 'Per payroll cutoff', 'Treat as zero'],
+  ['days_worked', 'Days worked', 20, 'Timekeeping', 'Decimal', 'days', 'Per timekeeping cutoff', 'Required — block payroll'],
+  ['absent_days', 'Absent days', 1, 'Timekeeping', 'Decimal', 'days', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['late_minutes', 'Late minutes', 25, 'Timekeeping', 'Integer', 'minutes', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['undertime_minutes', 'Undertime minutes', 40, 'Timekeeping', 'Integer', 'minutes', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['ot_hours', 'Overtime hours', 6, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['ot_rate', 'Overtime multiplier', 1.25, 'Reference Source', 'Rate', 'multiplier', 'Effective on payout date', 'Use default'],
+  ['holiday_hours', 'Holiday hours', 8, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['holiday_rate', 'Holiday multiplier', 2, 'Reference Source', 'Rate', 'multiplier', 'Effective on payout date', 'Use default'],
+  ['allowance_units', 'Allowance units', 20, 'Payroll Transaction', 'Decimal', 'units', 'Per payroll cutoff', 'Treat as zero'],
+  ['allowance_unit_rate', 'Allowance unit rate', 150, 'Employee Masterfile', 'Currency', '₱ per unit', 'Effective on payout date', 'Required — block payroll'],
+  ['taxable_earnings', 'Taxable earnings', 4500, 'Payroll Transaction', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],
+  ['non_taxable_earnings', 'Non-taxable earnings', 2000, 'Payroll Transaction', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],
+  ['other_bonus', 'Other bonus', 12000, 'Payroll Transaction', 'Currency', '₱', 'Per payroll cutoff', 'Treat as zero'],
+  ['basic_earnings_ytd', 'Basic earnings YTD', 300000, 'Payroll Transaction', 'Currency', '₱', 'Year to date', 'Use latest available value'],
+  ['statutory_deductions', 'Statutory deductions', 2500, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],
+  ['other_deductions', 'Other deductions', 1200, 'Payroll Transaction', 'Currency', '₱', 'Per payroll cutoff', 'Treat as zero'],
+  ['loan_amortizations', 'Loan amortizations', 1800, 'Payroll Transaction', 'Currency', '₱', 'Per payroll cutoff', 'Treat as zero'],
+  ['tax_rate', 'Tax table rate', 0.2, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
+  ['tax_offset', 'Tax table offset', 2083.33, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['sss_rate', 'SSS employee rate', 0.05, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
+  ['sss_ceiling', 'SSS compensation ceiling', 35000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['philhealth_rate', 'PhilHealth employee rate', 0.025, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
+  ['philhealth_ceiling', 'PhilHealth compensation ceiling', 100000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['hdmf_rate', 'HDMF employee rate', 0.02, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
+  ['hdmf_ceiling', 'HDMF compensation ceiling', 10000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['bonus_tax_ceiling', '13th month and bonus tax ceiling', 90000, 'Reference Source', 'Currency', '₱', 'Effective on payout date', 'Use default'],
+  ['bonus_paid_ytd', '13th month and bonuses paid YTD', 50000, 'Payroll Transaction', 'Currency', '₱', 'Year to date', 'Treat as zero'],
+  ['de_minimis_ceiling', 'De Minimis annual ceiling', 24000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Use default'],
+  ['de_minimis_paid_ytd', 'De Minimis paid YTD', 12000, 'Payroll Transaction', 'Currency', '₱', 'Year to date', 'Treat as zero'],
+  ['minimum_take_home_rate', 'Minimum take-home percentage', 0.2, 'Policy Engine', 'Rate', 'decimal rate', 'Static — configured', 'Use default'],
+  ['take_home_base', 'Protected take-home basis', 34500, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],
+  ['target_net_pay', 'Target net pay', 30000, 'Payroll Transaction', 'Currency', '₱', 'Per payroll cutoff', 'Not applicable'],
+  ['years_service', 'Years of service', 8, 'Employee Masterfile', 'Decimal', 'years', 'Effective on payout date', 'Required — block payroll'],
+  ['forecasted_annual_income', 'Forecasted annual income', 720000, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],
+  ['previous_employer_taxable', 'Previous-employer taxable income', 180000, 'Employee Masterfile', 'Currency', '₱', 'Year to date', 'Treat as zero'],
+  ['previous_employer_tax_withheld', 'Previous-employer tax withheld', 18000, 'Employee Masterfile', 'Currency', '₱', 'Year to date', 'Treat as zero'],
+  ['tax_schedule_periods', 'Remaining tax collection periods', 4, 'Payroll Transaction', 'Integer', 'periods', 'Per payroll cutoff', 'Use default'],
+  ['provident_rate', 'Provident fund rate', 0.05, 'Reference Source', 'Rate', 'decimal rate', 'Static — configured', 'Use default'],
+  ['pension_rate', 'Pension fund rate', 0.03, 'Reference Source', 'Rate', 'decimal rate', 'Static — configured', 'Use default'],
+  ['sickness_days', 'Approved sickness reimbursement days', 7, 'HRM Benefits', 'Decimal', 'days', 'Per payroll cutoff', 'Treat as zero'],
+  ['maternity_days', 'Approved maternity benefit days', 105, 'HRM Benefits', 'Decimal', 'days', 'Per payroll cutoff', 'Treat as zero'],
+  ['rounded_years_service', 'Rounded years of service', 8, 'System-generated', 'Decimal', 'years', 'Computed in this run', 'Required — block payroll'],
+  ['retirement_days_per_year', 'Retirement days per service year', 22.5, 'Reference Source', 'Decimal', 'days per year', 'Static — configured', 'Use default'],
+  ['retirement_company_value', 'Company retirement plan value', 300000, 'Employee Masterfile', 'Currency', '₱', 'Effective on payout date', 'Treat as zero'],
+  ['daily_rate', 'Daily rate', 1379.31, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Required — block payroll'],
+  ['hourly_rate', 'Hourly rate', 172.41, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Required — block payroll'],
+  ['piece_units', 'Completed piece-rate units', 120, 'Timekeeping', 'Decimal', 'units', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['piece_unit_rate', 'Piece rate per unit', 35, 'Employee Masterfile', 'Currency', '₱ per unit', 'Effective on payout date', 'Required — block payroll'],
+  ['ojt_days', 'OJT days rendered', 20, 'Timekeeping', 'Decimal', 'days', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['ojt_daily_allowance', 'OJT daily allowance', 300, 'Employee Masterfile', 'Currency', '₱ per day', 'Effective on payout date', 'Required — block payroll'],
+  ['part_time_hours', 'Part-time hours rendered', 60, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['unused_leave_days', 'Unused leave days', 5, 'HRM Benefits', 'Decimal', 'days', 'Effective on payout date', 'Treat as zero'],
+  ['gross_pay', 'Gross pay', 36500, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Required — block payroll'],
+  ['taxable_income', 'Taxable income', 34000, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Required — block payroll'],
+  ['withholding_tax', 'Withholding tax', 4716.67, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Required — block payroll'],
 ];
 
+/**
+ * `fields` stays a `[code, label, sample]` tuple list because every caller that
+ * builds a sample-value palette destructures it that way. The metadata is
+ * reached through `fieldMap`, which is what the Map Fields table renders.
+ */
+export const fields = fieldCatalog.map(([code, label, sample]) => [code, label, sample]);
 
-export const fieldMap = Object.fromEntries(fields.map(([code, label, sample]) => [code, { code, label, sample }]));
+export const fieldMap = Object.fromEntries(fieldCatalog.map(
+  ([code, label, sample, owner, dataType, unit, timing, missingBehaviour]) =>
+    [code, { code, label, sample, owner, dataType, unit, timing, missingBehaviour }]));
+
+/**
+ * Where a mapped token gets its runtime value — for a referenced computation
+ * code as well as an approved field, so the Map Fields table can describe every
+ * row it shows rather than only the field rows.
+ */
+export function fieldOrigin(code) {
+  const field = fieldMap[code];
+  if (field) return field;
+  if (isComputationToken(code)) return {
+    code,
+    label: code,
+    owner: 'Another Computation',
+    dataType: 'Currency',
+    unit: '₱',
+    timing: 'Computed in this run',
+    missingBehaviour: 'Required — block payroll',
+  };
+  return null;
+}
 
 export const coreComputations = [
   ['BAS-001', 'Daily Rate', 'Basic Pay', '{{monthly_basic}} * 12 / {{factor_days}}', 'Converts monthly basic pay to the company daily rate.'],
@@ -131,7 +192,52 @@ export const coreComputations = [
 ];
 
 
-export const categoryCycle = ['Basic Pay', 'Earnings', 'Deductions', 'Government', 'Tax', 'Bonus', 'Year to Date', 'Benefits', 'Take-Home Pay', 'Retirement', 'Payroll Result', 'Separation', 'Incentives'];
+/**
+ * Categories and the code prefix each one generates.
+ *
+ * This is the seed for the `computation-category` reference table; the screens
+ * read the controlled table so a category can be governed without a code
+ * change, and fall back to this list when the table has not been seeded yet.
+ * The prefixes are the ones the published library already uses (`ERN-002`,
+ * `DED-001`, `BON-003`), so a generated code sorts and reads beside the
+ * standards rather than beside a `CUS-00n` that says nothing about the record.
+ */
+export const categoryPrefixes = [
+  ['Basic Pay', 'BAS'],
+  ['Earnings', 'ERN'],
+  ['Deductions', 'DED'],
+  ['Government', 'GOV'],
+  ['Tax', 'TAX'],
+  ['Bonus', 'BON'],
+  ['Year to Date', 'YTD'],
+  ['Benefits', 'BEN'],
+  ['Take-Home Pay', 'THP'],
+  ['Retirement', 'RET'],
+  ['Payroll Result', 'PAY'],
+  ['Separation', 'FIN'],
+  ['Incentives', 'INC'],
+];
+
+export const categoryCycle = categoryPrefixes.map(([category]) => category);
+
+/** The code prefix a category generates. Unknown categories fall back to CUS. */
+export function prefixForCategory(category, catalogue = categoryPrefixes) {
+  return catalogue.find(([name]) => name === category)?.[1] || 'CUS';
+}
+
+/**
+ * The next free code for a category, following the agreed naming convention:
+ * the category's prefix, then the first three-digit sequence no record in the
+ * library already holds. The code is generated once and locked after save, so
+ * it never renumbers when the category changes later.
+ */
+export function nextComputationCode(category, library = [], catalogue = categoryPrefixes) {
+  const prefix = prefixForCategory(category, catalogue);
+  const used = new Set(library.map(item => String(item.code || '').toUpperCase()));
+  let sequence = 1;
+  while (used.has(`${prefix}-${String(sequence).padStart(3, '0')}`)) sequence += 1;
+  return `${prefix}-${String(sequence).padStart(3, '0')}`;
+}
 
 export function seedComputations() {
   const known = coreComputations.map((item, index) => ({
