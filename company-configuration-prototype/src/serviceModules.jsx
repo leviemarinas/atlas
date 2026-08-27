@@ -9,27 +9,57 @@ import {
   FileCsv,
   FilePdf,
   FileText,
+  Flask,
+  Function,
+  Link,
+  LinkBreak,
   MagnifyingGlass,
   PencilSimple,
   Plus,
   SlidersHorizontal,
   Trash,
   UploadSimple,
+  Users,
+  Warning,
   X,
 } from '@phosphor-icons/react';
 import { downloadFile } from './fileDownload';
 import { defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
+import {
+  SCOPE_KINDS,
+  coveredEmployees,
+  departments,
+  describeScope,
+  employeeDirectory,
+  employeeGroups,
+  normalizeScope,
+  scopeFromLegacyFields,
+  seedScope,
+} from './applicabilityScope';
+import { readComputationLibrary, readReferences, resolveReferenceVersion } from './computationGovernance';
+import { fields as approvedFields, fieldMap } from './computationCatalog';
+import {
+  BINDABLE_MODULES,
+  BINDING_KINDS,
+  bindableTokens,
+  bindingProblems,
+  bindingSummary,
+  boundDependencies,
+  computationsForModule,
+  evaluateBinding,
+  isBindableModule,
+  isEngineSupplied,
+  normalizeBindings,
+} from './computationBindings';
 
-const groupOptions =['All Employees', 'Job Level', 'Employee Type', 'Date Hired', 'Location'];
-const subGroupOptions = ['L2, L3, L4, Regular', 'Rank and File', 'Managers', 'Makati Office'];
 
-const moduleDefinitions = {
+const baseModuleDefinitions = {
   earnings: {
     title: 'Earning Configuration',
     plural: 'earnings',
     description: 'Set up fixed or one-time earnings, recurring frequency, taxability, computation rules, and accounting mappings.',
     table: [
-      ['code', 'Earning Code'], ['name', 'Earning Name'], ['type', 'Earning Type'], ['employeeGroup', 'Employee Group'], ['status', 'Status'],
+      ['code', 'Earning Code'], ['name', 'Earning Name'], ['type', 'Earning Type'], ['applicability', 'Applies To'], ['status', 'Status'],
     ],
     steps: [
       {
@@ -37,9 +67,7 @@ const moduleDefinitions = {
           { key: 'code', label: 'Earning Code', required: true, half: true },
           { key: 'name', label: 'Earning Name', required: true, half: true },
           { key: 'type', label: 'Earning Type', type: 'select', options: ['Normal', 'Basic Pay Adjustment', 'Allowance', 'Special Privilege Leave', 'Undertime', 'Late', 'Reimbursement'], required: true },
-          { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true },
-          { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, required: true, half: true },
-          { key: 'employeeNames', label: 'Employee Names', placeholder: 'e.g. Jane Collins Doe, Jandee Robins Fisher' },
+          { key: 'applicability', label: 'Applies to', type: 'applicability' },
           { key: 'frequency', label: 'Recurring Frequency', type: 'select', options: ['One-time', 'Weekly', 'Semi-monthly', 'Monthly', 'Quarterly', 'Annually'], required: true, half: true },
           { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
         ],
@@ -69,7 +97,7 @@ const moduleDefinitions = {
         ],
       },
     ],
-    defaults: { type: 'Normal', employeeGroup: 'Job Level', subEmployeeGroup: 'L2, L3, L4, Regular', frequency: 'Semi-monthly', status: 'Active', cappedEarning: 'Yes', adjustIfAbsent: 'Yes', minimumAbsent: '3', autoCompute: 'Yes', computationBasis: 'Current Variable Allowance', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'Yes', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisThreshold: '0', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
+    defaults: { type: 'Normal', frequency: 'Semi-monthly', status: 'Active', cappedEarning: 'Yes', adjustIfAbsent: 'Yes', minimumAbsent: '3', autoCompute: 'Yes', computationBasis: 'Current Variable Allowance', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'Yes', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisThreshold: '0', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance'], ['47218662', 'Night Differential', 'Normal'],
       // Tagged for retirement so the Retirement engine can resolve its salary
@@ -82,15 +110,13 @@ const moduleDefinitions = {
     title: 'Bonus Configuration',
     plural: 'bonuses',
     description: 'Define fixed or scheduled bonuses, taxability, employee coverage, exemption thresholds, and ledger mappings.',
-    table: [['code', 'Bonus Code'], ['name', 'Bonus Name'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['employeeGroup', 'Employee Group'], ['status', 'Status']],
+    table: [['code', 'Bonus Code'], ['name', 'Bonus Name'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['applicability', 'Applies To'], ['status', 'Status']],
     steps: [
       { title: 'Bonus Details', fields: [
         { key: 'code', label: 'Bonus Code', required: true, half: true }, { key: 'name', label: 'Bonus Name', required: true, half: true },
         { key: 'type', label: 'Bonus Type', type: 'select', options: ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Productivity Bonus'], required: true, half: true },
         { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable Bonus', 'Non-taxable Bonus'], required: true, half: true },
-        { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true },
-        { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, required: true, half: true },
-        { key: 'employeeNames', label: 'Employee Names', placeholder: 'All matching employees' },
+          { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'threshold', label: 'Bonus Threshold', type: 'number', required: true, half: true },
         { key: 'thresholdSplitting', label: 'Threshold Splitting?', type: 'boolean', half: true },
         { key: 'frequency', label: 'Schedule / Frequency', type: 'select', options: ['One-time', 'Monthly', 'Quarterly', 'Annually'], required: true, half: true },
@@ -103,21 +129,19 @@ const moduleDefinitions = {
         { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['13th Month Pay', 'Performance Incentives'], required: true },
       ] },
     ],
-    defaults: { type: 'Performance Bonus', taxability: 'Taxable Bonus', employeeGroup: 'Employee Type', subEmployeeGroup: 'Rank and File', threshold: '90000', thresholdSplitting: 'No', frequency: 'Annually', dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
+    defaults: { type: 'Performance Bonus', taxability: 'Taxable Bonus', threshold: '90000', thresholdSplitting: 'No', frequency: 'Annually', dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
     rows: [['BON-001', '13th Month Pay', '13th Month Pay'], ['BON-002', 'Performance Bonus', 'Performance Bonus'], ['BON-003', 'Signing Bonus', 'Signing Bonus'], ['BON-004', 'Productivity Incentive', 'Productivity Bonus'], ['BON-005', 'Service Award', 'Performance Bonus']],
   },
   deductions: {
     title: 'Deduction Configuration',
     plural: 'deductions',
     description: 'Configure fixed or one-time deductions, recurring frequency, payroll basis, net-pay treatment, and accounting setup.',
-    table: [['code', 'Deduction Code'], ['name', 'Deduction Name'], ['type', 'Deduction Type'], ['employeeGroup', 'Employee Group'], ['basis', 'Deduction Basis'], ['status', 'Status']],
+    table: [['code', 'Deduction Code'], ['name', 'Deduction Name'], ['type', 'Deduction Type'], ['applicability', 'Applies To'], ['basis', 'Deduction Basis'], ['status', 'Status']],
     steps: [
       { title: 'Deduction Details', fields: [
         { key: 'code', label: 'Deduction Code', required: true, half: true }, { key: 'name', label: 'Deduction Name', required: true, half: true },
         { key: 'type', label: 'Deduction Type', type: 'select', options: ['Fixed Deduction', 'One-time Deduction', 'Recurring Deduction', 'Adjustment'], required: true },
-        { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true },
-        { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, required: true, half: true },
-        { key: 'employeeNames', label: 'Employee Names', placeholder: 'All matching employees' },
+          { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'basis', label: 'Deduction Basis', type: 'select', options: ['Fixed Amount', 'Percentage of Basic Pay', 'Percentage of Gross Pay', 'Balance'], required: true, half: true },
         { key: 'amount', label: 'Default Amount / Rate', type: 'number', required: true, half: true },
         { key: 'frequency', label: 'Recurring Frequency', type: 'select', options: ['One-time', 'Weekly', 'Semi-monthly', 'Monthly'], required: true, half: true },
@@ -132,7 +156,7 @@ const moduleDefinitions = {
         { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Company Deductions', 'Other Receivables'], required: true },
       ] },
     ],
-    defaults: { type: 'Fixed Deduction', employeeGroup: 'All Employees', subEmployeeGroup: 'Rank and File', basis: 'Fixed Amount', amount: '500', frequency: 'Semi-monthly', partOfNetPay: 'Yes', tax: 'Post-tax', takeHomeTreatment: 'Partial Deduction', hierarchyPriority: '20', status: 'Active', glBreakdown: 'Per Employee', glName: 'Payroll Deductions', subGlName: 'Company Deductions' },
+    defaults: { type: 'Fixed Deduction', basis: 'Fixed Amount', amount: '500', frequency: 'Semi-monthly', partOfNetPay: 'Yes', tax: 'Post-tax', takeHomeTreatment: 'Partial Deduction', hierarchyPriority: '20', status: 'Active', glBreakdown: 'Per Employee', glName: 'Payroll Deductions', subGlName: 'Company Deductions' },
     rows: [['DED-001', 'Uniform Deduction', 'Fixed Deduction', { amount: '500', hierarchyPriority: '21' }], ['DED-002', 'Cooperative Dues', 'Recurring Deduction', { amount: '750', hierarchyPriority: '22' }], ['DED-003', 'Cash Advance', 'Recurring Deduction', { amount: '1000', hierarchyPriority: '23' }], ['DED-004', 'Equipment Charge', 'One-time Deduction', { amount: '900', hierarchyPriority: '24' }], ['DED-005', 'Union Dues', 'Recurring Deduction', { amount: '350', hierarchyPriority: '25' }], ['DED-006', 'Health Insurance', 'Recurring Deduction', { amount: '1200', hierarchyPriority: '26' }]],
   },
   loans: {
@@ -148,11 +172,10 @@ const moduleDefinitions = {
       { key: 'amortization', label: 'Amortization', type: 'number', required: true, half: true }, { key: 'frequency', label: 'Payment Frequency', type: 'select', options: ['Semi-monthly', 'Monthly', 'Quarterly', 'One-time'], required: true, half: true },
       { key: 'balanceHandling', label: 'Insufficient Net Pay Handling', type: 'select', options: ['Defer Balance', 'Partial Deduction', 'Deduct in Full'], required: true, half: true },
       { key: 'hierarchyPriority', label: 'Take-Home Adjustment Priority', type: 'number', required: true, half: true },
-      { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true }, { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, required: true, half: true },
-      { key: 'employeeNames', label: 'Employee Names', placeholder: 'All matching employees' },
+      { key: 'applicability', label: 'Applies to', type: 'applicability' },
       { key: 'effectiveDate', label: 'Effective Date', type: 'date', required: true, half: true }, { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
     ] }],
-    defaults: { type: 'Salary Loan', principal: '100000', interest: '5', terms: '12', interestAmount: '5000', amortization: '8750', frequency: 'Monthly', balanceHandling: 'Partial Deduction', hierarchyPriority: '10', employeeGroup: 'Employee Type', subEmployeeGroup: 'Rank and File', effectiveDate: '2026-01-01', status: 'Active' },
+    defaults: { type: 'Salary Loan', principal: '100000', interest: '5', terms: '12', interestAmount: '5000', amortization: '8750', frequency: 'Monthly', balanceHandling: 'Partial Deduction', hierarchyPriority: '10', effectiveDate: '2026-01-01', status: 'Active' },
     rows: [['CL-001', 'Employee Salary Loan', 'Salary Loan', { principal: '30000', amortization: '2500', hierarchyPriority: '11' }], ['CL-002', 'Emergency Assistance', 'Emergency Loan', { principal: '15000', amortization: '1500', hierarchyPriority: '12' }], ['CL-003', 'School Support Loan', 'Educational Loan', { principal: '18000', amortization: '1500', hierarchyPriority: '13' }], ['CL-004', 'Calamity Assistance', 'Calamity Loan', { principal: '12000', amortization: '1000', hierarchyPriority: '14' }]],
   },
   basicPay: {
@@ -210,13 +233,12 @@ const moduleDefinitions = {
     title: 'Time & Attendance Configuration',
     plural: 'time and attendance policies',
     description: 'Define work hours, breaks, core hours, shift schedules, flexible time and rounding rules used by payroll and attendance integrations.',
-    table: [['code', 'Policy Code'], ['name', 'Policy Name'], ['type', 'Policy Type'], ['employeeGroup', 'Employee Group'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
+    table: [['code', 'Policy Code'], ['name', 'Policy Name'], ['type', 'Policy Type'], ['applicability', 'Applies To'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
     steps: [
       { title: 'Time Policy Details', fields: [
         { key: 'code', label: 'Policy Code', required: true, half: true }, { key: 'name', label: 'Policy Name', required: true, half: true },
         { key: 'type', label: 'Policy Type', type: 'select', options: ['Work Hours', 'Break Hours', 'Core Hours', 'Shift Schedule', 'Flexible Time', 'Rounding'], required: true, half: true },
-        { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true },
-        { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, half: true },
+        { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'effectiveDate', label: 'Effective Date', type: 'date', required: true, half: true },
         { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
       ] },
@@ -227,20 +249,19 @@ const moduleDefinitions = {
         { key: 'approvalRequired', label: 'Approval Required?', type: 'boolean', half: true },
       ] },
     ],
-    defaults: { type: 'Work Hours', employeeGroup: 'All Employees', subEmployeeGroup: 'Rank and File', effectiveDate: '2026-01-01', status: 'Active', startTime: '08:00', endTime: '17:00', breakMinutes: '60', coreHours: '8', graceMinutes: '5', roundingRule: 'Nearest 5 minutes', approvalRequired: 'Yes' },
+    defaults: { type: 'Work Hours', effectiveDate: '2026-01-01', status: 'Active', startTime: '08:00', endTime: '17:00', breakMinutes: '60', coreHours: '8', graceMinutes: '5', roundingRule: 'Nearest 5 minutes', approvalRequired: 'Yes' },
     rows: [['TNA-001', 'Standard Work Hours', 'Work Hours'], ['TNA-002', 'Standard Meal Break', 'Break Hours'], ['TNA-003', 'Makati Core Hours', 'Core Hours'], ['TNA-004', 'Flexible Office Schedule', 'Flexible Time'], ['TNA-005', 'Five-Minute Rounding', 'Rounding']],
   },
   overtime: {
     title: 'Overtime Rate Management',
     plural: 'overtime policies',
     description: 'Maintain effective-dated overtime codes, day-type rates, attendance conditions, approval controls and employee/group assignments.',
-    table: [['code', 'OT Code'], ['name', 'OT Policy Name'], ['type', 'Day Type'], ['employeeGroup', 'Employee Group'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
+    table: [['code', 'OT Code'], ['name', 'OT Policy Name'], ['type', 'Day Type'], ['applicability', 'Applies To'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
     steps: [
       { title: 'Overtime Identity', fields: [
         { key: 'code', label: 'OT Code', required: true, half: true }, { key: 'name', label: 'OT Policy Name', required: true, half: true },
         { key: 'type', label: 'Day Type', type: 'select', options: ['Regular Workday', 'Rest Day', 'Special Non-working Holiday', 'Regular Holiday', 'Holiday Rest Day'], required: true, half: true },
-        { key: 'employeeGroup', label: 'Employee Group', type: 'select', options: groupOptions, required: true, half: true },
-        { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, half: true },
+        { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'effectiveDate', label: 'Effective Date', type: 'date', required: true, half: true },
         { key: 'effectiveTo', label: 'Effective To', type: 'date', half: true }, { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
       ] },
@@ -253,20 +274,19 @@ const moduleDefinitions = {
         { key: 'approvalRequired', label: 'Approval Required?', type: 'boolean', half: true }, { key: 'approvalLevel', label: 'Approval Level', type: 'select', options: ['Supervisor', 'Manager', 'Payroll Administrator'], required: true, half: true },
       ] },
     ],
-    defaults: { type: 'Regular Workday', employeeGroup: 'All Employees', subEmployeeGroup: 'Rank and File', effectiveDate: '2026-01-01', status: 'Active', workDaysPerYear: '261', preShift: '125', regularOvertime: '125', nightShiftDifferential: '110', regularOTWithNSD: '137.5', firstXHours: '125', excessOverXHours: '130', attendanceCondition: 'Approved overtime only', approvalRequired: 'Yes', approvalLevel: 'Supervisor' },
+    defaults: { type: 'Regular Workday', effectiveDate: '2026-01-01', status: 'Active', workDaysPerYear: '261', preShift: '125', regularOvertime: '125', nightShiftDifferential: '110', regularOTWithNSD: '137.5', firstXHours: '125', excessOverXHours: '130', attendanceCondition: 'Approved overtime only', approvalRequired: 'Yes', approvalLevel: 'Supervisor' },
     rows: [['OT-001', 'Regular Day Overtime', 'Regular Workday'], ['OT-002', 'Rest Day Overtime', 'Rest Day'], ['OT-003', 'Special Holiday Overtime', 'Special Non-working Holiday'], ['OT-004', 'Regular Holiday Overtime', 'Regular Holiday']],
   },
   leaveBenefits: {
     title: 'Benefits & Leave Configuration',
     plural: 'leave and benefit policies',
     description: 'Configure leave types, eligibility, accrual, carryover, forfeiture, cash conversion and effective periods without duplicating statutory reference tables.',
-    table: [['code', 'Policy Code'], ['name', 'Leave / Benefit Name'], ['type', 'Leave Type'], ['employeeGroup', 'Employee Group'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
+    table: [['code', 'Policy Code'], ['name', 'Leave / Benefit Name'], ['type', 'Leave Type'], ['applicability', 'Applies To'], ['effectiveDate', 'Effective Date'], ['status', 'Status']],
     steps: [
       { title: 'Leave or Benefit Details', fields: [
         { key: 'code', label: 'Policy Code', required: true, half: true }, { key: 'name', label: 'Leave / Benefit Name', required: true, half: true },
         { key: 'type', label: 'Leave Type', type: 'select', options: ['Vacation Leave', 'Sick Leave', 'Emergency Leave', 'Maternity Leave', 'Paternity Leave', 'Service Incentive Leave', 'Company Benefit'], required: true, half: true },
-        { key: 'employeeGroup', label: 'Eligibility Group', type: 'select', options: groupOptions, required: true, half: true },
-        { key: 'subEmployeeGroup', label: 'Sub-Employee Group', type: 'select', options: subGroupOptions, half: true },
+        { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'frequency', label: 'Credit Frequency', type: 'select', options: ['Monthly', 'Annually', 'Per Hire Anniversary', 'One-time'], required: true, half: true },
         { key: 'effectiveDate', label: 'Effective From', type: 'date', required: true, half: true }, { key: 'effectiveTo', label: 'Effective To', type: 'date', half: true },
         { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
@@ -279,7 +299,7 @@ const moduleDefinitions = {
         { key: 'taxTreatment', label: 'Tax Treatment', type: 'select', options: ['Taxable', 'Non-taxable', 'Per statutory reference'], required: true },
       ] },
     ],
-    defaults: { type: 'Vacation Leave', employeeGroup: 'All Employees', subEmployeeGroup: 'Rank and File', frequency: 'Annually', effectiveDate: '2026-01-01', status: 'Active', accrualRate: '15', minimumCredits: '0', maximumCredits: '15', carryover: 'Capped balance', carryoverCap: '5', forfeiture: 'At year end', cashConvertible: 'Yes', conversionBasis: 'Daily Basic Pay', taxTreatment: 'Per statutory reference' },
+    defaults: { type: 'Vacation Leave', frequency: 'Annually', effectiveDate: '2026-01-01', status: 'Active', accrualRate: '15', minimumCredits: '0', maximumCredits: '15', carryover: 'Capped balance', carryoverCap: '5', forfeiture: 'At year end', cashConvertible: 'Yes', conversionBasis: 'Daily Basic Pay', taxTreatment: 'Per statutory reference' },
     rows: [['LV-001', 'Vacation Leave', 'Vacation Leave'], ['LV-002', 'Sick Leave', 'Sick Leave'], ['LV-003', 'Emergency Leave', 'Emergency Leave'], ['LV-004', 'Service Incentive Leave', 'Service Incentive Leave']],
   },
   payrollControls: {
@@ -300,6 +320,54 @@ const moduleDefinitions = {
     rows: [['PAY-001', 'Semi-monthly Payroll Calendar', 'Payroll Calendar'], ['DED-H01', 'Statutory Before Company Deductions', 'Deduction Hierarchy'], ['PSL-001', 'Standard Payslip', 'Payslip Rule'], ['APR-001', 'Payroll Two-Level Approval', 'Approval Hierarchy']],
   },
 };
+
+/**
+ * The numeric fields on a configuration a formula variable may be bound to.
+ *
+ * Only numbers are offered: `{{allowance_unit_rate}}` can take the allowance's
+ * Default Amount, but binding it to a Taxability dropdown would produce a
+ * formula that cannot be evaluated, and offering it would invite exactly that.
+ */
+export function bindableConfigFields(def) {
+  return [...new Map(def.steps
+    .flatMap(step => step.fields)
+    .filter(field => field.type === 'number')
+    .map(field => [field.key, { key: field.key, label: field.label }])).values()];
+}
+
+/**
+ * The Computation Binding step every module in `BINDABLE_MODULES` carries.
+ *
+ * It is appended here rather than typed into each definition because the step
+ * is identical for all of them, and because a module becoming bindable should
+ * be one entry in `BINDABLE_MODULES` rather than an edit in two files. The step
+ * always comes last: a variable can only be bound once the fields it might draw
+ * on have been filled in.
+ */
+function withComputationBinding(moduleKey, def) {
+  if (!isBindableModule(moduleKey)) return def;
+  const definition = BINDABLE_MODULES[moduleKey];
+  return {
+    ...def,
+    bindable: true,
+    steps: [...def.steps, {
+      title: 'Computation Binding',
+      fields: [
+        {
+          key: 'computationCode',
+          label: 'Basis of Computation',
+          type: 'computation',
+          moduleKey,
+          hint: `The published Computational Basis formula that produces ${definition.produces}. Leave it unbound to keep the built-in payroll treatment.`,
+        },
+        { key: 'computationBindings', label: 'Variable Binding', type: 'bindings', moduleKey },
+      ],
+    }],
+  };
+}
+
+const moduleDefinitions = Object.fromEntries(
+  Object.entries(baseModuleDefinitions).map(([key, def]) => [key, withComputationBinding(key, def)]));
 
 const serviceTabs = Object.freeze({
   HRM: [
@@ -328,12 +396,29 @@ export function initialRows(def) {
     ...(row[3] || {}),
     id: index + 1,
     code: row[0], name: row[1], type: row[2],
-    employeeNames: 'All matching employees',
+    // A seeded configuration covers everybody until somebody narrows it; the
+    // scope is enforced now, so seeding a restriction nobody asked for would
+    // stop paying people on the first run after an upgrade.
+    applicability: seedScope(),
     dateCreated: `0${(index % 8) + 1}/01/2026`,
   }));
 }
 
 export const serviceStorageKey = (moduleKey, companyId) => `atlas-service-${moduleKey}:${companyId || 'default'}`;
+
+/**
+ * One stored record, carrying the applicability the engine now enforces.
+ *
+ * A record saved before the scope was unified holds the old
+ * `employeeGroup` / `subEmployeeGroup` / `employeeNames` triple, which nothing
+ * ever read. `scopeFromLegacyFields` translates it — permissively, and keeping
+ * the original text — and the legacy keys are dropped so the record has one
+ * answer to "who does this cover" rather than two that can disagree.
+ */
+function withApplicability(record, companyId) {
+  const { employeeGroup, subEmployeeGroup, employeeNames, ...rest } = record;
+  return { ...rest, applicability: scopeFromLegacyFields(record), companyId };
+}
 
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
   const def = moduleDefinitions[moduleKey];
@@ -347,9 +432,9 @@ export function readServiceConfiguration(moduleKey, companyId = readActiveCompan
     const seeded = initialRows(def).map(record => ({ ...record, companyId }));
     if (!Array.isArray(saved)) return seeded;
     const savedByCode = new Map(saved.map(record => [record.code, record]));
-    const reconciled = seeded.map(record => ({ ...record, ...(savedByCode.get(record.code) || {}), companyId }));
+    const reconciled = seeded.map(record => withApplicability({ ...record, ...(savedByCode.get(record.code) || {}) }, companyId));
     const seedCodes = new Set(seeded.map(record => record.code));
-    return [...reconciled, ...saved.filter(record => !seedCodes.has(record.code)).map(record => ({ ...def.defaults, ...record, companyId }))];
+    return [...reconciled, ...saved.filter(record => !seedCodes.has(record.code)).map(record => withApplicability({ ...def.defaults, ...record }, companyId))];
   } catch { return initialRows(def).map(record => ({ ...record, companyId })); }
 }
 
@@ -357,17 +442,40 @@ function csvEscape(value) {
   return `"${String(value ?? '').replaceAll('"', '""')}"`;
 }
 
-function exportRecords(def, records, format) {
+/**
+ * One configuration value as an export cell.
+ *
+ * The variable binding is an object, so it is flattened to the statements a
+ * reader of the CSV needs — `{{ot_hours}}=Payroll runtime` — rather than
+ * printing `[object Object]` in a column nobody can then reconcile.
+ */
+function exportValue(field, record, library) {
+  if (field.type === 'applicability') return describeScope(record.applicability);
+  if (field.type === 'bindings') {
+    const bindings = record.computationBindings;
+    if (!bindings || typeof bindings !== 'object') return '';
+    return Object.entries(bindings).map(([token, binding]) => {
+      const detail = binding.kind === 'config' ? binding.field
+        : binding.kind === 'reference' ? `${binding.referenceCode || ''}·${binding.entryKey || ''}`
+          : binding.kind === 'fixed' ? binding.value : 'engine';
+      return `{{${token}}}=${binding.kind}:${detail ?? ''}`;
+    }).join(' | ');
+  }
+  if (field.type === 'computation') return bindingSummary(record, library);
+  return String(record[field.key] ?? '');
+}
+
+function exportRecords(def, records, format, library = []) {
   const allFields = [...new Map(def.steps.flatMap(step => step.fields).map(field => [field.key, field])).values()];
   if (format === 'pdf') {
     const popup = window.open('', '_blank', 'noopener,noreferrer');
     if (!popup) return false;
-    const rows = records.map(record => `<tr>${allFields.map(field => `<td>${String(record[field.key] ?? '')}</td>`).join('')}</tr>`).join('');
+    const rows = records.map(record => `<tr>${allFields.map(field => `<td>${exportValue(field, record, library)}</td>`).join('')}</tr>`).join('');
     popup.document.write(`<html><head><title>${def.title}</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #ddd;padding:7px;text-align:left}h1{color:#54248f}</style></head><body><h1>${def.title}</h1><table><thead><tr>${allFields.map(field => `<th>${field.label}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);
     popup.document.close();
     return true;
   }
-  const csv = [allFields.map(field => csvEscape(field.label)).join(','), ...records.map(record => allFields.map(field => csvEscape(record[field.key])).join(','))].join('\n');
+  const csv = [allFields.map(field => csvEscape(field.label)).join(','), ...records.map(record => allFields.map(field => csvEscape(exportValue(field, record, library))).join(','))].join('\n');
   if (format === 'word') {
     const html = `<html><body><h1>${def.title}</h1><pre>${csv}</pre></body></html>`;
     downloadFile(`${def.plural.replaceAll(' ', '-')}.doc`, html, 'application/msword');
@@ -403,8 +511,251 @@ export function ServicesHub({ onOpen, companyName = 'ABC Company Ltd' }) {
   );
 }
 
-function Field({ field, value, onChange }) {
+/**
+ * The Computational Basis library and reference sources this company binds
+ * against, at the versions effective today.
+ *
+ * A reference source keeps its superseded versions, so the binding screen must
+ * pick one. It picks the current effective version, which is the one a payroll
+ * run today would resolve; a run with an earlier payout date resolves its own
+ * version through the engine, not through this screen.
+ */
+function useBindingCatalog(companyId) {
+  return useMemo(() => {
+    const library = readComputationLibrary(companyId);
+    const references = readReferences(companyId)
+      .filter(item => item.enabled !== false)
+      .map(item => {
+        const version = resolveReferenceVersion(item) || item;
+        return {
+          code: item.code,
+          name: item.name,
+          version: version.version || item.version || '',
+          entries: (version.entries || item.entries || []),
+        };
+      });
+    return { library, references };
+  }, [companyId]);
+}
+
+/** Sample values so the binding preview can run before payroll ever does. */
+const sampleRuntime = Object.fromEntries(approvedFields.map(([code, , sample]) => [code, sample]));
+
+/**
+ * Who this configuration applies to.
+ *
+ * The same four-way model the policy engines use, edited here so a company says
+ * "this earning covers Rank and File" once, in the language the rest of Atlas
+ * already speaks, instead of through the dimension/value/free-text triple this
+ * screen used to carry and nothing enforced.
+ */
+function ApplicabilityField({ value, onChange }) {
+  const scope = normalizeScope(value);
+  const [query, setQuery] = useState('');
+  const update = (key, next) => onChange({ ...scope, [key]: next });
+  const covered = coveredEmployees(scope);
+  const matches = employeeDirectory.filter(employee =>
+    `${employee.code} ${employee.name} ${employee.group} ${employee.department}`.toLowerCase().includes(query.toLowerCase()));
+  const toggle = code => update('employees', scope.employees.includes(code)
+    ? scope.employees.filter(item => item !== code)
+    : [...scope.employees, code]);
+
+  return <div className="service-applicability">
+    <div className="service-applicability-row">
+      <select value={scope.scope} onChange={event => update('scope', event.target.value)} aria-label="Applies to">
+        {SCOPE_KINDS.map(kind => <option key={kind}>{kind}</option>)}
+      </select>
+      {scope.scope === 'Employee Group' && <select value={scope.group} onChange={event => update('group', event.target.value)} aria-label="Employee group">
+        {employeeGroups.map(group => <option key={group}>{group}</option>)}
+      </select>}
+      {scope.scope === 'Department' && <select value={scope.department} onChange={event => update('department', event.target.value)} aria-label="Department">
+        {departments.map(department => <option key={department}>{department}</option>)}
+      </select>}
+      <span className="applicability-count"><Users weight="duotone" /> {covered.length} covered</span>
+    </div>
+    {scope.scope === 'Specific Employees' && <div className="service-applicability-picker">
+      <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search the roster..." aria-label="Search employees" />
+      <div className="service-applicability-list">
+        {matches.map(employee => <label key={employee.code}>
+          <input type="checkbox" checked={scope.employees.includes(employee.code)} onChange={() => toggle(employee.code)} />
+          <span>{employee.name}<small>{employee.code} · {employee.group} · {employee.department}</small></span>
+        </label>)}
+        {!matches.length && <p className="binding-empty">No employee matches “{query}”.</p>}
+      </div>
+    </div>}
+    <p className="field-hint">
+      {describeScope(scope)}. Payroll applies this configuration only to the employees it covers.
+      {scope.migratedFrom && ` Previously recorded as “${scope.migratedFrom}”, which was never enforced — set the scope deliberately.`}
+    </p>
+  </div>;
+}
+
+function ComputationField({ field, value, onChange, catalog }) {
+  const options = computationsForModule(field.moduleKey, catalog.library);
+  const selected = options.find(item => item.code === value)
+    || catalog.library.find(item => item.code === value)
+    || null;
+  const grouped = [...new Map(options.map(item => [item.category, []])).keys()]
+    .map(category => [category, options.filter(item => item.category === category)]);
+  return <div className="binding-computation-field">
+    <select value={value ?? ''} onChange={event => onChange(event.target.value)}>
+      <option value="">Not bound — use the built-in payroll treatment</option>
+      {grouped.map(([category, items]) => <optgroup key={category} label={category}>
+        {items.map(item => <option key={item.code} value={item.code}>{item.code} · {item.name}</option>)}
+      </optgroup>)}
+    </select>
+    {selected
+      ? <div className="binding-formula-preview">
+          <code>{selected.expression}</code>
+          <small>
+            <span className={`computation-source ${selected.isBuiltIn === false ? 'admin-defined' : 'built-in'}`}>
+              <Function weight="duotone" />{selected.isBuiltIn === false ? 'Company-defined' : 'Atlas standard'}
+            </span>
+            Version {selected.version} · effective {selected.effectiveDate}
+            {Boolean(boundDependencies(selected.code, catalog.library).length)
+              && ` · builds on ${boundDependencies(selected.code, catalog.library).join(', ')}`}
+          </small>
+        </div>
+      : <p className="field-hint">{field.hint}</p>}
+  </div>;
+}
+
+/**
+ * One variable of the bound formula, and where its value comes from.
+ *
+ * The Kind column is deliberately the first decision: a reviewer reading a
+ * payroll line asks "where did 150 come from", and the answer is the kind
+ * before it is the number.
+ */
+function BindingRow({ token, binding, entry, configFields, references, onChange }) {
+  const field = fieldMap[token];
+  const source = references.find(item => item.code === binding.referenceCode);
+  const set = patch => onChange({ ...binding, ...patch });
+  return <tr className={entry?.problem ? 'mapping-problem' : ''}>
+    <td>
+      <code>{`{{${token}}}`}</code>
+      <small className="block-caption">{field?.label || 'Unrecognized field'}</small>
+    </td>
+    <td>
+      <select value={binding.kind} onChange={event => set({ kind: event.target.value })} aria-label={`Source for ${token}`}>
+        {BINDING_KINDS.map(item => <option
+          key={item.kind}
+          value={item.kind}
+          disabled={item.kind === 'runtime' && !isEngineSupplied(token)}
+        >{item.label}</option>)}
+      </select>
+    </td>
+    <td>
+      {binding.kind === 'runtime' && <span className="mapping-owner">{field?.owner || 'Payroll runtime'}</span>}
+      {binding.kind === 'config' && <select value={binding.field ?? ''} onChange={event => set({ field: event.target.value })} aria-label={`Configuration field for ${token}`}>
+        <option value="">Please select</option>
+        {configFields.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}
+      </select>}
+      {binding.kind === 'reference' && <div className="binding-reference-pair">
+        <select value={binding.referenceCode ?? ''} onChange={event => set({ referenceCode: event.target.value, entryKey: '' })} aria-label={`Reference source for ${token}`}>
+          <option value="">Please select</option>
+          {references.map(item => <option key={item.code} value={item.code}>{item.code} · {item.name}</option>)}
+        </select>
+        <select value={binding.entryKey ?? ''} onChange={event => set({ entryKey: event.target.value })} disabled={!source} aria-label={`Reference row for ${token}`}>
+          <option value="">Please select</option>
+          {(source?.entries || []).map(item => <option key={item.key} value={item.key}>{item.key} — {item.value}</option>)}
+        </select>
+      </div>}
+      {binding.kind === 'fixed' && <input
+        type="number"
+        step="any"
+        value={binding.value ?? ''}
+        onChange={event => set({ value: event.target.value })}
+        placeholder="0.00"
+        aria-label={`Fixed value for ${token}`}
+      />}
+    </td>
+    <td>{field?.unit || '—'}</td>
+    <td>
+      {entry?.problem
+        ? <span className="binding-problem"><Warning weight="bold" /> {entry.problem}</span>
+        : <span className="binding-resolved">{Number(entry?.value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 })}<small className="block-caption">{entry?.source}</small></span>}
+    </td>
+  </tr>;
+}
+
+/**
+ * The variable binding table.
+ *
+ * It reconciles itself against whichever formula is bound: switching the
+ * computation drops the variables the new one does not use and defaults the
+ * ones it adds, so an admin who swaps a formula for a close relative does not
+ * re-bind the inputs that did not change.
+ */
+function BindingField({ field, value, onChange, draft, def, catalog }) {
+  const configFields = useMemo(() => bindableConfigFields(def), [def]);
+  const code = String(draft.computationCode || '').trim();
+  const tokens = useMemo(() => bindableTokens(code, catalog.library), [code, catalog.library]);
+  const bindings = useMemo(
+    () => normalizeBindings({ ...draft, computationBindings: value }, catalog.library, configFields),
+    [draft, value, catalog.library, configFields]);
+  const [preview, setPreview] = useState(null);
+
+  // Reconciling in an effect rather than during render keeps the stored value
+  // and the rendered table the same object: a binding the admin can see but the
+  // record does not hold would be lost on save.
+  useEffect(() => {
+    const current = value && typeof value === 'object' ? value : {};
+    const same = Object.keys(bindings).length === Object.keys(current).length
+      && Object.keys(bindings).every(token => current[token] === bindings[token]);
+    if (!same) onChange(bindings);
+  }, [bindings, value, onChange]);
+
+  const resolution = useMemo(() => evaluateBinding({
+    record: { ...draft, computationBindings: bindings },
+    library: catalog.library,
+    runtime: sampleRuntime,
+    references: catalog.references,
+    configFields,
+  }), [draft, bindings, catalog, configFields]);
+
+  if (!code) return <p className="binding-empty"><LinkBreak weight="duotone" /> Choose a basis of computation above and its variables appear here for binding.</p>;
+  if (!tokens.length) return <p className="binding-empty"><Link weight="duotone" /> {code} takes no mapped input — it needs no variable binding.</p>;
+
+  const entryFor = token => resolution?.entries?.find(item => item.token === token);
+  return <div className="binding-editor">
+    <div className="mapping-table-wrap">
+      <table className="mapping-table binding-table">
+        <thead><tr><th>Variable</th><th>Source</th><th>Bound to</th><th>Unit</th><th>Resolved value</th></tr></thead>
+        <tbody>
+          {tokens.map(token => <BindingRow
+            key={token}
+            token={token}
+            binding={bindings[token]}
+            entry={entryFor(token)}
+            configFields={configFields}
+            references={catalog.references}
+            onChange={next => onChange({ ...bindings, [token]: next })}
+          />)}
+        </tbody>
+      </table>
+    </div>
+    <div className="binding-preview-row">
+      <button type="button" className="button secondary" onClick={() => setPreview(evaluateBinding({
+        record: { ...draft, computationBindings: bindings },
+        library: catalog.library,
+        runtime: sampleRuntime,
+        references: catalog.references,
+        configFields,
+      }))}><Flask /> Preview with sample runtime values</button>
+      {preview && (preview.resolved
+        ? <div className="test-result passed"><Check weight="bold" /><span><small>{preview.code} resolved</small><strong>₱ {preview.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></span></div>
+        : <div className="test-result failed"><Warning weight="bold" /><span><small>Binding incomplete</small><strong>{preview.problem}</strong></span></div>)}
+    </div>
+    <p className="field-hint">A bound formula returns the amount for the payroll period being computed. The recurring frequency decides whether the item falls due — it never rescales a bound amount.</p>
+  </div>;
+}
+
+function Field({ field, value, onChange, draft, def, catalog }) {
   const common = { value: value ?? '', onChange: event => onChange(event.target.value), required: field.required };
+  if (field.type === 'applicability') return <ApplicabilityField value={value} onChange={onChange} />;
+  if (field.type === 'computation') return <ComputationField field={field} value={value} onChange={onChange} catalog={catalog} />;
+  if (field.type === 'bindings') return <BindingField field={field} value={value} onChange={onChange} draft={draft} def={def} catalog={catalog} />;
   if (field.type === 'select') return <select {...common}><option value="">Please select</option>{field.options.map(option => <option key={option}>{option}</option>)}</select>;
   if (field.type === 'boolean') return (
     <div className="radio-group">
@@ -414,17 +765,36 @@ function Field({ field, value, onChange }) {
   return <input {...common} type={field.type ?? 'text'} min={field.type === 'number' ? '0' : undefined} placeholder={field.placeholder ?? (field.type === 'number' ? '0.00' : `Input ${field.label.toLowerCase()}`)} />;
 }
 
-function ConfigurationForm({ def, record, onClose, onSave }) {
+function ConfigurationForm({ def, record, companyId, onClose, onSave }) {
   const [draft, setDraft] = useState({ ...def.defaults, ...record });
   const [step, setStep] = useState(0);
+  const [error, setError] = useState('');
+  const catalog = useBindingCatalog(companyId);
   const current = def.steps[step];
-  const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
+  // Editing anything retires the refusal that was shown for the previous draft:
+  // an error still on screen after the thing it complained about was fixed
+  // reads as a second, unexplained problem.
+  const update = (key, value) => {
+    setError('');
+    setDraft(previous => ({ ...previous, [key]: value }));
+  };
   const next = event => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
-    if (step < def.steps.length - 1) setStep(step + 1);
-    else onSave(draft);
+    if (step < def.steps.length - 1) { setStep(step + 1); return; }
+    // A half-bound formula is refused here rather than at payroll: an unbound
+    // variable resolves to nothing, and a deduction that silently computes zero
+    // is worse than one that never saved.
+    const problems = bindingProblems({
+      record: draft,
+      library: catalog.library,
+      references: catalog.references,
+      configFields: bindableConfigFields(def),
+    });
+    if (problems.length) { setError(problems[0]); setStep(def.steps.length - 1); return; }
+    setError('');
+    onSave(draft);
   };
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -436,11 +806,12 @@ function ConfigurationForm({ def, record, onClose, onSave }) {
             <h3>{current.title}</h3>
             <div className="config-form-grid">
               {current.fields.map(field => (
-                <label key={field.key} className={field.half ? 'half' : ''}>{field.label}{field.required && <span className="required">*</span>}
-                  <Field field={field} value={draft[field.key]} onChange={value => update(field.key, value)} />
+                <label key={field.key} className={field.half ? 'half' : field.type === 'bindings' ? 'full' : ''}>{field.label}{field.required && <span className="required">*</span>}
+                  <Field field={field} value={draft[field.key]} onChange={value => update(field.key, value)} draft={draft} def={def} catalog={catalog} />
                 </label>
               ))}
             </div>
+            {error && <div className="basis-error">{error}</div>}
           </div>
           <footer className="modal-actions sticky-actions">
             <button type="button" className="button secondary" onClick={step === 0 ? onClose : () => setStep(step - 1)}>{step === 0 ? 'Cancel' : 'Back'}</button>
@@ -452,13 +823,54 @@ function ConfigurationForm({ def, record, onClose, onSave }) {
   );
 }
 
-function ViewDrawer({ def, record, onClose, onEdit }) {
+/**
+ * The bound formula as a reviewer reads it: the expression, then every variable
+ * with the value it resolves to today and the source that produced it.
+ */
+function BindingDetail({ def, record, catalog }) {
+  const configFields = bindableConfigFields(def);
+  const resolution = evaluateBinding({
+    record,
+    library: catalog.library,
+    runtime: sampleRuntime,
+    references: catalog.references,
+    configFields,
+  });
+  if (!resolution) return <p className="binding-empty"><LinkBreak weight="duotone" /> Not bound to a computation — the built-in payroll treatment applies.</p>;
+  return <>
+    <div className="binding-formula-preview">
+      <code>{resolution.computation?.expression || '—'}</code>
+      <small>{resolution.code} · {resolution.computation?.name} · version {resolution.computation?.version}</small>
+    </div>
+    <div className="mapping-table-wrap">
+      <table className="mapping-table binding-table">
+        <thead><tr><th>Variable</th><th>Source</th><th>Bound to</th><th>Value</th></tr></thead>
+        <tbody>
+          {resolution.entries.map(entry => <tr key={entry.token} className={entry.problem ? 'mapping-problem' : ''}>
+            <td><code>{`{{${entry.token}}}`}</code><small className="block-caption">{entry.label}</small></td>
+            <td><span className="mapping-owner">{entry.kindLabel}</span></td>
+            <td>{entry.source}</td>
+            <td>{entry.problem ? <span className="binding-problem"><Warning weight="bold" /> {entry.problem}</span> : Number(entry.value).toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+          </tr>)}
+          {!resolution.entries.length && <tr className="mapping-empty"><td colSpan={4}>This formula takes no mapped input.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  </>;
+}
+
+function ViewDrawer({ def, record, companyId, onClose, onEdit }) {
+  const catalog = useBindingCatalog(companyId);
   return (
     <div className="drawer-backdrop view-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <aside className="record-drawer">
         <header><div><p>View configuration</p><h2>{record.name}</h2></div><button className="icon-button" onClick={onClose}><X /></button></header>
         <div className="record-drawer-body">
-          {def.steps.map(step => <section key={step.title}><h3>{step.title}</h3><div className="detail-grid">{step.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{record[field.key] || '—'}</span></div>)}</div></section>)}
+          {def.steps.map(step => <section key={step.title}><h3>{step.title}</h3>
+            {step.fields.some(field => field.type === 'bindings')
+              ? <BindingDetail def={def} record={record} catalog={catalog} />
+              : <div className="detail-grid">{step.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{field.type === 'applicability' ? describeScope(record.applicability) : record[field.key] || '—'}</span></div>)}</div>}
+          </section>)}
         </div>
         <footer><button className="button secondary" onClick={onClose}>Close</button><button className="button primary" onClick={() => onEdit(record)}><PencilSimple /> Edit</button></footer>
       </aside>
@@ -507,6 +919,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const [page, setPage] = useState(1);
   const uploadRef = useRef(null);
   const pageSize = 8;
+  const catalog = useBindingCatalog(companyId);
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(records)), [records, storageKey]);
 
   const filtered = useMemo(() => records.filter(record => {
@@ -525,13 +938,18 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       const asDate = value => value ? new Date(value).getTime() : Number.POSITIVE_INFINITY;
       const start = asDate(draft.effectiveDate);
       const end = asDate(draft.effectiveTo);
+      // Two policies of the same type clash only where they cover the same
+      // person, so overlap is tested against the employees each one actually
+      // reaches rather than against the scope fields being spelled alike.
+      const draftCovers = new Set(coveredEmployees(draft.applicability).map(employee => employee.code));
       const overlap = records.some(record => {
-        if (record.id === draft.id || record.status !== 'Active' || record.type !== draft.type || record.employeeGroup !== draft.employeeGroup || (record.subEmployeeGroup || '') !== (draft.subEmployeeGroup || '')) return false;
+        if (record.id === draft.id || record.status !== 'Active' || record.type !== draft.type) return false;
+        if (!coveredEmployees(record.applicability).some(employee => draftCovers.has(employee.code))) return false;
         const existingStart = asDate(record.effectiveDate);
         const existingEnd = asDate(record.effectiveTo);
         return start <= existingEnd && existingStart <= end;
       });
-      if (overlap) { notify({ type: 'error', message: 'This active policy overlaps an existing effective period for the same type and employee group.' }); return; }
+      if (overlap) { notify({ type: 'error', message: 'This active policy overlaps an existing effective period for employees it already covers.' }); return; }
     }
     if (draft.id) setRecords(previous => previous.map(record => record.id === draft.id ? { ...draft, companyId } : record));
     else setRecords(previous => [{ ...draft, companyId, id: Math.max(0, ...previous.map(record => record.id)) + 1, dateCreated: new Date().toLocaleDateString('en-US') }, ...previous]);
@@ -573,17 +991,21 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
         <button className="button primary" onClick={() => setEditing({})}><Plus /> Add</button>
         <button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button>
         <input ref={uploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={importCsv} />
-        <ExportMenu onExport={format => { if (exportRecords(def, filtered, format)) notify({ type: 'success', message: `${def.title} export prepared.` }); }} />
+        <ExportMenu onExport={format => { if (exportRecords(def, filtered, format, catalog.library)) notify({ type: 'success', message: `${def.title} export prepared.` }); }} />
       </div>
       <div className="table-card config-table-card">
         <table className="config-table">
-          <thead><tr>{def.table.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead>
-          <tbody>{visible.length ? visible.map(record => <tr key={record.id}>{def.table.map(([key]) => <td key={key}>{key === 'status' ? <span className={`status-pill ${String(record[key]).toLowerCase()}`}>{record[key]}</span> : ['principal', 'amortization', 'threshold'].includes(key) ? `₱ ${Number(record[key] || 0).toLocaleString()}` : record[key] || '—'}</td>)}<td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(record)} aria-label="Delete"><Trash /></button></div></td></tr>) : <tr><td colSpan={def.table.length + 1}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
+          <thead><tr>{def.table.map(([, label]) => <th key={label}>{label}</th>)}{def.bindable && <th>Basis of Computation</th>}<th>Action</th></tr></thead>
+          <tbody>{visible.length ? visible.map(record => <tr key={record.id}>{def.table.map(([key]) => <td key={key}>{key === 'status' ? <span className={`status-pill ${String(record[key]).toLowerCase()}`}>{record[key]}</span> : key === 'applicability' ? <span className="scope-chip"><Users weight="duotone" />{describeScope(record.applicability)}</span> : ['principal', 'amortization', 'threshold'].includes(key) ? `₱ ${Number(record[key] || 0).toLocaleString()}` : record[key] || '—'}</td>)}
+            {def.bindable && <td>{record.computationCode
+              ? <span className="binding-chip" title={bindingSummary(record, catalog.library)}><Function weight="duotone" />{record.computationCode}</span>
+              : <span className="binding-chip none"><LinkBreak />Not bound</span>}</td>}
+            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(record)} aria-label="Delete"><Trash /></button></div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 2 : 1)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
         </table>
       </div>
       <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
-      {editing && <ConfigurationForm def={def} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} />}
-      {viewing && <ViewDrawer def={def} record={viewing} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
+      {editing && <ConfigurationForm def={def} record={editing.id ? editing : null} companyId={companyId} onClose={() => setEditing(null)} onSave={save} />}
+      {viewing && <ViewDrawer def={def} record={viewing} companyId={companyId} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
       {deleting && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRecords(previous => previous.filter(record => record.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
       {filterOpen && <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />}
     </div>

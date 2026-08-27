@@ -37,6 +37,8 @@
  */
 
 import { computationByCode, evaluateExpression, seedComputations } from './computationCatalog.js';
+import { ENGINE_SUPPLIED_FIELDS, evaluateBinding } from './computationBindings.js';
+import { coversEmployee, describeScope } from './applicabilityScope.js';
 import { requestAppliesToTransaction, staggeredDue } from './staggeredPayments.js';
 import {
   bracketFor,
@@ -104,6 +106,185 @@ export const EARNING_CLASSES = Object.freeze({
 });
 
 const classOf = classification => EARNING_CLASSES[classification] || EARNING_CLASSES['Taxable Allowance'];
+
+/* --------------------------------------------------------- bound formulas */
+
+/**
+ * The resolver that turns a Services Information configuration into an amount.
+ *
+ * An earning type, deduction, allowance, bonus or loan may name the
+ * Computational Basis formula that produces its amount and say where each of
+ * that formula's variables comes from. This builds one index over every such
+ * configuration in `context.serviceConfig`, keyed by both code and name because
+ * a payroll item is identified by whichever of the two its source module
+ * carries, and returns a lookup the pipeline calls as it prices each item.
+ *
+ * `runtime` is passed by reference and mutated as the pipeline advances, so a
+ * deduction bound to `{{gross_pay}}` resolves the gross this line actually
+ * reached rather than a stale zero.
+ */
+export function boundResolverFor(context = {}, runtime = {}, employee = null) {
+  const configurations = context.serviceConfig || {};
+  const library = context.computations || [];
+  const references = context.references || [];
+  const index = new Map();
+  Object.values(configurations).forEach(records => {
+    (records || []).forEach(item => {
+      // An inactive configuration is not a formula the run may apply, and a
+      // configuration that binds nothing keeps the built-in treatment.
+      if (!item?.computationCode) return;
+      if (item.status && item.status !== 'Active') return;
+      [item.code, item.name].filter(Boolean).forEach(key => {
+        const normal = String(key).trim().toUpperCase();
+        if (!index.has(normal)) index.set(normal, item);
+      });
+    });
+  });
+  if (!index.size) return () => null;
+  return (...keys) => {
+    for (const key of keys) {
+      const found = key && index.get(String(key).trim().toUpperCase());
+      if (!found) continue;
+      // Applicability is enforced here rather than displayed and ignored: a
+      // configuration scoped to Rank and File must not compute for a Manager,
+      // however the item reached this line.
+      if (employee && !coversEmployee(found.applicability, employee)) {
+        return {
+          code: String(found.computationCode || '').toUpperCase(),
+          amount: null,
+          resolved: false,
+          outOfScope: true,
+          problem: `${found.name || found.code} applies to ${describeScope(found.applicability).toLowerCase()}, which does not cover ${employee.name || employee.code}.`,
+          entries: [],
+        };
+      }
+      return evaluateBinding({ record: found, library, runtime, references });
+    }
+    return null;
+  };
+}
+
+/**
+ * Which configuration governs a payroll item, whether or not it binds a formula.
+ *
+ * `boundResolverFor` only indexes configurations that bind a computation, but
+ * applicability governs every configuration — an earning scoped to one
+ * department is out of scope for everyone else even when its amount comes
+ * straight from the register. This is the index that answers that.
+ */
+export function scopeResolverFor(context = {}) {
+  const index = new Map();
+  Object.values(context.serviceConfig || {}).forEach(records => {
+    (records || []).forEach(item => {
+      if (!item) return;
+      [item.code, item.name].filter(Boolean).forEach(key => {
+        const normal = String(key).trim().toUpperCase();
+        if (!index.has(normal)) index.set(normal, item);
+      });
+    });
+  });
+  if (!index.size) return () => null;
+  return (...keys) => {
+    for (const key of keys) {
+      const found = key && index.get(String(key).trim().toUpperCase());
+      if (found) return found;
+    }
+    return null;
+  };
+}
+
+/**
+ * Drop the items a configuration does not cover, and say who was dropped.
+ *
+ * An item with no configuration at all is left alone: a one-off encoded on the
+ * transaction, or a loan schedule, answers to nobody's applicability.
+ */
+function withinScope(items, resolveScope, employee, onDropped) {
+  if (!resolveScope || !employee) return items;
+  return items.filter(item => {
+    const configuration = resolveScope(item.code, item.name);
+    if (!configuration || coversEmployee(configuration.applicability, employee)) return true;
+    onDropped?.(item, configuration);
+    return false;
+  });
+}
+
+/**
+ * The engine's half of the binding contract, as a value.
+ *
+ * Every field `ENGINE_SUPPLIED_FIELDS` names appears here, which is what lets a
+ * configuration bind a variable to "Payroll runtime" and rely on a value being
+ * there. The totals a line only reaches later start at zero and are filled in
+ * as the pipeline advances; extracting this as a function rather than a literal
+ * inside `computeEmployeeLine` is what lets the suite assert the contract holds
+ * without computing a whole payroll to find out.
+ */
+export function runtimeFieldsFor({ employee = {}, pay = {}, attendance = {}, context = {}, override = {}, rates = {} } = {}) {
+  const overtimeHours = Object.values(attendance.overtimeByType || {});
+  return {
+    monthly_basic: number(rates.monthlyRate),
+    basic_pay: number(rates.basicPay),
+    basic_pay_adjustment: number(override.basicPayAdjustment),
+    daily_rate: number(rates.dailyRate),
+    hourly_rate: number(rates.hourlyRate),
+    factor_days: number(rates.factorDays),
+    work_hours: number(rates.workHours),
+    ecola_amount: pay.mwe === 'Yes' ? number(pay.ecolaPerDay) : 0,
+    days_worked: number(attendance.daysWorked),
+    absent_days: number(attendance.absentDays),
+    late_minutes: number(attendance.tardinessMinutes),
+    undertime_minutes: number(attendance.undertimeMinutes),
+    ot_hours: round2(overtimeHours.reduce((total, hours) => total + number(hours), 0)),
+    ot_rate: OT_MULTIPLIERS.Regular,
+    holiday_hours: number((attendance.overtimeByType || {}).Holiday),
+    holiday_rate: OT_MULTIPLIERS.Holiday,
+    part_time_hours: number(attendance.hoursWorked),
+    years_service: number(employee.yearsOfService),
+    rounded_years_service: Math.round(number(employee.yearsOfService)),
+    unused_leave_days: number((context.leaveBalances || []).find(row => row.employeeId === employee.employeeId)?.balance),
+    basic_earnings_ytd: number(employee.ytd?.basicEarnings),
+    bonus_paid_ytd: number(employee.ytd?.bonusPaid),
+    de_minimis_paid_ytd: number(employee.ytd?.deMinimisPaid),
+    // Reached later in the pipeline; declared now so the contract holds from
+    // the first bound item rather than from the first item after gross pay.
+    taxable_earnings: 0,
+    non_taxable_earnings: 0,
+    other_bonus: 0,
+    gross_pay: 0,
+    statutory_deductions: 0,
+    taxable_income: 0,
+    withholding_tax: 0,
+  };
+}
+
+/** Whether the runtime map still honours every field the contract publishes. */
+export function runtimeContractGaps(runtime = {}) {
+  return ENGINE_SUPPLIED_FIELDS.filter(field => !Object.hasOwn(runtime, field));
+}
+
+/**
+ * A payroll item priced by its bound formula instead of its configured amount.
+ *
+ * A binding that cannot resolve does not fail the run: the item keeps the
+ * amount the module already gave it and carries the reason, which the line then
+ * raises as an exception. Payroll that stops entirely because one allowance
+ * lost a reference row would be worse than payroll that says so.
+ */
+function priceByBinding(item, resolveBound) {
+  const bound = resolveBound?.(item.code, item.name);
+  if (!bound) return item;
+  if (!bound.resolved) return { ...item, boundCode: bound.code, boundProblem: bound.problem };
+  return {
+    ...item,
+    amount: bound.amount,
+    due: bound.amount,
+    boundCode: bound.code,
+    boundVersion: bound.version,
+    boundValues: bound.values,
+    boundEntries: bound.entries,
+    boundProblem: '',
+  };
+}
 
 /* ------------------------------------------------------------------- steps */
 
@@ -257,7 +438,7 @@ export function attendanceFor(timeLogs = [], employeeId, transaction) {
  * entries encoded or uploaded onto the line. A monthly earning is divided by
  * the number of payroll periods in a month; a one-time earning is paid whole.
  */
-export function earningItemsFor({ salary, registerEarnings = [], manual = [], transaction, employee }) {
+export function earningItemsFor({ salary, registerEarnings = [], manual = [], transaction, employee, resolveBound = null }) {
   const periodsPerMonth = PERIODS_PER_YEAR[transaction.paymentMode] / 12;
   // A recurring earning is spread across the periods of the month it accrues
   // in. A quarterly or annual one falls due in the last period of its cycle
@@ -304,8 +485,14 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
       source: 'Earning Management',
     }));
 
-  return [...recurring, ...assigned, ...manual.map(row => ({ ...row, source: row.source || 'Encoded on the transaction' }))]
-    .filter(row => row.amount !== 0);
+  // A figure encoded on the transaction is an instruction, not a default, so a
+  // bound formula never overwrites it — only the recurring and assigned items
+  // the configuration itself produced are priced by their binding.
+  return [
+    ...recurring.map(row => priceByBinding(row, resolveBound)),
+    ...assigned.map(row => priceByBinding(row, resolveBound)),
+    ...manual.map(row => ({ ...row, source: row.source || 'Encoded on the transaction' })),
+  ].filter(row => row.amount !== 0 || row.boundProblem);
 }
 
 /**
@@ -315,7 +502,7 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
  * cleared or passed its end date stops collecting, so a settled item cannot
  * reappear on a later payroll.
  */
-export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [], staggeredRequests = [] }) {
+export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [], staggeredRequests = [], resolveBound = null }) {
   const rankOf = (name, group) => {
     const entry = hierarchy.find(row => row.name === name)
       || hierarchy.find(row => row.group === group && row.kind && name.toLowerCase().includes(row.kind.toLowerCase()));
@@ -378,8 +565,17 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
       };
     });
 
-  return [...loans, ...companyDeductions, ...assigned, ...manual]
-    .filter(item => item.due > 0)
+  // A bound deduction still never collects more than the balance outstanding:
+  // the formula decides what is due this period, the schedule decides what is
+  // left to collect, and the smaller of the two is what the employee pays.
+  const priced = item => {
+    const bound = priceByBinding(item, resolveBound);
+    if (!bound.boundCode || bound.boundProblem) return bound;
+    return { ...bound, due: round2(Math.min(bound.due, number(item.outstanding) || bound.due)) };
+  };
+
+  return [...loans.map(priced), ...companyDeductions.map(priced), ...assigned.map(priced), ...manual]
+    .filter(item => item.due > 0 || item.boundProblem)
     .sort((left, right) => left.rank - right.rank);
 }
 
@@ -608,13 +804,55 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     });
   }
 
+  /* bound configurations -------------------------------------------------- */
+  // The map is mutated as the pipeline advances — gross pay, tax and statutory
+  // totals are not known at earnings time — so a deduction bound to
+  // `{{gross_pay}}` reads the gross this line actually reached.
+  const runtime = runtimeFieldsFor({
+    employee, pay, attendance, context, override,
+    rates: { monthlyRate, basicPay, dailyRate, hourlyRate, factorDays, workHours },
+  });
+  const resolveBound = boundResolverFor(context, runtime, employee);
+  const resolveScope = scopeResolverFor(context);
+  // A configuration that does not cover this employee is reported once, on the
+  // line it was withheld from, so "why did Sophia not get the meal allowance?"
+  // is answerable from the payslip rather than from the configuration screen.
+  const outOfScope = (item, configuration) => exceptions.push({
+    severity: 'Info',
+    message: `${item.name} was not applied: ${configuration.name || configuration.code} covers ${describeScope(configuration.applicability).toLowerCase()}.`,
+  });
+
+  /**
+   * A bound item's own step, so the binding is auditable on the payslip.
+   *
+   * The step re-evaluates the published expression against the values the
+   * binding resolved, which is what makes "how was this figure reached?" a
+   * report of the calculation rather than a restatement of its answer.
+   */
+  const recordBinding = (item, category) => {
+    if (item.boundProblem) {
+      exceptions.push({ severity: 'Warning', message: `${item.name}: ${item.boundProblem}` });
+      return;
+    }
+    if (!item.boundCode) return;
+    record({
+      code: item.boundCode,
+      label: item.name,
+      category,
+      inputs: item.boundValues || {},
+      detail: `${item.name} computed from its bound formula · ${(item.boundEntries || []).map(entry => `${entry.token} ← ${entry.source}`).join('; ')}`,
+      source: 'Services Information binding',
+    });
+  };
+
   /* 5 — earnings ---------------------------------------------------------- */
-  const configured = earningItemsFor({
+  const configured = withinScope(earningItemsFor({
     salary,
     registerEarnings: (context.registers?.earnings) || [],
     manual: override.earnings || [],
-    transaction, employee,
-  });
+    transaction, employee, resolveBound,
+  }), resolveScope, employee, outOfScope);
+  configured.forEach(item => recordBinding(item, 'Earnings'));
   const monthIndex = Number(String(toIsoDate(transaction.periodEnd)).slice(5, 7)) || 1;
   const deMinimisVersion = schedules.deMinimis;
   const earnings = [];
@@ -662,8 +900,21 @@ export function computeEmployeeLine({ employee, transaction, context }) {
 
     selected.forEach(type => {
       let amount = 0;
+      // A Bonus Configuration that binds its own formula owns the amount: it is
+      // the more specific statement than either the standard 13th-month rule or
+      // the figure the Bonus Management register carries.
+      const boundBonus = resolveBound(type);
       if (config.thirteenthMonth.basis === 'Custom / uploaded value') {
         amount = number((override.bonuses || []).find(row => row.name === type)?.amount);
+      } else if (boundBonus?.resolved) {
+        amount = boundBonus.amount;
+        record({
+          code: boundBonus.code, label: type, category: 'Bonus', inputs: boundBonus.values,
+          detail: `${type} computed from its bound formula · ${boundBonus.entries.map(entry => `${entry.token} ← ${entry.source}`).join('; ')}`,
+          source: 'Services Information binding',
+        });
+      } else if (boundBonus && !boundBonus.resolved) {
+        exceptions.push({ severity: 'Warning', message: `${type}: ${boundBonus.problem}` });
       } else if (type === '13th Month Pay') {
         const ytdBasic = number(employee.ytd?.basicEarnings) + basicPay;
         amount = record({ code: 'BON-002', category: 'Bonus', inputs: { basic_earnings_ytd: ytdBasic }, detail: 'Basic earnings year to date ÷ 12', source: 'Employee YTD payroll record' });
@@ -691,6 +942,15 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     code: 'PAY-001', category: 'Payroll Result',
     inputs: { basic_pay: basicPay, taxable_earnings: taxableEarnings, non_taxable_earnings: nonTaxableEarnings, other_bonus: round2(taxableBonus + nonTaxableBonus) },
     detail: 'Basic pay plus every earning and bonus classified on this line',
+  });
+  // Everything downstream of gross pay may be bound to it, so the runtime the
+  // binding resolver reads catches up here rather than after the line is done.
+  Object.assign(runtime, {
+    basic_pay: basicPay,
+    taxable_earnings: taxableEarnings,
+    non_taxable_earnings: nonTaxableEarnings,
+    other_bonus: round2(taxableBonus + nonTaxableBonus),
+    gross_pay: grossPay,
   });
 
   /* 8 — statutory contributions ------------------------------------------ */
@@ -817,17 +1077,28 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   }
 
   /* 11 — deductions and loans --------------------------------------------- */
-  const collections = collectionItemsFor({
+  // Statutory and tax are settled, so a deduction bound to any of them now
+  // resolves the figures this line reached rather than the zeros it started at.
+  Object.assign(runtime, {
+    statutory_deductions: statutoryEmployee,
+    taxable_income: taxableIncome,
+    withholding_tax: withholdingTax,
+  });
+  const collections = withinScope(collectionItemsFor({
     salary,
     loanSchedules: (context.loanSchedules || []).filter(row => row.employeeId === employee.employeeId),
     registerDeductions: (context.registers?.deductions) || [],
     manual: override.deductions || [],
     transaction, employee, hierarchy: context.hierarchy || [], staggeredRequests: context.staggeredRequests || [],
-  });
+    resolveBound,
+  }), resolveScope, employee, outOfScope);
+  collections.forEach(item => recordBinding(item, 'Deductions'));
   collections.filter(item => item.authorised === false).forEach(item => {
     exceptions.push({ severity: 'Warning', message: `${item.name} has no acknowledged authority to deduct; it is held out of this run.` });
   });
-  const collectible = [...collections.filter(item => item.authorised !== false), ...attendanceItems];
+  // A binding that could not resolve has already raised its exception; keeping
+  // a zero-value row in the collection list would only clutter the payslip.
+  const collectible = [...collections.filter(item => item.authorised !== false && item.due > 0), ...attendanceItems];
   if (voluntaryHdmf > 0) {
     collectible.push({ code: 'HDMF-VOL', name: 'Pag-IBIG voluntary contribution', group: 'Deduction', kind: 'Company', due: voluntaryHdmf, outstanding: voluntaryHdmf, rank: 50, canAdjust: false, source: 'Employee Masterfile' });
   }

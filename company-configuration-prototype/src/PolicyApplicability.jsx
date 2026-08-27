@@ -2,25 +2,35 @@ import { useState } from 'react';
 import { MagnifyingGlass, Users, X } from '@phosphor-icons/react';
 import { useFieldScope } from './PolicyFields';
 import { plural } from './textFormat';
-import { departments, employeeGroups, employeeRoster } from './employeeRoster';
+import {
+  SCOPE_KINDS,
+  coveredEmployees,
+  coversEmployee,
+  departments,
+  describeScope,
+  employeeDirectory,
+  employeeGroups,
+  normalizeScope,
+  seedScope,
+} from './applicabilityScope';
 
 /**
  * Applicability is shared by every policy engine: a rule is not necessarily
  * company-wide, so the engine must be able to say whether it covers all
  * employees, one employee group, a department, or named individuals before the
  * payroll transaction resolves which configuration an employee falls under.
+ *
+ * The model itself lives in `applicabilityScope.js`, which is pure and free of
+ * React so `payrollEngine.js` can enforce the very same scope these panels
+ * edit. This module is the panel; it is no longer a second definition of what
+ * "covers" means. The names below are the ones the policy engines have always
+ * imported, kept so that moving the logic did not become a rename of every
+ * call site.
  */
-export const assignmentScopes = ['All Employees', 'Employee Group', 'Department', 'Specific Employees'];
-
-/**
- * The roster, the employee groups and the departments come from
- * `employeeRoster.js` — the one place Core, HRM, Timekeeping and Payroll all
- * read. They are re-exported here because the policy engines have always
- * imported them from this module, and `employeeDirectory` stays the name the
- * engines use for the roster.
- */
-export { employeeGroups, departments };
-export const employeeDirectory = employeeRoster;
+export const assignmentScopes = SCOPE_KINDS;
+export { employeeGroups, departments, employeeDirectory, coveredEmployees, coversEmployee };
+export const seedAssignment = seedScope;
+export const normalizeAssignment = normalizeScope;
 
 export const separationReasons = [
   'Retirement',
@@ -34,36 +44,8 @@ export const separationReasons = [
   'End of project or contract',
 ];
 
-export const seedAssignment = () => ({ scope: 'All Employees', group: 'All Employees', department: departments[0], employees: [] });
-
-/** Merges a stored assignment with the seed so an older saved policy still resolves. */
-export function normalizeAssignment(assignment) {
-  return { ...seedAssignment(), ...(assignment || {}), employees: [...(assignment?.employees || [])] };
-}
-
-/** Decides whether one directory row falls inside a configured assignment. */
-export function coversEmployee(assignment, employee) {
-  const scope = normalizeAssignment(assignment);
-  if (scope.scope === 'Employee Group') return scope.group === 'All Employees' || scope.group === employee.group;
-  if (scope.scope === 'Department') return scope.department === employee.department;
-  if (scope.scope === 'Specific Employees') return scope.employees.includes(employee.code);
-  return true;
-}
-
-export function coveredEmployees(assignment) {
-  return employeeDirectory.filter(employee => coversEmployee(assignment, employee));
-}
-
-/** One-line summary used in save messages, Company Rules rows, and headers. */
-export function describeAssignment(assignment) {
-  const scope = normalizeAssignment(assignment);
-  if (scope.scope === 'Employee Group') return `Employee group: ${scope.group}`;
-  if (scope.scope === 'Department') return `Department: ${scope.department}`;
-  if (scope.scope === 'Specific Employees') return scope.employees.length
-    ? `${scope.employees.length} named ${plural(scope.employees.length, 'employee')}: ${scope.employees.join(', ')}`
-    : 'Specific employees — none selected yet';
-  return 'All employees';
-}
+/** The policy engines' name for the shared summary. */
+export const describeAssignment = describeScope;
 
 /**
  * Applicability control shared by the engines. The employee picker carries the
