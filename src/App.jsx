@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,17 +9,17 @@ import {
   CaretDown,
   Check,
   CheckCircle,
-  Clock,
+  ClockCounterClockwise,
   CurrencyCircleDollar,
   Cube,
   DownloadSimple,
-  FileText,
   FirstAid,
   Gear,
   House,
   IdentificationCard,
   Info,
   Key,
+  Lock,
   MagnifyingGlass,
   PencilSimple,
   Phone,
@@ -36,7 +36,6 @@ import {
   Trash,
   UserCircle,
   UserFocus,
-  Users,
   Wrench,
   X,
 } from '@phosphor-icons/react';
@@ -55,39 +54,44 @@ import { BrandRail, Topbar } from './AppChrome';
 import { readPolicies, readPolicyCodes, savePolicyCode } from './PolicyComputations';
 import { describeAssignment } from './PolicyApplicability';
 import { completeParameterSchema, defaultParameterValues, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
+import { engineSectionForCode, isClientEditableEngineParameter } from './policyEngineAccess';
 import { getPolicyLinkage } from './policyGovernance';
 import { companyRuleTaxonomy, requirementRuleSeeds } from './requirementsCatalog';
 import { OperationalWorkspace } from './OperationalWorkspaces';
 import { TicketingWorkspace } from './InheritedCapabilities';
-import { EnhancedReportShellWorkspace } from './EnhancedReports';
 import { defaultCompanyRecord, readActiveCompanyId, readCompanies, saveCompany, setActiveCompanyId as persistActiveCompanyId } from './companyRepository';
 import { ModulesFeaturesTab } from './ModulesFeaturesTab';
+import { HRMPortal } from './HRMPortal';
+import { useRole } from './RoleContext';
+import { canAccessScreen, landingScreen } from './moduleAccess';
+import { TimekeepingPortal } from './TimekeepingPortal';
+import { ScenarioStudio } from './ScenarioStudio';
+import { readPayrollRuns } from './payrollRuns';
+import { canEditPolicy, createPolicyVersion, normalizePolicy, policyUsage, readManagedPolicies } from './policyManagement';
 
 const violet = '#54248f';
 
 const coreModules = [
   { label: 'Company Configuration', icon: Buildings, enabled: true },
   { label: 'Employee Masterfile', icon: IdentificationCard, enabled: true },
-  { label: 'Access Right Configuration', icon: UserFocus, enabled: true },
+  { label: 'Access & Approvals', icon: UserFocus, enabled: true },
   { label: 'Security Configuration', icon: Key, enabled: true },
   { label: 'Reference Table', icon: Table, enabled: true },
   { label: 'Navigation Configuration', icon: SlidersHorizontal, enabled: true },
   { label: 'Tickets', icon: Ticket, enabled: true },
-  { label: 'Reports', icon: FileText, enabled: true },
   { label: 'Others', icon: SquaresFour },
 ];
 
 const sideItems = [
   { label: 'Company Information', icon: Buildings, enabled: true, view: 'information' },
-  { label: 'Services Information', icon: Wrench, enabled: true, view: 'services' },
   { label: 'Calendar Settings', icon: CalendarBlank, enabled: true, view: 'workspace:calendar' },
   { label: 'Employee Onboarding', icon: IdentificationCard, enabled: true, view: 'workspace:employeeOnboarding', serviceCode: 'HRM' },
+  { label: 'Employee Requests', icon: ClockCounterClockwise, enabled: true, view: 'workspace:timeCorrections', serviceCode: 'HRM' },
   { label: 'Employee Charge Codes', icon: CurrencyCircleDollar, enabled: true, view: 'workspace:chargeCodes', serviceCode: 'HRM' },
   { label: 'Happiness Meter', icon: CheckCircle, enabled: true, view: 'workspace:happiness', serviceCode: 'HAPPINESS' },
   { label: 'Health & Wellness', icon: FirstAid, enabled: true, view: 'workspace:wellness', serviceCode: 'WELLNESS' },
   { label: 'Notifications', icon: Bell, enabled: true, view: 'workspace:notifications' },
-  { label: 'FAQ & Help', icon: Info, enabled: true, view: 'workspace:faq' },
-  { label: 'Company Rules', icon: Scales, enabled: true, view: 'rules' },
+  { label: 'FAQ and Self-Learning', icon: Info, enabled: true, view: 'workspace:faq' },
   { label: 'Connected Systems', icon: PuzzlePiece, enabled: true, view: 'workspace:connectedSystems' },
 ];
 
@@ -234,7 +238,7 @@ function DisabledHint({ children, disabled }) {
 function CoreHome({ onOpen, onNavigate, company, companies, onSelectCompany }) {
   return (
     <div className="app-shell core-screen">
-      <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
+      <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
       <main className="shell-main">
         <Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />
         <div className="core-content">
@@ -295,7 +299,7 @@ function CompanyLayout({ children, view, setView, onBack, onNavigate, company, c
   const nestedLabel = nestedViewLabels[view] || (view.startsWith('service:') ? 'Services Information detail' : '');
   return (
     <div className="app-shell company-screen">
-      <BrandRail onHome={onBack} onCore={onBack} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
+      <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active="core" />
       <CompanySidebar view={view} setView={setView} onBack={onBack} company={company} />
       <main className="company-main">
         <Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />
@@ -317,7 +321,7 @@ function CompanyLayout({ children, view, setView, onBack, onNavigate, company, c
 function PlatformLayout({ children, screen, onNavigate, company, companies, onSelectCompany }) {
   const active = screen.includes('settings') || screen.includes('computation-admin') ? 'settings' : 'payroll';
   return <div className="app-shell core-screen platform-screen">
-    <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active={active} />
+    <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active={active} />
     <main className="shell-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />{children}</main>
   </div>;
 }
@@ -401,7 +405,7 @@ function CompanyInformation({ data, setData, completed, setCompleted, setToast, 
              if (!company) return;
              const saved = onSaveCompany({ ...company, documents });
              setData(companyRecordToData(saved));
-             setToast({ type: 'success', message: 'Company document register updated.' });
+             setToast({ type: 'success', message: 'Company document list updated.' });
            }}
          />
       )}
@@ -418,10 +422,10 @@ function CompanyDocumentEditor({ documents = [], onChange }) {
   };
   const updateDocument = (documentId, changes) => onChange(documents.map(document => document.documentId === documentId ? { ...document, ...changes } : document));
   const removeDocument = document => {
-    if (!window.confirm(`Remove ${document.filename} from the permanent document register?`)) return;
+    if (!window.confirm(`Remove ${document.filename} from the permanent document list?`)) return;
     onChange(documents.filter(item => item.documentId !== document.documentId));
   };
-  return <section className="company-document-editor"><div className="company-collection-toolbar"><div><strong>Permanent document register</strong><small>Upload metadata, verify the evidence, and keep the lifecycle readiness gate auditable.</small></div><label className="button secondary upload-button"><Plus /> Add document<input className="sr-only" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={addDocument} /></label></div>{documents.length ? <div className="company-document-list">{documents.map(document => <div key={document.documentId} className="company-document-row"><div><strong>{document.filename}</strong><small>{document.documentType} · uploaded {String(document.uploadedAt || '').slice(0, 10)}</small></div><select aria-label={`Document status for ${document.filename}`} value={document.status || 'Pending'} onChange={event => updateDocument(document.documentId, { status: event.target.value })}><option>Pending</option><option>Validated</option><option>Rejected</option></select><button type="button" className="icon-button" onClick={() => removeDocument(document)} aria-label={`Remove ${document.filename}`}><Trash /></button></div>)}</div> : <p className="company-document-empty">No permanent documents registered yet.</p>}</section>;
+  return <section className="company-document-editor"><div className="company-collection-toolbar"><div><strong>Permanent document list</strong><small>Upload metadata, verify the evidence, and keep the lifecycle readiness gate auditable.</small></div><label className="button secondary upload-button"><Plus /> Add document<input className="sr-only" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={addDocument} /></label></div>{documents.length ? <div className="company-document-list">{documents.map(document => <div key={document.documentId} className="company-document-row"><div><strong>{document.filename}</strong><small>{document.documentType} · uploaded {String(document.uploadedAt || '').slice(0, 10)}</small></div><select aria-label={`Document status for ${document.filename}`} value={document.status || 'Pending'} onChange={event => updateDocument(document.documentId, { status: event.target.value })}><option>Pending</option><option>Validated</option><option>Rejected</option></select><button type="button" className="icon-button" onClick={() => removeDocument(document)} aria-label={`Remove ${document.filename}`}><Trash /></button></div>)}</div> : <p className="company-document-empty">No permanent documents registered yet.</p>}</section>;
 }
 
 function CompanyForm({ sectionId, title, values, onClose, onSave, readOnlyFields = [], documents = [], onDocumentsChange }) {
@@ -496,7 +500,7 @@ function DerivedPolicies({ onOpenPolicies }) {
   return (
     <section className="derived-policies">
       <header>
-        <div><ShieldCheck weight="duotone" /><div><h2>Derived from Computational Basis</h2><p>These qualifiers are read-only here. Edit them in the policy engines so the rule register and the computations cannot drift apart.</p></div></div>
+        <div><ShieldCheck weight="duotone" /><div><h2>Derived from Computational Basis</h2><p>These qualifiers are read-only here. Edit them in the policy engines so the rule list and the computations cannot drift apart.</p></div></div>
         <button className="button secondary" onClick={onOpenPolicies}>Open policy engines <ArrowRight /></button>
       </header>
       <table>
@@ -535,6 +539,8 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
   const perPage = 10;
   const engineRows = useMemo(getEngineRows, []);
   const registerRows = useMemo(() => [...engineRows, ...rules], [engineRows, rules]);
+  const companyId = rules[0]?.companyId || readActiveCompanyId();
+  const payrollRuns = useMemo(() => readPayrollRuns(companyId), [companyId]);
   const filtered = useMemo(() => registerRows.filter(r => {
     const text = `${r.category} ${r.subcategory} ${r.rule} ${r.parameter} ${r.setting || ''}`.toLowerCase();
     return text.includes(query.toLowerCase()) && (category === 'All categories' || r.category === category) && (subcategory === 'All sub-categories' || r.subcategory === subcategory) && (!enabledOnly || r.enabled);
@@ -548,8 +554,9 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
       setToast({ type: 'error', message: 'A similar rule already exists. Please review and try again.' });
       return false;
     }
-    if (rule.id) setRules(prev => prev.map(r => r.id === rule.id ? rule : r));
-    else setRules(prev => [{ ...rule, id: Math.max(...prev.map(r => r.id), 0) + 1 }, ...prev]);
+    const prepared = normalizePolicy({ ...rule, status: rule.enabled ? 'Active' : 'Inactive' }, 0, companyId);
+    if (rule.id) setRules(prev => prev.map(r => r.id === rule.id ? prepared : r));
+    else setRules(prev => [{ ...prepared, id: Math.max(...prev.map(r => Number(r.id) || 0), 0) + 1 }, ...prev]);
     setEditing(null);
     setToast({ type: 'success', message: rule.id ? 'Rule updated successfully.' : 'Rule added successfully.' });
     return true;
@@ -557,30 +564,30 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
 
   return (
     <div className="page-content rules-page">
-      <div className="page-heading"><div><p className="breadcrumb">Core / Company Configuration</p><h1>Company Rules</h1></div></div>
+      <div className="page-heading"><div><p className="breadcrumb">Payroll / Policy Management</p><h1>Policy Management</h1><p className="page-description">Manage effective-dated payroll policies and preserve the exact versions used by payroll transactions.</p></div></div>
       <div className="tabs" role="tablist">
         {['Rules', 'Enable / Disable Fields', 'Modules & Features', 'Preferences'].map(item => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}
       </div>
       {tab === 'Rules' ? (
         <>
-          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>One rule register</strong><span>Company rules and policy-engine-owned rules are combined below. Engine-owned rows stay locked here to prevent configuration drift.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
+          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>Versioned policy list</strong><span>An Active policy stays editable until a payroll transaction uses it. Used policies are locked; create a new version to change future payroll.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
           <div className="rules-toolbar">
             <div className="search-box"><input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Search rules..." /><MagnifyingGlass /></div>
             <button className={`filter-button ${(category !== 'All categories' || subcategory !== 'All sub-categories' || enabledOnly) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
             <div className="toolbar-spacer" />
-            <button className="button primary" onClick={() => setEditing({ category: 'Pay and Earnings', subcategory: 'Basic Pay', rule: '', parameter: '', policyCode: '', enabled: true, groupBy: 'All Employees', groupValue: 'ABC Company Ltd' })}><Plus /> Apply New Rule</button>
+            <button className="button primary" onClick={() => setEditing({ category: 'Pay and Earnings', subcategory: 'Basic Pay', rule: '', parameter: '', policyCode: '', enabled: true, status: 'Active', version: '1.0', effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: '', groupBy: 'All Employees', groupValue: 'ABC Company Ltd' })}><Plus /> Add Policy</button>
             <button className="button secondary" onClick={() => exportRules(filtered)}><DownloadSimple /> Export</button>
           </div>
           <div className="table-card">
             <table>
-              <thead><tr><th>Category</th><th>Sub-Category</th><th>Specific Rule</th><th>Policy engine / setting</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>Category</th><th>Sub-Category</th><th>Policy</th><th>Code / Version</th><th>Effective Period</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {shown.length ? shown.map(row => (
                   <tr key={row.id}>
-                    <td>{row.category}</td><td>{row.subcategory}</td><td className="rule-cell">{row.rule.split('\n').map((line, i) => <span key={i}>{line}</span>)}{row.engineOwned && <small className="engine-owned-label"><ShieldCheck weight="fill" /> Policy engine owned</small>}</td><td><span className="policy-code-chip">{row.policyCode || row.parameter || 'Not assigned'}</span>{row.setting && <small className="engine-setting">{row.setting}</small>}{row.parameterValues && <small className="engine-setting">{Object.keys(row.parameterValues).length} configured parameter{Object.keys(row.parameterValues).length === 1 ? '' : 's'}</small>}</td>
-                    <td><div className="row-actions">{row.engineOwned ? <button onClick={onOpenPolicies} aria-label="Open policy engine"><ShieldCheck /></button> : <><button onClick={() => setEditing(row)} aria-label="Edit rule"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete rule"><Trash /></button></>}</div></td>
+                    <td>{row.category}</td><td>{row.subcategory}</td><td className="rule-cell">{row.rule.split('\n').map((line, i) => <span key={i}>{line}</span>)}{row.engineOwned && <small className="engine-owned-label"><ShieldCheck weight="fill" /> Policy engine owned</small>}{!row.engineOwned && policyUsage(row, payrollRuns).length > 0 && <small className="engine-owned-label"><Lock weight="fill" /> Used in {policyUsage(row, payrollRuns).length} payroll transaction{policyUsage(row, payrollRuns).length === 1 ? '' : 's'}</small>}</td><td><span className="policy-code-chip">{row.policyCode || row.parameter || 'Not assigned'}</span><small className="engine-setting">Version {row.version || '1.0'}</small>{row.setting && <small className="engine-setting">{row.setting}</small>}{row.parameterValues && <small className="engine-setting">{Object.keys(row.parameterValues).length} configured parameter{Object.keys(row.parameterValues).length === 1 ? '' : 's'}</small>}</td><td>{row.engineOwned ? 'Governed in engine' : `${row.effectiveFrom || '2026-01-01'} – ${row.effectiveTo || 'Open-ended'}`}</td><td><span className={`status-pill ${(row.status || (row.enabled ? 'Active' : 'Inactive')).toLowerCase()}`}>{row.status || (row.enabled ? 'Active' : 'Inactive')}</span></td>
+                    <td><div className="row-actions">{row.engineOwned ? <button onClick={onOpenPolicies} aria-label="Open policy engine"><ShieldCheck /></button> : canEditPolicy(row, payrollRuns) ? <><button onClick={() => setEditing(row)} aria-label="Edit policy"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete unused policy"><Trash /></button></> : <button onClick={() => setEditing(createPolicyVersion(row, rules))} aria-label="Create new policy version" title="Create new version"><Plus /></button>}</div></td>
                   </tr>
-                )) : <tr><td colSpan="5"><div className="empty-state"><MagnifyingGlass /><h3>No rules found</h3><p>Try changing your search or filter.</p></div></td></tr>}
+                )) : <tr><td colSpan="7"><div className="empty-state"><MagnifyingGlass /><h3>No policies found</h3><p>Try changing your search or filter.</p></div></td></tr>}
               </tbody>
             </table>
           </div>
@@ -589,7 +596,7 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
       ) : <SettingsTab key={tab} tab={tab} setToast={setToast} onOpenModule={onOpenModule} />}
       {filterOpen && <FilterPanel category={category} setCategory={value => { setCategory(value); setSubcategory('All sub-categories'); }} subcategory={subcategory} setSubcategory={setSubcategory} enabledOnly={enabledOnly} setEnabledOnly={setEnabledOnly} onClose={() => setFilterOpen(false)} onReset={() => { setCategory('All categories'); setSubcategory('All sub-categories'); setEnabledOnly(false); }} />}
       {editing && <RuleForm rule={editing} onClose={() => setEditing(null)} onSave={saveRule} onOpenPolicies={() => { setEditing(null); onOpenPolicies(); }} />}
-      {deleting && <DeleteDialog rule={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRules(prev => prev.filter(r => r.id !== deleting.id)); setDeleting(null); setToast({ type: 'success', message: 'Rule deleted successfully.' }); }} />}
+      {deleting && <DeleteDialog rule={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRules(prev => prev.filter(r => r.id !== deleting.id)); setDeleting(null); setToast({ type: 'success', message: 'Unused policy deleted successfully.' }); }} />}
     </div>
   );
 }
@@ -600,7 +607,7 @@ function exportRules(rules) {
   const csv = [header, ...rows].map(row => row.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  link.download = 'company-rules.csv'; link.click(); URL.revokeObjectURL(link.href);
+  link.download = 'payroll-policies.csv'; link.click(); URL.revokeObjectURL(link.href);
 }
 
 function FilterPanel({ category, setCategory, subcategory, setSubcategory, enabledOnly, setEnabledOnly, onClose, onReset }) {
@@ -635,6 +642,12 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
   const availableCodes = codes.filter(item => item.category === draft.category && item.subcategory === draft.subcategory && item.status === 'Active');
   const selectedCode = codes.find(item => item.code === (draft.policyCode || draft.parameter));
   const selectedTemplateSize = selectedCode ? completeParameterSchema(selectedCode).length : 0;
+  // The same Controlled Hybrid split the policy engines use: on a code that
+  // carries an engine's settings, a client sets only the approved values, and
+  // creating a code is P&A's.
+  const { isPaAdmin } = useRole();
+  const ruleEngineSection = engineSectionForCode(selectedCode || draft);
+  const lockParameter = key => !isPaAdmin && Boolean(ruleEngineSection) && !isClientEditableEngineParameter(ruleEngineSection, key);
   const linkage = getPolicyLinkage(draft);
   const engineForSelection = () => linkage.engine;
   const templateCandidates = codes.filter(item => item.status === 'Active' && item.isBuiltIn && item.parameterSchema?.length && item.category === draft.category && item.subcategory === draft.subcategory);
@@ -655,6 +668,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
     setCreatingCode(true); setError('');
   };
   const createCode = () => {
+    if (!isPaAdmin) return setError('A new policy code is created by P&A.');
     const code = codeDraft.code.trim().toUpperCase();
     if (!code || !codeDraft.name.trim() || !codeDraft.description.trim()) return setError('Complete the code, name, and description.');
     if (codes.some(item => item.code === code)) return setError('That policy-engine code already exists.');
@@ -673,7 +687,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
   const changeCategory = category => setDraft(previous => ({ ...previous, category, subcategory: moduleSubcategories[category][0], policyCode: '', parameter: '', parameterValues: {} }));
   const changeSubcategory = subcategory => setDraft(previous => ({ ...previous, subcategory, policyCode: '', parameter: '', parameterValues: {} }));
   return (
-    <Modal title={draft.id ? 'Edit Rule' : 'Apply New Rule'} onClose={onClose} width="860px">
+    <Modal title={draft.id ? 'Edit Policy' : draft.supersedesPolicyId ? 'Create New Policy Version' : 'Add Policy'} onClose={onClose} width="860px">
       <form className="rule-form rule-wizard" onSubmit={e => { e.preventDefault(); if (step < 3) goNext(); else onSave({ ...draft, parameter: draft.policyCode, parameterValues: configuredValues }); }}>
         <div className="wizard-steps" aria-label="Rule creation progress">
           {ruleWizardSteps.map((label, index) => <div key={label} className={`${step === index + 1 ? 'active' : ''} ${step > index + 1 ? 'complete' : ''}`}><span>{step > index + 1 ? <Check weight="bold" /> : index + 1}</span><strong>{label}</strong></div>)}
@@ -685,6 +699,9 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
             <label>{draft.groupBy}<span className="required">*</span><input value={draft.groupValue} onChange={e => update('groupValue', e.target.value)} required /></label>
             <label>Category<span className="required">*</span><select value={draft.category} onChange={e => changeCategory(e.target.value)}>{Object.keys(moduleSubcategories).map(item => <option key={item}>{item}</option>)}</select></label>
             <label>Sub-category<span className="required">*</span><select value={draft.subcategory} onChange={e => changeSubcategory(e.target.value)}>{moduleSubcategories[draft.category].map(item => <option key={item}>{item}</option>)}</select></label>
+            <label>Version<input value={draft.version || '1.0'} readOnly /></label>
+            <label>Effective From<span className="required">*</span><input type="date" value={draft.effectiveFrom || ''} onChange={e => update('effectiveFrom', e.target.value)} required /></label>
+            <label>Effective To<input type="date" min={draft.effectiveFrom || undefined} value={draft.effectiveTo || ''} onChange={e => update('effectiveTo', e.target.value)} /></label>
             <label className="wide">Specific rule<span className="required">*</span><textarea value={draft.rule} onChange={e => update('rule', e.target.value)} placeholder="Describe the business rule in plain language" required /></label>
           </div>
           <div className="rule-activation-card"><div><strong>Enable rule after creation</strong><span>Keep this on to activate the rule immediately. Turn it off to save the rule without applying it.</span></div><button type="button" className={`switch ${draft.enabled ? 'on' : ''}`} onClick={() => update('enabled', !draft.enabled)} aria-label="Enable rule"><span /></button></div>
@@ -692,17 +709,17 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
           {hasConflictCopy && <p className="warning-copy">It looks like some rules are overlapping. Review the wording before continuing.</p>}
         </div>}
         {step === 2 && <div className="wizard-panel">
-          <div className="wizard-heading"><span>Step {2} of {ruleWizardSteps.length}</span><h3>Select the computation behind this rule</h3><p>Choose an active governed code mapped to <strong>{draft.subcategory}</strong>. To make a variant, copy the complete approved template and change only its company values.</p></div>
+          <div className="wizard-heading"><span>Step {2} of {ruleWizardSteps.length}</span><h3>Select the computation behind this rule</h3><p>Choose an active governed code mapped to <strong>{draft.subcategory}</strong>. P&amp;A creates and assigns the codes. A client picks one and updates only its approved values.</p></div>
           <div className="rule-linkage-card"><div><small>Policy engine</small><strong>{linkage.engine}</strong></div><div><small>Standard computations</small><strong>{linkage.computations.length ? linkage.computations.join(', ') : 'Policy control — no arithmetic formula'}</strong></div><div><small>Reference sources</small><strong>{linkage.references.length ? linkage.references.join(', ') : 'No table dependency'}</strong></div><button type="button" className="button secondary" onClick={onOpenPolicies}>Open Policy Engine library <ArrowRight /></button></div>
           {availableCodes.length ? <div className="policy-code-picker">{availableCodes.map(item => <button type="button" key={item.code} className={draft.policyCode === item.code ? 'selected' : ''} onClick={() => selectCode(item)}><span className="code-radio">{draft.policyCode === item.code && <Check weight="bold" />}</span><span><code>{item.code}</code><strong>{item.name}</strong><small>{item.description} · {completeParameterSchema(item).length} template fields{item.parameterSchema.length < completeParameterSchema(item).length ? ` · ${item.parameterSchema.length} governed by this code` : ''}</small></span><span className="status-pill active">{item.engine}</span></button>)}</div> : <div className="no-policy-codes"><Info weight="duotone" /><h3>No active code for {draft.subcategory}</h3><p>Create one here and it will also be added to the Policy Engine library.</p></div>}
-          {!creatingCode ? <button type="button" className="button secondary create-code-inline" onClick={beginCreateCode}><Plus /> Create configured code variant</button> : <div className="inline-code-creator">
+          {!isPaAdmin ? <p className="field-hint pa-only-note">A new policy code is created by P&amp;A. Choose one of the codes above.</p> : !creatingCode ? <button type="button" className="button secondary create-code-inline" onClick={beginCreateCode}><Plus /> Create configured code variant</button> : <div className="inline-code-creator">
             <div className="inline-code-heading"><div><strong>Create a configured code from an existing template</strong><span>Definitions stay governed by the {draft.subcategory} engine; this new code only changes its configuration values.</span></div><button type="button" className="icon-button" onClick={() => setCreatingCode(false)}><X /></button></div>
             <div className="wizard-field-grid"><label className="wide">Existing policy template<span className="required">*</span><select value={codeDraft.templateCode} onChange={e => { const template = templateCandidates.find(item => item.code === e.target.value); if (!template) return; const schema = completeParameterSchema(template); setCodeDraft(previous => ({ ...previous, templateCode: template.code, description: template.description, parameterSchema: schema, parameterValues: { ...defaultParameterValues(schema), ...(template.parameterValues || {}) } })); }} required><option value="">Choose a governed code template</option>{templateCandidates.map(item => <option key={item.code} value={item.code}>{item.code} - {item.name}</option>)}</select><small className="policy-template-help">This copies the full {draft.subcategory} schema, including its basis, thresholds, effective period, controls, and audit fields.</small></label><label>New code<span className="required">*</span><input value={codeDraft.code} onChange={e => setCodeDraft(previous => ({ ...previous, code: e.target.value.toUpperCase() }))} placeholder="e.g. THP-003" /></label><label>Name<span className="required">*</span><input value={codeDraft.name} onChange={e => setCodeDraft(previous => ({ ...previous, name: e.target.value }))} placeholder="Company variant name" /></label><label className="wide">Description<span className="required">*</span><textarea value={codeDraft.description} onChange={e => setCodeDraft(previous => ({ ...previous, description: e.target.value }))} /></label></div>
             {codeTemplate && <div className="policy-template-meta inline-template-meta"><span><small>Template</small><strong>{codeTemplate.code}</strong></span><span><small>Engine</small><strong>{codeTemplate.engine}</strong></span><span><small>Sub-category</small><strong>{draft.subcategory}</strong></span></div>}
             {codeTemplate && <div className="policy-template-parameters inline-template-parameters"><div className="policy-template-parameters-heading"><div><strong>Configure the new code</strong><span>Adjust all {codeDraft.parameterSchema.length} predefined values below. The governed definitions cannot be removed or renamed here.</span></div><span className="policy-template-locked">Complete template</span></div><PolicyParameterFields schema={codeDraft.parameterSchema} values={codeDraft.parameterValues || {}} onChange={parameterValues => setCodeDraft(previous => ({ ...previous, parameterValues }))} /></div>}
             <div className="inline-code-actions"><button type="button" className="button secondary" onClick={() => setCreatingCode(false)}>Cancel</button><button type="button" className="button primary" onClick={createCode}>Create & select code</button></div>
           </div>}
-          {selectedCode && !creatingCode && <section className="rule-parameter-configuration"><header><div><strong>Configure {selectedCode.code} for this rule</strong><span>{selectedCode.parameterSchema.length < selectedTemplateSize ? `This standard code owns ${selectedCode.parameterSchema.length} of ${selectedTemplateSize} engine fields. Open the Policy Engine library to adjust the whole engine, or create a variant to configure every field.` : 'The code schema is reusable; these values apply only to this company rule.'}</span></div><span>{selectedCode.parameterSchema.length}/{selectedTemplateSize} fields</span></header><PolicyParameterFields schema={selectedCode.parameterSchema} values={configuredValues} onChange={parameterValues => update('parameterValues', parameterValues)} /></section>}
+          {selectedCode && !creatingCode && <section className="rule-parameter-configuration"><header><div><strong>Configure {selectedCode.code} for this rule</strong><span>{selectedCode.parameterSchema.length < selectedTemplateSize ? `This standard code owns ${selectedCode.parameterSchema.length} of ${selectedTemplateSize} engine fields. Open the Policy Engine library to adjust the whole engine, or create a variant to configure every field.` : 'The code schema is reusable; these values apply only to this company rule.'}</span></div><span>{selectedCode.parameterSchema.length}/{selectedTemplateSize} fields</span></header><PolicyParameterFields schema={selectedCode.parameterSchema} values={configuredValues} onChange={parameterValues => update('parameterValues', parameterValues)} isLocked={lockParameter} /></section>}
         </div>}
         {step === 3 && <div className="wizard-panel">
           <div className="wizard-heading"><span>Step {3} of {ruleWizardSteps.length}</span><h3>Review the rule before applying it</h3><p>Confirm the audience, rule wording, and governed computation link.</p></div>
@@ -711,7 +728,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
           <div className="review-ready"><CheckCircle weight="fill" /><div><strong>Ready to {draft.id ? 'save' : 'apply'}</strong><span>The rule will be linked to {draft.policyCode} and {draft.enabled ? 'enabled immediately' : 'kept disabled'}.</span></div></div>
         </div>}
         {error && <p className="wizard-error">{error}</p>}
-        <div className="modal-actions wizard-actions"><button type="button" className="button secondary" onClick={step === 1 ? onClose : () => { setError(''); setStep(current => current - 1); }}>{step === 1 ? 'Cancel' : 'Back'}</button><button className="button primary">{step < 3 ? <>Continue <ArrowRight /></> : draft.id ? 'Save rule' : 'Apply rule'}</button></div>
+        <div className="modal-actions wizard-actions"><button type="button" className="button secondary" onClick={step === 1 ? onClose : () => { setError(''); setStep(current => current - 1); }}>{step === 1 ? 'Cancel' : 'Back'}</button><button className="button primary">{step < 3 ? <>Continue <ArrowRight /></> : draft.id ? 'Save policy' : draft.supersedesPolicyId ? 'Create version' : 'Add policy'}</button></div>
       </form>
     </Modal>
   );
@@ -719,8 +736,8 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
 
 function DeleteDialog({ rule, onClose, onDelete }) {
   return (
-    <Modal title="Delete Rule" onClose={onClose} width="440px">
-      <div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete this company rule?</h3><p>“{rule.rule.slice(0, 95)}{rule.rule.length > 95 ? '…' : ''}”</p><p>This action is irreversible.</p></div></div>
+    <Modal title="Delete Policy" onClose={onClose} width="440px">
+      <div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete this unused policy?</h3><p>“{rule.rule.slice(0, 95)}{rule.rule.length > 95 ? '…' : ''}”</p><p>Policies referenced by payroll are locked and cannot reach this action.</p></div></div>
       <div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div>
     </Modal>
   );
@@ -755,19 +772,18 @@ function derivedCompletedSections(company = defaultCompanyRecord) {
   ].filter(Boolean);
 }
 
+const companyRulesKey = companyId => `atlas-company-rules-v3:${companyId || 'default'}`;
+function readCompanyRules(companyId) {
+  return readManagedPolicies(companyId);
+}
+
 export function App() {
-  const [screen, setScreen] = useState('core');
+  const { role } = useRole();
+  const [screen, setScreen] = useState(() => landingScreen(role));
   const [view, setView] = useState('information');
   const [companyRecords, setCompanyRecords] = useState(() => readCompanies());
   const [activeCompanyId, setActiveCompanyId] = useState(() => readActiveCompanyId());
-  const [rules, setRules] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('atlas-company-rules-v3'));
-      if (!Array.isArray(saved)) return requirementRuleSeeds;
-      const missing = requirementRuleSeeds.filter(seed => !saved.some(rule => (rule.policyCode || rule.parameter) === seed.policyCode));
-      return [...missing, ...saved];
-    } catch { return requirementRuleSeeds; }
-  });
+  const [rules, setRules] = useState(() => readCompanyRules(readActiveCompanyId()));
   const [companyData, setCompanyData] = useState(() => {
     const initialId = readActiveCompanyId();
     const repositoryData = companyRecordToData(readCompanies().find(company => company.companyId === initialId) || defaultCompanyRecord);
@@ -801,9 +817,14 @@ export function App() {
   const pathname = window.location.pathname.toLowerCase();
   const experience = pathname.startsWith('/wireframe') ? 'wireframe' : pathname.startsWith('/monochrome') ? 'monochrome' : 'original';
   useEffect(() => { document.documentElement.dataset.experience = experience; }, [experience]);
-  useEffect(() => { localStorage.setItem('atlas-company-rules-v3', JSON.stringify(rules)); }, [rules]);
+  useEffect(() => { localStorage.setItem(companyRulesKey(activeCompanyId), JSON.stringify(rules)); }, [rules, activeCompanyId]);
   useEffect(() => { localStorage.setItem('atlas-company-data-v3', JSON.stringify(companyData)); }, [companyData]);
   useEffect(() => { localStorage.setItem('atlas-company-completed-v3', JSON.stringify(completed)); }, [completed]);
+  useEffect(() => {
+    const openScenarios = () => setScreen('scenarios');
+    window.addEventListener('atlas:open-scenarios', openScenarios);
+    return () => window.removeEventListener('atlas:open-scenarios', openScenarios);
+  }, []);
 
   const notify = (value) => { setToast(value); window.setTimeout(() => setToast(null), 4200); };
   /** Single entry point for changing the company every module reads from. */
@@ -813,10 +834,26 @@ export function App() {
     const record = refreshed.find(company => company.companyId === resolvedId) || refreshed[0] || defaultCompanyRecord;
     setCompanyRecords(refreshed);
     setActiveCompanyId(record.companyId);
+    setRules(readCompanyRules(record.companyId));
     setCompanyData(companyRecordToData(record));
     setCompleted(derivedCompletedSections(record));
     return record;
   };
+  const previousRole = useRef(role);
+  useEffect(() => {
+    if (previousRole.current === role) return;
+    previousRole.current = role;
+    setScreen(landingScreen(role));
+    setView('information');
+  }, [role]);
+
+  // A screen reached before a rule changed — or restored from a previous
+  // session — must never render for an actor who may not open it.
+  const reachable = canAccessScreen(role, screen);
+  useEffect(() => {
+    if (!reachable) setScreen(landingScreen(role));
+  }, [reachable, role]);
+
   const navigate = destination => {
     if (destination === 'company') {
       const refreshed = readCompanies();
@@ -836,47 +873,51 @@ export function App() {
   if (screen === 'core') return <CoreHome onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} onOpen={(module) => {
     if (module === 'Employee Masterfile') setScreen('employee');
     else if (module === 'Reference Table') setScreen('reference');
-    else if (module === 'Access Right Configuration') setScreen('settings-workspace:accessRights');
+    else if (module === 'Access & Approvals') setScreen('settings-workspace:accessRights');
     else if (module === 'Security Configuration') setScreen('settings-workspace:security');
     else if (module === 'Navigation Configuration') setScreen('settings-workspace:navigation');
     else if (module === 'Tickets') setScreen('ticketing');
-    else if (module === 'Reports') setScreen('reports');
     else { setScreen('company'); setView('information'); }
   }} />;
+  if (screen === 'scenarios') return <ScenarioStudio onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />;
+  if (screen === 'timekeeping') return <TimekeepingPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenCore={() => setScreen('core')} onOpenHrm={() => setScreen('hrm')} onOpenPayroll={() => setScreen('payroll')} onOpenSettings={() => setScreen('settings')} notify={notify} />;
+  if (screen === 'hrm') return <HRMPortal company={activeCompany} companies={companyRecords} companyId={activeCompanyId} onSelectCompany={selectCompany} onExit={() => setScreen(landingScreen(role))} onOpenCore={() => setScreen('core')} onOpenTimekeeping={() => setScreen('timekeeping')} onOpenPayroll={() => setScreen('payroll')} onOpenSettings={() => setScreen('settings')} notify={notify} />;
   if (screen === 'employee') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
     <EmployeeMasterfile onBack={() => setScreen('core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
   if (screen === 'ticketing') return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><TicketingWorkspace onBack={() => setScreen('core')} notify={notify} /></PlatformLayout>;
-  if (screen === 'reports') return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><EnhancedReportShellWorkspace onBack={() => setScreen('core')} notify={notify} /></PlatformLayout>;
   if (screen === 'reference' || screen === 'reference-settings') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
     <ReferenceTables onBack={() => setScreen(screen === 'reference-settings' ? 'settings' : 'core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
-  if (screen === 'settings' || screen === 'payroll' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
+  if (screen === 'settings' || screen === 'payroll' || screen === 'payroll-policy-management' || screen === 'statutory-settings' || screen === 'statutory-payroll' || screen === 'tax-settings' || screen === 'tax-payroll' || screen === 'settings-computation-admin' || screen.startsWith('settings-workspace:') || screen.startsWith('payroll-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
     <Toast toast={toast} onClose={() => setToast(null)} />
-    {screen === 'settings' && <SettingsHub onOpen={() => setScreen('statutory-settings')} onOpenReference={() => setScreen('reference-settings')} onOpenComputationLibrary={() => setScreen('settings-computation-admin')} onOpenWorkspace={key => setScreen(`settings-workspace:${key}`)} />}
-    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
-    {screen === 'statutory-settings' && <StatutoryTables mode="settings" onBack={() => setScreen('settings')} notify={notify} />}
-    {screen === 'statutory-payroll' && <StatutoryTables mode="payroll" onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen === 'settings' && <SettingsHub onOpen={() => setScreen('statutory-settings')} onOpenTax={() => setScreen('tax-settings')} onOpenReference={() => setScreen('reference-settings')} onOpenComputationLibrary={() => setScreen('settings-computation-admin')} onOpenWorkspace={key => setScreen(`settings-workspace:${key}`)} />}
+    {screen === 'payroll' && <PayrollHub onOpen={() => setScreen('statutory-payroll')} onOpenTax={() => setScreen('tax-payroll')} onOpenPolicyManagement={() => setScreen('payroll-policy-management')} onOpenWorkspace={key => setScreen(`payroll-workspace:${key}`)} />}
+    {screen === 'payroll-policy-management' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => { setScreen('company'); setView('policies'); }} onOpenModule={target => { const [scope, ...parts] = target.split(':'); const destination = parts.join(':'); if (scope === 'view') { setScreen('company'); setView(destination); } if (scope === 'screen') setScreen(destination); }} />}
+    {screen === 'statutory-settings' && <StatutoryTables mode="settings" group="statutory" onBack={() => setScreen('settings')} notify={notify} />}
+    {screen === 'statutory-payroll' && <StatutoryTables mode="payroll" group="statutory" onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen === 'tax-settings' && <StatutoryTables mode="settings" group="tax" onBack={() => setScreen('settings')} notify={notify} />}
+    {screen === 'tax-payroll' && <StatutoryTables mode="payroll" group="tax" onBack={() => setScreen('payroll')} notify={notify} />}
     {screen === 'settings-computation-admin' && <StandardComputationAdmin onBack={() => setScreen('settings')} notify={notify} />}
-    {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} />}
-    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} />}
+    {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
+    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
   </PlatformLayout>;
   return (
     <CompanyLayout view={view} setView={setView} onBack={() => setScreen('core')} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
       <Toast toast={toast} onClose={() => setToast(null)} />
       {view === 'information' && <CompanyInformation data={companyData} setData={setCompanyData} completed={completed} setCompleted={setCompleted} setToast={notify} onOpenServices={() => setView('services')} company={activeCompany} onSaveCompany={persistCompany} />}
-      {view === 'rules' && <RulesPage rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
+      {view === 'rules' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
         const [scope, ...parts] = target.split(':');
         const destination = parts.join(':');
         if (scope === 'view') setView(destination);
         if (scope === 'screen') setScreen(destination);
       }} />}
       {view === 'services' && <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />}
-      {(view === 'computations' || view === 'policies') && <ComputationalBasis key={view} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
-      {view.startsWith('service:') && <ServiceConfiguration moduleKey={view.split(':')[1]} onBack={() => setView('services')} notify={notify} />}
-      {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} />}
+      {(view === 'computations' || view === 'policies') && <ComputationalBasis key={`${view}:${activeCompanyId}`} companyId={activeCompanyId} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
+      {view.startsWith('service:') && <ServiceConfiguration key={`${view}:${activeCompanyId}`} moduleKey={view.split(':')[1]} companyId={activeCompanyId} onBack={() => setView('services')} notify={notify} />}
+      {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
     </CompanyLayout>
   );
 }

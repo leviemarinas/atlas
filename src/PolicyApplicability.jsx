@@ -2,18 +2,35 @@ import { useState } from 'react';
 import { MagnifyingGlass, Users, X } from '@phosphor-icons/react';
 import { useFieldScope } from './PolicyFields';
 import { plural } from './textFormat';
+import {
+  SCOPE_KINDS,
+  coveredEmployees,
+  coversEmployee,
+  departments,
+  describeScope,
+  employeeDirectory,
+  employeeGroups,
+  normalizeScope,
+  seedScope,
+} from './applicabilityScope';
 
 /**
  * Applicability is shared by every policy engine: a rule is not necessarily
  * company-wide, so the engine must be able to say whether it covers all
  * employees, one employee group, a department, or named individuals before the
  * payroll transaction resolves which configuration an employee falls under.
+ *
+ * The model itself lives in `applicabilityScope.js`, which is pure and free of
+ * React so `payrollEngine.js` can enforce the very same scope these panels
+ * edit. This module is the panel; it is no longer a second definition of what
+ * "covers" means. The names below are the ones the policy engines have always
+ * imported, kept so that moving the logic did not become a rename of every
+ * call site.
  */
-export const assignmentScopes = ['All Employees', 'Employee Group', 'Department', 'Specific Employees'];
-
-export const employeeGroups = ['All Employees', 'Rank and File', 'Managers', 'Project-based Employees', 'Retirement Eligible'];
-
-export const departments = ['Corporate Services', 'Operations', 'Finance', 'Sales and Marketing', 'Information Technology'];
+export const assignmentScopes = SCOPE_KINDS;
+export { employeeGroups, departments, employeeDirectory, coveredEmployees, coversEmployee };
+export const seedAssignment = seedScope;
+export const normalizeAssignment = normalizeScope;
 
 export const separationReasons = [
   'Retirement',
@@ -27,98 +44,8 @@ export const separationReasons = [
   'End of project or contract',
 ];
 
-/**
- * One directory serves every engine — the retirement roster, the final-pay
- * roster, and the specific-employee picker all read these rows so an employee
- * cannot exist in one engine and be missing from another.
- */
-export const employeeDirectory = [
-  {
-    code: 'E-1042', name: 'Ana Reyes', group: 'Managers', department: 'Corporate Services',
-    dateOfBirth: '1964-01-15', dateHired: '2014-02-01', rehired: false, priorServiceYears: 0, breakMonths: 0,
-    retirementDate: '2026-08-31', separationDate: '2026-08-31',
-    reason: 'Retirement', reasonForLeaving: 'Retirement', memberPlan: 'Company plan member',
-    monthlyBasic: 60000, average36Months: 55000,
-    earningAmounts: { 47218663: 3000, 47218664: 1500, 47218656: 2000 },
-    finalPay: { unpaidSalary: 18000, thirteenthMonth: 24500, silConversion: 6800, convertibleLeave: 4200, offsetAmounts: { 'GL-001': 12000, 'CL-001': 21000, 'DED-001': 500 } },
-  },
-  {
-    code: 'E-2288', name: 'Ben Cruz', group: 'Rank and File', department: 'Operations',
-    dateOfBirth: '1961-05-02', dateHired: '2019-06-15', rehired: true, priorServiceYears: 6, breakMonths: 14,
-    retirementDate: '2026-08-31', separationDate: '2026-08-31',
-    reason: 'Retirement', reasonForLeaving: 'Retirement', memberPlan: 'Statutory plan member',
-    monthlyBasic: 42000, average36Months: 40000,
-    earningAmounts: { 47218663: 2000, 47218664: 1000, 47218656: 1500 },
-    finalPay: { unpaidSalary: 12000, thirteenthMonth: 17800, silConversion: 3900, convertibleLeave: 2400, offsetAmounts: { 'GL-001': 8000, 'CL-001': 6500, 'DED-001': 500 } },
-  },
-  {
-    code: 'E-3391', name: 'Carla Lim', group: 'Managers', department: 'Finance',
-    dateOfBirth: '1972-09-20', dateHired: '2016-03-01', rehired: false, priorServiceYears: 0, breakMonths: 0,
-    retirementDate: '2026-08-31', separationDate: '2026-07-31',
-    reason: 'Retirement', reasonForLeaving: 'Redundancy', memberPlan: 'Company plan member',
-    monthlyBasic: 78000, average36Months: 74000,
-    earningAmounts: { 47218663: 3500, 47218664: 2000, 47218656: 2500 },
-    finalPay: { unpaidSalary: 26000, thirteenthMonth: 32000, silConversion: 9100, convertibleLeave: 7300, offsetAmounts: { 'GL-001': 0, 'CL-001': 14000, 'DED-001': 500 } },
-  },
-  {
-    code: 'E-4417', name: 'Diego Santos', group: 'Project-based Employees', department: 'Information Technology',
-    dateOfBirth: '1958-11-08', dateHired: '2023-01-09', rehired: false, priorServiceYears: 0, breakMonths: 0,
-    retirementDate: '2026-08-31', separationDate: '2026-08-15',
-    reason: 'Retirement', reasonForLeaving: 'End of project or contract', memberPlan: 'Statutory plan member',
-    monthlyBasic: 51000, average36Months: 51000,
-    earningAmounts: { 47218663: 1800, 47218664: 900, 47218656: 1000 },
-    finalPay: { unpaidSalary: 9500, thirteenthMonth: 11200, silConversion: 2100, convertibleLeave: 0, offsetAmounts: { 'GL-001': 3200, 'CL-001': 0, 'DED-001': 0 } },
-  },
-  {
-    code: 'E-5502', name: 'Elena Uy', group: 'Rank and File', department: 'Sales and Marketing',
-    dateOfBirth: '1965-07-30', dateHired: '2010-08-16', rehired: false, priorServiceYears: 0, breakMonths: 0,
-    retirementDate: '2026-08-31', separationDate: '2026-08-31',
-    reason: 'Resignation', reasonForLeaving: 'Resignation', memberPlan: 'Company plan member',
-    monthlyBasic: 66000, average36Months: 63000,
-    earningAmounts: { 47218663: 2800, 47218664: 1500, 47218656: 2000 },
-    finalPay: { unpaidSalary: 15400, thirteenthMonth: 21000, silConversion: 5200, convertibleLeave: 3100, offsetAmounts: { 'GL-001': 5400, 'CL-001': 18000, 'DED-001': 750 } },
-  },
-  {
-    code: 'E-6613', name: 'Fely Navarro', group: 'Rank and File', department: 'Operations',
-    dateOfBirth: '1979-04-12', dateHired: '2016-11-02', rehired: false, priorServiceYears: 0, breakMonths: 0,
-    retirementDate: '2026-08-31', separationDate: '2026-08-20',
-    reason: 'Termination', reasonForLeaving: 'Retrenchment', memberPlan: 'Statutory plan member',
-    monthlyBasic: 38000, average36Months: 36500,
-    earningAmounts: { 47218663: 1600, 47218664: 800, 47218656: 1200 },
-    finalPay: { unpaidSalary: 11000, thirteenthMonth: 14600, silConversion: 3400, convertibleLeave: 1900, offsetAmounts: { 'GL-001': 2800, 'CL-001': 9200, 'DED-001': 500 } },
-  },
-];
-
-export const seedAssignment = () => ({ scope: 'All Employees', group: 'All Employees', department: departments[0], employees: [] });
-
-/** Merges a stored assignment with the seed so an older saved policy still resolves. */
-export function normalizeAssignment(assignment) {
-  return { ...seedAssignment(), ...(assignment || {}), employees: [...(assignment?.employees || [])] };
-}
-
-/** Decides whether one directory row falls inside a configured assignment. */
-export function coversEmployee(assignment, employee) {
-  const scope = normalizeAssignment(assignment);
-  if (scope.scope === 'Employee Group') return scope.group === 'All Employees' || scope.group === employee.group;
-  if (scope.scope === 'Department') return scope.department === employee.department;
-  if (scope.scope === 'Specific Employees') return scope.employees.includes(employee.code);
-  return true;
-}
-
-export function coveredEmployees(assignment) {
-  return employeeDirectory.filter(employee => coversEmployee(assignment, employee));
-}
-
-/** One-line summary used in save messages, Company Rules rows, and headers. */
-export function describeAssignment(assignment) {
-  const scope = normalizeAssignment(assignment);
-  if (scope.scope === 'Employee Group') return `Employee group: ${scope.group}`;
-  if (scope.scope === 'Department') return `Department: ${scope.department}`;
-  if (scope.scope === 'Specific Employees') return scope.employees.length
-    ? `${scope.employees.length} named ${plural(scope.employees.length, 'employee')}: ${scope.employees.join(', ')}`
-    : 'Specific employees — none selected yet';
-  return 'All employees';
-}
+/** The policy engines' name for the shared summary. */
+export const describeAssignment = describeScope;
 
 /**
  * Applicability control shared by the engines. The employee picker carries the

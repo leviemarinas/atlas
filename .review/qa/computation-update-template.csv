@@ -1,2 +1,0 @@
-code,expression
-TAX-003,{{taxable_income}} / (1 - {{tax_rate}})

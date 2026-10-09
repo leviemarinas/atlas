@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowClockwise, ArrowLeft, ArrowRight, Check, CheckCircle, DownloadSimple, Eye, FileCsv, MagnifyingGlass, PencilSimple, Plus, ShieldCheck, Trash, UploadSimple, Warning, X } from '@phosphor-icons/react';
+import { referenceValues } from './ReferenceTables';
+import { splitBonusCeiling } from './bonusCeiling.js';
+import { ArrowLeft, ArrowRight, Check, CheckCircle, DownloadSimple, Eye, FileCsv, MagnifyingGlass, PencilSimple, Plus, ShieldCheck, Trash, UploadSimple, Warning, X } from '@phosphor-icons/react';
 import {
   activateCompany,
   appendAuditEvent,
@@ -25,17 +27,33 @@ import {
 import { AccessRightsWorkspace, CalendarWorkspace, OvertimeGateway, SecurityWorkspace, SettingsConfigurationWorkspace } from './CanonicalWorkspaces';
 import { ChargeCodesWorkspace, EmployeeOnboardingWorkspace, HappinessWorkspace, NotificationsWorkspace, TicketingWorkspace, WellnessWorkspace } from './InheritedCapabilities';
 import { EnhancedReportShellWorkspace } from './EnhancedReports';
+import { PayrollProcessingWorkspace } from './PayrollProcessing';
+import { TimeCorrectionWorkspace } from './TimeCorrectionWorkspace';
+import { employeeDirectory } from './PolicyApplicability';
 import { downloadFile } from './fileDownload';
 import { plural } from './textFormat';
+import { rejectUpload } from './uploadErrorLog.js';
+import { withFbt, withSssEstimate } from './payrollBenefits.js';
+import { employeeRoster } from './employeeRoster.js';
+import { DateInput } from './DateInput.jsx';
+import {
+  operationalStorageKey,
+  postedPayrollOptionsForCompany,
+  readOperationalRowsForCompany,
+  writeOperationalRowsForCompany,
+} from './operationalStore';
 
 const f = (key, label, type = 'text', options = [], required = true) => ({ key, label, type, options, required });
-const readOperationalRows = workspaceKey => {
-  try { return JSON.parse(localStorage.getItem(`atlas-operational-${workspaceKey}-v2`)) || JSON.parse(localStorage.getItem(`atlas-operational-${workspaceKey}-v1`)) || []; } catch { return []; }
-};
-const postedPayrollOptions = () => {
-  const posted = readOperationalRows('transactions').filter(row => ['Posted', 'Locked'].includes(row.status)).map(row => row.code);
-  return posted.length ? posted : ['PAY-2026-07-2'];
-};
+/** A field Atlas fills in on save; shown read-only on the form. */
+const auto = field => ({ ...field, auto: true, required: false });
+
+const employeeOptions = () => employeeDirectory.map(employee => `${employee.code} - ${employee.name}`);
+/**
+ * Posted payroll payouts, read from Payroll Processing's own run store — the
+ * register that actually posts a payroll. Remittance and Journal bind to this,
+ * so a remittance can only be recorded against a payout that really exists.
+ */
+const postedPayrollOptions = () => postedPayrollOptionsForCompany(readActiveCompanyId());
 const calendarOptions = (type, fallback) => {
   try {
     const rows = JSON.parse(localStorage.getItem('atlas-operational-calendar-v1')) || [];
@@ -50,7 +68,6 @@ const legacyOperationalDefinitions = {
   connectedSystems: { title: 'Connected Systems', description: 'Manage timekeeping, banking, accounting, HR, and identity integrations.', fields: [f('code', 'Connection Code'), f('name', 'System Name'), f('type', 'System Type', 'select', ['Timekeeping', 'Banking', 'Accounting', 'HRM', 'Identity / SSO']), f('syncFrequency', 'Sync Frequency', 'select', ['Real-time', 'Hourly', 'Daily', 'Per Payroll']), f('lastSync', 'Last Sync'), f('failureAction', 'Failure Action', 'select', ['Warn Only', 'Block Payroll', 'Retry Automatically']), f('status', 'Status', 'select', ['Connected', 'Disconnected', 'Error'])], rows: [['SYS-TK', 'Atlas Time', 'Timekeeping', 'Hourly', '2026-08-10 09:00', 'Block Payroll', 'Connected'], ['SYS-BANK', 'BDO Payroll File', 'Banking', 'Per Payroll', '2026-08-09 17:20', 'Warn Only', 'Connected']] },
   remittance: { title: 'Remittance Monitoring', description: 'Record government receipts against posted payouts and monitor payment status.', fields: [f('code', 'Remittance Code'), f('agency', 'Agency', 'select', ['BIR', 'SSS', 'PhilHealth', 'HDMF']), f('month', 'Remittance Month'), f('year', 'Year', 'number'), f('receipt', 'Receipt / Reference No.'), f('amount', 'Amount', 'number'), f('payoutStatus', 'Linked Payout', 'select', ['Posted', 'Not posted']), f('status', 'Status', 'select', ['Draft', 'For Payment', 'Paid', 'Posted'])], rows: [['REM-001', 'SSS', 'July', '2026', 'SSS-OR-00819', '485000', 'Posted', 'Paid']] },
   billing: { title: 'Billing Configuration and Transactions', description: 'Configure recurring billing and move generated bills through three review levels.', fields: [f('code', 'Billing Code'), f('basis', 'Billing Basis', 'select', ['Straight', 'Headcount', 'Bracket', 'Percentage', 'Custom']), f('service', 'Service', 'select', ['Payroll', 'HRM', 'Timekeeping']), f('period', 'Billing Period'), f('cutoffDate', 'Cutoff Date', 'date'), f('amount', 'Amount', 'number'), f('reviewStage', 'Review Stage', 'select', ['Preparer', 'Checker', 'Reviewer']), f('status', 'Status', 'select', ['Draft', 'For Review', 'Approved', 'Generated'])], rows: [['BIL-2026-08', 'Headcount', 'Payroll', 'August 2026', '2026-08-31', '125000', 'Reviewer', 'Approved']] },
-  transactions: { title: 'Payroll Transactions', description: 'Create, recalculate, draft, post, lock, cancel, and export single or multi-currency payroll runs.', fields: [f('code', 'Transaction Code'), f('scope', 'Employee Scope', 'select', ['Single Employee', 'Selective Employees', 'All Employees']), f('period', 'Payroll Period'), f('currency', 'Currency', 'select', ['PHP', 'USD', 'SGD']), f('conversionRate', 'Conversion Rate', 'number'), f('payoutDate', 'Payout Date', 'date'), f('overrideFields', 'Override Fields Open', 'select', ['No', 'Yes - Special Payroll']), f('status', 'Status', 'select', ['Draft', 'Calculated', 'For Approval', 'Posted', 'Locked', 'Cancelled'])], rows: [['PAY-2026-08-2', 'All Employees', '16–31 Aug 2026', 'PHP', '1', '2026-08-31', 'No', 'Calculated']] },
   payslip: { title: 'Payslip Designer', description: 'Configure branded payslip templates, visible fields, signatures, and printing details.', fields: [f('code', 'Template Code'), f('name', 'Template Name'), f('logo', 'Logo / Letterhead'), f('visibleFields', 'Visible Fields'), f('showYtd', 'Show YTD', 'select', ['Yes', 'No']), f('eSignature', 'E-signature'), f('status', 'Status', 'select', ['Draft', 'Active', 'Inactive'])], rows: [['PSL-001', 'Standard Atlas Payslip', 'ABC Company Logo', 'Earnings, Deductions, Net Pay, Bank', 'Yes', 'CFO Signature', 'Active']] },
   journal: { title: 'Journal Entries', description: 'Review balanced payroll accounting entries generated from GL mappings.', fields: [f('code', 'Journal Code'), f('period', 'Payroll Period'), f('description', 'Description'), f('debit', 'Total Debit', 'number'), f('credit', 'Total Credit', 'number'), f('status', 'Status', 'select', ['Draft', 'Balanced', 'Posted'])], rows: [['JE-2026-08-2', '16–31 Aug 2026', 'Semi-monthly payroll', '4250000', '4250000', 'Balanced']] },
 };
@@ -59,17 +76,97 @@ export const operationalDefinitions = {
   ...legacyOperationalDefinitions,
   payCodes: {
     version: 2,
-    title: 'Pay Code Library',
+    title: 'Paycode Management',
     description: 'Maintain payroll codes, computation ownership, taxability, and balanced accounting mappings used by payroll and journals.',
     fields: [f('code', 'Pay Code'), f('name', 'Pay Item Name'), f('type', 'Type', 'select', ['Basic Pay', 'Earning', 'Bonus', 'Deduction', 'Loan', 'Statutory']), f('taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable', 'De Minimis', 'Not applicable']), f('computationBasis', 'Computation Basis'), f('debitGl', 'Debit GL Account'), f('creditGl', 'Credit GL Account'), f('allocationDimension', 'Allocation Dimension', 'select', ['Employee', 'Department', 'Cost Center', 'Client / Charge Code']), f('status', 'Status', 'select', ['Active', 'Inactive'])],
     rows: [['PAY-BASIC', 'Basic Pay', 'Basic Pay', 'Taxable', 'Basic monthly rate / factor days', '5100-100', '2100-100', 'Cost Center', 'Active'], ['ERN-DMN', 'De Minimis Benefit', 'Earning', 'De Minimis', 'Effective statutory ceiling', '5200-200', '2100-100', 'Employee', 'Active']],
   },
-  remittance: {
+  earnings: {
+    // v3: the seed rows now name employees from the one company roster; v2 rows
+    // point at a roster that no longer exists, so the dropdown could not offer them.
+    version: 3,
+    title: 'Earning Management',
+    description: 'Assign recurring and one-time earnings to employees with their effectivity window, frequency, basis and payroll period.',
+    statusTabs: ['All', 'Active', 'Inactive', 'Expired'],
+    fields: [f('code', 'Earning Code'), f('name', 'Earning Name', 'select', ['13th Month Pay', 'Allowance', 'Adjustments', 'Bonuses', 'Incentives', 'De Minimis Benefit']), f('employee', 'Employee', 'select', employeeOptions), f('frequency', 'Earning Frequency', 'select', ['One-time', 'Monthly', 'Quarterly', 'Semi-monthly', 'Annual']), f('basis', 'Basis/Unit', 'select', ['Fixed amount', 'Hourly', 'Daily', 'Percentage', 'Current Basic Rate']), f('amount', 'Amount', 'number'), f('effectiveDate', 'Effectivity Date', 'date'), f('periodStart', 'Period Start', 'date'), f('periodEnd', 'Period End', 'date', [], false), f('endDate', 'End Date', 'date', [], false), f('holdDate', 'Hold Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive', 'Expired']), f('totalAmount', 'Total Entitlement (for an earning paid over several runs)', 'number', [], false)],
+    rows: [
+      ['ERN-2025-050', 'Allowance', '0011223345 - John Collins Doe', 'Monthly', 'Fixed amount', '4000', '2025-01-01', '2025-01-01', '2025-12-31', '', '', 'Managerial allowance', 'Active'],
+      ['ERN-2025-054', 'Incentives', '0000112345 - Ethan Collins', 'Monthly', 'Fixed amount', '2500', '2025-01-01', '2025-01-01', '2025-12-31', '', '', 'Delivery incentive', 'Active'],
+      ['ERN-2024-058', 'Incentives', '0000112346 - Sophia Ramirez', 'Quarterly', 'Percentage', '5', '2024-01-01', '2024-01-01', '2024-12-31', '2024-12-31', '', 'Prior plan year', 'Expired'],
+      ['ERN-2025-060', 'Adjustments', '0000112345 - Ethan Collins', 'Semi-monthly', 'Fixed amount', '1500', '2025-01-01', '2025-01-01', '2025-12-31', '', '', 'Salary adjustment arrears paid over four cut-offs', 'Active', '6000'],
+    ],
+  },
+  deductions: {
+    // v3: re-keyed to the one company roster, like Earning Management.
+    version: 3,
+    title: 'Deduction Management',
+    description: 'Track company deductions against each employee with their frequency, recovery window and outstanding balance.',
+    fields: [f('code', 'Deduction Code'), f('name', 'Deduction Name', 'select', ['Cash Advance', 'Loan Repayment', 'Tax', 'Late Penalty', 'Allotment', 'MP2 Savings', 'Other']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Deduction Amount', 'number'), f('frequency', 'Deduction Frequency', 'select', ['Once', 'Monthly', 'Semi-monthly', 'Bi-monthly', 'Quarterly']), f('startDate', 'Start Date', 'date'), f('endDate', 'End Date', 'date', [], false), f('balance', 'Balance', 'number', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Settled', 'On Hold'])],
+    rows: [
+      ['DED-2025-050', 'Cash Advance', '0011223345 - John Collins Doe', '1837.33', 'Once', '2025-01-01', '2025-12-31', '8662.67', '', 'Active'],
+      ['DED-2025-053', 'Loan Repayment', '0000112345 - Ethan Collins', '1837.33', 'Bi-monthly', '2025-01-01', '2025-12-31', '14698.64', '', 'Active'],
+      ['DED-2025-058', 'Late Penalty', '0000112346 - Sophia Ramirez', '500', 'Monthly', '2025-01-01', '', '0', 'Fully recovered', 'Settled'],
+      ['DED-2025-060', 'MP2 Savings', '0011223345 - John Collins Doe', '500', 'Semi-monthly', '2025-01-01', '', '', 'Pag-IBIG MP2 account 1040-0012-3456', 'Active'],
+    ],
+  },
+  bonuses: {
+    // v3: re-keyed to the one company roster, like Earning Management.
+    version: 3,
+    title: 'Bonus Management',
+    description: 'Schedule 13th month, performance and retention bonuses and follow each one from active through processed to completed.',
+    statusTabs: ['All', 'Active', 'Scheduled', 'Processed', 'Completed'],
+    fields: [f('code', 'Bonus Code'), f('name', 'Bonus Name', 'select', ['13th Month Pay', 'Performance Bonus', 'Retention Bonus', 'Signing Bonus', 'Mid-year Bonus']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Bonus Amount', 'number'), f('effectiveDate', 'Effective Date', 'date'), auto(f('nonTaxableAmount', 'Non-Taxable Amount (auto, up to the ₱90,000 ceiling)', 'number', [], false)), f('statusDate', 'Status Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Scheduled', 'Processed', 'Completed']), auto(f('taxableAmount', 'Taxable Amount (auto, above the ceiling)', 'number', [], false))],
+    rows: [
+      ['BON-2025-050', 'Performance Bonus', '0011223345 - John Collins Doe', '45000', '2025-11-30', '', '2025-12-01', '', 'Active'],
+      ['BON-2025-053', 'Performance Bonus', '0000112345 - Ethan Collins', '30000', '2025-11-30', '', '2025-12-01', '', 'Scheduled'],
+      ['BON-2025-056', 'Retention Bonus', '0000112347 - Liam Johnson', '25000', '2025-11-30', '', '2025-12-01', '', 'Processed'],
+      ['BON-2025-058', 'Retention Bonus', '0000112349 - Olivia Carter', '20000', '2025-11-30', '', '2025-12-01', '', 'Completed'],
+    ],
+  },
+  fringeBenefits: {
+    title: 'Fringe Benefits (FBT)',
+    description: 'Fringe benefits given to managerial and supervisory employees. Atlas grosses up each benefit and computes the 35% fringe benefit tax the employer pays, filed quarterly on BIR Form 1603Q.',
+    statusTabs: ['All', 'Recorded', 'Filed'],
+    fields: [f('code', 'Benefit Code'), f('employee', 'Employee', 'select', employeeOptions), f('benefitType', 'Benefit Type', 'select', ['Housing', 'Vehicle', 'Club membership', 'Educational assistance', 'Expense account', 'Household personnel', 'Other']), f('date', 'Date Given', 'date'), f('monetaryValue', 'Monetary Value', 'number'), auto(f('grossedUpValue', 'Grossed-up Value (÷ 65%)', 'number')), auto(f('fbtAmount', 'Fringe Benefit Tax (35%)', 'number')), f('remarks', 'Remarks', 'textarea', [], false), f('status', 'Status', 'select', ['Recorded', 'Filed'])],
+    rows: [
+      ['FBT-2026-001', '0011223345 - John Collins Doe', 'Vehicle', '2026-07-15', '19500', '', '', 'Company car — 50% personal use', 'Filed'],
+      ['FBT-2026-002', '0000112345 - Ethan Collins', 'Housing', '2026-08-01', '13000', '', '', 'Condominium unit — 50% of rental', 'Recorded'],
+    ],
+  },
+  sssBenefits: {
+    title: 'SSS Maternity and Sickness Benefits',
+    description: 'Maternity and sickness benefits from approved leave: the SSS benefit the company advances and claims back, and the salary differential the employer pays under RA 11210. Amounts are estimates until SSS approves the claim.',
+    statusTabs: ['All', 'Filed', 'Approved', 'Reimbursed'],
+    fields: [f('code', 'Claim Code'), f('employee', 'Employee', 'select', employeeOptions), f('benefitType', 'Benefit Type', 'select', ['Maternity — live birth (105 days)', 'Maternity — solo parent (120 days)', 'Maternity — miscarriage or ET (60 days)', 'Sickness']), f('startDate', 'Leave Start', 'date'), f('days', 'Days (sickness only)', 'number', [], false), f('monthlySalary', 'Monthly Salary', 'number', [], false), auto(f('averageDailySalaryCredit', 'Average Daily Salary Credit', 'number')), auto(f('sssBenefit', 'SSS Benefit (estimate)', 'number')), auto(f('salaryDifferential', 'Salary Differential (employer)', 'number')), f('status', 'Status', 'select', ['Filed', 'Approved', 'Reimbursed'])],
+    rows: [
+      ['SSS-MAT-2026-001', '0000112346 - Sophia Ramirez', 'Maternity — live birth (105 days)', '2026-09-01', '', '', '', '', '', 'Approved'],
+      ['SSS-SIC-2026-001', '0000112347 - Liam Johnson', 'Sickness', '2026-08-10', '7', '', '', '', '', 'Filed'],
+    ],
+  },
+  mweRates: {
     version: 2,
+    title: 'MWE Rate Tables',
+    description: 'Regional minimum wage rates by sector and municipality, with the wage order each rate was issued under.',
+    fields: [f('code', 'Code'), f('effectiveDate', 'Effective Date', 'date'), f('region', 'MWE Region', 'select', ['NCR', 'Region I', 'Region III', 'Region IV-A', 'Region VI', 'Region VII', 'Region XI']), f('sector', 'MWE Sector', 'select', ['Non-agriculture', 'Agriculture (Plantation)', 'Agriculture (Non-plantation)', 'Retail/Service Establishments']), f('municipality', 'Municipality'), f('classification', 'MWE Municipalities Classification', 'select', ['1st', '2nd', '3rd', '4th', '5th', '6th']), f('dailyRate', 'MWE Daily Rate', 'number'), f('wageOrder', 'Wage Order'), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive'])],
+    rows: [
+      ['MWE-2026-001', '2026-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '700', 'Wage Order NCR-25', '', 'Active'],
+      ['MWE-2026-002', '2026-01-01', 'NCR', 'Retail/Service Establishments', 'Marikina', '1st', '663', 'Wage Order NCR-25', '', 'Active'],
+      ['MWE-2025-001', '2025-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '645', 'Wage Order NCR-24', 'Superseded by NCR-25', 'Inactive'],
+    ],
+  },
+  remittance: {
+    // v3: the register now records the filing itself (who filed and paid, the
+    // filing reference, O.R. details), so v2 rows cannot satisfy its fields.
+    version: 3,
     title: 'Remittance Monitoring',
     description: 'Record filing and payment evidence against posted payroll payouts for BIR, SSS, PhilHealth and HDMF.',
-    fields: [f('code', 'Remittance Code'), f('linkedPayout', 'Posted Payroll Payout', 'select', postedPayrollOptions), f('agency', 'Agency', 'select', ['BIR', 'SSS', 'PhilHealth', 'HDMF']), f('remittanceType', 'Remittance Type', 'select', ['Contribution', 'Loan', 'Withholding Tax', 'Expanded Tax', 'Final Tax', 'Other']), f('year', 'Year', 'number'), f('month', 'Remittance Month'), f('filedBy', 'Filed By', 'select', ['P&A', 'Client']), f('modeOfPayment', 'Mode of Payment', 'select', ['Online', 'Bank', 'Check', 'Cash']), f('receipt', 'OR / Reference No.'), f('dateFiled', 'Date Filed / Authorized', 'date', [], false), f('datePaid', 'Date Paid', 'date', [], false), f('datePosted', 'Date Posted', 'date', [], false), f('amount', 'Amount', 'number'), f('status', 'Status', 'select', ['Draft', 'For Payment', 'Paid', 'Posted'])],
-    rows: [['REM-001', 'PAY-2026-07-2', 'SSS', 'Contribution', '2026', 'July', 'P&A', 'Online', 'SSS-OR-00819', '2026-08-08', '2026-08-09', '2026-08-10', '485000', 'Posted']],
+    statusTabs: ['All', 'Pending', 'Draft', 'Verified'],
+    fields: [f('code', 'Remittance Code'), f('year', 'Year', 'number'), f('month', 'Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']), f('linkedPayout', 'Posted Payroll Payout', 'select', postedPayrollOptions), f('filedBy', 'Filed By', 'select', () => referenceValues('remittance-parties')), f('paidBy', 'Paid By', 'select', () => referenceValues('remittance-parties')), f('transactionMode', 'Transaction Mode', 'select', ['Online', 'Over-the-counter', 'Bank Debit', 'Check', 'Cash']), f('agency', 'Statutory Agency', 'select', ['BIR', 'SSS', 'PhilHealth', 'HDMF']), f('statutoryType', 'Statutory Type', 'select', ['Contribution', 'Loan', 'Tax']), f('remittanceType', 'Remittance Type', 'select', ['Contribution', 'Loan', 'Withholding Tax', 'Expanded Tax', 'Final Tax', 'Other']), f('governmentLoanType', 'Government Loan Type', 'select', ['Not applicable', 'SSS Salary Loan', 'SSS Calamity Loan', 'HDMF Multi-Purpose Loan', 'HDMF Calamity Loan'], false), f('loanName', 'Loan Name', 'text', [], false), f('dateFiled', 'Date Filed / Authorized', 'date'), f('filingReference', 'Filing Reference Number'), f('receipt', 'O.R. Number'), f('orDate', 'O.R. Date', 'date', [], false), f('datePaid', 'Date Paid / Posted', 'date', [], false), f('amount', 'Amount Paid', 'number'), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Pending', 'Draft', 'Verified'])],
+    rows: [
+      ['REM-2026-001', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Online', 'SSS', 'Contribution', 'Contribution', 'Not applicable', '', '2026-08-08', 'SSS-FIL-2026-0731', 'SSS-OR-00819', '2026-08-09', '2026-08-10', '485000', '', 'Verified'],
+      ['REM-2026-002', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Online', 'BIR', 'Tax', 'Withholding Tax', 'Not applicable', '', '2026-08-10', 'BIR-1601C-2026-07', 'BIR-OR-11204', '2026-08-10', '2026-08-10', '612400', '', 'Pending'],
+      ['REM-2026-003', '2026', 'July', 'PAY-2026-07-2', 'John Doe', 'Ethan Collins', 'Bank Debit', 'HDMF', 'Loan', 'Loan', 'HDMF Multi-Purpose Loan', 'MPL Amortization', '2026-08-11', 'HDMF-FIL-2026-0715', 'HDMF-OR-77120', '', '', '96500', 'Awaiting O.R. copy', 'Draft'],
+    ],
   },
   billing: {
     version: 2,
@@ -77,13 +174,6 @@ export const operationalDefinitions = {
     description: 'Configure billing basis and cutoff dependencies, calculate the fee, and move each bill through preparer, checker and reviewer stages.',
     fields: [f('code', 'Billing Code'), f('basis', 'Billing Basis', 'select', ['Straight', 'Headcount', 'Bracket', 'Percentage', 'Custom']), f('service', 'Service', 'select', ['Payroll', 'HRM', 'Timekeeping']), f('calendarCode', 'Billing Cutoff Calendar', 'select', () => calendarOptions('Billing Cutoff', 'BILL-AUG')), f('period', 'Billing Period'), f('quantity', 'Headcount / Quantity', 'number', [], false), f('unitRate', 'Unit / Bracket Rate', 'number', [], false), f('baseAmount', 'Percentage Base Amount', 'number', [], false), f('percentageRate', 'Percentage Rate', 'number', [], false), f('amount', 'Calculated Billing Amount', 'number'), f('reviewStage', 'Current Review Stage', 'select', ['Preparer', 'Checker', 'Reviewer']), f('status', 'Status', 'select', ['Draft', 'For Review', 'Approved', 'Generated'])],
     rows: [['BIL-2026-08', 'Headcount', 'Payroll', 'BILL-AUG', 'August 2026', '1250', '100', '', '', '125000', 'Reviewer', 'Approved']],
-  },
-  transactions: {
-    version: 2,
-    title: 'Payroll Transactions',
-    description: 'Validate source inputs, calculate, approve, post, lock, cancel and export regular, special and multi-currency payroll runs.',
-    fields: [f('code', 'Transaction Code'), f('payrollType', 'Payroll Type', 'select', ['Regular', 'Special / Off-cycle', 'Final Pay']), f('scope', 'Employee Scope', 'select', ['Single Employee', 'Selective Employees', 'All Employees']), f('employeeSelection', 'Employee / Group Selection', 'text', [], false), f('calendarCode', 'Payout Calendar', 'select', () => calendarOptions('Payout', 'CAL-AUG2')), f('period', 'Payroll Period'), f('timekeepingSource', 'Timekeeping Source', 'select', ['Integrated', 'Uploaded', 'Manual']), f('earningsChecked', 'Earnings Validated', 'select', ['Yes', 'No']), f('deductionsChecked', 'Deductions and Loans Validated', 'select', ['Yes', 'No']), f('bonusesChecked', 'Bonuses Validated', 'select', ['Yes', 'No']), f('salaryRatesChecked', 'Salary Rates Validated', 'select', ['Yes', 'No']), f('currency', 'Currency', 'select', ['PHP', 'USD', 'SGD']), f('conversionRate', 'Conversion Rate', 'number'), f('payoutDate', 'Payout Date', 'date'), f('overrideFields', 'Override Fields Open', 'select', ['No', 'Yes - Special Payroll']), f('status', 'Status', 'select', ['Draft', 'Calculated', 'For Approval', 'Posted', 'Locked', 'Cancelled'])],
-    rows: [['PAY-2026-08-2', 'Regular', 'All Employees', 'All Employees', 'CAL-AUG2', '16-31 Aug 2026', 'Integrated', 'Yes', 'Yes', 'Yes', 'Yes', 'PHP', '1', '2026-08-31', 'No', 'Calculated'], ['PAY-2026-07-2', 'Regular', 'All Employees', 'All Employees', 'CAL-JUL2', '16-31 Jul 2026', 'Integrated', 'Yes', 'Yes', 'Yes', 'Yes', 'PHP', '1', '2026-07-31', 'No', 'Posted']],
   },
   payslip: {
     version: 2,
@@ -101,12 +191,44 @@ export const operationalDefinitions = {
   },
 };
 
-const recordFromRow = (definition, row, index) => ({ id: index + 1, ...Object.fromEntries(definition.fields.map((field, fieldIndex) => [field.key, row[fieldIndex] ?? ''])) });
+/** The monthly salary on the roster for a register's "code - name" employee option. */
+const salaryOf = option => {
+  const code = String(option || '').split(' - ')[0];
+  const employee = employeeRoster.find(item => item.code === code || item.employeeCode === code);
+  return employee ? String(employee.payroll?.monthlyBasic || employee.monthlyBasic || '') : '';
+};
+
+/** Columns Atlas computes on a register when its rows are loaded or saved. */
+const computeRegisterRows = workspaceKey => list => {
+  if (workspaceKey === 'bonuses') return splitBonusCeiling(list);
+  if (workspaceKey === 'fringeBenefits') return list.map(withFbt);
+  if (workspaceKey === 'sssBenefits') return list.map(row => withSssEstimate({ ...row, monthlySalary: row.monthlySalary || salaryOf(row.employee) }));
+  return list;
+};
+
+const recordFromRow = (definition, row, index, companyId) => ({ companyId, id: index + 1, ...Object.fromEntries(definition.fields.map((field, fieldIndex) => [field.key, row[fieldIndex] ?? ''])) });
+
+/**
+ * A register's rows, for a module that needs them without opening the screen.
+ *
+ * A register only writes its rows to storage once somebody has visited it, so a
+ * payroll run that read storage alone saw nothing from a register nobody had
+ * opened — the seeded bonuses and deductions were invisible to the computation.
+ * Falling back to the definition's own seed is what makes the register the
+ * single source whether or not its screen has been mounted.
+ */
+export function readRegisterRows(workspaceKey, companyId = readActiveCompanyId()) {
+  const definition = operationalDefinitions[workspaceKey];
+  if (!definition) return [];
+  const stored = readOperationalRowsForCompany(workspaceKey, companyId, globalThis.localStorage, [definition.version || 1]);
+  if (stored.length) return computeRegisterRows(workspaceKey)(stored);
+  return computeRegisterRows(workspaceKey)((definition.rows || []).map((row, index) => recordFromRow(definition, row, index, companyId)));
+}
 
 function EntryModal({ definition, record, onClose, onSave }) {
   const optionsFor = field => typeof field.options === 'function' ? field.options() : field.options;
   const [draft, setDraft] = useState(record || Object.fromEntries(definition.fields.map(field => [field.key, field.key === 'status' ? optionsFor(field)[0] : ''])));
-  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal operational-entry-modal"><header><h2>{record ? 'Edit' : 'Add'} {definition.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><form onSubmit={event => { event.preventDefault(); onSave(draft); }}><div className="employee-form-grid">{definition.fields.map(field => <label key={field.key}>{field.label}{field.required && <span className="required">*</span>}{field.type === 'select' ? <select required={field.required} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })}><option value="">Please select</option>{optionsFor(field).map(option => <option key={option}>{option}</option>)}</select> : field.type === 'textarea' ? <textarea required={field.required} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} /> : <input required={field.required} type={field.type} step={field.type === 'number' ? '0.01' : undefined} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />}</label>)}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">Save record</button></footer></form></section></div>;
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal operational-entry-modal"><header><h2>{record ? 'Edit' : 'Add'} {definition.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><form onSubmit={event => { event.preventDefault(); onSave(draft); }}><div className="employee-form-grid">{definition.fields.map(field => <label key={field.key}>{field.label}{field.required && <span className="required">*</span>}{field.type === 'select' ? <select required={field.required} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })}><option value="">Please select</option>{optionsFor(field).map(option => <option key={option}>{option}</option>)}</select> : field.type === 'textarea' ? <textarea required={field.required} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} /> : <input required={field.required} readOnly={field.auto} placeholder={field.auto ? 'Computed when saved' : undefined} type={field.type} step={field.type === 'number' ? '0.01' : undefined} value={draft[field.key] || ''} onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />}</label>)}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">Save record</button></footer></form></section></div>;
 }
 
 /** Steps in the company onboarding wizard; the counters read their length. */
@@ -202,7 +324,8 @@ function OnboardingWizard({ company, lifecycle, onClose, onSaved, notify }) {
       const batch = saveImportBatch({ companyId: draft.companyId, importType, templateVersion: 'v1.0', filename: file.name, status: errors.length ? 'Rejected' : 'Validated', accepted: errors.length ? 0 : rows.length, rejected: errors.length, warnings: 0, errors, rowCount: rows.length }, 'P&A Admin');
       setImportResult(batch);
       setCaseDraft(previous => ({ ...previous, importType, importBatchId: batch.batchId, checklist: previous.checklist.map(item => item.itemCode === 'STARTUP_YTD' ? { ...item, status: errors.length ? 'Blocked' : 'Complete', evidence: `${batch.accepted} accepted / ${batch.rejected} rejected` } : item) }));
-      notify({ type: errors.length ? 'error' : 'success', message: errors.length ? `${file.name} needs correction before it can be committed.` : `${file.name} validated. ${rows.length} rows are ready for controlled commit.` });
+      if (errors.length) rejectUpload(file.name, errors, () => {});
+      notify({ type: errors.length ? 'error' : 'success', message: errors.length ? `${file.name} needs correction before it can be committed; the error log has been downloaded.` : `${file.name} validated. ${rows.length} rows are ready for controlled commit.` });
     };
     reader.readAsText(file); event.target.value = '';
   };
@@ -244,7 +367,7 @@ function OnboardingWizard({ company, lifecycle, onClose, onSaved, notify }) {
     <div className="lifecycle-steps">{onboardingSteps.map((label, index) => <div key={label} className={`${step === index ? 'active' : ''} ${step > index ? 'complete' : ''}`}><span>{step > index ? <Check weight="bold" /> : index + 1}</span><strong>{label}</strong></div>)}</div>
     <div className="lifecycle-body">
       {step === 0 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {1} of {onboardingSteps.length}</span><h3>Enter company identity</h3><p>Create one draft company record. The Company Code stays unique across active and historical companies.</p></div><div className="lifecycle-grid"><label>Company Code<span className="required">*</span><input value={draft.companyCode} onChange={event => update('companyCode', event.target.value.toUpperCase())} placeholder="e.g. ABC-PH-001" required /></label><label>Legal Company Name<span className="required">*</span><input value={draft.legalName} onChange={event => update('legalName', event.target.value)} required /></label><label>Display / Trade Name<input value={draft.displayName} onChange={event => update('displayName', event.target.value)} /></label><label>Industry<span className="required">*</span><input value={draft.industry} onChange={event => update('industry', event.target.value)} placeholder="e.g. Professional Services" required /></label><label>Business Type<select value={draft.businessType} onChange={event => update('businessType', event.target.value)}><option>Corporation</option><option>Partnership</option><option>Sole Proprietorship</option><option>Non-profit</option></select></label><label>TIN<span className="required">*</span><input value={draft.tin} onChange={event => update('tin', event.target.value)} required /></label></div></section>}
-      {step === 1 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {2} of {onboardingSteps.length}</span><h3>Complete the company profile</h3><p>These values remain owned by Company Information. The onboarding case only references the companyId.</p></div><div className="lifecycle-subheading">Employer registrations</div><div className="lifecycle-grid"><label>SEC / DTI registration no.<input value={draft.profile.secDtiNumber} onChange={event => updateProfile('secDtiNumber', event.target.value)} /></label><label>BIR RDO<input value={draft.profile.birRdo} onChange={event => updateProfile('birRdo', event.target.value)} /></label><label>SSS branch code<input value={draft.profile.sssBranchCode} onChange={event => updateProfile('sssBranchCode', event.target.value)} /></label><label>PhilHealth branch code<input value={draft.profile.philHealthBranchCode} onChange={event => updateProfile('philHealthBranchCode', event.target.value)} /></label><label>HDMF branch code<input value={draft.profile.hdmfBranchCode} onChange={event => updateProfile('hdmfBranchCode', event.target.value)} /></label><label>Registration status<select value={draft.profile.registrationStatus} onChange={event => updateProfile('registrationStatus', event.target.value)}><option>Pending</option><option>Verified</option></select></label></div><div className="lifecycle-subheading">Contact and payout profile</div><div className="lifecycle-grid"><label>Business address<span className="required">*</span><input value={draft.profile.address} onChange={event => updateProfile('address', event.target.value)} required /></label><label>ZIP<input value={draft.profile.zip} onChange={event => updateProfile('zip', event.target.value)} /></label><label>Telephone<input value={draft.profile.telephone} onChange={event => updateProfile('telephone', event.target.value)} /></label><label>Mobile<input value={draft.profile.mobile} onChange={event => updateProfile('mobile', event.target.value)} /></label><label>Primary email<span className="required">*</span><input type="email" value={draft.profile.email} onChange={event => updateProfile('email', event.target.value)} required /></label><label>Website<input value={draft.profile.website} onChange={event => updateProfile('website', event.target.value)} /></label><label>Payroll contact<input value={draft.profile.payrollContact} onChange={event => updateProfile('payrollContact', event.target.value)} /></label><label>Billing contact<input value={draft.profile.billingContact} onChange={event => updateProfile('billingContact', event.target.value)} /></label><label>Remittance contact<input value={draft.profile.remittanceContact} onChange={event => updateProfile('remittanceContact', event.target.value)} /></label></div><div className="lifecycle-subheading">Default bank account and authorized people</div><div className="lifecycle-grid"><label>Bank reference<span className="required">*</span><input value={draft.bankAccounts[0]?.bankReference || ''} onChange={event => updateBank('bankReference', event.target.value)} required /></label><label>Bank name<span className="required">*</span><input value={draft.bankAccounts[0]?.bankName || ''} onChange={event => updateBank('bankName', event.target.value)} required /></label><label>Account name<span className="required">*</span><input value={draft.bankAccounts[0]?.accountName || ''} onChange={event => updateBank('accountName', event.target.value)} required /></label><label>Account number<span className="required">*</span><input value={draft.bankAccounts[0]?.accountNumber || ''} onChange={event => updateBank('accountNumber', event.target.value)} required /></label><label>Payment mode<select value={draft.bankAccounts[0]?.paymentMode || 'Bank Transfer'} onChange={event => updateBank('paymentMode', event.target.value)}><option>Bank Transfer</option><option>Check</option><option>Cash</option></select></label><label>Authorized contact<input value={draft.authorizedContacts[0]?.person || ''} onChange={event => updateContact('person', event.target.value)} /></label><label>Contact responsibility<input value={draft.authorizedContacts[0]?.responsibility || ''} onChange={event => updateContact('responsibility', event.target.value)} /></label><label>Authorized signatory<input value={draft.signatories[0]?.person || ''} onChange={event => updateSignatory('person', event.target.value)} /></label><label>Approval role<input value={draft.signatories[0]?.approvalRole || ''} onChange={event => updateSignatory('approvalRole', event.target.value)} /></label></div><div className="lifecycle-callout"><ShieldCheck /><div><strong>Permanent company documents stay in Company Information.</strong><span>Open Setup &amp; Verification to upload and verify registration evidence. This readiness gate reads the validated document register without duplicating the files here.</span></div></div></section>}
+      {step === 1 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {2} of {onboardingSteps.length}</span><h3>Complete the company profile</h3><p>These values remain owned by Company Information. The onboarding case only references the companyId.</p></div><div className="lifecycle-subheading">Employer registrations</div><div className="lifecycle-grid"><label>SEC / DTI registration no.<input value={draft.profile.secDtiNumber} onChange={event => updateProfile('secDtiNumber', event.target.value)} /></label><label>BIR RDO<input value={draft.profile.birRdo} onChange={event => updateProfile('birRdo', event.target.value)} /></label><label>SSS branch code<input value={draft.profile.sssBranchCode} onChange={event => updateProfile('sssBranchCode', event.target.value)} /></label><label>PhilHealth branch code<input value={draft.profile.philHealthBranchCode} onChange={event => updateProfile('philHealthBranchCode', event.target.value)} /></label><label>HDMF branch code<input value={draft.profile.hdmfBranchCode} onChange={event => updateProfile('hdmfBranchCode', event.target.value)} /></label><label>Registration status<select value={draft.profile.registrationStatus} onChange={event => updateProfile('registrationStatus', event.target.value)}><option>Pending</option><option>Verified</option></select></label></div><div className="lifecycle-subheading">Contact and payout profile</div><div className="lifecycle-grid"><label>Business address<span className="required">*</span><input value={draft.profile.address} onChange={event => updateProfile('address', event.target.value)} required /></label><label>ZIP<input value={draft.profile.zip} onChange={event => updateProfile('zip', event.target.value)} /></label><label>Telephone<input value={draft.profile.telephone} onChange={event => updateProfile('telephone', event.target.value)} /></label><label>Mobile<input value={draft.profile.mobile} onChange={event => updateProfile('mobile', event.target.value)} /></label><label>Primary email<span className="required">*</span><input type="email" value={draft.profile.email} onChange={event => updateProfile('email', event.target.value)} required /></label><label>Website<input value={draft.profile.website} onChange={event => updateProfile('website', event.target.value)} /></label><label>Payroll contact<input value={draft.profile.payrollContact} onChange={event => updateProfile('payrollContact', event.target.value)} /></label><label>Billing contact<input value={draft.profile.billingContact} onChange={event => updateProfile('billingContact', event.target.value)} /></label><label>Remittance contact<input value={draft.profile.remittanceContact} onChange={event => updateProfile('remittanceContact', event.target.value)} /></label></div><div className="lifecycle-subheading">Default bank account and authorized people</div><div className="lifecycle-grid"><label>Bank reference<span className="required">*</span><input value={draft.bankAccounts[0]?.bankReference || ''} onChange={event => updateBank('bankReference', event.target.value)} required /></label><label>Bank name<span className="required">*</span><input value={draft.bankAccounts[0]?.bankName || ''} onChange={event => updateBank('bankName', event.target.value)} required /></label><label>Account name<span className="required">*</span><input value={draft.bankAccounts[0]?.accountName || ''} onChange={event => updateBank('accountName', event.target.value)} required /></label><label>Account number<span className="required">*</span><input value={draft.bankAccounts[0]?.accountNumber || ''} onChange={event => updateBank('accountNumber', event.target.value)} required /></label><label>Payment mode<select value={draft.bankAccounts[0]?.paymentMode || 'Bank Transfer'} onChange={event => updateBank('paymentMode', event.target.value)}><option>Bank Transfer</option><option>Check</option><option>Cash</option></select></label><label>Authorized contact<input value={draft.authorizedContacts[0]?.person || ''} onChange={event => updateContact('person', event.target.value)} /></label><label>Contact responsibility<input value={draft.authorizedContacts[0]?.responsibility || ''} onChange={event => updateContact('responsibility', event.target.value)} /></label><label>Authorized signatory<input value={draft.signatories[0]?.person || ''} onChange={event => updateSignatory('person', event.target.value)} /></label><label>Approval role<input value={draft.signatories[0]?.approvalRole || ''} onChange={event => updateSignatory('approvalRole', event.target.value)} /></label></div><div className="lifecycle-callout"><ShieldCheck /><div><strong>Permanent company documents stay in Company Information.</strong><span>Open Setup &amp; Verification to upload and verify registration evidence. This readiness gate reads the validated document list without duplicating the files here.</span></div></div></section>}
       {step === 2 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {3} of {onboardingSteps.length}</span><h3>Select service modules</h3><p>Enrollment is stored on the company master; service configuration and readiness stay in the owning modules.</p></div><div className="lifecycle-service-list">{lifecycleServiceOptions.map(option => { const enrolled = draft.serviceEnrollments?.find(item => item.serviceCode === option.serviceCode); return <button type="button" key={option.serviceCode} className={`lifecycle-service-card ${enrolled?.enabled ? 'selected' : ''}`} onClick={() => updateServices(option.serviceCode)}><span className="service-check">{enrolled?.enabled ? <Check weight="bold" /> : <span />}</span><div><strong>{option.name}</strong><small>{enrolled?.enabled ? `Enrolled · ${enrolled.status}` : 'Not selected'}</small></div><ArrowRight /></button>; })}</div><div className="lifecycle-callout"><ShieldCheck /><div><strong>Access and approvals are checked, not duplicated here.</strong><span>Configure company users, roles and approval levels in Access & Approvals. The checklist will refresh from that source.</span></div></div></section>}
       {step === 3 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {4} of {onboardingSteps.length}</span><h3>Import startup or YTD data</h3><p>Download the published template, upload it for row-level validation, then commit only after errors are resolved.</p></div><div className="import-workflow-card"><label>Import type<select value={importType} onChange={event => setImportType(event.target.value)}><option>Startup configuration</option><option>Historical / YTD</option><option>Other approved template</option></select></label><div className="import-actions"><button type="button" className="button secondary" onClick={downloadTemplate}><DownloadSimple /> Download template</button><label className="button secondary upload-button"><UploadSimple /> Upload file<input className="sr-only" type="file" accept=".csv,text/csv" onChange={importFile} /></label></div>{importResult && <div className={`import-result ${importResult.status.toLowerCase()}`}><div><strong>{importResult.filename}</strong><span>{importResult.status} · {importResult.accepted || 0} accepted · {importResult.rejected || 0} rejected</span></div>{importResult.errors?.length ? <ul>{importResult.errors.slice(0, 5).map(item => <li key={item}>{item}</li>)}</ul> : <p>Structure and row checks passed. Commit the batch to complete the checklist item.</p>}{importResult.status === 'Validated' && <button type="button" className="button primary" onClick={commitImport}>Commit validated batch</button>}</div>}</div></section>}
       {step === 4 && <section className="lifecycle-panel"><div className="lifecycle-heading"><span>Step {5} of {onboardingSteps.length}</span><h3>Review readiness and activate</h3><p>Required items are computed from Company Information, service modules, calendars, imports, access, billing and connections.</p></div><div className="readiness-summary"><span><strong>{readiness.checklist.filter(item => item.status === 'Complete').length}</strong><small>Complete</small></span><span><strong>{readiness.blockers.length}</strong><small>Blocking</small></span><span><strong>{readiness.warnings.length}</strong><small>Warnings</small></span><span><strong className={`status-text ${lifecycleClass(caseDraft.status)}`}>{caseDraft.status}</strong><small>Case state</small></span></div><Checklist items={readiness.checklist} onToggle={toggleChecklist} />{readiness.blockers.length > 0 && <div className="lifecycle-warning"><Warning /><span><strong>Activation is blocked.</strong> Resolve the required checklist items before submitting this case for review.</span></div>}{caseDraft.status === 'For Review' && <div className="lifecycle-callout"><CheckCircle /><div><strong>Ready for an authorized approval.</strong><span>The requester has submitted the case; an approver can move it to Ready for Activation.</span></div></div>}{caseDraft.status === 'Active' && <div className="lifecycle-success"><CheckCircle /><span>Company is active. Changes after activation will recalculate readiness and create a new audit event.</span></div>}</section>}
@@ -280,7 +403,7 @@ function OffboardingModal({ caseRecord, onClose, onSaved, notify }) {
     const nextChecklist = (draft.checklist?.length ? draft.checklist : clone(checklist)).map(item => ['HANDOFF_APPROVAL', 'DELIVERY_ACK', 'DEACTIVATION'].includes(item.itemCode) ? { ...item, status: 'Complete' } : item);
     const result = deactivateCompany(company, { ...draft, checklist: nextChecklist }, 'Approver'); setDraft(result.lifecycle); notify({ type: 'success', message: `${company.companyCode} deactivated without deleting historical data.` }); onSaved?.();
   };
-  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal lifecycle-modal offboarding-modal" role="dialog" aria-modal="true" aria-label="Company offboarding workflow"><header><div><small>Company lifecycle</small><h2>{draft.caseId ? `Offboarding ${company?.companyCode || ''}` : 'Start offboarding request'}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="lifecycle-body"><section className="lifecycle-panel"><div className="lifecycle-heading"><span>Export and deactivation workflow</span><h3>Preserve history while handing off the company</h3><p>Offboarding moves through Requested → For Approval → Export Ready → Completed. It never deletes company, payroll or audit history.</p></div><div className="lifecycle-grid"><label>Company<span className="required">*</span><select value={draft.companyId} onChange={event => setCase({ companyId: event.target.value })} disabled={Boolean(draft.caseId)}><option value="">Choose active company</option>{companies.map(item => <option key={item.companyId} value={item.companyId}>{item.companyCode} — {item.legalName}</option>)}</select></label><label>Request date<span className="required">*</span><input type="date" value={String(draft.requestedAt || '').slice(0, 10)} onChange={event => setCase({ requestedAt: event.target.value })} disabled={Boolean(draft.caseId)} /></label><label className="wide">Handoff recipient<input value={draft.handoffRecipient || ''} onChange={event => setCase({ handoffRecipient: event.target.value })} placeholder="Receiving vendor or authorized recipient" /></label><label className="wide">Acknowledgement / notes<textarea value={draft.acknowledgement || ''} onChange={event => setCase({ acknowledgement: event.target.value })} placeholder="Record handoff notes or approval evidence" /></label></div><div className="lifecycle-subheading">Export scope<span className="required">*</span></div><div className="scope-checks">{['All Company Data', 'Payroll and YTD', 'Employee Masterfile', 'Configuration Snapshots', 'Company Documents', 'Audit Manifest'].map(scope => <label key={scope}><input type="checkbox" checked={draft.exportScope?.includes(scope)} onChange={() => setCase({ exportScope: draft.exportScope?.includes(scope) ? draft.exportScope.filter(item => item !== scope) : [...(draft.exportScope || []), scope] })} disabled={draft.status !== 'Requested'} />{scope}</label>)}</div><div className="readiness-summary"><span><strong className={`status-text ${lifecycleClass(draft.status)}`}>{draft.status}</strong><small>Case state</small></span><span><strong>{draft.packageReference || 'Not prepared'}</strong><small>Export package</small></span><span><strong>{draft.exportScope?.length || 0}</strong><small>Scope items</small></span></div><Checklist items={draft.checklist?.length ? draft.checklist : checklist} /><div className="lifecycle-warning"><Warning /><span>Open payrolls, approvals, remittances, billing and sync errors should be reviewed by the owning modules before export approval.</span></div></section></div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Close</button><div className="lifecycle-footer-actions">{draft.status === 'Requested' && <button type="button" className="button primary" onClick={submitForApproval}>Submit for approval</button>}{draft.status === 'For Approval' && <button type="button" className="button primary" onClick={prepareExport}>Prepare export package <DownloadSimple /></button>}{draft.status === 'Export Ready' && <button type="button" className="button danger" onClick={complete}>Complete and deactivate</button>}</div></footer></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal lifecycle-modal offboarding-modal" role="dialog" aria-modal="true" aria-label="Company offboarding workflow"><header><div><small>Company lifecycle</small><h2>{draft.caseId ? `Offboarding ${company?.companyCode || ''}` : 'Start offboarding request'}</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="lifecycle-body"><section className="lifecycle-panel"><div className="lifecycle-heading"><span>Export and deactivation workflow</span><h3>Preserve history while handing off the company</h3><p>Offboarding moves through Requested → For Approval → Export Ready → Completed. It never deletes company, payroll or audit history.</p></div><div className="lifecycle-grid"><label>Company<span className="required">*</span><select value={draft.companyId} onChange={event => setCase({ companyId: event.target.value })} disabled={Boolean(draft.caseId)}><option value="">Choose active company</option>{companies.map(item => <option key={item.companyId} value={item.companyId}>{item.companyCode} — {item.legalName}</option>)}</select></label><label>Request date<span className="required">*</span><DateInput value={String(draft.requestedAt || '').slice(0, 10)} onChange={value => setCase({ requestedAt: value })} disabled={Boolean(draft.caseId)} /></label><label className="wide">Handoff recipient<input value={draft.handoffRecipient || ''} onChange={event => setCase({ handoffRecipient: event.target.value })} placeholder="Receiving vendor or authorized recipient" /></label><label className="wide">Acknowledgement / notes<textarea value={draft.acknowledgement || ''} onChange={event => setCase({ acknowledgement: event.target.value })} placeholder="Record handoff notes or approval evidence" /></label></div><div className="lifecycle-subheading">Export scope<span className="required">*</span></div><div className="scope-checks">{['All Company Data', 'Payroll and YTD', 'Employee Masterfile', 'Configuration Snapshots', 'Company Documents', 'Audit Manifest'].map(scope => <label key={scope}><input type="checkbox" checked={draft.exportScope?.includes(scope)} onChange={() => setCase({ exportScope: draft.exportScope?.includes(scope) ? draft.exportScope.filter(item => item !== scope) : [...(draft.exportScope || []), scope] })} disabled={draft.status !== 'Requested'} />{scope}</label>)}</div><div className="readiness-summary"><span><strong className={`status-text ${lifecycleClass(draft.status)}`}>{draft.status}</strong><small>Case state</small></span><span><strong>{draft.packageReference || 'Not prepared'}</strong><small>Export package</small></span><span><strong>{draft.exportScope?.length || 0}</strong><small>Scope items</small></span></div><Checklist items={draft.checklist?.length ? draft.checklist : checklist} /><div className="lifecycle-warning"><Warning /><span>Open payrolls, approvals, remittances, billing and sync errors should be reviewed by the owning modules before export approval.</span></div></section></div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Close</button><div className="lifecycle-footer-actions">{draft.status === 'Requested' && <button type="button" className="button primary" onClick={submitForApproval}>Submit for approval</button>}{draft.status === 'For Approval' && <button type="button" className="button primary" onClick={prepareExport}>Prepare export package <DownloadSimple /></button>}{draft.status === 'Export Ready' && <button type="button" className="button danger" onClick={complete}>Complete and deactivate</button>}</div></footer></section></div>;
 }
 
 function LifecycleWorkspace({ workspaceKey, onBack, notify }) {
@@ -311,14 +434,19 @@ function AuditLogWorkspace({ onBack, notify }) {
 }
 
 const delegatedWorkspaces = {
-  security: ({ onBack, notify }) => <SecurityWorkspace onBack={onBack} notify={notify} />,
-  accessRights: ({ onBack, notify }) => <AccessRightsWorkspace onBack={onBack} notify={notify} />,
-  calendar: ({ onBack, notify }) => <CalendarWorkspace onBack={onBack} notify={notify} />,
+  // Payroll Processing is the payroll transaction itself, not a record table:
+  // it computes, reviews, approves, posts and locks a run, so it owns its own
+  // screen rather than an entry in `operationalDefinitions`.
+  transactions: ({ onBack, notify, companyId }) => <PayrollProcessingWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} readRegister={readRegisterRows} />,
+  security: ({ onBack, notify, companyId }) => <SecurityWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  accessRights: ({ onBack, notify, companyId }) => <AccessRightsWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  calendar: ({ onBack, notify, companyId }) => <CalendarWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
   overtime: ({ onBack, notify }) => <OvertimeGateway onBack={onBack} notify={notify} />,
   reports: ({ onBack, notify }) => <EnhancedReportShellWorkspace onBack={onBack} notify={notify} />,
   ticketing: ({ onBack, notify }) => <TicketingWorkspace onBack={onBack} notify={notify} />,
   audit: ({ onBack, notify }) => <AuditLogWorkspace onBack={onBack} notify={notify} />,
   employeeOnboarding: ({ onBack, notify }) => <EmployeeOnboardingWorkspace onBack={onBack} notify={notify} />,
+  timeCorrections: ({ onBack, notify, companyId, company }) => <TimeCorrectionWorkspace onBack={onBack} notify={notify} companyId={companyId} company={company} />,
   chargeCodes: ({ onBack, notify }) => <ChargeCodesWorkspace onBack={onBack} notify={notify} />,
   happiness: ({ onBack, notify }) => <HappinessWorkspace onBack={onBack} notify={notify} />,
   wellness: ({ onBack, notify }) => <WellnessWorkspace onBack={onBack} notify={notify} />,
@@ -339,63 +467,52 @@ function UnknownWorkspace({ workspaceKey, onBack }) {
  * declares its own and switching between a delegated and a record workspace
  * would otherwise change the hook count on a mounted component.
  */
-export function OperationalWorkspace({ workspaceKey, onBack, notify }) {
+export function OperationalWorkspace({ workspaceKey, onBack, notify, companyId, company }) {
   const delegate = delegatedWorkspaces[workspaceKey];
-  if (delegate) return delegate({ onBack, notify });
+  if (delegate) return delegate({ onBack, notify, companyId, company });
   const definition = operationalDefinitions[workspaceKey];
   if (!definition) return <UnknownWorkspace workspaceKey={workspaceKey} onBack={onBack} />;
-  return <RecordWorkspace key={workspaceKey} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} />;
+  return <RecordWorkspace key={`${workspaceKey}:${companyId}`} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} companyId={companyId} />;
 }
 
-function LegacyRecordWorkspace({ workspaceKey, definition, onBack, notify }) {
-  const storageKey = `atlas-operational-${workspaceKey}-v1`;
-  const [rows, setRows] = useState(() => { try { return JSON.parse(localStorage.getItem(storageKey)) || definition.rows.map((row, index) => recordFromRow(definition, row, index)); } catch { return definition.rows.map((row, index) => recordFromRow(definition, row, index)); } });
-  const [query, setQuery] = useState(''); const [editing, setEditing] = useState(undefined); const [viewing, setViewing] = useState(null); const uploadRef = useRef(null);
-  useEffect(() => localStorage.setItem(storageKey, JSON.stringify(rows)), [rows, storageKey]);
-  const visible = useMemo(() => rows.filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query]);
-  const save = draft => {
-    if (workspaceKey === 'remittance' && draft.payoutStatus !== 'Posted') { notify({ type: 'error', message: 'A remittance can only be saved against a posted payout.' }); return; }
-    if (workspaceKey === 'journal' && Number(draft.debit) !== Number(draft.credit)) { notify({ type: 'error', message: 'Journal debit and credit totals must balance.' }); return; }
-    if (rows.some(row => row.id !== draft.id && row.code === draft.code)) { notify({ type: 'error', message: `${draft.code} already exists.` }); return; }
-    setRows(previous => draft.id ? previous.map(row => row.id === draft.id ? draft : row) : [{ ...draft, id: Date.now() }, ...previous]); setEditing(undefined); notify({ type: 'success', message: `${definition.title} record saved.` });
-  };
-  const recalculate = record => {
-    // A posted, locked or cancelled run is retained as computed (Annex C).
-    if (['Posted', 'Locked', 'Cancelled'].includes(record.status)) { notify({ type: 'error', message: `${record.code} is ${record.status.toLowerCase()} and can no longer be recalculated.` }); return; }
-    setRows(previous => previous.map(row => row.id === record.id ? { ...row, status: 'Calculated' } : row)); notify({ type: 'success', message: `${record.code} recalculated using the current company configuration.` });
-  };
-  const exportRows = () => { const csv = [definition.fields.map(field => `"${field.label}"`).join(','), ...visible.map(row => definition.fields.map(field => `"${String(row[field.key] || '').replaceAll('"', '""')}"`).join(','))].join('\n'); const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); const link = document.createElement('a'); link.href = url; link.download = `${workspaceKey}.csv`; link.click(); URL.revokeObjectURL(url); notify({ type: 'success', message: `${definition.title} export prepared.` }); };
-  const importRows = event => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { const lines = String(reader.result).split(/\r?\n/).filter(Boolean); const headers = (lines.shift() || '').split(',').map(value => value.replaceAll('"', '').trim().toLowerCase()); const imported = lines.map((line, index) => { const values = line.split(',').map(value => value.replace(/^"|"$/g, '').trim()); const row = { id: Date.now() + index }; definition.fields.forEach(field => { const position = headers.findIndex(header => header === field.key.toLowerCase() || header === field.label.toLowerCase()); if (position >= 0) row[field.key] = values[position]; }); return row; }).filter(row => row.code); setRows(previous => [...imported, ...previous]); notify({ type: 'success', message: `${imported.length} records imported for review.` }); }; reader.readAsText(file); event.target.value = ''; };
-  return <div className="page-content operational-workspace"><button className="inline-back" onClick={onBack}><ArrowLeft /> Back</button><div className="page-heading"><div><p className="breadcrumb">Atlas / {definition.title}</p><h1>{definition.title}</h1><p className="page-description">{definition.description}</p></div></div><div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /><button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div><div className="table-card"><table><thead><tr>{definition.fields.slice(0, 6).map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => <tr key={row.id}>{definition.fields.slice(0, 6).map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workspaceKey === 'transactions' && <button onClick={() => recalculate(row)} aria-label="Recalculate"><ArrowClockwise /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => { setRows(previous => previous.filter(item => item.id !== row.id)); notify({ type: 'success', message: `${row.code} deleted.` }); }} aria-label="Delete"><Trash /></button></div></td></tr>)}</tbody></table>{!visible.length && <div className="empty-state"><h3>No records found</h3><p>Add a record or adjust the search.</p></div>}</div><div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {rows.length} records</span><span>1 of 1</span></div>{editing !== undefined && <EntryModal definition={definition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}{viewing && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setViewing(null); }}><aside className="record-drawer"><header><div><p>Record details</p><h2>{viewing.code}</h2></div><button className="icon-button" onClick={() => setViewing(null)}><X /></button></header><div className="record-drawer-body"><section><h3>{definition.title}</h3><div className="detail-grid">{definition.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{viewing[field.key] || '—'}</span></div>)}</div></section></div><footer><button className="button secondary" onClick={() => setViewing(null)}>Close</button><button className="button primary" onClick={() => { setEditing(viewing); setViewing(null); }}><PencilSimple /> Edit</button></footer></aside></div>}</div>;
-}
-
-function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
-  const storageKey = `atlas-operational-${workspaceKey}-v${definition.version || 1}`;
-  const seedRows = () => definition.rows.map((row, index) => recordFromRow(definition, row, index));
+function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }) {
+  const storageKey = operationalStorageKey(workspaceKey, definition.version || 1);
+  const seedRows = () => definition.rows.map((row, index) => recordFromRow(definition, row, index, companyId));
   const [rows, setRows] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(storageKey));
-      if (!Array.isArray(saved)) return seedRows();
-      const empty = Object.fromEntries(definition.fields.map(field => [field.key, '']));
-      return saved.map(row => ({ ...empty, ...row }));
-    } catch { return seedRows(); }
+    const saved = readOperationalRowsForCompany(workspaceKey, companyId, globalThis.localStorage, [definition.version || 1]);
+    const finish = computeRegisterRows(workspaceKey);
+    if (!saved.length) return finish(seedRows());
+    const empty = Object.fromEntries(definition.fields.map(field => [field.key, '']));
+    return finish(saved.map(row => ({ ...empty, ...row, companyId })));
   });
   const [query, setQuery] = useState('');
+  const [statusTab, setStatusTab] = useState('All');
   const [editing, setEditing] = useState(undefined);
   const [viewing, setViewing] = useState(null);
   const uploadRef = useRef(null);
-  useEffect(() => localStorage.setItem(storageKey, JSON.stringify(rows)), [rows, storageKey]);
-  const visible = useMemo(() => rows.filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query]);
-  const emitAudit = (action, record, summary) => appendAuditEvent({ companyId: readActiveCompanyId(), actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
+  useEffect(() => { writeOperationalRowsForCompany(storageKey, companyId, rows); }, [rows, storageKey, companyId]);
+  const visible = useMemo(() => rows
+    .filter(row => statusTab === 'All' || row.status === statusTab)
+    .filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query, statusTab]);
+  const emitAudit = (action, record, summary) => appendAuditEvent({ companyId, actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
 
   const save = draft => {
     const existing = rows.find(row => row.id === draft.id);
-    if (workspaceKey === 'transactions' && existing && ['Posted', 'Locked', 'Cancelled'].includes(existing.status)) return notify({ type: 'error', message: `${existing.code} is retained as ${existing.status.toLowerCase()} and cannot be edited.` });
     if (workspaceKey === 'remittance' && !postedPayrollOptions().includes(draft.linkedPayout)) return notify({ type: 'error', message: 'Choose a posted or locked payroll payout before saving the remittance.' });
     if (workspaceKey === 'journal' && !postedPayrollOptions().includes(draft.linkedPayout)) return notify({ type: 'error', message: 'A journal entry must be generated from a posted or locked payroll payout.' });
     if (workspaceKey === 'journal' && Number(draft.debit) !== Number(draft.credit)) return notify({ type: 'error', message: 'Journal debit and credit totals must balance.' });
     if (workspaceKey === 'payCodes' && (!draft.debitGl || !draft.creditGl)) return notify({ type: 'error', message: 'Both debit and credit GL accounts are required for a payroll pay code.' });
-    if (workspaceKey === 'transactions' && draft.currency !== 'PHP' && Number(draft.conversionRate) <= 0) return notify({ type: 'error', message: 'A positive conversion rate is required for a non-PHP payroll.' });
+    // An effectivity window that closes before it opens would silently pay or
+    // collect nothing, so it is rejected rather than stored.
+    const window = { earnings: ['periodStart', 'endDate'], deductions: ['startDate', 'endDate'], mweRates: ['effectiveDate', ''] }[workspaceKey];
+    if (window && draft[window[1]] && draft[window[0]] && String(draft[window[1]]) < String(draft[window[0]])) return notify({ type: 'error', message: 'The end date cannot fall before the start date.' });
+    if (['earnings', 'bonuses'].includes(workspaceKey) && Number(draft.amount) <= 0) return notify({ type: 'error', message: 'Enter an amount greater than zero.' });
+    if (workspaceKey === 'deductions' && Number(draft.amount) <= 0) return notify({ type: 'error', message: 'Enter a deduction amount greater than zero.' });
+    if (workspaceKey === 'deductions' && Number(draft.balance) < 0) return notify({ type: 'error', message: 'An outstanding balance cannot be negative — a deduction stops once the balance clears.' });
+    if (workspaceKey === 'mweRates' && Number(draft.dailyRate) <= 0) return notify({ type: 'error', message: 'Enter a minimum wage daily rate greater than zero.' });
+    // One region, sector and municipality can only have one rate in force, or
+    // payroll would have two minimum wages to choose between for the same day.
+    if (workspaceKey === 'mweRates' && draft.status === 'Active' && rows.some(row => row.id !== draft.id && row.status === 'Active' && row.region === draft.region && row.sector === draft.sector && row.municipality === draft.municipality)) return notify({ type: 'error', message: `${draft.municipality} already has an active ${draft.sector} rate. Set the superseded row to Inactive first.` });
     if (rows.some(row => row.id !== draft.id && row.code === draft.code)) return notify({ type: 'error', message: `${draft.code} already exists.` });
 
     let prepared = { ...draft };
@@ -408,27 +525,16 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
     setRows(previous => {
       let next = previous;
       if (workspaceKey === 'payslip' && prepared.status === 'Active') next = next.map(row => row.id === prepared.id ? row : { ...row, status: 'Inactive' });
-      return prepared.id ? next.map(row => row.id === prepared.id ? prepared : row) : [{ ...prepared, id: Date.now() }, ...next];
+      const saved = prepared.id ? next.map(row => row.id === prepared.id ? prepared : row) : [{ ...prepared, id: Date.now() }, ...next];
+      return computeRegisterRows(workspaceKey)(saved);
     });
     emitAudit(prepared.id ? 'RecordUpdated' : 'RecordCreated', prepared, `${prepared.code} saved in ${definition.title}.`);
     setEditing(undefined);
     notify({ type: 'success', message: workspaceKey === 'billing' ? `${prepared.code} saved with a calculated amount of PHP ${Number(prepared.amount).toLocaleString()}.` : `${definition.title} record saved.` });
   };
 
-  const recalculate = record => {
-    if (['Posted', 'Locked', 'Cancelled'].includes(record.status)) return notify({ type: 'error', message: `${record.code} is ${record.status.toLowerCase()} and can no longer be recalculated.` });
-    const checks = ['earningsChecked', 'deductionsChecked', 'bonusesChecked', 'salaryRatesChecked'];
-    const missing = checks.filter(key => record[key] !== 'Yes');
-    if (missing.length) return notify({ type: 'error', message: 'Validate earnings, deductions and loans, bonuses, and salary rates before calculating payroll.' });
-    if (!record.timekeepingSource) return notify({ type: 'error', message: 'Select the integrated, uploaded or manual timekeeping source first.' });
-    setRows(previous => previous.map(row => row.id === record.id ? { ...row, status: 'Calculated' } : row));
-    emitAudit('PayrollCalculated', record, `${record.code} calculated using governed company configuration and source checks.`);
-    notify({ type: 'success', message: `${record.code} calculated using the approved policy codes, employee records, statutory versions and source validations.` });
-  };
-
   const workflowAction = record => {
     const maps = {
-      transactions: { Calculated: ['For Approval', 'Submit for approval'], 'For Approval': ['Posted', 'Post payroll'], Posted: ['Locked', 'Lock payroll'] },
       billing: { Draft: ['For Review', 'Submit for review'], 'For Review': ['Approved', 'Approve bill'], Approved: ['Generated', 'Generate bill'] },
       journal: { Balanced: ['Posted', 'Post journal'] },
     };
@@ -447,15 +553,7 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
     notify({ type: 'success', message: `${record.code} moved to ${action.status}.` });
   };
 
-  const cancelTransaction = record => {
-    if (['Posted', 'Locked', 'Cancelled'].includes(record.status)) return notify({ type: 'error', message: `${record.code} cannot be cancelled from ${record.status}.` });
-    setRows(previous => previous.map(row => row.id === record.id ? { ...row, status: 'Cancelled' } : row));
-    emitAudit('PayrollCancelled', record, `${record.code} cancelled and retained for audit.`);
-    notify({ type: 'success', message: `${record.code} cancelled and retained in payroll history.` });
-  };
-
   const removeRecord = record => {
-    if (workspaceKey === 'transactions') return notify({ type: 'error', message: 'Payroll transactions are retained. Use Cancel for an unposted run.' });
     if (['Posted', 'Generated'].includes(record.status)) return notify({ type: 'error', message: `${record.code} is ${record.status.toLowerCase()} and must be retained.` });
     setRows(previous => previous.filter(item => item.id !== record.id));
     emitAudit('RecordDeleted', record, `${record.code} removed from ${definition.title}.`);
@@ -480,14 +578,24 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
       const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
       const headers = (lines.shift() || '').split(',').map(value => value.replaceAll('"', '').trim().toLowerCase());
       const missingHeaders = definition.fields.filter(field => field.required).filter(field => !headers.includes(field.key.toLowerCase()) && !headers.includes(field.label.toLowerCase()));
-      if (missingHeaders.length) return notify({ type: 'error', message: `Missing required columns: ${missingHeaders.map(field => field.label).join(', ')}.` });
+      if (missingHeaders.length) return rejectUpload(file.name, missingHeaders.map(field => ({ row: 1, field: field.label, reason: 'Required column is missing.' })), notify);
+      const errors = [];
+      const seenCodes = new Set();
       const imported = lines.map((line, index) => {
         const values = line.split(',').map(value => value.replace(/^"|"$/g, '').trim());
         const row = { id: Date.now() + index };
         definition.fields.forEach(field => { const position = headers.findIndex(header => header === field.key.toLowerCase() || header === field.label.toLowerCase()); if (position >= 0) row[field.key] = values[position]; });
+        const rowNumber = index + 2;
+        if (!row.code) errors.push({ row: rowNumber, field: 'Code', reason: 'Code is required.' });
+        else if (rows.some(existing => existing.code === row.code)) errors.push({ row: rowNumber, field: 'Code', value: row.code, reason: 'This code already exists.' });
+        else if (seenCodes.has(row.code)) errors.push({ row: rowNumber, field: 'Code', value: row.code, reason: 'Code appears twice in this file.' });
+        seenCodes.add(row.code);
+        definition.fields.filter(field => field.required && !field.auto && field.key !== 'code' && !String(row[field.key] ?? '').trim()).forEach(field => errors.push({ row: rowNumber, field: field.label, reason: `${field.label} is required.` }));
+        definition.fields.filter(field => field.type === 'number' && String(row[field.key] ?? '').trim() && Number.isNaN(Number(row[field.key]))).forEach(field => errors.push({ row: rowNumber, field: field.label, value: row[field.key], reason: 'Must be a number.' }));
         return row;
-      }).filter(row => row.code && !rows.some(existing => existing.code === row.code));
-      if (!imported.length) return notify({ type: 'error', message: 'No new valid records were found in the upload.' });
+      });
+      if (!imported.length) errors.push({ reason: 'The file has no data rows.' });
+      if (errors.length) return rejectUpload(file.name, errors, notify);
       setRows(previous => [...imported, ...previous]);
       imported.forEach(record => emitAudit('RecordsImported', record, `${record.code} imported into ${definition.title} for review.`));
       notify({ type: 'success', message: `${imported.length} ${plural(imported.length, 'record')} imported for review.` });
@@ -499,13 +607,14 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify }) {
   return <div className="page-content operational-workspace">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Back</button>
     <div className="page-heading"><div><p className="breadcrumb">Atlas / {definition.title}</p><h1>{definition.title}</h1><p className="page-description">{definition.description}</p></div></div>
+    {definition.statusTabs && <div className="record-status-tabs" role="tablist">{definition.statusTabs.map(tab => <button key={tab} role="tab" aria-selected={statusTab === tab} className={statusTab === tab ? 'selected' : ''} onClick={() => setStatusTab(tab)}>{tab}<span>{tab === 'All' ? rows.length : rows.filter(row => row.status === tab).length}</span></button>)}</div>}
     <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Template</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /><button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div>
     <div className="table-card"><table><thead><tr>{definition.fields.slice(0, 6).map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => {
       const workflow = workflowAction(row);
-      return <tr key={row.id}>{definition.fields.slice(0, 6).map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workspaceKey === 'transactions' && !['Posted', 'Locked', 'Cancelled'].includes(row.status) && <button onClick={() => recalculate(row)} aria-label="Recalculate payroll" title="Recalculate payroll"><ArrowClockwise /></button>}{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}{workspaceKey === 'transactions' && !['Posted', 'Locked', 'Cancelled'].includes(row.status) && <button onClick={() => cancelTransaction(row)} aria-label="Cancel payroll" title="Cancel payroll"><X /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button disabled={workspaceKey === 'transactions' && ['Posted', 'Locked', 'Cancelled'].includes(row.status)} onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={workspaceKey === 'transactions' || ['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></div></td></tr>;
+      return <tr key={row.id}>{definition.fields.slice(0, 6).map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></div></td></tr>;
     })}</tbody></table>{!visible.length && <div className="empty-state"><h3>No records found</h3><p>Add a record or adjust the search.</p></div>}</div>
     <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {rows.length} {plural(rows.length, 'record')}</span><span>1 of 1</span></div>
     {editing !== undefined && <EntryModal definition={definition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}
-    {viewing && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setViewing(null); }}><aside className="record-drawer"><header><div><p>Record details</p><h2>{viewing.code}</h2></div><button className="icon-button" onClick={() => setViewing(null)}><X /></button></header><div className="record-drawer-body"><section><h3>{definition.title}</h3><div className="detail-grid">{definition.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{viewing[field.key] || '—'}</span></div>)}</div></section></div><footer><button className="button secondary" onClick={() => setViewing(null)}>Close</button><button className="button primary" disabled={workspaceKey === 'transactions' && ['Posted', 'Locked', 'Cancelled'].includes(viewing.status)} onClick={() => { setEditing(viewing); setViewing(null); }}><PencilSimple /> Edit</button></footer></aside></div>}
+    {viewing && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setViewing(null); }}><aside className="record-drawer"><header><div><p>Record details</p><h2>{viewing.code}</h2></div><button className="icon-button" onClick={() => setViewing(null)}><X /></button></header><div className="record-drawer-body"><section><h3>{definition.title}</h3><div className="detail-grid">{definition.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{viewing[field.key] || '—'}</span></div>)}</div></section></div><footer><button className="button secondary" onClick={() => setViewing(null)}>Close</button><button className="button primary" onClick={() => { setEditing(viewing); setViewing(null); }}><PencilSimple /> Edit</button></footer></aside></div>}
   </div>;
 }

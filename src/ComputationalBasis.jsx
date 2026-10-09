@@ -14,275 +14,105 @@ import {
   MagnifyingGlass,
   PencilSimple,
   Plus,
+  Prohibit,
+  SlidersHorizontal,
   Table,
-  Trash,
   UploadSimple,
+  Warning,
   X,
 } from '@phosphor-icons/react';
 import { downloadFile } from './fileDownload';
+import {
+  categoryCycle,
+  categoryPrefixes,
+  computationDependencies,
+  coreComputations,
+  describeParameterRange,
+  evaluateExpression,
+  fieldMap,
+  fieldOrigin,
+  fields,
+  formatParameterValue,
+  fromDisplayValue,
+  nextComputationCode,
+  normalizeParameters,
+  parameterDefinitionProblems,
+  parameterUnit,
+  parameterUnitLabel,
+  prefixForCategory,
+  referenceProblems,
+  resolvedFields,
+  seedComputations,
+  toDisplayValue,
+  usedComputations,
+  usedFields,
+} from './computationCatalog';
+import {
+  FORMULA_SCOPES,
+  companyLabel,
+  computationGuards,
+  computationScope,
+  diffComputation,
+  governanceStamps,
+  historyEntry,
+  payItemsUsing,
+  readApplicability,
+  readAssignments,
+  readCompanyRuns,
+  readComputationLibrary,
+  readHistory,
+  readReferences,
+  referenceVersionHistory,
+  setApplicability,
+  usageIndexFromRuns,
+  usageOf,
+  versionIndex,
+  withReferenceVersion,
+  writeAssignments,
+  writeHistory,
+  writeReferences,
+} from './computationGovernance';
+import { isEngineSupplied } from './computationBindings';
+import { seedReferences } from './referenceSources';
 import { PolicyComputations, policyEngines } from './PolicyComputations';
 import { PAYROLL_REFERENCE_CODES, synchronizePayrollReference } from './payrollIntegration';
+import { referenceRows } from './ReferenceTables';
 import { useRole } from './RoleContext';
+import { plural } from './textFormat';
+import { rejectUpload } from './uploadErrorLog.js';
+import { compareVersions, runTestCases, versionState, whereUsed, whereUsedCsv } from './computationInsights.js';
 
 /**
- * Built-in standard formulas are maintained in Settings > Standard Computation
- * Library. Client-created computations stay company-specific, use only the
- * approved field/operator palette, and never overwrite an Atlas standard.
+ * The library's data and evaluator live in `computationCatalog.js` so the
+ * payroll engine can resolve and evaluate the very same formulas. They are
+ * re-exported here because this module is the library's screen and the rest of
+ * the prototype has always imported them from it.
  */
-export function canEditComputation(record, isAdmin) {
-  return isAdmin || record.isBuiltIn === false;
+export { categoryCycle, coreComputations, evaluateExpression, fields, seedComputations, usedComputations, usedFields };
+
+/**
+ * The controlled category list, read from the Generic Reference Table so a new
+ * category is governed there rather than added to a hard-coded array. The
+ * catalogue in `computationCatalog.js` is the seed and the fallback for a
+ * preview whose reference tables have not been loaded yet.
+ */
+export function computationCategoryCatalogue() {
+  const rows = referenceRows('computation-category');
+  const controlled = rows.map(row => [row.name, row.code]).filter(([name, code]) => name && code);
+  return controlled.length ? controlled : categoryPrefixes;
 }
 
-const STORAGE = {
-  computations: 'atlas-computational-basis-library-v3',
-  assignments: 'atlas-computational-basis-assignments-v3',
-  references: 'atlas-computational-basis-references-v3',
-  history: 'atlas-computational-basis-history-v3',
-};
 
-export const COMPUTATION_STORAGE_KEY = STORAGE.computations;
 
-export const fields = [
-  ['basic_pay', 'Current basic pay', 30000],
-  ['monthly_basic', 'Monthly basic pay', 30000],
-  ['factor_days', 'Factor days', 261],
-  ['work_hours', 'Hours per workday', 8],
-  ['ecola_amount', 'ECOLA amount', 30],
-  ['basic_pay_adjustment', 'Effective basic pay adjustment', 2500],
-  ['days_worked', 'Days worked', 20],
-  ['absent_days', 'Absent days', 1],
-  ['late_minutes', 'Late minutes', 25],
-  ['undertime_minutes', 'Undertime minutes', 40],
-  ['ot_hours', 'Overtime hours', 6],
-  ['ot_rate', 'Overtime multiplier', 1.25],
-  ['holiday_hours', 'Holiday hours', 8],
-  ['holiday_rate', 'Holiday multiplier', 2],
-  ['allowance_units', 'Allowance units', 20],
-  ['allowance_unit_rate', 'Allowance unit rate', 150],
-  ['taxable_earnings', 'Taxable earnings', 4500],
-  ['non_taxable_earnings', 'Non-taxable earnings', 2000],
-  ['other_bonus', 'Other bonus', 12000],
-  ['basic_earnings_ytd', 'Basic earnings YTD', 300000],
-  ['statutory_deductions', 'Statutory deductions', 2500],
-  ['other_deductions', 'Other deductions', 1200],
-  ['loan_amortizations', 'Loan amortizations', 1800],
-  ['tax_rate', 'Tax table rate', 0.2],
-  ['tax_offset', 'Tax table offset', 2083.33],
-  ['sss_rate', 'SSS employee rate', 0.05],
-  ['sss_ceiling', 'SSS compensation ceiling', 35000],
-  ['philhealth_rate', 'PhilHealth employee rate', 0.025],
-  ['philhealth_ceiling', 'PhilHealth compensation ceiling', 100000],
-  ['hdmf_rate', 'HDMF employee rate', 0.02],
-  ['hdmf_ceiling', 'HDMF compensation ceiling', 10000],
-  ['bonus_tax_ceiling', '13th month and bonus tax ceiling', 90000],
-  ['bonus_paid_ytd', '13th month and bonuses paid YTD', 50000],
-  ['de_minimis_ceiling', 'De Minimis annual ceiling', 24000],
-  ['de_minimis_paid_ytd', 'De Minimis paid YTD', 12000],
-  ['minimum_take_home_rate', 'Minimum take-home percentage', 0.2],
-  ['take_home_base', 'Protected take-home basis', 34500],
-  ['target_net_pay', 'Target net pay', 30000],
-  ['years_service', 'Years of service', 8],
-  ['forecasted_annual_income', 'Forecasted annual income', 720000],
-  ['previous_employer_taxable', 'Previous-employer taxable income', 180000],
-  ['previous_employer_tax_withheld', 'Previous-employer tax withheld', 18000],
-  ['tax_schedule_periods', 'Remaining tax collection periods', 4],
-  ['provident_rate', 'Provident fund rate', 0.05],
-  ['pension_rate', 'Pension fund rate', 0.03],
-  ['sickness_days', 'Approved sickness reimbursement days', 7],
-  ['maternity_days', 'Approved maternity benefit days', 105],
-  ['rounded_years_service', 'Rounded years of service', 8],
-  ['retirement_days_per_year', 'Retirement days per service year', 22.5],
-  ['retirement_company_value', 'Company retirement plan value', 300000],
-  ['daily_rate', 'Daily rate', 1379.31],
-  ['hourly_rate', 'Hourly rate', 172.41],
-  ['piece_units', 'Completed piece-rate units', 120],
-  ['piece_unit_rate', 'Piece rate per unit', 35],
-  ['ojt_days', 'OJT days rendered', 20],
-  ['ojt_daily_allowance', 'OJT daily allowance', 300],
-  ['part_time_hours', 'Part-time hours rendered', 60],
-  ['unused_leave_days', 'Unused leave days', 5],
-  ['gross_pay', 'Gross pay', 36500],
-  ['taxable_income', 'Taxable income', 34000],
-  ['withholding_tax', 'Withholding tax', 4716.67],
-];
-
-const fieldMap = Object.fromEntries(fields.map(([code, label, sample]) => [code, { code, label, sample }]));
-
-const coreComputations = [
-  ['BAS-001', 'Daily Rate', 'Basic Pay', '{{monthly_basic}} * 12 / {{factor_days}}', 'Converts monthly basic pay to the company daily rate.'],
-  ['BAS-002', 'Hourly Rate', 'Basic Pay', '{{daily_rate}} / {{work_hours}}', 'Derives the hourly rate from the daily rate and standard work hours.'],
-  ['BAS-003', 'Minute Rate', 'Basic Pay', '{{hourly_rate}} / 60', 'Derives the per-minute rate for tardiness and undertime.'],
-  ['BAS-004', 'Effective Pay Adjustment', 'Basic Pay', '{{basic_pay}} + {{basic_pay_adjustment}}', 'Applies an effective-dated basic pay adjustment within the selected payroll cutoff.'],
-  ['MWE-001', 'MWE Pay with ECOLA', 'Basic Pay', '{{daily_rate}} * {{days_worked}} + {{ecola_amount}} * {{days_worked}}', 'Computes minimum wage pay together with the applicable daily ECOLA.'],
-  ['ERN-001', 'Basic Pay for Period', 'Earnings', '{{monthly_basic}} / 2', 'Computes semi-monthly basic pay.'],
-  ['ERN-002', 'Overtime Pay', 'Earnings', '{{hourly_rate}} * {{ot_hours}} * {{ot_rate}}', 'Computes overtime pay using the applicable premium multiplier.'],
-  ['ERN-003', 'Night Differential', 'Earnings', '{{hourly_rate}} * {{ot_hours}} * 0.10', 'Computes night differential earnings.'],
-  ['ERN-004', 'Variable Allowance Adjustment', 'Earnings', '{{taxable_earnings}} / {{days_worked}}', 'Adjusts a variable allowance using payroll attendance units.'],
-  ['ERN-005', 'Variable Allowance by Unit', 'Earnings', '{{allowance_units}} * {{allowance_unit_rate}}', 'Computes variable allowance from uploaded or timekeeping-derived units.'],
-  ['ERN-006', 'Holiday Premium Pay', 'Earnings', '{{hourly_rate}} * {{holiday_hours}} * {{holiday_rate}}', 'Computes holiday and rest-day premiums using the assigned reference rate.'],
-  ['DED-001', 'Absence Deduction', 'Deductions', '{{daily_rate}} * {{absent_days}}', 'Computes the deduction for unpaid absences.'],
-  ['DED-002', 'Tardiness Deduction', 'Deductions', '{{hourly_rate}} / 60 * {{late_minutes}}', 'Computes tardiness using the minute rate.'],
-  ['DED-003', 'Undertime Deduction', 'Deductions', '{{hourly_rate}} / 60 * {{undertime_minutes}}', 'Computes undertime using the minute rate.'],
-  ['THP-001', 'Minimum Take-Home Pay', 'Take-Home Pay', '{{take_home_base}} * {{minimum_take_home_rate}}', 'Computes the protected minimum using the assigned basic, gross, or gross-less-reimbursements basis.'],
-  ['THP-002', 'Maximum Controllable Deductions', 'Take-Home Pay', 'MAX(0, {{gross_pay}} - {{statutory_deductions}} - {{take_home_base}} * {{minimum_take_home_rate}})', 'Calculates the amount available to controllable deductions after mandatory statutory items are applied in full.'],
-  ['GOV-001', 'SSS Employee Contribution', 'Government', 'MIN({{monthly_basic}}, {{sss_ceiling}}) * {{sss_rate}}', 'Computes employee SSS contribution from the active statutory reference values.'],
-  ['GOV-002', 'PhilHealth Employee Contribution', 'Government', 'MIN({{monthly_basic}}, {{philhealth_ceiling}}) * {{philhealth_rate}}', 'Computes the employee PhilHealth share.'],
-  ['GOV-003', 'HDMF Employee Contribution', 'Government', 'MIN({{monthly_basic}}, {{hdmf_ceiling}}) * {{hdmf_rate}}', 'Computes the employee HDMF share.'],
-  ['TAX-001', 'Taxable Income', 'Tax', '{{gross_pay}} - {{non_taxable_earnings}} - {{statutory_deductions}}', 'Determines taxable income before the withholding tax lookup.'],
-  ['TAX-002', 'Withholding Tax', 'Tax', 'MAX(0, {{taxable_income}} * {{tax_rate}} - {{tax_offset}})', 'Computes withholding tax using mapped values from the active tax table.'],
-  ['TAX-003', 'Gross Up', 'Tax', '{{taxable_income}} / (1 - {{tax_rate}})', 'Computes grossed-up income using the mapped tax rate.'],
-  ['GUP-001', 'Target Net Gross Up', 'Tax', '{{target_net_pay}} / (1 - {{tax_rate}})', 'Back-solves gross taxable pay from the target net pay.'],
-  ['TAX-004', 'Fringe Benefit Tax', 'Tax', '{{taxable_earnings}} / 0.65 * 0.35', 'Computes fringe benefit tax for taxable fringe benefits.'],
-  ['TAX-005', 'Final Tax', 'Tax', '{{taxable_earnings}} * {{tax_rate}}', 'Computes final tax based on the assigned tax rate.'],
-  ['TAX-006', 'Expanded Withholding Tax', 'Tax', '{{taxable_earnings}} * 0.02', 'Computes expanded withholding tax for configured pay items.'],
-  ['TAX-008', 'Annualized Withholding Tax', 'Tax', 'MAX(0, ({{basic_earnings_ytd}} + {{taxable_earnings}}) * {{tax_rate}} - {{tax_offset}} - {{withholding_tax}})', 'Projects remaining annual tax from current and previous-employer year-to-date values.'],
-  ['TAX-009', 'Tax Projection with Previous Employer', 'Tax', 'MAX(0, ({{forecasted_annual_income}} + {{previous_employer_taxable}}) * {{tax_rate}} - {{tax_offset}} - {{previous_employer_tax_withheld}})', 'Projects correct annual tax using the employee 2316 and previous-employer balances.'],
-  ['TAX-010', 'Scheduled Projected Tax', 'Tax', 'MAX(0, ({{forecasted_annual_income}} + {{previous_employer_taxable}}) * {{tax_rate}} - {{tax_offset}} - {{previous_employer_tax_withheld}}) / {{tax_schedule_periods}}', 'Spreads projected tax across the configured remaining payroll periods or year-end collection.'],
-  ['BON-001', 'Standard 13th Month Pay', 'Bonus', '{{basic_earnings_ytd}} / 12', 'Computes the standard thirteenth-month benefit.'],
-  ['BON-002', 'Pro-rated 13th Month Pay', 'Bonus', '{{basic_earnings_ytd}} / 12', 'Computes pro-rated thirteenth-month pay from eligible earnings.'],
-  ['BON-003', 'Taxable Bonus Excess', 'Bonus', 'MAX(0, {{other_bonus}} - {{bonus_tax_ceiling}})', 'Applies the single exemption ceiling across thirteenth-month pay and other bonuses.'],
-  ['BON-004', 'Remaining Bonus Exemption', 'Bonus', 'MAX(0, {{bonus_tax_ceiling}} - {{bonus_paid_ytd}})', 'Tracks the remaining annual non-taxable bonus ceiling before taxable reclassification.'],
-  ['DMN-001', 'Remaining De Minimis Ceiling', 'Benefits', 'MAX(0, {{de_minimis_ceiling}} - {{de_minimis_paid_ytd}})', 'Tracks the remaining annual ceiling for the assigned De Minimis benefit.'],
-  ['RCL-001', 'Taxable De Minimis Excess', 'Tax', 'MAX(0, {{de_minimis_paid_ytd}} + {{non_taxable_earnings}} - {{de_minimis_ceiling}})', 'Reclassifies De Minimis amounts above the annual ceiling as taxable earnings.'],
-  ['PAY-001', 'Gross Pay', 'Payroll Result', '{{basic_pay}} + {{taxable_earnings}} + {{non_taxable_earnings}} + {{other_bonus}}', 'Computes gross pay from the configured earning groups.'],
-  ['PAY-002', 'Net Pay', 'Payroll Result', '{{gross_pay}} - {{withholding_tax}} - {{statutory_deductions}} - {{other_deductions}} - {{loan_amortizations}}', 'Computes net pay after taxes, deductions, and loan amortizations.'],
-  ['YTD-001', 'YTD Taxable Earnings', 'Year to Date', '{{taxable_earnings}} + {{basic_earnings_ytd}}', 'Accumulates taxable earnings for the year.'],
-  ['RET-001', 'Statutory Retirement Benefit', 'Retirement', '{{daily_rate}} * {{retirement_days_per_year}} * {{rounded_years_service}}', 'Computes the RA 7641 statutory retirement benefit basis using the configured divisor, 22.5-day equivalent, and six-month rounding rule.'],
-  ['RET-002', 'More Beneficial Retirement Benefit', 'Retirement', 'MAX({{daily_rate}} * {{retirement_days_per_year}} * {{rounded_years_service}}, {{retirement_company_value}})', 'Selects the higher qualifying value between the statutory and company retirement plans.'],
-  ['FIN-001', 'Unused Leave Conversion', 'Separation', '{{daily_rate}} * {{unused_leave_days}}', 'Computes unused leave conversion for final pay using the assigned daily rate.'],
-  ['BEN-001', 'Maternity Benefit Reimbursement', 'Benefits', '{{daily_rate}} * {{maternity_days}}', 'Computes the standard maternity benefit reimbursement basis.'],
-  ['BEN-002', 'Provident Fund Contribution', 'Benefits', '{{monthly_basic}} * {{provident_rate}}', 'Computes the configured government-backed provident fund contribution.'],
-  ['BEN-003', 'Pension Fund Contribution', 'Benefits', '{{monthly_basic}} * {{pension_rate}}', 'Computes the configured employer or government pension contribution.'],
-  ['BEN-004', 'SSS Sickness Reimbursement', 'Benefits', '{{daily_rate}} * {{sickness_days}}', 'Computes the sickness reimbursement basis from approved benefit days.'],
-  ['BEN-005', 'Expanded Maternity Reimbursement', 'Benefits', '{{daily_rate}} * {{maternity_days}}', 'Computes expanded maternity benefit reimbursement from approved days.'],
-  ['INC-001', 'Commission', 'Incentives', '{{taxable_earnings}} * 0.05', 'Computes commission using the configured eligible earnings.'],
-  ['PCE-001', 'Piece Rate', 'Incentives', '{{piece_units}} * {{piece_unit_rate}}', 'Computes piece-rate earnings using completed units and the configured unit rate.'],
-  ['OJT-001', 'OJT Allowance', 'Incentives', '{{ojt_days}} * {{ojt_daily_allowance}}', 'Computes OJT allowance from eligible rendered days.'],
-  ['PRT-001', 'Part-Time Pay', 'Incentives', '{{part_time_hours}} * {{hourly_rate}}', 'Computes part-time pay from approved hours and the assigned hourly rate.'],
-];
-
-export const categoryCycle = ['Basic Pay', 'Earnings', 'Deductions', 'Government', 'Tax', 'Bonus', 'Year to Date', 'Benefits', 'Take-Home Pay', 'Retirement', 'Payroll Result', 'Separation', 'Incentives'];
-
-export function seedComputations() {
-  const known = coreComputations.map((item, index) => ({
-    id: index + 1,
-    code: item[0],
-    name: item[1],
-    category: item[2],
-    expression: item[3],
-    description: item[4],
-    status: 'Active',
-    isBuiltIn: true,
-    version: '1.0',
-    effectiveDate: '2026-01-01',
-    updatedBy: index % 4 === 0 ? 'P&A Admin' : 'System Standard',
-    updatedAt: index % 4 === 0 ? 'Aug 8, 2026' : 'Jan 1, 2026',
-  }));
-  const generated = Array.from({ length: 219 - known.length }, (_, index) => {
-    const number = index + known.length + 1;
-    const category = categoryCycle[index % categoryCycle.length];
-    return {
-      id: number,
-      code: `STD-${String(number).padStart(3, '0')}`,
-      name: `${category} Standard Computation ${String(index + 1).padStart(3, '0')}`,
-      category,
-      expression: '{{basic_pay}}',
-      description: `Standard ${category.toLowerCase()} computation included in the controlled Atlas library.`,
-      status: index % 17 === 0 ? 'Inactive' : 'Active',
-      isBuiltIn: true,
-      version: '1.0',
-      effectiveDate: '2026-01-01',
-      updatedBy: 'System Standard',
-      updatedAt: 'Jan 1, 2026',
-    };
-  });
-  return [...known, ...generated];
-}
 
 const initialAssignments = [
-  { id: 1, type: 'Government deduction', table: 'SSS Contribution Table 2026', computationCode: 'GOV-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 2, type: 'Government deduction', table: 'PhilHealth Contribution Table 2026', computationCode: 'GOV-002', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 3, type: 'Government deduction', table: 'HDMF Contribution Table 2026', computationCode: 'GOV-003', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 4, type: 'Tax computation', table: 'BIR Withholding Tax Table 2026', computationCode: 'TAX-002', employeeGroup: 'Monthly', frequency: 'Every payroll', status: 'Active' },
-  { id: 5, type: 'Take-home protection', table: 'Deduction and Loan Hierarchy', computationCode: 'THP-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' },
-  { id: 6, type: 'Retirement benefit', table: 'Employee Groups', computationCode: 'RET-002', employeeGroup: 'All Employees', frequency: 'On retirement', status: 'Active' },
+  { id: 1, type: 'Government deduction', table: 'SSS Contribution Table 2026', computationCode: 'GOV-001', status: 'Active' },
+  { id: 2, type: 'Government deduction', table: 'PhilHealth Contribution Table 2026', computationCode: 'GOV-002', status: 'Active' },
+  { id: 3, type: 'Government deduction', table: 'HDMF Contribution Table 2026', computationCode: 'GOV-003', status: 'Active' },
+  { id: 4, type: 'Tax computation', table: 'BIR Withholding Tax Table 2026', computationCode: 'TAX-002', status: 'Active' },
+  { id: 5, type: 'Take-home protection', table: 'Deduction and Loan Hierarchy', computationCode: 'THP-001', status: 'Active' },
+  { id: 6, type: 'Retirement benefit', table: 'Employee Groups', computationCode: 'RET-002', status: 'Active' },
 ];
-
-function refRows(type) {
-  // BRD row 47 keeps the deduction/loan adjustment order in a reference table.
-  // `note` carries "Group · Classification"; `value` is the rank (0 = never adjusted).
-  if (type === 'hierarchy') return [
-    { id: 1, key: 'Statutory deductions', value: '0', note: 'Statutory · Never adjusted' },
-    { id: 2, key: 'HMO', value: '1', note: 'Loan · Company-mandated' },
-    { id: 3, key: 'Educational Loan', value: '2', note: 'Loan · Company-mandated' },
-    { id: 4, key: 'Salary Loan', value: '3', note: 'Loan · Company-mandated' },
-    { id: 5, key: 'SSS Salary Loan', value: '4', note: 'Loan · Government' },
-    { id: 6, key: 'HDMF Salary Loan', value: '5', note: 'Loan · Government' },
-    { id: 7, key: 'SSS Calamity Loan', value: '6', note: 'Loan · Government' },
-    { id: 8, key: 'Optional deductions', value: '7', note: 'Deduction · Optional' },
-    { id: 9, key: 'Lates, Absences & Undertime', value: '8', note: 'Deduction · Attendance' },
-  ];
-  if (type === 'rate') return [
-    { id: 1, key: 'Employee rate', value: '5.00%', note: 'Effective January 2025' },
-    { id: 2, key: 'Employer rate', value: '10.00%', note: 'Effective January 2025' },
-    { id: 3, key: 'Compensation ceiling', value: '35,000.00', note: 'Monthly compensation' },
-  ];
-  if (type === 'tax') return [
-    { id: 1, key: '0.00 - 20,833.00', value: '0%', note: 'No withholding tax' },
-    { id: 2, key: '20,833.01 - 33,332.00', value: '15% of excess', note: 'Monthly bracket' },
-    { id: 3, key: '33,332.01 - 66,666.00', value: '1,875 + 20%', note: 'Monthly bracket' },
-  ];
-  return [
-    { id: 1, key: 'Default', value: 'Enabled', note: 'Company standard' },
-    { id: 2, key: 'Special case', value: 'By assignment', note: 'Requires employee group mapping' },
-  ];
-}
-
-const referenceSeeds = [
-  ['REF-001', 'BIR Withholding Tax Table 2026', 'Tax', 'tax'],
-  ['REF-002', 'SSS Contribution Table 2026', 'Linked Statutory', 'rate'],
-  ['REF-003', 'PhilHealth Contribution Table 2026', 'Linked Statutory', 'rate'],
-  ['REF-004', 'HDMF Contribution Table 2026', 'Linked Statutory', 'rate'],
-  ['REF-005', 'Minimum Wage Table', 'Payroll', 'default'],
-  ['REF-006', 'De Minimis Ceiling', 'Tax', 'default'],
-  ['REF-007', 'Bonus Tax Exemption Ceiling', 'Tax', 'default'],
-  ['REF-008', 'Overtime Premium Rates', 'Earnings', 'rate'],
-  ['REF-009', 'Holiday Premium Rates', 'Earnings', 'rate'],
-  ['REF-010', 'Factor Days', 'Basic Pay', 'default'],
-  ['REF-011', 'Deduction and Loan Hierarchy', 'Deductions', 'hierarchy'],
-  ['REF-012', 'Minimum Take Home Pay', 'Deductions', 'default'],
-  ['REF-013', 'Bank Codes', 'Accounting', 'default'],
-  ['REF-014', 'General Ledger Mapping', 'Accounting', 'default'],
-  ['REF-015', 'Departments', 'Organization', 'default'],
-  ['REF-016', 'Positions', 'Organization', 'default'],
-  ['REF-017', 'Locations', 'Organization', 'default'],
-  ['REF-018', 'Employee Groups', 'Organization', 'default'],
-  ['REF-019', 'Earnings and Allowance Codes', 'Payroll', 'default'],
-  ['REF-020', 'Bonus Codes and Priority', 'Payroll', 'default'],
-  ['REF-021', 'De Minimis Benefit Types', 'Tax', 'default'],
-  ['REF-022', 'Deduction Codes', 'Deductions', 'default'],
-  ['REF-023', 'Loan Types', 'Deductions', 'default'],
-  ['REF-024', 'Holiday Calendar and Types', 'Time', 'default'],
-  ['REF-025', 'Shift and Work Schedule Codes', 'Time', 'default'],
-  ['REF-026', 'Leave Types and Conversion Rules', 'Leave', 'default'],
-  ['REF-027', 'Currency and Exchange Rates', 'Payroll', 'rate'],
-  ['REF-028', 'Cost Centers and Allocation Dimensions', 'Accounting', 'default'],
-  ['REF-029', 'Payment Frequencies and Payroll Periods', 'Payroll', 'default'],
-  ['REF-030', 'Separation Reasons and Final Pay Treatments', 'Separation', 'default'],
-];
-
-function seedReferences() {
-  return referenceSeeds.map((row, index) => ({
-    id: index + 1,
-    code: row[0],
-    name: row[1],
-    category: row[2],
-    version: index < 4 ? '2026.1' : '1.0',
-    effectiveDate: index < 4 ? '2026-01-01' : '2025-01-01',
-    enabled: index !== 16,
-    entries: refRows(row[3]),
-  }));
-}
 
 const initialHistory = [
   { id: 1, item: 'BIR Withholding Tax Table 2026', type: 'Reference table', action: 'Version uploaded', version: '2026.1', user: 'P&A Admin', date: 'Aug 8, 2026 · 3:42 PM' },
@@ -291,17 +121,14 @@ const initialHistory = [
   { id: 4, item: 'Locations', type: 'Reference table', action: 'Disabled for company', version: '1.0', user: 'Client Admin', date: 'Aug 6, 2026 · 4:20 PM' },
 ];
 
-function readStored(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
-}
-
-function readReferenceLibrary() {
+function readReferenceLibrary(companyId) {
   const seeds = seedReferences();
-  const stored = readStored(STORAGE.references, seeds);
-  if (!Array.isArray(stored)) return seeds;
+  const stored = readReferences(companyId, seeds);
+  if (!Array.isArray(stored) || !stored.length) return seeds;
   const reconciled = seeds.map(seed => ({ ...seed, ...(stored.find(item => item.code === seed.code) || {}) }));
   const custom = stored.filter(item => !seeds.some(seed => seed.code === item.code));
   return [...reconciled, ...custom].map(reference => ({
+    versions: [],
     ...reference,
     entries: synchronizePayrollReference(reference.code, reference.entries),
   }));
@@ -340,73 +167,6 @@ function printReport(title, rows, columns) {
   return true;
 }
 
-function lexExpression(expression) {
-  const cleaned = expression.replace(/\s+/g, '');
-  const matches = cleaned.match(/\{\{[a-z0-9_]+\}\}|\d+(?:\.\d+)?|MAX|MIN|ROUND|[()+\-*/,]/gi) || [];
-  if (matches.join('').toUpperCase() !== cleaned.toUpperCase()) throw new Error('Only mapped fields, numbers, parentheses, and available operators are allowed.');
-  return matches;
-}
-
-export function evaluateExpression(expression, values) {
-  const tokens = lexExpression(expression);
-  let position = 0;
-  const peek = () => tokens[position];
-  const take = () => tokens[position++];
-  const parsePrimary = () => {
-    const token = take();
-    if (token === undefined) throw new Error('The formula is incomplete.');
-    if (token === '(') {
-      const value = parseSum();
-      if (take() !== ')') throw new Error('A closing parenthesis is missing.');
-      return value;
-    }
-    if (token === '-') return -parsePrimary();
-    if (/^(MAX|MIN|ROUND)$/i.test(token)) {
-      if (take() !== '(') throw new Error(`${token.toUpperCase()} needs parentheses.`);
-      const first = parseSum();
-      let second;
-      if (peek() === ',') { take(); second = parseSum(); }
-      if (take() !== ')') throw new Error(`${token.toUpperCase()} is incomplete.`);
-      if (/^MAX$/i.test(token)) return Math.max(first, second);
-      if (/^MIN$/i.test(token)) return Math.min(first, second);
-      return Math.round(first);
-    }
-    if (/^\{\{/.test(token)) {
-      const code = token.slice(2, -2);
-      if (!(code in values)) throw new Error(`No test value is mapped for ${code}.`);
-      return Number(values[code]) || 0;
-    }
-    if (/^\d/.test(token)) return Number(token);
-    throw new Error(`Unexpected token ${token}.`);
-  };
-  const parseProduct = () => {
-    let value = parsePrimary();
-    while (peek() === '*' || peek() === '/') {
-      const operator = take();
-      const next = parsePrimary();
-      if (operator === '/' && next === 0) throw new Error('Division by zero is not allowed.');
-      value = operator === '*' ? value * next : value / next;
-    }
-    return value;
-  };
-  const parseSum = () => {
-    let value = parseProduct();
-    while (peek() === '+' || peek() === '-') {
-      const operator = take();
-      const next = parseProduct();
-      value = operator === '+' ? value + next : value - next;
-    }
-    return value;
-  };
-  const result = parseSum();
-  if (position !== tokens.length) throw new Error(`Unexpected token ${peek()}.`);
-  if (!Number.isFinite(result)) throw new Error('The formula did not produce a valid number.');
-  return result;
-}
-
-function usedFields(expression) {
-  return [...new Set([...expression.matchAll(/\{\{([a-z0-9_]+)\}\}/gi)].map(match => match[1]))];
-}
 
 function Modal({ title, onClose, children, className = '' }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -431,136 +191,554 @@ function ReportMenu({ onCsv, onPdf }) {
 function SummaryCards({ computations, references, assignments }) {
   const active = computations.filter(item => item.status === 'Active').length;
   return <section className="basis-summary" aria-label="Computational Basis summary">
-    <div><Function weight="duotone" /><span><strong>{computations.length}</strong><small>governed computations</small></span></div>
+    <div><Function weight="duotone" /><span><strong>{computations.length}</strong><small>formulas assigned by P&amp;A</small></span></div>
     <div><Table weight="duotone" /><span><strong>{references.length}</strong><small>formula reference sources</small></span></div>
     <div><Check weight="bold" /><span><strong>{active}</strong><small>active computations</small></span></div>
-    <div><ClockCounterClockwise weight="duotone" /><span><strong>{assignments.length}</strong><small>client assignments</small></span></div>
+    <div><ClockCounterClockwise weight="duotone" /><span><strong>{assignments.length}</strong><small>pipeline assignments</small></span></div>
   </section>;
 }
 
-function FormulaEditor({ record, onClose, onSave, onTestHistory }) {
+/**
+ * One row of the Map Fields table.
+ *
+ * The meeting asked for more than "this token exists": who owns the value at
+ * run time, what type and unit it carries, when it is resolved, and what
+ * payroll does when the owning module supplies nothing. All five come from the
+ * field catalogue, so the table describes the real contract rather than a
+ * label typed next to the token.
+ */
+function MapFieldRow({ code, kind, source, sample, problem = '', detail = '' }) {
+  const origin = fieldOrigin(code) || {};
+  return <tr className={problem ? 'mapping-problem' : ''}>
+    <td><code>{`{{${code}}}`}</code></td>
+    <td><span className={`mapping-kind ${kind === 'Computation' ? 'computation' : 'field'}`}>{kind === 'Computation' ? <><Function weight="duotone" /> Computation</> : 'Approved field'}</span></td>
+    <td>{source}{detail && <small className="block-caption">{detail}</small>}</td>
+    <td><span className="mapping-owner">{origin.owner || '—'}</span></td>
+    <td>{origin.dataType || '—'}</td>
+    <td>{origin.unit ? parameterUnitLabel(code) : '—'}</td>
+    <td>{origin.timing || '—'}</td>
+    <td><span className={`missing-behaviour ${/Required/.test(origin.missingBehaviour || '') ? 'blocking' : ''}`}>{origin.missingBehaviour || '—'}</span></td>
+    <td>{sample}</td>
+  </tr>;
+}
+
+/** A parameter bound, typed the way a reader thinks of it: 10 %, not 0.1. */
+function ParameterNumber({ token, value, onChange, label }) {
+  const unit = parameterUnit(token);
+  return <span className="parameter-input">
+    {unit.prefix && <em>{unit.prefix}</em>}
+    <input type="number" step="any" value={toDisplayValue(token, value)} onChange={event => onChange(fromDisplayValue(token, event.target.value))} aria-label={label} />
+    {unit.suffix && <em>{unit.suffix}</em>}
+  </span>;
+}
+
+/**
+ * Which values in this formula a client may change, and within what range.
+ *
+ * This is the Controlled Hybrid boundary written down per formula. The
+ * expression, its variables and anything payroll supplies stay with P&A; a
+ * variable marked here may be given a value by the client, on their own pay
+ * item, inside the range. A client's value never changes the formula.
+ */
+function ParameterDefinitions({ expression, parameters = {}, onChange }) {
+  const tokens = usedFields(expression);
+  const set = (token, patch) => onChange({ ...parameters, [token]: { clientEditable: false, ...(parameters[token] || {}), ...patch } });
+  const problems = parameterDefinitionProblems(normalizeParameters(expression, parameters));
+  return <div className="parameter-workspace">
+    <div className="test-copy"><SlidersHorizontal weight="duotone" /><div><h3>Parameters</h3><p>Mark the values in this formula a client may change, and the range they may change them within — rates, amounts, multipliers, thresholds, caps. The expression, its variables and anything payroll supplies stay with P&amp;A. A client&apos;s value is saved on their own pay item and never changes this formula.</p></div></div>
+    <div className="mapping-table-wrap"><table className="mapping-table parameter-table">
+      <thead><tr><th>Variable</th><th>Supplied by</th><th>Client may change</th><th>Minimum</th><th>Maximum</th><th>Default</th></tr></thead>
+      <tbody>
+        {tokens.map(token => {
+          const field = fieldMap[token];
+          const definition = parameters[token] || {};
+          if (isEngineSupplied(token)) return <tr key={token} className="parameter-runtime">
+            <td><code>{`{{${token}}}`}</code><small className="block-caption">{field?.label || token}</small></td>
+            <td><span className="mapping-owner">{field?.owner || 'Payroll runtime'}</span></td>
+            <td colSpan={4}><span className="parameter-chip locked"><Lock weight="duotone" /> Supplied by payroll at run time — not a parameter</span></td>
+          </tr>;
+          return <tr key={token}>
+            <td><code>{`{{${token}}}`}</code><small className="block-caption">{field?.label || token}</small></td>
+            <td><span className="mapping-owner">{field?.owner || '—'}</span></td>
+            <td><label className="parameter-toggle"><input type="checkbox" checked={Boolean(definition.clientEditable)} onChange={event => set(token, { clientEditable: event.target.checked })} /> {definition.clientEditable ? 'Yes, within the range' : 'No — P&A only'}</label></td>
+            <td><ParameterNumber token={token} value={definition.min} onChange={value => set(token, { min: value })} label={`Minimum for ${token}`} /></td>
+            <td><ParameterNumber token={token} value={definition.max} onChange={value => set(token, { max: value })} label={`Maximum for ${token}`} /></td>
+            <td><ParameterNumber token={token} value={definition.default} onChange={value => set(token, { default: value })} label={`Default for ${token}`} /></td>
+          </tr>;
+        })}
+        {!tokens.length && <tr className="mapping-empty"><td colSpan={6}>This formula uses no approved field yet, so it has no parameters.</td></tr>}
+      </tbody>
+    </table></div>
+    {problems.length
+      ? <div className="basis-error">{problems[0]}</div>
+      : <p className="field-hint">The default is what payroll uses until a pay item sets its own value. Changing a range or who may change a value is a change to the formula, so it publishes a new version.</p>}
+  </div>;
+}
+
+/**
+ * The one formula editor. Under the Controlled Hybrid approach only P&A
+ * authors formulas, so it is opened from Settings › Standard Computation
+ * Library — for Atlas standards and client-specific formulas alike.
+ */
+export function FormulaEditor({ record, library = [], categories = categoryPrefixes, guard = null, actor = 'P&A Admin', companies = [], onClose, onSave, onTestHistory }) {
   const isCreating = record.isNew === true;
-  const [draft, setDraft] = useState({ ...record });
+  const [draft, setDraft] = useState({ scope: 'Atlas standard', ownerCompanyId: '', parameters: {}, ...record });
   const [tab, setTab] = useState('formula');
   const [fieldCode, setFieldCode] = useState(fields[0][0]);
+  // A formula may build on an already published one: only an active one, never
+  // the record being edited, and never another client's own formula — an Atlas
+  // standard that leaned on one client's formula would expose it to everyone.
+  const referenceable = library.filter(item => item.status === 'Active' && item.code !== draft.code
+    && (computationScope(item) !== 'Client-specific' || (draft.scope === 'Client-specific' && item.ownerCompanyId === draft.ownerCompanyId)));
+  const [referenceCode, setReferenceCode] = useState(referenceable[0]?.code || '');
   const [testValues, setTestValues] = useState(() => Object.fromEntries(fields.map(([code, , sample]) => [code, sample])));
   const [testResult, setTestResult] = useState(null);
+  const [expected, setExpected] = useState('');
   const [error, setError] = useState('');
-  const [changeNote, setChangeNote] = useState('Updated through the Computational Basis workspace.');
-  const append = token => setDraft(previous => ({ ...previous, expression: `${previous.expression}${previous.expression && !/[ (]$/.test(previous.expression) ? ' ' : ''}${token}` }));
+  // A formula a posted payroll used gets no ready-made note: the new version
+  // has to say why it exists.
+  const [changeNote, setChangeNote] = useState(isCreating ? 'Formula added to the central library.' : guard?.versionNotice ? '' : 'Formula updated in the central library.');
+  const [changeSource, setChangeSource] = useState('Screen');
+  const [approvalRef, setApprovalRef] = useState('');
+  const [caseName, setCaseName] = useState('');
+  const testCases = draft.testCases || [];
+  const caseResults = runTestCases(draft.expression, testCases, (expression, inputs) => evaluateExpression(expression, inputs, { library }));
+  const addTestCase = () => {
+    if (expected === '') { setError('Give the expected result before saving this as a test case.'); return; }
+    const inputs = Object.fromEntries(resolvedFields(draft.expression, library).map(code => [code, Number(testValues[code]) || 0]));
+    setDraft(previous => ({ ...previous, testCases: [...(previous.testCases || []), { id: `tc-${Date.now()}`, name: caseName.trim() || `Case ${(previous.testCases || []).length + 1}`, inputs, expected: Number(expected), addedBy: actor, addedAt: new Date().toISOString() }] }));
+    setCaseName('');
+    setError('');
+  };
+  const removeTestCase = id => setDraft(previous => ({ ...previous, testCases: (previous.testCases || []).filter(item => item.id !== id || item.lockedIn) }));
+  /**
+   * Editing the expression retires the test evidence recorded against the old
+   * one. A version must not publish carrying proof that a different formula
+   * passed — the evidence is only evidence if it was produced by the
+   * expression being saved.
+   */
+  const changeExpression = expression => setDraft(previous => ({
+    ...previous,
+    expression,
+    lastTest: previous.lastTest && previous.lastTest.expression === expression ? previous.lastTest : null,
+  }));
+  const append = token => changeExpression(`${draft.expression}${draft.expression && !/[ (]$/.test(draft.expression) ? ' ' : ''}${token}`);
+
+  /**
+   * While the record is being created the code follows the category, because
+   * the agreed convention derives it from the category and a sequence. Once it
+   * is saved the code is locked: a payroll transaction may already print it.
+   */
+  const changeCategory = category => setDraft(previous => ({
+    ...previous,
+    category,
+    code: isCreating ? nextComputationCode(category, library, categories) : previous.code,
+  }));
+
   const runTest = () => {
     try {
-      const value = evaluateExpression(draft.expression, testValues);
-      setTestResult(value);
-      setError('');
-      onTestHistory?.(draft, value);
+      const value = evaluateExpression(draft.expression, testValues, { library });
+      const inputs = Object.fromEntries(resolvedFields(draft.expression, library).map(code => [code, Number(testValues[code]) || 0]));
+      const target = expected === '' ? null : Number(expected);
+      const passed = target === null || Math.abs(target - value) < 0.005;
+      const evidence = {
+        inputs,
+        expected: target,
+        actual: value,
+        result: passed ? 'Passed' : 'Failed',
+        testedBy: actor,
+        testedAt: new Date().toISOString(),
+        expression: draft.expression,
+      };
+      setTestResult(evidence);
+      setDraft(previous => ({ ...previous, lastTest: evidence }));
+      setError(passed ? '' : `The formula returned ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}, not the expected ${target.toLocaleString(undefined, { maximumFractionDigits: 2 })}.`);
+      if (passed) onTestHistory?.(draft, evidence);
     } catch (testError) {
       setTestResult(null);
       setError(testError.message);
     }
   };
+
   const submit = event => {
     event.preventDefault();
+    if (guard && !guard.canEdit) { setError(guard.editReason); return; }
+    if (guard?.versionNotice && !changeNote.trim()) { setError('Give the reason for this new version under Change details — a posted payroll used this formula, so the change has to be explained.'); setTab('change'); return; }
+    if (guard?.versionNotice && !approvalRef.trim()) { setError('Give the approval reference for this change under Change details — a posted payroll used this formula.'); setTab('change'); return; }
+    const failing = caseResults.filter(item => !item.passed);
+    if (failing.length) { setError(`${failing.map(item => item.name).join(', ')} ${failing.length === 1 ? 'no longer passes' : 'no longer pass'}. Every test case must pass before the version is saved.`); setTab('test'); return; }
+    if (!String(draft.name || '').trim()) { setError('Give the formula a name. A description is optional but recommended.'); setTab('formula'); return; }
+    if (draft.scope === 'Client-specific' && !draft.ownerCompanyId) { setError('Choose the client this formula is built for.'); setTab('formula'); return; }
+    const problems = referenceProblems(draft.expression, library, draft.code);
+    if (problems.length) { setError(problems.join(' ')); setTab('formula'); return; }
+    // Parameters follow the expression: a variable the formula no longer uses
+    // takes its definition with it.
+    const parameters = normalizeParameters(draft.expression, draft.parameters);
+    const parameterIssues = parameterDefinitionProblems(parameters);
+    if (parameterIssues.length) { setError(parameterIssues[0]); setTab('parameters'); return; }
     try {
-      evaluateExpression(draft.expression, testValues);
-      onSave({ ...draft, changeNote });
+      evaluateExpression(draft.expression, testValues, { library });
+      onSave({ ...draft, name: draft.name.trim(), description: String(draft.description || '').trim(), parameters, changeNote, changeSource, approvalRef: approvalRef.trim() });
     } catch (saveError) { setError(saveError.message); setTab('formula'); }
   };
+
+  // The banner result belongs to the tested expression, not to the draft.
+  const staleResult = Boolean(testResult) && testResult.expression !== draft.expression;
   const mapped = usedFields(draft.expression);
-  return <Modal title={isCreating ? 'Create company computation' : `Edit computation · ${record.code}`} onClose={onClose} className="basis-editor-modal">
+  const dependencies = computationDependencies(draft.expression, library, draft.code);
+  // A referenced computation brings its own inputs, so the test tab asks for the
+  // fields the whole chain needs rather than a figure the user would otherwise
+  // have to work out by hand.
+  const testable = resolvedFields(draft.expression, library);
+  const pendingChanges = isCreating ? [] : diffComputation(record, draft);
+  // A new version that adds a variable leaves every pay item bound to this
+  // formula to be told where that value comes from.
+  const addedVariables = isCreating ? [] : usedFields(draft.expression).filter(token => !usedFields(record.expression || '').includes(token));
+  const affectedPayItems = addedVariables.length ? payItemsUsing(record.code, companies) : [];
+  const recalculableRuns = guard?.recalculableRuns || [];
+  const showVersionNotice = Boolean(guard?.versionNotice || recalculableRuns.length || affectedPayItems.length);
+
+  return <Modal title={isCreating ? 'Add formula' : `Edit formula · ${record.code}`} onClose={onClose} className="basis-editor-modal">
     <form onSubmit={submit}>
       <div className="basis-editor-tabs">
         <button type="button" className={tab === 'formula' ? 'active' : ''} onClick={() => setTab('formula')}>Formula setup</button>
+        <button type="button" className={tab === 'parameters' ? 'active' : ''} onClick={() => setTab('parameters')}>Parameters</button>
         <button type="button" className={tab === 'test' ? 'active' : ''} onClick={() => setTab('test')}>Test calculation</button>
         <button type="button" className={tab === 'change' ? 'active' : ''} onClick={() => setTab('change')}>Change details</button>
       </div>
       <div className="basis-editor-body">
+        {showVersionNotice && <div className="library-notice governed-notice version-notice"><Warning weight="duotone" /><span>
+          {guard?.versionNotice && <strong>{guard.versionNotice}</strong>}
+          {Boolean(recalculableRuns.length) && <small>{`${recalculableRuns.join(', ')} ${recalculableRuns.length === 1 ? 'is' : 'are'} still open or in review and will use the new version if recalculated.`}</small>}
+          {Boolean(affectedPayItems.length) && <small>{`This change adds ${addedVariables.map(token => `{{${token}}}`).join(', ')}. Check where it comes from on ${affectedPayItems.map(item => `${item.name} (${item.companyName})`).join(', ')}.`}</small>}
+        </span></div>}
         {tab === 'formula' && <>
           <div className="basis-form-grid">
-            <label>Computation code<input value={draft.code} disabled={!isCreating} onChange={event => setDraft({ ...draft, code: event.target.value.toUpperCase() })} placeholder="e.g. CUS-001" required /></label>
+            <label>Computation code
+              <input value={draft.code} disabled readOnly aria-describedby="computation-code-hint" />
+              <small id="computation-code-hint" className="field-hint">{isCreating
+                ? `Generated from the ${draft.category} category (${prefixForCategory(draft.category, categories)}) and locked once saved.`
+                : 'Generated on creation and locked — payroll transactions print this code.'}</small>
+            </label>
             <label>Computation name<input value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} required /></label>
-            <label>Category<select value={draft.category} onChange={event => setDraft({ ...draft, category: event.target.value })}>{categoryCycle.map(value => <option key={value}>{value}</option>)}</select></label>
-            <label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })}><option>Active</option><option>Inactive</option></select></label>
-            <label className="wide">Description<textarea value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} required /></label>
+            <label>Category<select value={draft.category} onChange={event => changeCategory(event.target.value)}>{categories.map(([name]) => <option key={name}>{name}</option>)}</select>
+              <small className="field-hint">Controlled by Settings › Reference Table › Computation Category.</small>
+            </label>
+            <label>Scope
+              <select value={draft.scope} disabled={!isCreating} onChange={event => { const scope = event.target.value; setDraft(previous => ({ ...previous, scope, ownerCompanyId: scope === 'Client-specific' ? (previous.ownerCompanyId || companies[0]?.companyId || '') : '' })); }}>
+                {FORMULA_SCOPES.map(scope => <option key={scope}>{scope}</option>)}
+              </select>
+              <small className="field-hint">{isCreating
+                ? 'An Atlas standard can be assigned to any company. A client-specific formula is built by P&A for one client and is only ever assigned to that client.'
+                : 'Fixed once the formula is saved.'}</small>
+            </label>
+            {draft.scope === 'Client-specific' && <label>Client
+              <select value={draft.ownerCompanyId || ''} disabled={!isCreating} onChange={event => setDraft(previous => ({ ...previous, ownerCompanyId: event.target.value }))} required>
+                <option value="">Please select</option>
+                {companies.map(company => <option key={company.companyId} value={company.companyId}>{companyLabel(company)}</option>)}
+              </select>
+            </label>}
+            {isCreating
+              ? <label>Status
+                  <input value="Inactive" disabled readOnly />
+                  <small className="field-hint">A new computation stays Inactive while it is built and reviewed. Activate it from the list when it is ready to compute.</small>
+                </label>
+              : <label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })}><option>Active</option><option>Inactive</option></select></label>}
+            <label className="wide"><span className="label-caption">Description <span className="optional-tag">Optional</span></span>
+              <textarea value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} placeholder="Recommended — explain what this formula includes and excludes." />
+            </label>
           </div>
           <section className="formula-builder">
-            <div className="formula-builder-heading"><div><h3>Expression builder</h3><p>Build a company calculation from approved payroll fields and operators. Atlas validates the expression before it can be saved.</p></div><span className="version-chip">{isCreating ? 'Company-defined' : `Version ${draft.version}`}</span></div>
-            <textarea className="formula-expression" value={draft.expression} onChange={event => setDraft({ ...draft, expression: event.target.value })} aria-label="Formula expression" required />
+            <div className="formula-builder-heading"><div><h3>Expression builder</h3><p>Build the calculation from approved payroll fields, published formulas and operators. Keep a rate or amount a client may change out of the expression as a number — insert it as a field and give it a range on the Parameters tab.</p></div><span className="version-chip">{isCreating ? draft.scope : `Version ${draft.version}`}</span></div>
+            <textarea className="formula-expression" value={draft.expression} onChange={event => changeExpression(event.target.value)} aria-label="Formula expression" required />
             <div className="formula-insert-row">
               <select value={fieldCode} onChange={event => setFieldCode(event.target.value)}>{fields.map(([code, label]) => <option value={code} key={code}>{label}</option>)}</select>
               <button type="button" className="button secondary" onClick={() => append(`{{${fieldCode}}}`)}><Plus /> Insert field</button>
               <div className="operator-palette" aria-label="Available operators">{['+', '−', '×', '÷', '(', ')', 'MIN(', 'MAX('].map(operator => <button type="button" key={operator} onClick={() => append(operator.replace('−', '-').replace('×', '*').replace('÷', '/'))}>{operator}</button>)}</div>
             </div>
+            <div className="formula-insert-row formula-reference-row">
+              <select value={referenceCode} onChange={event => setReferenceCode(event.target.value)} aria-label="Published computation" disabled={!referenceable.length}>{referenceable.map(item => <option value={item.code} key={item.code}>{item.code} · {item.name}</option>)}</select>
+              <button type="button" className="button secondary" onClick={() => append(`{{${referenceCode}}}`)} disabled={!referenceCode}><Function /> Insert computation</button>
+              <p className="formula-insert-hint">Build on a published formula instead of repeating its arithmetic. Its own inputs are collected for you.</p>
+            </div>
             <div className="mapping-table-wrap">
-              <table className="mapping-table"><thead><tr><th>Mapped field</th><th>Atlas source</th><th>Sample value</th></tr></thead><tbody>
-                {mapped.map(code => <tr key={code}><td><code>{`{{${code}}}`}</code></td><td>{fieldMap[code]?.label || 'Unrecognized field'}</td><td>{fieldMap[code]?.sample?.toLocaleString?.() ?? '—'}</td></tr>)}
+              <table className="mapping-table map-field-table"><thead><tr><th>Mapped field</th><th>Kind</th><th>Atlas source</th><th>Owner / source module</th><th>Data type</th><th>Unit</th><th>Timing</th><th>If the value is missing</th><th>Sample value</th></tr></thead><tbody>
+                {mapped.map(code => <MapFieldRow key={code} code={code} kind="Approved field" source={fieldMap[code]?.label || 'Unrecognized field'} sample={fieldMap[code]?.sample?.toLocaleString?.() ?? '—'} />)}
+                {dependencies.map(dependency => <MapFieldRow
+                  key={dependency.code}
+                  code={dependency.code}
+                  kind="Computation"
+                  problem={dependency.missing || dependency.circular || dependency.inactive ? 'problem' : ''}
+                  source={dependency.circular ? 'A formula cannot refer to itself' : dependency.missing ? 'Not a published computation' : `${dependency.name}${dependency.inactive ? ' · inactive' : ''}`}
+                  detail={dependency.missing || dependency.circular ? '' : dependency.expression}
+                  sample={dependency.missing || dependency.circular ? '—' : `Version ${dependency.version}`}
+                />)}
+                {!mapped.length && !dependencies.length && <tr className="mapping-empty"><td colSpan={9}>Insert an approved field or a published computation to begin.</td></tr>}
               </tbody></table>
             </div>
           </section>
         </>}
         {tab === 'test' && <div className="test-workspace">
-          <div className="test-copy"><Flask weight="duotone" /><div><h3>Test calculation</h3><p>Run the draft formula with controlled values before saving it.</p></div></div>
-          <div className="test-input-grid">{mapped.map(code => <label key={code}>{fieldMap[code]?.label || code}<input type="number" step="any" value={testValues[code] ?? 0} onChange={event => setTestValues({ ...testValues, [code]: event.target.value })} /></label>)}</div>
-          <div className="test-result-row"><button type="button" className="button primary" onClick={runTest}><Flask /> Run test</button>{testResult !== null && <div className="test-result passed"><Check weight="bold" /><span><small>Formula passed</small><strong>₱ {testResult.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></span></div>}</div>
+          <div className="test-copy"><Flask weight="duotone" /><div><h3>Test calculation</h3><p>Run the draft formula with controlled values. The inputs, the expected amount and the result are stored with the version this save publishes, so the evidence stays with the record.</p></div></div>
+          {Boolean(dependencies.length) && <p className="test-reference-note"><Function weight="duotone" /> This formula builds on {dependencies.map(item => item.code).join(', ')}. The inputs below cover the whole chain.</p>}
+          <div className="test-input-grid">{testable.map(code => <label key={code}>{fieldMap[code]?.label || code}<input type="number" step="any" value={testValues[code] ?? 0} onChange={event => setTestValues({ ...testValues, [code]: event.target.value })} /></label>)}</div>
+          <div className="test-expectation"><label><span className="label-caption">Expected result <span className="optional-tag">Optional</span></span><input type="number" step="any" value={expected} onChange={event => setExpected(event.target.value)} placeholder="e.g. 2000" /></label><small>Give an expected amount and the stored evidence records Passed or Failed against it rather than only the figure Atlas produced.</small></div>
+          <div className="test-result-row">
+            <button type="button" className="button primary" onClick={runTest}><Flask /> Run test</button>
+            {testResult && !staleResult && <div className={`test-result ${testResult.result === 'Passed' ? 'passed' : 'failed'}`}>{testResult.result === 'Passed' ? <Check weight="bold" /> : <Warning weight="bold" />}<span><small>{testResult.result === 'Passed' ? 'Formula passed' : 'Formula did not match the expected amount'}</small><strong>₱ {testResult.actual.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></span></div>}
+          </div>
+          {staleResult && <p className="test-evidence-empty">The expression changed after this test ran. Run it again so the version you publish carries evidence for the formula it actually contains.</p>}
+          {testResult && !staleResult && <TestEvidence evidence={testResult} />}
+          <section className="test-cases">
+            <header><h4>Test cases</h4><span>{testCases.length ? `${caseResults.filter(item => item.passed).length} of ${testCases.length} passing` : 'None yet'}</span></header>
+            <p className="field-hint">Keep the inputs above with their expected result as a test case. Every case is run again on each change and must pass to save; a case is locked once the version it was saved with is approved.</p>
+            <div className="test-case-add"><input value={caseName} onChange={event => setCaseName(event.target.value)} placeholder="Case name, e.g. Mid-month hire" aria-label="Test case name" /><button type="button" className="button secondary" onClick={addTestCase}><Plus /> Save inputs as a test case</button></div>
+            {testCases.length > 0 && <table className="config-table test-case-table"><thead><tr><th>Case</th><th>Inputs</th><th>Expected</th><th>Actual</th><th>Result</th><th /></tr></thead><tbody>
+              {caseResults.map(item => <tr key={item.id}>
+                <td><strong>{item.name}</strong>{item.lockedIn && <small className="block-caption"><Lock weight="duotone" /> Locked in v{item.lockedIn}</small>}</td>
+                <td><small>{Object.entries(item.inputs).map(([code, value]) => `${fieldMap[code]?.label || code}: ${Number(value).toLocaleString()}`).join(' · ')}</small></td>
+                <td>₱{Number(item.expected).toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+                <td>{item.actual === null ? item.error : `₱${Number(item.actual).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</td>
+                <td><span className={`status-pill ${item.passed ? 'active' : 'inactive'}`}>{item.passed ? 'Passed' : 'Failed'}</span></td>
+                <td>{item.lockedIn ? <Lock weight="duotone" /> : <button type="button" className="text-danger" onClick={() => removeTestCase(item.id)}>Remove</button>}</td>
+              </tr>)}
+            </tbody></table>}
+          </section>
         </div>}
+        {tab === 'parameters' && <ParameterDefinitions expression={draft.expression} parameters={draft.parameters} onChange={parameters => setDraft(previous => ({ ...previous, parameters }))} />}
         {tab === 'change' && <div className="change-workspace">
-          <h3>Change details</h3><p>Saving creates a new controlled version and records the change in history.</p>
+          <h3>Change details</h3><p>Saving creates a new controlled version and records the change — with its before and after values — in history.</p>
           <label>Effective date<input type="date" value={draft.effectiveDate} onChange={event => setDraft({ ...draft, effectiveDate: event.target.value })} required /></label>
           <label>Change note<textarea value={changeNote} onChange={event => setChangeNote(event.target.value)} required /></label>
-          <div className="change-summary"><span>{isCreating ? 'Initial version' : 'Current version'} <strong>{isCreating ? '1.0' : draft.version}</strong></span><span>{isCreating ? 'Ownership' : 'Next version'} <strong>{isCreating ? 'Company' : (Number(draft.version) + 0.1).toFixed(1)}</strong></span><span>{isCreating ? 'Created by' : 'Changed by'} <strong>Client Admin</strong></span></div>
+          <div className="basis-form-grid">
+            <label>Change source<select value={changeSource} onChange={event => setChangeSource(event.target.value)}><option>Screen</option><option>Upload</option><option>API</option></select><small className="field-hint">Recorded with the version so the history shows how the change arrived.</small></label>
+            <label><span className="label-caption">Approval reference {guard?.versionNotice ? <span className="required">*</span> : <span className="optional-tag">Optional</span>}</span><input value={approvalRef} onChange={event => setApprovalRef(event.target.value)} placeholder="e.g. CR-2026-014 or the approval email subject" /></label>
+          </div>
+          {draft.effectiveDate > new Date().toISOString().slice(0, 10) && <p className="field-hint scheduled-hint">Effective {draft.effectiveDate} — this version is scheduled. Payroll paid out before that date keeps using the version in force now.</p>}
+          {Boolean(pendingChanges.length) && <div className="change-diff">
+            <h4>What this save changes</h4>
+            <table className="change-diff-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>
+              {pendingChanges.map(change => <tr key={change.field}><td>{change.field}</td><td><code className="diff-before">{String(change.from) || '—'}</code></td><td><code className="diff-after">{String(change.to) || '—'}</code></td></tr>)}
+            </tbody></table>
+          </div>}
+          {!isCreating && !pendingChanges.length && <p className="change-diff-empty">No tracked field has changed yet. Edit the formula, its parameters, status, effective date, name, category or description to record a change.</p>}
+          <div className="change-summary"><span>{isCreating ? 'Initial version' : 'Current version'} <strong>{isCreating ? '1.0' : draft.version}</strong></span><span>{isCreating ? 'Scope' : 'Next version'} <strong>{isCreating ? draft.scope : (Number(draft.version) + 0.1).toFixed(1)}</strong></span><span>{isCreating ? 'Created by' : 'Changed by'} <strong>{actor}</strong></span><span>Test evidence <strong>{draft.lastTest ? `${draft.lastTest.result} · ₱${Number(draft.lastTest.actual).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : 'Not run'}</strong></span></div>
         </div>}
         {error && <div className="basis-error">{error}</div>}
       </div>
-      <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{isCreating ? 'Validate and create' : 'Validate and save'}</button></div>
+      <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{isCreating ? 'Validate and add' : 'Validate and save'}</button></div>
     </form>
   </Modal>;
 }
 
-function ComputationDrawer({ record, onClose, onEdit, canEdit }) {
+/** The stored proof for one published version, rather than a figure recomputed on open. */
+function TestEvidence({ evidence, compact = false }) {
+  if (!evidence) return <p className="test-evidence-empty">No test evidence was recorded for this version.</p>;
+  return <div className={`test-evidence ${compact ? 'compact' : ''}`}>
+    <header><Flask weight="duotone" /><strong>Test evidence</strong><span className={`status-pill ${evidence.result === 'Passed' ? 'active' : 'inactive'}`}>{evidence.result}</span></header>
+    <dl>
+      {Object.entries(evidence.inputs || {}).map(([code, value]) => <div key={code}><dt>{fieldMap[code]?.label || code}</dt><dd>{Number(value).toLocaleString()}</dd></div>)}
+      <div><dt>Expected result</dt><dd>{evidence.expected === null || evidence.expected === undefined ? 'Not stated' : `₱${Number(evidence.expected).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</dd></div>
+      <div><dt>Actual result</dt><dd>₱{Number(evidence.actual).toLocaleString(undefined, { maximumFractionDigits: 2 })}</dd></div>
+      <div><dt>Tested by</dt><dd>{evidence.testedBy}</dd></div>
+      <div><dt>Tested at</dt><dd>{new Date(evidence.testedAt).toLocaleString()}</dd></div>
+    </dl>
+  </div>;
+}
+
+/**
+ * The record view.
+ *
+ * Beyond the definition it answers the three governance questions the meeting
+ * raised: which versions have been published and what test evidence each one
+ * carries, which payroll transactions have already used the code, and what that
+ * usage now forbids.
+ */
+/** Two versions side by side, differences highlighted. */
+export function VersionCompare({ versions = [] }) {
+  const [left, setLeft] = useState(versions[1]?.version || versions[0]?.version || '');
+  const [right, setRight] = useState(versions[0]?.version || '');
+  if (versions.length < 2) return <p className="drawer-paragraph">Compare needs at least two published versions.</p>;
+  const pick = value => versions.find(item => item.version === value) || {};
+  const rows = compareVersions(pick(left), pick(right));
+  return <div className="version-compare">
+    <div className="version-compare-pickers">
+      <label>Compare<select value={left} onChange={event => setLeft(event.target.value)}>{versions.map(item => <option key={item.version} value={item.version}>v{item.version} · {item.effectiveDate}</option>)}</select></label>
+      <label>with<select value={right} onChange={event => setRight(event.target.value)}>{versions.map(item => <option key={item.version} value={item.version}>v{item.version} · {item.effectiveDate}</option>)}</select></label>
+      <span>{rows.filter(row => row.changed).length} {rows.filter(row => row.changed).length === 1 ? 'difference' : 'differences'}</span>
+    </div>
+    <table className="config-table version-compare-table"><thead><tr><th>Field</th><th>v{left}</th><th>v{right}</th></tr></thead><tbody>
+      {rows.map(row => <tr key={row.field} className={row.changed ? 'changed' : ''}><td>{row.field}</td><td><code>{row.left || '—'}</code></td><td><code>{row.right || '—'}</code></td></tr>)}
+    </tbody></table>
+  </div>;
+}
+
+function ComputationDrawer({ record, library = [], versions = [], usage = null, guard = null, whereUsedRows = [], onClose }) {
   const mapped = usedFields(record.expression);
-  let result = null;
-  try { result = evaluateExpression(record.expression, Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { /* validated on edit */ }
+  const dependencies = computationDependencies(record.expression, library, record.code);
+  // Every value the formula uses that payroll does not supply itself, with who
+  // may set it and where. This is how a client reads "what can I change here".
+  const parameterRows = mapped.filter(token => !isEngineSupplied(token)).map(token => {
+    const definition = record.parameters?.[token] || null;
+    const field = fieldMap[token];
+    return {
+      token,
+      label: field?.label || token,
+      clientEditable: Boolean(definition?.clientEditable),
+      range: definition ? describeParameterRange(token, definition) : '—',
+      defaultValue: formatParameterValue(token, definition?.default),
+      where: definition?.clientEditable
+        ? 'On the pay item that uses this formula, in Services Information'
+        : field?.owner === 'Statutory Reference' ? 'Statutory tables, maintained by P&A' : 'Set by P&A',
+    };
+  });
   return <div className="modal-backdrop view-drawer-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
     <aside className="record-drawer basis-record-drawer" role="dialog" aria-modal="true" aria-label={record.name}>
       <header><div><p>{record.code} · Version {record.version}</p><h2>{record.name}</h2></div><button className="icon-button" onClick={onClose}><X /></button></header>
       <div className="record-drawer-body">
-        <section><div className="detail-grid"><div><strong>Category</strong><span>{record.category}</span></div><div><strong>Source</strong><span className={`computation-source ${record.isBuiltIn !== false ? 'built-in' : 'admin-defined'}`}><Function weight="duotone" />{record.isBuiltIn !== false ? 'Built-in standard' : 'Admin-defined'}</span></div><div><strong>Status</strong><span className={`status-pill ${record.status.toLowerCase()}`}>{record.status}</span></div><div><strong>Effective date</strong><span>{record.effectiveDate}</span></div><div><strong>Updated by</strong><span>{record.updatedBy}</span></div></div></section>
-        <section><h3>Description</h3><p className="drawer-paragraph">{record.description}</p></section>
+        <section><div className="detail-grid">
+          <div><strong>Category</strong><span>{record.category}</span></div>
+          <div><strong>Scope</strong><ScopeChip record={record} /></div>
+          <div><strong>Owned and maintained by</strong><span>P&amp;A</span></div>
+          <div><strong>Status in this company</strong><span className={`status-pill ${record.status.toLowerCase()}`}>{record.status}</span></div>
+          <div><strong>Effective date</strong><span>{record.effectiveDate}</span></div>
+          <div><strong>Updated by</strong><span>{record.updatedBy}</span></div>
+        </div></section>
+        <section><h3>Description</h3><p className="drawer-paragraph">{record.description || 'No description was recorded. A description is optional but recommended for explaining inclusions and exclusions.'}</p></section>
         <section><h3>Formula expression</h3><div className="formula-preview">{record.expression}</div></section>
-        <section><h3>Mapped fields</h3><div className="mapped-chip-list">{mapped.map(code => <span key={code}>{fieldMap[code]?.label || code}</span>)}</div></section>
-        <section><h3>Standard test result</h3><div className="drawer-test"><Check weight="bold" /><span><small>Passed using sample values</small><strong>₱ {result?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? '—'}</strong></span></div></section>
+        <section><h3>Map fields</h3><div className="mapping-table-wrap">
+          <table className="mapping-table map-field-table"><thead><tr><th>Mapped field</th><th>Kind</th><th>Atlas source</th><th>Owner / source module</th><th>Data type</th><th>Unit</th><th>Timing</th><th>If the value is missing</th><th>Sample value</th></tr></thead><tbody>
+            {mapped.map(code => <MapFieldRow key={code} code={code} kind="Approved field" source={fieldMap[code]?.label || code} sample={fieldMap[code]?.sample?.toLocaleString?.() ?? '—'} />)}
+            {dependencies.map(dependency => <MapFieldRow key={dependency.code} code={dependency.code} kind="Computation" source={dependency.name || 'Not a published computation'} detail={dependency.expression} sample={dependency.version ? `Version ${dependency.version}` : '—'} />)}
+            {!mapped.length && !dependencies.length && <tr className="mapping-empty"><td colSpan={9}>This formula takes no mapped input.</td></tr>}
+          </tbody></table>
+        </div></section>
+        <section><h3>Parameters</h3>
+          {parameterRows.length ? <div className="mapping-table-wrap"><table className="mapping-table parameter-table"><thead><tr><th>Variable</th><th>Who may change it</th><th>Allowed range</th><th>Default</th><th>Where the value is set</th></tr></thead><tbody>
+            {parameterRows.map(row => <tr key={row.token}>
+              <td><code>{`{{${row.token}}}`}</code><small className="block-caption">{row.label}</small></td>
+              <td>{row.clientEditable ? <span className="parameter-chip client">Client, within the range</span> : <span className="parameter-chip locked"><Lock weight="duotone" /> P&amp;A only</span>}</td>
+              <td>{row.range}</td>
+              <td>{row.defaultValue}</td>
+              <td>{row.where}</td>
+            </tr>)}
+          </tbody></table></div>
+            : <p className="drawer-paragraph">Every value this formula uses is supplied by payroll or by another formula, so there is nothing to set.</p>}
+        </section>
+        <section><h3>Version history</h3>
+          {versions.length ? <div className="version-history">{versions.map(version => <article key={`${version.code}-${version.version}`} className={version.version === record.version ? 'current' : ''}>
+            <header><strong>Version {version.version}</strong><span>Effective {version.effectiveDate}</span>{versionState(version) === 'Scheduled' && <span className="status-pill scheduled">Scheduled</span>}{version.version === record.version && <span className="version-current-chip">Current</span>}</header>
+            <code className="version-expression">{version.expression}</code>
+            <small>{version.note || 'No change note recorded.'} · {version.publishedBy} · {new Date(version.publishedAt).toLocaleString()} · Source: {version.source || 'Screen'}{version.approvalRef ? ` · Approval ${version.approvalRef}` : ''}</small>
+            {Boolean(version.changes?.length) && <ul className="version-change-list">{version.changes.map(change => <li key={change.field}><b>{change.field}</b> <code className="diff-before">{String(change.from) || '—'}</code> → <code className="diff-after">{String(change.to) || '—'}</code></li>)}</ul>}
+            <TestEvidence evidence={version.test} compact />
+            {Boolean(version.testCases?.length) && <small className="block-caption"><Lock weight="duotone" /> {version.testCases.length} locked test {version.testCases.length === 1 ? 'case' : 'cases'}: {version.testCases.map(item => item.name).join(', ')}</small>}
+          </article>)}</div>
+            : <p className="drawer-paragraph">No version has been published from this workspace yet. The current definition is version {record.version}.</p>}
+        </section>
+        <section><h3>Compare versions</h3><VersionCompare versions={versions} /></section>
+        <section><div className="section-heading-row"><h3>Where used</h3>{whereUsedRows.length > 0 && <button type="button" className="button secondary small" onClick={() => downloadFile(`${record.code}-where-used.csv`, whereUsedCsv(record.code, whereUsedRows), 'text/csv')}><DownloadSimple /> Download report</button>}</div>
+          {whereUsedRows.length ? <table className="config-table usage-table"><thead><tr><th>Used as</th><th>Where</th><th>Company</th><th>Detail</th></tr></thead><tbody>
+            {whereUsedRows.map((row, index) => <tr key={`${row.kind}-${index}`}><td>{row.kind}</td><td><strong>{row.where}</strong></td><td>{row.company}</td><td><small>{row.detail}</small></td></tr>)}
+          </tbody></table> : <p className="drawer-paragraph">Nothing uses this formula yet — no pay item, formula, assignment or payroll transaction.</p>}
+        </section>
+        <section><h3>Payroll usage</h3>
+          {usage?.transactions?.length ? <table className="config-table usage-table"><thead><tr><th>Transaction</th><th>Period</th><th>Status</th><th>Version used</th></tr></thead><tbody>
+            {usage.transactions.map(item => <tr key={item.runId}><td><strong>{item.transactionNumber}</strong></td><td>{item.period || item.payoutDate || '—'}</td><td><span className={`status-pill ${item.posted ? 'active' : 'inactive'}`}>{item.status}</span></td><td>{item.version ? `v${item.version}` : 'Not recorded'}</td></tr>)}
+          </tbody></table>
+            : <p className="drawer-paragraph">{guard && !guard.canEdit ? 'No payroll transaction has used this computation yet.' : 'No payroll transaction has used this computation yet, so it may still be edited, deactivated or deleted.'}</p>}
+        </section>
+        {Boolean(guard && (!guard.canEdit || !guard.canDelete || !guard.canDeactivate)) && <section><h3>What is protected</h3><ul className="guard-list">
+          {!guard.canEdit && <li><Prohibit weight="duotone" /> {guard.editReason}</li>}
+          {!guard.canDelete && <li><Prohibit weight="duotone" /> {guard.deleteReason}</li>}
+          {!guard.canDeactivate && <li><Prohibit weight="duotone" /> {guard.deactivateReason}</li>}
+        </ul></section>}
       </div>
-      <footer><button className="button secondary" onClick={onClose}>Close</button>{canEdit
-        ? <button className="button primary" onClick={() => onEdit(record)}><PencilSimple /> Edit computation</button>
-        : <span className="drawer-lock-note"><Lock weight="duotone" /> Built-in formula — edit in Settings › Standard Computation Library</span>}</footer>
+      <footer><button className="button secondary" onClick={onClose}>Close</button><span className="drawer-lock-note"><Lock weight="duotone" /> {guard?.editReason || 'Formulas are maintained by P&A.'}</span></footer>
     </aside>
   </div>;
 }
 
+/** Atlas standard or client-specific — both authored and maintained by P&A. */
+export function ScopeChip({ record }) {
+  const scope = computationScope(record);
+  const clientSpecific = scope === 'Client-specific';
+  return <span className={`computation-source ${clientSpecific ? 'client-specific' : 'built-in'}`} title={clientSpecific ? 'Built by P&A for one client, and assigned only to that client' : 'Atlas standard — defined once, centrally'}><Function weight="duotone" />{scope}</span>;
+}
+
+/**
+ * The computations the payroll pipeline runs that own no configuration record.
+ *
+ * Earnings, deductions, bonuses, allowances and loans each have a Services
+ * Information configuration, and that configuration is where their formula and
+ * their applicability are now set. These four do not: statutory contributions
+ * and withholding tax are computed from the effective statutory tables,
+ * take-home protection comes from the Take-Home Pay policy, and the retirement
+ * benefit from the Retirement engine. They still need somewhere to say which
+ * published formula applies — and this is it.
+ */
+const PIPELINE_ASSIGNMENT_TYPES = ['Government deduction', 'Tax computation', 'Take-home protection', 'Retirement benefit'];
+
+const ASSIGNMENT_DEFAULTS = { type: 'Government deduction', computationCode: 'GOV-001', status: 'Active' };
+
 function AssignmentModal({ record, computations, references, onClose, onSave }) {
   const enabledReferences = references.filter(item => item.enabled);
-  const [draft, setDraft] = useState(record || { type: 'Government deduction', table: enabledReferences[0]?.name, computationCode: 'GOV-001', employeeGroup: 'All Employees', frequency: 'Every payroll', status: 'Active' });
+  const [draft, setDraft] = useState(record || { ...ASSIGNMENT_DEFAULTS, table: enabledReferences[0]?.name, effectiveDate: new Date().toISOString().slice(0, 10) });
   const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
-  return <Modal title={record ? 'Edit computation assignment' : 'Add computation assignment'} onClose={onClose} className="assignment-modal">
+  return <Modal title={record ? 'Edit pipeline assignment' : 'Add pipeline assignment'} onClose={onClose} className="assignment-modal">
     <form onSubmit={event => { event.preventDefault(); onSave(draft); }}>
       <div className="modal-body basis-form-grid">
-        <label>Assignment type<select value={draft.type} onChange={event => update('type', event.target.value)}><option>Government deduction</option><option>Tax computation</option><option>Bonus computation</option><option>Earnings computation</option><option>Take-home protection</option><option>Retirement benefit</option></select></label>
+        <label>Assignment type<select value={draft.type} onChange={event => update('type', event.target.value)}>{PIPELINE_ASSIGNMENT_TYPES.map(type => <option key={type}>{type}</option>)}</select></label>
         <label>Reference table<select value={draft.table} onChange={event => update('table', event.target.value)}>{enabledReferences.map(item => <option key={item.id}>{item.name}</option>)}</select></label>
-        <label className="wide">Basis of computation<select value={draft.computationCode} onChange={event => update('computationCode', event.target.value)}>{computations.filter(item => item.status === 'Active').map(item => <option value={item.code} key={item.id}>{item.code} · {item.name}</option>)}</select></label>
-        <label>Employee group<select value={draft.employeeGroup} onChange={event => update('employeeGroup', event.target.value)}><option>All Employees</option><option>Monthly</option><option>Rank and File</option><option>Managers</option><option>Retirement Eligible</option></select></label>
-        <label>Frequency<select value={draft.frequency} onChange={event => update('frequency', event.target.value)}><option>Every payroll</option><option>Monthly</option><option>Quarterly</option><option>Annually</option><option>On retirement</option></select></label>
+        <label className="wide">Basis of computation<select value={draft.computationCode} onChange={event => update('computationCode', event.target.value)}>{computations.filter(item => item.status === 'Active').map(item => <option value={item.code} key={item.code}>{item.code} · {item.name}</option>)}</select></label>
+        {/* An assignment is effective-dated: payroll resolves the assignment in
+            force on the payout date, so a change mid-year does not restate the
+            cutoffs that ran before it. */}
+        <label>Effective date<input type="date" value={draft.effectiveDate || ''} onChange={event => update('effectiveDate', event.target.value)} required /></label>
         <label>Status<select value={draft.status} onChange={event => update('status', event.target.value)}><option>Active</option><option>Inactive</option></select></label>
+        <p className="field-hint wide">
+          These computations apply to every employee the run includes — the transaction decides who is paid, and the
+          statutory tables and policies decide the amounts. Employee group and frequency are set on the Services
+          Information configuration for everything that has one.
+        </p>
       </div>
       <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">Save assignment</button></div>
     </form>
   </Modal>;
 }
 
-function ReferenceEditor({ table: reference, onClose, onSave, onExport }) {
+/** The published versions of one formula reference source, newest effective last. */
+function ReferenceVersions({ reference, onClose }) {
+  const history = referenceVersionHistory(reference);
+  return <Modal title={`Version history · ${reference.name}`} onClose={onClose} className="reference-modal">
+    <div className="reference-modal-body">
+      <p className="drawer-paragraph">Each published version is kept in full. Payroll resolves the version whose effective date covers the payout date, so a transaction computed under {history[0]?.version} keeps showing {history[0]?.version} after a newer version is published.</p>
+      <div className="version-history">{[...history].reverse().map(version => <article key={version.version} className={version.current ? 'current' : ''}>
+        <header><strong>Version {version.version}</strong><span>Effective {version.effectiveDate}</span>{version.current && <span className="version-current-chip">Current</span>}</header>
+        <small>{version.note || 'No note recorded.'}{version.publishedBy ? ` · ${version.publishedBy}` : ''}{version.publishedAt ? ` · ${new Date(version.publishedAt).toLocaleString()}` : ''}</small>
+        <table className="config-table"><thead><tr><th>Key / Range</th><th>Value</th><th>Notes / source</th></tr></thead><tbody>
+          {(version.entries || []).map(entry => <tr key={entry.id}><td>{entry.key}</td><td>{entry.value}</td><td>{entry.note}</td></tr>)}
+        </tbody></table>
+      </article>)}</div>
+    </div>
+    <div className="modal-actions sticky-actions"><button className="button secondary" onClick={onClose}>Close</button></div>
+  </Modal>;
+}
+
+/**
+ * `valuesOnly` is the client's view. A client may publish new values for the
+ * rows a source already has; adding, removing or renaming a row changes what a
+ * formula can look up, and re-ranking the deduction hierarchy changes payroll
+ * logic, so both stay with P&A.
+ */
+function ReferenceEditor({ table: reference, valuesOnly = false, onClose, onSave, onExport }) {
   const [draft, setDraft] = useState({ ...reference, entries: reference.entries.map(item => ({ ...item })) });
   const [newEntry, setNewEntry] = useState({ key: '', value: '', note: '' });
   const payrollDerived = [PAYROLL_REFERENCE_CODES.deductions, PAYROLL_REFERENCE_CODES.loans].includes(reference.code);
   const hierarchy = reference.code === PAYROLL_REFERENCE_CODES.hierarchy;
+  const structureLocked = payrollDerived || hierarchy || valuesOnly;
+  const valueLocked = item => payrollDerived || (hierarchy && (valuesOnly || /statutory/i.test(item.key)));
+  const canSave = !payrollDerived && !(hierarchy && valuesOnly);
   const hierarchyRanks = hierarchy ? draft.entries.filter(item => !/statutory/i.test(item.key)).map(item => Number(item.value)) : [];
   const hierarchyError = hierarchy && (hierarchyRanks.some(rank => !Number.isInteger(rank) || rank < 1) || new Set(hierarchyRanks).size !== hierarchyRanks.length);
   const updateEntry = (id, key, value) => setDraft(previous => ({ ...previous, entries: previous.entries.map(item => item.id === id ? { ...item, [key]: value } : item) }));
@@ -573,184 +751,195 @@ function ReferenceEditor({ table: reference, onClose, onSave, onExport }) {
   return <Modal title={`Manage reference table · ${reference.name}`} onClose={onClose} className="reference-modal">
     <div className="reference-modal-body">
       <div className="reference-meta">
-        <span><small>Code</small><strong>{draft.code}</strong></span><span><small>Version</small><strong>{draft.version}</strong></span><span><small>Effective</small><strong>{draft.effectiveDate}</strong></span>
-        <button className={`switch ${draft.enabled ? 'on' : ''}`} onClick={() => setDraft({ ...draft, enabled: !draft.enabled })}><span /></button>
+        <span><small>Code</small><strong>{draft.code}</strong></span>
+        <span><small>Current version</small><strong>{reference.version}</strong></span>
+        <span><small>Publishing as</small><strong>{(Number.parseFloat(reference.version) + 0.1).toFixed(1)}</strong></span>
+        {/* The new version needs its own effective date: payroll resolves a
+            reference source by the date in force on its payout date, so a
+            version that inherits the old date could never be told apart. */}
+        <label className="reference-effective"><small>Effective from</small><input type="date" value={draft.effectiveDate} onChange={event => setDraft({ ...draft, effectiveDate: event.target.value })} /></label>
+        <button type="button" className={`switch ${draft.enabled ? 'on' : ''}`} disabled={valuesOnly} title={valuesOnly ? 'Enabling or disabling a formula reference source is done by P&A.' : undefined} onClick={() => setDraft({ ...draft, enabled: !draft.enabled })}><span /></button>
       </div>
-      {(payrollDerived || hierarchy) && <div className="linked-reference-note"><Lock weight="duotone" /><span>{hierarchy ? 'Item codes and classifications come from the active Deduction and Loan modules. Only the adjustment rank is maintained here.' : 'This source is generated from active module definitions. Edit the originating Deduction or Loan module instead of duplicating values here.'}</span></div>}
+      <p className="reference-version-note">Saving publishes version {(Number.parseFloat(reference.version) + 0.1).toFixed(1)}. Version {reference.version} is kept in full and stays available to the payrolls that used it.</p>
+      {(payrollDerived || hierarchy) && <div className="linked-reference-note"><Lock weight="duotone" /><span>{hierarchy ? (valuesOnly ? 'The deduction hierarchy decides the order payroll collects in, which is payroll logic, so P&A maintains it.' : 'Item codes and classifications come from the active Deduction and Loan modules. Only the adjustment rank is maintained here.') : 'This source is generated from active module definitions. Edit the originating Deduction or Loan module instead of duplicating values here.'}</span></div>}
+      {valuesOnly && !payrollDerived && !hierarchy && <div className="linked-reference-note"><Lock weight="duotone" /><span>You can publish new values for the rows below. Adding, removing or renaming a row changes what the formulas can look up, so P&amp;A does that.</span></div>}
       {hierarchyError && <div className="warning-copy">Each adjustable item needs a unique whole-number rank of 1 or greater.</div>}
       <div className="reference-entry-table"><table><thead><tr><th>Key / Range</th><th>{hierarchy ? 'Adjustment rank' : 'Value'}</th><th>Notes / source</th><th>Action</th></tr></thead><tbody>
-        {draft.entries.map(item => <tr key={item.id}><td><input value={item.key} readOnly={payrollDerived || hierarchy} onChange={event => updateEntry(item.id, 'key', event.target.value)} /></td><td><input value={item.value} readOnly={payrollDerived || (hierarchy && /statutory/i.test(item.key))} onChange={event => updateEntry(item.id, 'value', event.target.value)} /></td><td><input value={item.note} readOnly={payrollDerived || hierarchy} onChange={event => updateEntry(item.id, 'note', event.target.value)} /></td><td>{payrollDerived || hierarchy ? <Lock /> : <button className="text-danger" onClick={() => removeEntry(item.id)}>Remove</button>}</td></tr>)}
-        {!payrollDerived && !hierarchy && <tr className="new-reference-row"><td><input value={newEntry.key} onChange={event => setNewEntry({ ...newEntry, key: event.target.value })} placeholder="New key or range" /></td><td><input value={newEntry.value} onChange={event => setNewEntry({ ...newEntry, value: event.target.value })} placeholder="Value" /></td><td><input value={newEntry.note} onChange={event => setNewEntry({ ...newEntry, note: event.target.value })} placeholder="Optional note" /></td><td><button className="button secondary small" onClick={addEntry}><Plus /> Add</button></td></tr>}
+        {draft.entries.map(item => <tr key={item.id}><td><input value={item.key} readOnly={structureLocked} onChange={event => updateEntry(item.id, 'key', event.target.value)} /></td><td><input value={item.value} readOnly={valueLocked(item)} onChange={event => updateEntry(item.id, 'value', event.target.value)} /></td><td><input value={item.note} readOnly={structureLocked} onChange={event => updateEntry(item.id, 'note', event.target.value)} /></td><td>{structureLocked ? <Lock /> : <button className="text-danger" onClick={() => removeEntry(item.id)}>Remove</button>}</td></tr>)}
+        {!structureLocked && <tr className="new-reference-row"><td><input value={newEntry.key} onChange={event => setNewEntry({ ...newEntry, key: event.target.value })} placeholder="New key or range" /></td><td><input value={newEntry.value} onChange={event => setNewEntry({ ...newEntry, value: event.target.value })} placeholder="Value" /></td><td><input value={newEntry.note} onChange={event => setNewEntry({ ...newEntry, note: event.target.value })} placeholder="Optional note" /></td><td><button className="button secondary small" onClick={addEntry}><Plus /> Add</button></td></tr>}
       </tbody></table></div>
     </div>
-    <div className="modal-actions sticky-actions"><button className="button secondary" onClick={() => onExport(draft)}><DownloadSimple /> Download CSV</button><span className="toolbar-spacer" /><button className="button secondary" onClick={onClose}>{payrollDerived ? 'Close' : 'Cancel'}</button>{!payrollDerived && <button className="button primary" disabled={hierarchyError} onClick={() => onSave(draft)}>Save table</button>}</div>
+    <div className="modal-actions sticky-actions"><button className="button secondary" onClick={() => onExport(draft)}><DownloadSimple /> Download CSV</button><span className="toolbar-spacer" /><button className="button secondary" onClick={onClose}>{canSave ? 'Cancel' : 'Close'}</button>{canSave && <button className="button primary" disabled={hierarchyError} onClick={() => onSave(draft)}>{valuesOnly ? 'Publish new values' : 'Save table'}</button>}</div>
   </Modal>;
 }
 
-export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
-  const { isAdmin } = useRole();
-  const [computations, setComputations] = useState(() => readStored(STORAGE.computations, seedComputations()).map(item => ({ ...item, isBuiltIn: item.isBuiltIn !== false })));
-  const [assignments, setAssignments] = useState(() => readStored(STORAGE.assignments, initialAssignments));
-  const [references, setReferences] = useState(readReferenceLibrary);
-  const [history, setHistory] = useState(() => readStored(STORAGE.history, initialHistory));
+export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenService, notify, initialTab = 'computations' }) {
+  const { isPaAdmin, actor } = useRole();
+
+  // Controlled Hybrid: every formula lives once in the central library and is
+  // owned by P&A. This screen shows the formulas P&A assigned to this company,
+  // the values each one lets the client change, and the sources those values
+  // come from. Nothing here authors or edits formula logic.
+  const [libraryVersion, setLibraryVersion] = useState(0);
+  const [assignments, setAssignments] = useState(() => readAssignments(companyId, initialAssignments));
+  const [references, setReferences] = useState(() => readReferenceLibrary(companyId));
+  const [history, setHistory] = useState(() => readHistory(companyId, initialHistory));
   const [tab, setTab] = useState(initialTab);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All categories');
   const [status, setStatus] = useState('All statuses');
+  const [source, setSource] = useState('All scopes');
   const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
   const [viewing, setViewing] = useState(null);
   const [assignmentEditing, setAssignmentEditing] = useState(undefined);
   const [referenceEditing, setReferenceEditing] = useState(null);
-  const computationUploadRef = useRef(null);
+  const [referenceHistory, setReferenceHistory] = useState(null);
   const referenceUploadRef = useRef(null);
   const [uploadTarget, setUploadTarget] = useState(null);
   const pageSize = 10;
 
-  useEffect(() => localStorage.setItem(STORAGE.computations, JSON.stringify(computations)), [computations]);
-  useEffect(() => localStorage.setItem(STORAGE.assignments, JSON.stringify(assignments)), [assignments]);
-  useEffect(() => localStorage.setItem(STORAGE.references, JSON.stringify(references)), [references]);
-  useEffect(() => localStorage.setItem(STORAGE.history, JSON.stringify(history)), [history]);
+  useEffect(() => { writeAssignments(companyId, assignments); }, [companyId, assignments]);
+  useEffect(() => { writeReferences(companyId, references); }, [companyId, references]);
+  useEffect(() => { writeHistory(companyId, history); }, [companyId, history]);
 
-  const addHistory = entry => setHistory(previous => [{ id: Date.now(), user: 'Client Admin', date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }), ...entry }, ...previous]);
+  // `libraryVersion` is bumped whenever P&A changes this company's status for a
+  // formula, so the register re-reads the assignment it now carries.
+  const computations = useMemo(() => readComputationLibrary(companyId), [companyId, libraryVersion]);
+  const runs = useMemo(() => readCompanyRuns(companyId), [companyId, tab]);
+  const usage = useMemo(() => usageIndexFromRuns(runs), [runs]);
+  const versions = useMemo(() => versionIndex(companyId), [companyId, libraryVersion]);
+  const guardFor = record => computationGuards(record, {
+    companyId,
+    isPaAdmin,
+    assignments,
+    usage: usageOf(record.code, usage),
+    versions: versions[String(record.code).toUpperCase()] || [],
+  });
+
+  const addHistory = entry => setHistory(previous => [historyEntry({ user: actor, ...entry }), ...previous]);
+
   const filteredComputations = useMemo(() => computations.filter(item => {
-    const matchQuery = `${item.code} ${item.name} ${item.description}`.toLowerCase().includes(query.toLowerCase());
+    const matchQuery = `${item.code} ${item.name} ${item.description || ''}`.toLowerCase().includes(query.toLowerCase());
     const matchCategory = category === 'All categories' || item.category === category;
     const matchStatus = status === 'All statuses' || item.status === status;
-    return matchQuery && matchCategory && matchStatus;
-  }), [computations, query, category, status]);
+    const matchSource = source === 'All scopes' || computationScope(item) === source;
+    return matchQuery && matchCategory && matchStatus && matchSource;
+  }), [computations, query, category, status, source]);
   const pages = Math.max(1, Math.ceil(filteredComputations.length / pageSize));
   const visibleComputations = filteredComputations.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => { setPage(1); }, [query, category, status, tab]);
+  useEffect(() => { setPage(1); }, [query, category, status, source, tab]);
 
-  const saveComputation = draft => {
-    if (!canEditComputation(draft, isAdmin)) {
-      notify({ type: 'error', message: `${draft.code} is a built-in formula. Edit it in Settings › Standard Computation Library.` });
-      return;
+  /* --------------------------------------------------------- bulk selection */
+
+  const selectedRecords = computations.filter(item => selected.has(item.code));
+  const allFilteredSelected = Boolean(filteredComputations.length) && filteredComputations.every(item => selected.has(item.code));
+  const toggleSelected = code => setSelected(previous => {
+    const next = new Set(previous);
+    if (next.has(code)) next.delete(code); else next.add(code);
+    return next;
+  });
+  const toggleAllFiltered = () => setSelected(previous => {
+    const next = new Set(previous);
+    if (allFilteredSelected) filteredComputations.forEach(item => next.delete(item.code));
+    else filteredComputations.forEach(item => next.add(item.code));
+    return next;
+  });
+
+  /* ----------------------------------------------------------- status moves */
+
+  /**
+   * Activation and deactivation are the only company-level actions on an Atlas
+   * standard, and deactivation is refused while any payroll transaction is
+   * linked to the code. Activating is never blocked — it adds a computation to
+   * the run, it does not change one that already ran.
+   */
+  const applyStatus = (record, nextStatus) => {
+    // Switching an assigned formula on or off changes what payroll computes for
+    // the company, so it is P&A's decision rather than a client parameter.
+    if (!isPaAdmin) return { ok: false, reason: `Activating or deactivating ${record.code} for this company is done by P&A.` };
+    const guard = guardFor(record);
+    if (nextStatus === 'Inactive' && !guard.canDeactivate) return { ok: false, reason: guard.deactivateReason };
+    // A formula retired centrally cannot be switched back on for one company —
+    // the definition itself is inactive, and reviving it is a Settings decision.
+    if (nextStatus === 'Active' && record.centralStatus === 'Inactive') {
+      return { ok: false, reason: `${record.code} is Inactive in the central Atlas library. It has to be reactivated in Settings › Standard Computation Library before any company can use it.` };
     }
-    const normalizedCode = draft.code.trim().toUpperCase();
-    if (!/^[A-Z][A-Z0-9]{1,7}-\d{3}$/.test(normalizedCode)) {
-      notify({ type: 'error', message: 'Use a unique code such as CUS-001 (letters, then a three-digit number).' });
-      return;
-    }
-    if (computations.some(item => item.code === normalizedCode && item.id !== draft.id)) {
-      notify({ type: 'error', message: `${normalizedCode} already exists. Choose a unique computation code.` });
-      return;
-    }
-    if (draft.isNew) {
-      const saved = {
-        ...draft,
-        id: Math.max(0, ...computations.map(item => Number(item.id) || 0)) + 1,
-        code: normalizedCode,
-        isBuiltIn: false,
-        version: '1.0',
-        updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin',
-        updatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      };
-      delete saved.isNew;
-      delete saved.changeNote;
-      setComputations(previous => [saved, ...previous]);
-      addHistory({ item: saved.name, type: 'Computation', action: draft.changeNote || 'Company computation created', version: '1.0' });
-      setEditing(null);
-      notify({ type: 'success', message: `${saved.code} was validated and added to company computations.` });
-      return;
-    }
-    const version = (Number(draft.version) + 0.1).toFixed(1);
-    const saved = { ...draft, version, updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
-    delete saved.changeNote;
-    setComputations(previous => previous.map(item => item.id === saved.id ? saved : item));
-    addHistory({ item: saved.name, type: 'Computation', action: draft.changeNote || 'Formula updated', version });
-    setEditing(null);
-    notify({ type: 'success', message: `${saved.code} was validated and saved as version ${version}.` });
+    setApplicability(record.code, companyId, { status: nextStatus }, actor);
+    setLibraryVersion(value => value + 1);
+    addHistory({
+      item: record.name,
+      code: record.code,
+      type: 'Computation',
+      action: `${record.code} ${nextStatus === 'Active' ? 'activated' : 'deactivated'} for this company`,
+      version: record.version,
+      changes: [{ field: 'Status', from: record.status, to: nextStatus }],
+    });
+    return { ok: true };
   };
 
-  const createComputation = () => {
-    let sequence = 1;
-    while (computations.some(item => item.code === `CUS-${String(sequence).padStart(3, '0')}`)) sequence += 1;
-    setEditing({
-      id: null,
-      code: `CUS-${String(sequence).padStart(3, '0')}`,
-      name: '',
-      category: 'Payroll Result',
-      expression: '',
-      description: '',
-      status: 'Active',
-      isBuiltIn: false,
-      isNew: true,
-      version: '0.0',
-      effectiveDate: new Date().toISOString().slice(0, 10),
-      updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin',
-      updatedAt: 'Not saved',
+  const toggleStatus = record => {
+    const nextStatus = record.status === 'Active' ? 'Inactive' : 'Active';
+    const outcome = applyStatus(record, nextStatus);
+    if (!outcome.ok) { notify({ type: 'error', message: outcome.reason }); return; }
+    notify({ type: 'success', message: `${record.code} is now ${nextStatus} for this company.` });
+  };
+
+  const bulkStatus = nextStatus => {
+    const applied = [];
+    const blocked = [];
+    selectedRecords.forEach(record => {
+      if (record.status === nextStatus) return;
+      const outcome = applyStatus(record, nextStatus);
+      if (outcome.ok) applied.push(record.code); else blocked.push(record.code);
+    });
+    setSelected(new Set());
+    if (!applied.length && !blocked.length) { notify({ type: 'error', message: `Every selected computation is already ${nextStatus}.` }); return; }
+    notify({
+      type: applied.length ? 'success' : 'error',
+      message: `${applied.length} ${plural(applied.length, 'computation')} set to ${nextStatus}.${blocked.length ? ` ${blocked.length} left unchanged — linked to a payroll transaction: ${blocked.join(', ')}.` : ''}`,
     });
   };
 
-  const deleteComputation = record => {
-    if (record.isBuiltIn !== false) return;
-    if (assignments.some(item => item.computationCode === record.code)) {
-      notify({ type: 'error', message: `${record.code} is assigned to an employee group. Remove that assignment before deleting it.` });
-      return;
-    }
-    setDeleting(record);
-  };
-
-  const confirmDeleteComputation = () => {
-    if (!deleting) return;
-    const record = deleting;
-    setComputations(previous => previous.filter(item => item.id !== record.id));
-    addHistory({ item: record.name, type: 'Computation', action: `${record.code} company computation deleted`, version: record.version });
-    setDeleting(null);
-    notify({ type: 'success', message: `${record.code} was removed from company computations.` });
-  };
-
   const saveAssignment = draft => {
+    // Which formula a statutory, tax or retirement computation applies is part
+    // of the logic, so pipeline assignments are P&A's.
+    if (!isPaAdmin) { notify({ type: 'error', message: 'Pipeline assignments are set by P&A.' }); return; }
     if (draft.id) setAssignments(previous => previous.map(item => item.id === draft.id ? draft : item));
     else setAssignments(previous => [{ ...draft, id: Math.max(0, ...previous.map(item => item.id)) + 1 }, ...previous]);
-    addHistory({ item: `${draft.type} · ${draft.employeeGroup}`, type: 'Assignment', action: draft.id ? 'Assignment updated' : 'Assignment created', version: '—' });
+    addHistory({ item: `${draft.type} · ${draft.computationCode}`, type: 'Assignment', action: `${draft.id ? 'Assignment updated' : 'Assignment created'} · effective ${draft.effectiveDate}`, version: '—' });
     setAssignmentEditing(undefined);
-    notify({ type: 'success', message: `Computation assignment ${draft.id ? 'updated' : 'added'} successfully.` });
+    notify({ type: 'success', message: `Computation assignment ${draft.id ? 'updated' : 'added'}, effective ${draft.effectiveDate}.` });
   };
 
+  /* ------------------------------------------------------ reference sources */
+
+  /**
+   * Saving or uploading publishes a new version and keeps the previous one in
+   * full, so payroll can still resolve the values that were effective when an
+   * earlier cutoff ran.
+   */
   const saveReference = draft => {
     const version = (Number.parseFloat(draft.version) + 0.1).toFixed(1);
-    const saved = { ...draft, version };
-    setReferences(previous => previous.map(item => item.id === saved.id ? saved : item));
-    addHistory({ item: saved.name, type: 'Reference table', action: 'Entries edited', version });
+    const current = references.find(item => item.id === draft.id) || draft;
+    const saved = withReferenceVersion(current, { entries: draft.entries, effectiveDate: draft.effectiveDate, version, note: 'Entries edited in Computational Basis', actor });
+    setReferences(previous => previous.map(item => item.id === saved.id ? { ...saved, enabled: draft.enabled } : item));
+    addHistory({ item: saved.name, code: saved.code, type: 'Reference source', action: 'Entries edited', version, changes: [{ field: 'Version', from: current.version, to: version }] });
     setReferenceEditing(null);
-    notify({ type: 'success', message: `${saved.name} saved as version ${version}.` });
+    notify({ type: 'success', message: `${saved.name} published as version ${version}. Version ${current.version} is kept for payrolls that used it.` });
   };
 
-  const updateComputationList = event => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
-      const headers = parseCsvLine(lines.shift() || '').map(value => value.trim().toLowerCase());
-      const codeIndex = headers.indexOf('code');
-      const expressionIndex = headers.indexOf('expression');
-      if (codeIndex < 0 || expressionIndex < 0) { notify({ type: 'error', message: 'Use the Atlas template with Code and Expression columns.' }); return; }
-      let updated = 0;
-      let skipped = 0;
-      let locked = 0;
-      const incoming = new Map(lines.map(line => {
-        const values = parseCsvLine(line);
-        return [values[codeIndex], values];
-      }));
-      setComputations(previous => previous.map(item => {
-        const values = incoming.get(item.code);
-        if (!values) return item;
-        if (!canEditComputation(item, isAdmin)) { locked += 1; return item; }
-        try { evaluateExpression(values[expressionIndex], Object.fromEntries(fields.map(([code, , sample]) => [code, sample]))); } catch { skipped += 1; return item; }
-        updated += 1;
-        return { ...item, expression: values[expressionIndex], version: (Number(item.version) + 0.1).toFixed(1), updatedBy: isAdmin ? 'P&A Admin' : 'Client Admin', updatedAt: new Date().toLocaleDateString('en-US') };
-      }));
-      const lockedNote = locked ? ` ${locked} built-in formulas were left unchanged.` : '';
-      addHistory({ item: file.name, type: 'Computation', action: `Bulk update · ${updated} matched, ${skipped} invalid, ${locked} locked`, version: 'Multiple' });
-      notify({ type: updated ? 'success' : 'error', message: updated ? `${updated} computations updated. ${skipped} invalid rows skipped.${lockedNote}` : `No computations were updated.${lockedNote}` });
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+  const downloadReferenceTemplate = target => {
+    const rows = (target?.entries || []).slice(0, 3);
+    const csv = [
+      ['Key', 'Value', 'Note'].join(','),
+      ...(rows.length ? rows : [{ key: 'Example key', value: '0.00', note: 'Optional note' }]).map(item => [item.key, item.value, item.note].map(csvCell).join(',')),
+      '',
+      csvCell('# Key and Value are required on every row. Note is optional.'),
+      csvCell('# Uploading publishes a new version. The previous version is kept in full and stays available to the payrolls that used it.'),
+    ].join('\n');
+    downloadFile(`atlas-${(target?.code || 'reference').toLowerCase()}-template.csv`, csv, 'text/csv');
+    notify({ type: 'success', message: `${target?.name || 'Reference'} template downloaded.` });
   };
 
   const uploadReferenceVersion = event => {
@@ -759,39 +948,55 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
     const reader = new FileReader();
     reader.onload = () => {
       const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
-      if (lines.length < 2) { notify({ type: 'error', message: 'The reference file needs a header and at least one row.' }); return; }
+      if (lines.length < 2) { rejectUpload(file.name, ['The reference file needs a header and at least one row.'], notify); return; }
       const entries = lines.slice(1).map((line, index) => {
         const [key = '', value = '', note = ''] = parseCsvLine(line);
         return { id: index + 1, key, value, note };
-      }).filter(item => item.key && item.value);
-      if (!entries.length) { notify({ type: 'error', message: 'No valid Key and Value rows were found.' }); return; }
+      });
+      const rowErrors = entries.flatMap((item, index) => [
+        !item.key && { row: index + 2, field: 'Key', reason: 'Key is required.' },
+        !item.value && { row: index + 2, field: 'Value', value: item.key, reason: 'Value is required.' },
+      ].filter(Boolean));
+      if (rowErrors.length) { rejectUpload(file.name, rowErrors, notify); return; }
+      // A client may publish new values, not new rows: the upload has to name
+      // exactly the rows the source already has.
+      if (!isPaAdmin) {
+        const expectedKeys = new Set((uploadTarget.entries || []).map(item => String(item.key)));
+        const receivedKeys = new Set(entries.map(item => String(item.key)));
+        const sameRows = expectedKeys.size === receivedKeys.size && [...expectedKeys].every(key => receivedKeys.has(key));
+        if (!sameRows) { notify({ type: 'error', message: `${uploadTarget.name} can only receive new values for the rows it already has. Adding, removing or renaming a row changes what the formulas can look up, so P&A does that.` }); return; }
+      }
       const version = (Number.parseFloat(uploadTarget.version) + 0.1).toFixed(1);
-      setReferences(previous => previous.map(item => item.id === uploadTarget.id ? { ...item, entries, version, effectiveDate: new Date().toISOString().slice(0, 10) } : item));
-      addHistory({ item: uploadTarget.name, type: 'Reference table', action: `Version uploaded from ${file.name}`, version });
+      const saved = withReferenceVersion(uploadTarget, { entries, effectiveDate: governanceStamps.today(), version, note: `Uploaded from ${file.name}`, actor });
+      setReferences(previous => previous.map(item => item.id === uploadTarget.id ? saved : item));
+      addHistory({ item: uploadTarget.name, code: uploadTarget.code, type: 'Reference source', action: `Version uploaded from ${file.name}`, version, changes: [{ field: 'Version', from: uploadTarget.version, to: version }, { field: 'Rows', from: (uploadTarget.entries || []).length, to: entries.length }] });
       setUploadTarget(null);
-      notify({ type: 'success', message: `${uploadTarget.name} version ${version} uploaded with ${entries.length} rows.` });
+      notify({ type: 'success', message: `${uploadTarget.name} version ${version} uploaded with ${entries.length} ${plural(entries.length, 'row')}. Version ${uploadTarget.version} is preserved.` });
     };
     reader.readAsText(file);
     event.target.value = '';
   };
 
   const toggleReference = reference => {
+    if (!isPaAdmin) { notify({ type: 'error', message: 'Enabling or disabling a formula reference source is done by P&A.' }); return; }
     setReferences(previous => previous.map(item => item.id === reference.id ? { ...item, enabled: !item.enabled } : item));
-    addHistory({ item: reference.name, type: 'Reference table', action: `${reference.enabled ? 'Disabled' : 'Enabled'} for company`, version: reference.version });
-    notify({ type: 'success', message: `${reference.name} ${reference.enabled ? 'disabled' : 'enabled'} for ABC Company Ltd.` });
+    addHistory({ item: reference.name, code: reference.code, type: 'Reference source', action: `${reference.enabled ? 'Disabled' : 'Enabled'} for company`, version: reference.version, changes: [{ field: 'Company status', from: reference.enabled ? 'Enabled' : 'Disabled', to: reference.enabled ? 'Disabled' : 'Enabled' }] });
+    notify({ type: 'success', message: `${reference.name} ${reference.enabled ? 'disabled' : 'enabled'} for this company.` });
   };
 
   const computationColumns = [['code', 'Code'], ['name', 'Computation'], ['category', 'Category'], ['expression', 'Formula'], ['version', 'Version'], ['status', 'Status']];
-  const assignmentColumns = [['type', 'Assignment Type'], ['table', 'Reference Table'], ['computationCode', 'Computation'], ['employeeGroup', 'Employee Group'], ['frequency', 'Frequency'], ['status', 'Status']];
+  const assignmentColumns = [['type', 'Assignment Type'], ['table', 'Reference Table'], ['computationCode', 'Computation'], ['effectiveDate', 'Effective Date'], ['status', 'Status']];
   const referenceColumns = [['code', 'Code'], ['name', 'Reference Table'], ['category', 'Category'], ['version', 'Version'], ['effectiveDate', 'Effective Date']];
+  const historyColumns = [['date', 'Date'], ['item', 'Item'], ['type', 'Type'], ['action', 'Action'], ['version', 'Version'], ['user', 'User'], ['detail', 'Before → after']];
+  const historyRows = history.map(item => ({ ...item, detail: (item.changes || []).map(change => `${change.field}: ${change.from || '—'} → ${change.to || '—'}`).join(' · ') }));
 
   return <div className="page-content computational-page">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Services Information</button>
-    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Information / Services Information / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">Manage Atlas standard formulas, client assignments, policy scenarios, and linked reference sources used by automatic payroll calculation.</p></div><span className="controlled-badge"><Check weight="bold" /> Controlled standard library</span></div>
+    <div className="page-heading basis-heading"><div><p className="breadcrumb">Company Info / Services Information / Payroll / Computational Basis</p><h1>Computational Basis</h1><p className="page-description">The formulas P&amp;A assigned to this company, the values each one lets you change, the pipeline assignments, policy engines and versioned reference sources payroll runs with.</p></div><span className="controlled-badge"><Lock weight="duotone" /> Controlled Hybrid · formulas owned by P&amp;A</span></div>
     <SummaryCards computations={computations} references={references} assignments={assignments} />
     <div className="basis-tabs" role="tablist">
       <button className={tab === 'computations' ? 'active' : ''} onClick={() => setTab('computations')}>Computations <span>{computations.length}</span></button>
-      <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Client assignments <span>{assignments.length}</span></button>
+      <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Pipeline assignments <span>{assignments.length}</span></button>
       <button className={tab === 'policies' ? 'active' : ''} onClick={() => setTab('policies')}>Policy engines <span>{policyEngines.length}</span></button>
       <button className={tab === 'references' ? 'active' : ''} onClick={() => setTab('references')}>Reference sources <span>{references.length}</span></button>
       <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Change history</button>
@@ -802,52 +1007,115 @@ export function ComputationalBasis({ onBack, onOpenStatutory, onOpenService, not
         <div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search code, computation, or description..." /><MagnifyingGlass /></div>
         <select className="compact-select" value={category} onChange={event => setCategory(event.target.value)}><option>All categories</option>{[...new Set(computations.map(item => item.category))].map(value => <option key={value}>{value}</option>)}</select>
         <select className="compact-select" value={status} onChange={event => setStatus(event.target.value)}><option>All statuses</option><option>Active</option><option>Inactive</option></select>
+        <select className="compact-select" value={source} onChange={event => setSource(event.target.value)}><option>All scopes</option>{FORMULA_SCOPES.map(scope => <option key={scope}>{scope}</option>)}</select>
         <div className="toolbar-spacer" />
-        <div className="basis-toolbar-actions"><button className="button primary" onClick={createComputation}><Plus /> Create computation</button>
-          <button className="button secondary" onClick={() => computationUploadRef.current?.click()}><UploadSimple /> Import CSV</button>
-          <input ref={computationUploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={updateComputationList} />
+        <div className="basis-toolbar-actions">
           <ReportMenu onCsv={() => { exportCsv('atlas-computational-basis.csv', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis CSV report downloaded.' }); }} onPdf={() => { printReport('Atlas Computational Basis', filteredComputations, computationColumns); notify({ type: 'success', message: 'Computational Basis print report prepared.' }); }} /></div>
       </div>
-      <div className="library-notice">{isAdmin ? <Function weight="duotone" /> : <Lock weight="duotone" />}<span>{isAdmin
-        ? <><strong>P&amp;A Admin view — every formula is editable.</strong> Changes here update the controlled library for this company and are recorded in Change history.</>
-        : <><strong>Built-in formulas are read-only; company calculations are editable here.</strong> Create a governed computation with the approved field and operator palette, then assign it to the applicable employee group.</>}</span></div>
-      <div className="table-card config-table-card basis-table-card"><table className="config-table basis-table"><thead><tr><th>Code</th><th>Type</th><th>Computation</th><th>Category</th><th>Formula</th><th>Version</th><th>Status</th><th>Action</th></tr></thead><tbody>
-        {visibleComputations.map(item => <tr key={item.id}><td><strong>{item.code}</strong></td><td><span className={`computation-source ${item.isBuiltIn !== false ? 'built-in' : 'admin-defined'}`} title={item.isBuiltIn !== false ? 'Built-in standard computation' : 'Admin-defined computation'}><Function weight="duotone" />{item.isBuiltIn !== false ? 'Built-in' : 'Admin-defined'}</span></td><td><div className="table-title-cell"><strong>{item.name}</strong><small>Updated {item.updatedAt} by {item.updatedBy}</small></div></td><td>{item.category}</td><td><code className="table-formula">{item.expression}</code></td><td>{item.version}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setViewing(item)} aria-label={`View ${item.name}`}><Eye /></button>{canEditComputation(item, isAdmin)
-          ? <><button onClick={() => setEditing(item)} aria-label={`Edit ${item.name}`}><PencilSimple /></button>{item.isBuiltIn === false && <button onClick={() => deleteComputation(item)} aria-label={`Delete ${item.name}`}><Trash /></button>}</>
-          : <span className="row-lock" title="Built-in formula — edit in Settings › Standard Computation Library"><Lock weight="duotone" /></span>}</div></td></tr>)}
+      <div className="library-notice"><Lock weight="duotone" /><span>{isPaAdmin
+        ? <><strong>Every formula is authored once, centrally, by P&amp;A.</strong> Add or change a formula — Atlas standard or client-specific — and assign it to companies in Settings › Standard Computation Library. Here you activate or deactivate what is assigned to this company, and only while no payroll transaction is linked to it.</>
+        : <><strong>These are the formulas P&amp;A assigned to your company.</strong> Open one to see its logic and the values you may change. You change an approved value on the pay item that uses the formula, in Services Information. For a new formula or a change in logic, contact P&amp;A — it is handled as an enhancement.</>}</span></div>
+
+      {/* Bulk maintenance: filter the register, select what the filter found,
+          then move the whole selection at once. Codes a payroll transaction is
+          linked to are reported rather than silently skipped. */}
+      {isPaAdmin && Boolean(selected.size) && <div className="bulk-action-bar">
+        <span><strong>{selected.size}</strong> selected</span>
+        <button className="button secondary small" onClick={() => bulkStatus('Active')}><Check /> Activate</button>
+        <button className="button secondary small" onClick={() => bulkStatus('Inactive')}><Prohibit /> Deactivate</button>
+        <button className="button secondary small" onClick={() => setSelected(new Set())}><X /> Clear selection</button>
+      </div>}
+
+      <div className="table-card config-table-card basis-table-card"><table className="config-table basis-table"><thead><tr>
+        {isPaAdmin && <th className="select-column"><input type="checkbox" checked={allFilteredSelected} onChange={toggleAllFiltered} aria-label={`Select all ${filteredComputations.length} filtered computations`} /></th>}
+        <th>Code</th><th>Scope</th><th>Computation</th><th>Category</th><th>Formula</th><th>Version</th><th>Status</th><th>Payroll usage</th><th>Action</th>
+      </tr></thead><tbody>
+        {visibleComputations.map(item => {
+          const guard = guardFor(item);
+          const used = guard.usage;
+          return <tr key={item.code} className={selected.has(item.code) ? 'row-selected' : ''}>
+            {isPaAdmin && <td className="select-column"><input type="checkbox" checked={selected.has(item.code)} onChange={() => toggleSelected(item.code)} aria-label={`Select ${item.code}`} /></td>}
+            <td><strong>{item.code}</strong></td>
+            <td><ScopeChip record={item} /></td>
+            <td><div className="table-title-cell"><strong>{item.name}</strong><small>Updated {item.updatedAt} by {item.updatedBy}</small></div></td>
+            <td>{item.category}</td>
+            <td><code className="table-formula">{item.expression}</code></td>
+            <td>{item.version}</td>
+            <td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td>
+            <td>{used.transactions.length
+              ? <span className="usage-chip" title={used.transactions.map(row => `${row.transactionNumber} · ${row.status}${row.version ? ` · v${row.version}` : ''}`).join('\n')}>{used.transactions.length} {plural(used.transactions.length, 'transaction')}{used.posted.length ? ` · ${used.posted.length} posted` : ''}</span>
+              : <span className="usage-chip none">Not used yet</span>}</td>
+            <td><div className="row-actions always">
+              <button onClick={() => setViewing(item)} aria-label={`View ${item.name}`}><Eye /></button>
+              {isPaAdmin && <button
+                onClick={() => toggleStatus(item)}
+                disabled={item.status === 'Active' ? !guard.canDeactivate : item.centralStatus === 'Inactive'}
+                title={item.status === 'Active'
+                  ? (guard.canDeactivate ? `Deactivate ${item.code} for this company` : guard.deactivateReason)
+                  : (item.centralStatus === 'Inactive' ? `${item.code} is Inactive in the central Atlas library — reactivate it in Settings first.` : `Activate ${item.code} for this company`)}
+                aria-label={`${item.status === 'Active' ? 'Deactivate' : 'Activate'} ${item.name}`}
+              >{item.status === 'Active' ? <Prohibit /> : <Check />}</button>}
+              <span className="row-lock" title={guard.editReason}><Lock weight="duotone" /></span>
+            </div></td>
+          </tr>;
+        })}
       </tbody></table></div>
-      <div className="pagination"><span>Displaying <strong>{visibleComputations.length}</strong> of {filteredComputations.length} computations</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
+      <div className="pagination"><span>Displaying <strong>{visibleComputations.length}</strong> of {filteredComputations.length} {plural(filteredComputations.length, 'computation')}</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
     </>}
 
     {tab === 'assignments' && <>
-      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Client computation assignments</h2><p>Connect a standard computation and reference table to an employee group and payroll frequency.</p></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setAssignmentEditing(null)}><Plus /> Add assignment</button><ReportMenu onCsv={() => exportCsv('atlas-computation-assignments.csv', assignments, assignmentColumns)} onPdf={() => printReport('Atlas Computation Assignments', assignments, assignmentColumns)} /></div>
-      <div className="table-card config-table-card"><table className="config-table"><thead><tr><th>Assignment type</th><th>Reference table</th><th>Basis of computation</th><th>Employee group</th><th>Frequency</th><th>Status</th><th>Action</th></tr></thead><tbody>
-        {assignments.map(item => <tr key={item.id}><td>{item.type}</td><td>{item.table}</td><td><strong>{item.computationCode}</strong><small className="block-caption">{computations.find(record => record.code === item.computationCode)?.name}</small></td><td>{item.employeeGroup}</td><td>{item.frequency}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setAssignmentEditing(item)} aria-label="Edit assignment"><PencilSimple /></button></div></td></tr>)}
+      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Pipeline computation assignments</h2><p>The formula each pipeline computation applies — statutory contributions, withholding tax, take-home protection and the retirement benefit. Everything with a Services Information configuration sets its formula and its applicability there instead. P&amp;A sets these during onboarding.</p></div><div className="toolbar-spacer" />{isPaAdmin && <button className="button primary" onClick={() => setAssignmentEditing(null)}><Plus /> Add assignment</button>}<ReportMenu onCsv={() => exportCsv('atlas-computation-assignments.csv', assignments, assignmentColumns)} onPdf={() => printReport('Atlas Computation Assignments', assignments, assignmentColumns)} /></div>
+      <div className="table-card config-table-card"><table className="config-table"><thead><tr><th>Assignment type</th><th>Reference table</th><th>Basis of computation</th><th>Effective date</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        {assignments.map(item => <tr key={item.id}><td>{item.type}</td><td>{item.table}</td><td><strong>{item.computationCode}</strong><small className="block-caption">{computations.find(record => record.code === item.computationCode)?.name}</small></td><td>{item.effectiveDate || '—'}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always">{isPaAdmin
+          ? <button onClick={() => setAssignmentEditing(item)} aria-label="Edit assignment"><PencilSimple /></button>
+          : <span className="row-lock" title="Pipeline assignments are set by P&A."><Lock weight="duotone" /></span>}</div></td></tr>)}
       </tbody></table></div>
     </>}
 
-    {tab === 'policies' && <PolicyComputations notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
+    {tab === 'policies' && <PolicyComputations companyId={companyId} notify={notify} addHistory={addHistory} references={references} onManageHierarchy={() => setTab('references')} onOpenService={onOpenService} />}
 
     {tab === 'references' && <>
-      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Formula reference sources</h2><p>Maintain formula reference sources. Statutory contribution versions are linked here but managed in Settings, then consumed read-only in Payroll.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>
+      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Formula reference sources</h2><p>Maintain formula reference sources. Every published version is kept, so payroll resolves the values that were effective on its payout date. Statutory contribution versions are linked here but managed in Settings.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>
       <input ref={referenceUploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={uploadReferenceVersion} />
-      <div className="reference-grid">{references.map(item => <article className="reference-card" key={item.id}>
-        <header><span className="reference-icon"><Table weight="duotone" /></span><button className={`switch ${item.enabled ? 'on' : ''}`} onClick={() => toggleReference(item)} aria-label={`${item.enabled ? 'Disable' : 'Enable'} ${item.name}`}><span /></button></header>
-        <div><small>{item.code} · {item.category}</small><h3>{item.name}</h3><p>{item.entries.length} configured rows</p></div>
-        <dl><div><dt>Version</dt><dd>{item.version}</dd></div><div><dt>Effective</dt><dd>{item.effectiveDate}</dd></div><div><dt>Company</dt><dd className={item.enabled ? 'enabled-copy' : 'disabled-copy'}>{item.enabled ? 'Enabled' : 'Disabled'}</dd></div></dl>
-        <footer>{item.category === 'Linked Statutory' ? <button onClick={onOpenStatutory}><Table /> Manage in Settings</button> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> Manage</button><button onClick={() => { setUploadTarget(item); window.setTimeout(() => referenceUploadRef.current?.click(), 0); }}><UploadSimple /> Upload version</button></>}</footer>
-      </article>)}</div>
+      <div className="reference-grid">{references.map(item => {
+        const published = referenceVersionHistory(item);
+        return <article className="reference-card" key={item.id}>
+          <header><span className="reference-icon"><Table weight="duotone" /></span><button className={`switch ${item.enabled ? 'on' : ''}`} onClick={() => toggleReference(item)} disabled={!isPaAdmin} title={isPaAdmin ? undefined : 'Enabling or disabling a formula reference source is done by P&A.'} aria-label={`${item.enabled ? 'Disable' : 'Enable'} ${item.name}`}><span /></button></header>
+          <div><small>{item.code} · {item.category}</small><h3>{item.name}</h3><p>{item.entries.length} configured {plural(item.entries.length, 'row')}</p></div>
+          <dl><div><dt>Version</dt><dd>{item.version}</dd></div><div><dt>Effective</dt><dd>{item.effectiveDate}</dd></div><div><dt>Published versions</dt><dd>{published.length}</dd></div><div><dt>Company</dt><dd className={item.enabled ? 'enabled-copy' : 'disabled-copy'}>{item.enabled ? 'Enabled' : 'Disabled'}</dd></div></dl>
+          <footer>{item.category === 'Linked Statutory' ? <><button onClick={onOpenStatutory}><Table /> Manage in Settings</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button></> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> {isPaAdmin ? 'Manage' : 'Update values'}</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button><button onClick={() => downloadReferenceTemplate(item)}><FileCsv /> Template</button><button onClick={() => { setUploadTarget(item); window.setTimeout(() => referenceUploadRef.current?.click(), 0); }}><UploadSimple /> Upload version</button></>}</footer>
+        </article>;
+      })}</div>
     </>}
 
     {tab === 'history' && <>
-      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Change history</h2><p>Review formula edits, table versions, tests, and client enablement changes.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-computational-basis-history.csv', history, [['date', 'Date'], ['item', 'Item'], ['type', 'Type'], ['action', 'Action'], ['version', 'Version'], ['user', 'User']])} onPdf={() => printReport('Atlas Computational Basis Change History', history, [['date', 'Date'], ['item', 'Item'], ['type', 'Type'], ['action', 'Action'], ['version', 'Version'], ['user', 'User']])} /></div>
-      <div className="history-list">{history.map(item => <article key={item.id}><span className="history-dot"><ClockCounterClockwise /></span><div><header><strong>{item.item}</strong><span>{item.type}</span></header><p>{item.action}</p><small>{item.date} · {item.user} · Version {item.version}</small></div></article>)}</div>
+      <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Change history</h2><p>Who changed what, when, and which version was affected — with the value before and after the change.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-computational-basis-history.csv', historyRows, historyColumns)} onPdf={() => printReport('Atlas Computational Basis Change History', historyRows, historyColumns)} /></div>
+      <div className="history-list">{history.map(item => <article key={item.id}><span className="history-dot"><ClockCounterClockwise /></span><div>
+        <header><strong>{item.code ? `${item.code} · ${item.item}` : item.item}</strong><span>{item.type}</span></header>
+        <p>{item.action}</p>
+        {Boolean(item.changes?.length) && <ul className="history-change-list">{item.changes.map(change => <li key={change.field}><b>{change.field}</b><code className="diff-before">{String(change.from) || '—'}</code><span aria-hidden="true">→</span><code className="diff-after">{String(change.to) || '—'}</code></li>)}</ul>}
+        <small>{item.date} · {item.user} · Version {item.version}</small>
+      </div></article>)}</div>
     </>}
 
-    {editing && <FormulaEditor record={editing} onClose={() => setEditing(null)} onSave={saveComputation} onTestHistory={(draft) => addHistory({ item: draft.name, type: 'Computation', action: 'Test calculation passed', version: draft.version })} />}
-    {deleting && <Modal title="Delete company computation" onClose={() => setDeleting(null)} className="delete-computation-modal"><div className="modal-body"><p>Delete <strong>{deleting.code} · {deleting.name}</strong> from this company’s computation library?</p><small>It will no longer be available for new assignments. Atlas standard computations are not affected.</small></div><div className="modal-actions"><button className="button secondary" onClick={() => setDeleting(null)}>Cancel</button><button className="button danger" onClick={confirmDeleteComputation}><Trash /> Delete computation</button></div></Modal>}
-    {viewing && <ComputationDrawer record={viewing} canEdit={canEditComputation(viewing, isAdmin)} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
-    {assignmentEditing !== undefined && <AssignmentModal record={assignmentEditing} computations={computations} references={references} onClose={() => setAssignmentEditing(undefined)} onSave={saveAssignment} />}
-    {referenceEditing && <ReferenceEditor table={referenceEditing} onClose={() => setReferenceEditing(null)} onSave={saveReference} onExport={table => exportCsv(`${table.code.toLowerCase()}-${table.version}.csv`, table.entries, [['key', 'Key'], ['value', 'Value'], ['note', 'Note']])} />}
+    {viewing && <ComputationDrawer
+      record={viewing}
+      library={computations}
+      versions={versions[String(viewing.code).toUpperCase()] || []}
+      usage={usageOf(viewing.code, usage)}
+      guard={guardFor(viewing)}
+      whereUsedRows={whereUsed(viewing.code, {
+        library: computations,
+        payItems: payItemsUsing(viewing.code, [{ companyId, displayName: 'This company' }]),
+        assignments: assignments.map(item => ({ ...item, companyName: 'This company' })),
+        companies: [{ companyId, displayName: 'This company' }],
+        applicability: readApplicability(),
+        transactions: usageOf(viewing.code, usage).transactions || [],
+      })}
+      onClose={() => setViewing(null)}
+    />}
+    {isPaAdmin && assignmentEditing !== undefined && <AssignmentModal record={assignmentEditing} computations={computations} references={references} onClose={() => setAssignmentEditing(undefined)} onSave={saveAssignment} />}
+    {referenceEditing && <ReferenceEditor table={referenceEditing} valuesOnly={!isPaAdmin} onClose={() => setReferenceEditing(null)} onSave={saveReference} onExport={table => exportCsv(`${table.code.toLowerCase()}-${table.version}.csv`, table.entries, [['key', 'Key'], ['value', 'Value'], ['note', 'Note']])} />}
+    {referenceHistory && <ReferenceVersions reference={referenceHistory} onClose={() => setReferenceHistory(null)} />}
   </div>;
 }

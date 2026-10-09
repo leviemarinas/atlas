@@ -37,21 +37,43 @@ import {
   PersonalDetails,
   TimeOff,
 } from './EmployeeMasterfileModules';
-import { RoleSwitch } from './RoleContext';
+import { RoleSwitch, useRole } from './RoleContext';
+import { AUDITED_SECTIONS, logEmployeeChange, readEmployeeChanges, recordChanges } from './employeeChangeLog.js';
 import { appendAuditEvent } from './companyRepository';
 import { chargeCodeNames, chargeCodeTypes } from './chargeCodeService';
-import { referenceValues } from './ReferenceTables';
+import { referenceRows, referenceValues } from './ReferenceTables';
+import { CONFIG_PAYMENT_MODES, frequencyOptions, migrateSchedule, readServiceConfiguration } from './serviceModules';
+import { coversEmployee, employeeDirectory } from './applicabilityScope';
 import { deMinimisSplit } from './statutoryService';
+import { seedVersion } from './statutorySchedules.js';
+import { readRegisterRows } from './OperationalWorkspaces';
 import { BrandRail, Topbar } from './AppChrome';
+import { rejectUpload } from './uploadErrorLog.js';
 
 const today = '2026-01-01';
+const PERIODS = ['Every Payroll', 'First Half', 'Second Half'];
+
+// Entry fields left optional, as agreed; everything else is starred.
+const OPTIONAL_FIELDS = new Set(['end', 'endDate', 'periodEnd', 'holdDate', 'remarks', 'description', 'reference', 'accumulatedManual', 'accumulatedComputed', 'accumulated']);
+const SECTION_OPTIONAL = { loans: ['payItem', 'loanSource'], basicPay: ['ecola'] };
+const isRequired = (section, [key, , type]) => type !== 'computed' && !OPTIONAL_FIELDS.has(key) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
+
+/** Active records of a company configuration register, for the entry forms that pick from it. */
+function configured(moduleKey) {
+  try { return readServiceConfiguration(moduleKey).filter(item => (item.status || 'Active') === 'Active'); } catch { return []; }
+}
+const configuredNames = (moduleKey, fallback = []) => {
+  const names = configured(moduleKey).map(item => item.name).filter(Boolean);
+  return names.length ? names : fallback;
+};
 
 const sectionDefinitions = [
   {
     key: 'basicPay', title: 'Basic Pay', upload: true,
-    columns: [['effectiveDate', 'Effective Date'], ['payType', 'Pay Type'], ['amount', 'Entered Rate'], ['monthlyRate', 'Monthly Rate'], ['dailyRate', 'Daily Rate'], ['ecola', 'ECOLA']],
+    columns: [['effectiveDate', 'Effective Date'], ['payType', 'Pay Type'], ['amount', 'Basic Pay Amount'], ['monthlyRate', 'Monthly Rate'], ['dailyRate', 'Daily Rate'], ['ecola', 'ECOLA']],
+    // In the order P&A listed; the five rates are always computed from the Basic Pay Amount.
     fields: [
-      ['dateCreated', 'Date Created', 'date'], ['effectiveDate', 'Effectivity Date', 'date'], ['payType', 'Pay Type', 'select', ['Monthly', 'Daily', 'Hourly']], ['amount', 'Entered Basic Pay Rate', 'number'], ['workDays', 'Work Days', 'number'], ['workDaysType', 'Work Days Type', 'select', ['Per Year', 'Per Month']], ['workHours', 'Work Hours per Day', 'number'], ['mwe', 'Minimum Wage Earner', 'boolean'], ['ecola', 'ECOLA Amount', 'number'], ['location', 'Minimum Wage Region / Location', 'select', () => referenceValues('work-locations'), draft => draft.mwe === 'Yes'], ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Minute Rate', 'computed'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']],
+      ['dateCreated', 'Date Created', 'date'], ['payType', 'Pay Type', 'select', ['Monthly', 'Daily', 'Hourly']], ['amount', 'Basic Pay Amount', 'number'], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'computed'], ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Per Minute Rate', 'computed'], ['mwe', 'Minimum Wage Earner', 'boolean'], ['location', 'Minimum Wage Region / Location', 'select', () => referenceValues('work-locations'), draft => draft.mwe === 'Yes'], ['ecola', 'ECOLA Amount', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS],
     ],
     rows: [
       { dateCreated: '01/01/2026', effectiveDate: '01/01/2026', payType: 'Monthly', amount: '50000', workDays: '261', workDaysType: 'Per Year', workHours: '8', mwe: 'No', ecola: '0', location: 'NCR', annualRate: '600000', monthlyRate: '50000', dailyRate: '2298.85' },
@@ -60,8 +82,9 @@ const sectionDefinitions = [
   },
   {
     key: 'earnings', title: 'Earnings', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable']],
-    fields: [['dateCreated', 'Date Created', 'date'], ['code', 'Earning Code'], ['name', 'Earning Name', 'select', () => referenceValues('earning-types')], ['amount', 'Earning Amount', 'number'], ['frequency', 'Payment Frequency', 'select', ['One-time', 'Weekly', 'Semi-monthly', 'Monthly']], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', ['Regular', 'De Minimis', 'Reimbursement']], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
+    // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'select', () => configuredNames('earnings', referenceValues('earning-types'))], ['code', 'Earning Code', 'computed'], ['amount', 'Earning Amount', 'number'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [
       { dateCreated: '01/01/2026', code: 'EXA-001', name: 'Salary', amount: '50000', frequency: 'Semi-monthly', taxability: 'Taxable', classification: 'Taxable' },
       { dateCreated: '01/01/2026', code: 'EXA-002', name: 'Lecture Fee', amount: '7500', frequency: 'One-time', taxability: 'Non-taxable', classification: 'Non-Taxable' },
@@ -71,9 +94,10 @@ const sectionDefinitions = [
   },
   {
     key: 'bonuses', title: '13th Month Pay and Bonuses', upload: true,
-    columns: [['name', 'Name'], ['type', 'Type'], ['taxability', 'Taxability'], ['amount', 'Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
-    fields: [['name', 'Bonus Name'], ['type', 'Bonus Type', 'select', ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Other Bonus']], ['computationBasis', 'Computation Basis', 'select', ['Basic Pay', 'Basic Pay + Taxable Earnings', 'Eligible Earnings', 'Custom Policy Code']], ['employeeGroup', 'Eligible Employee Group'], ['hierarchyPriority', 'Bonus Hierarchy Priority', 'number'], ['releaseMonth', 'Release Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']], ['taxability', 'Taxability', 'select', ['Taxable Bonus', 'Non-taxable Bonus']], ['amount', 'Manual / Override Amount', 'number'], ['transactionThreshold', 'Per Transaction Non-Taxable Threshold', 'number'], ['annualThreshold', 'Annual Non-Taxable Threshold', 'number'], ['source', 'Entry Source', 'select', ['Computed', 'Manual', 'Upload']], ['remarks', 'Remarks', 'textarea']],
-    rows: [{ name: '13th Month Pay', type: '13th Month Pay', taxability: 'Taxable Bonus', amount: '50000' }, { name: 'Performance Bonus', type: 'Performance Bonus', taxability: 'Non-taxable Bonus', amount: '10000' }],
+    columns: [['code', 'Bonus Code'], ['name', 'Name'], ['type', 'Type'], ['amount', 'Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
+    // No Taxability: the remaining non-taxable ceiling is used first and only the excess is taxable.
+    fields: [['name', 'Bonus Name', 'select', () => configuredNames('bonuses')], ['code', 'Bonus Code', 'computed'], ['type', 'Bonus Type', 'select', ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Other Bonus']], ['computationBasis', 'Computation Basis', 'select', ['Basic Pay', 'Basic Pay + Taxable Earnings', 'Eligible Earnings', 'Custom Policy Code']], ['employeeGroup', 'Eligible Employee Group'], ['hierarchyPriority', 'Bonus Hierarchy Priority', 'number'], ['releaseMonth', 'Release Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']], ['effectiveDate', 'Effectivity Date', 'date'], ['amount', 'Total Amount', 'number'], ['nonTaxableAmount', 'Non-Taxable Amount', 'computed'], ['taxableAmount', 'Taxable Amount', 'computed'], ['transactionThreshold', 'Per Transaction Non-Taxable Threshold', 'number'], ['annualThreshold', 'Annual Non-Taxable Threshold', 'number'], ['source', 'Entry Source', 'select', ['Computed', 'Manual', 'Upload']], ['remarks', 'Remarks', 'textarea']],
+    rows: [{ name: '13th Month Pay', type: '13th Month Pay', amount: '50000' }, { name: 'Performance Bonus', type: 'Performance Bonus', amount: '10000' }],
   },
   {
     key: 'statutory', title: 'Statutory Deductions and Shares', upload: true,
@@ -84,13 +108,13 @@ const sectionDefinitions = [
   {
     key: 'deductions', title: 'Company Deductions', upload: false,
     columns: [['name', 'Deduction Name'], ['amount', 'Amount of Deduction'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['count', 'Number of Deductions'], ['total', 'Total Deduction'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['deductionStatus', 'Status']],
-    fields: [['code', 'Deduction Code'], ['name', 'Deduction Name', 'select', () => referenceValues('deduction-types')], ['frequency', 'Payment Frequency', 'select', ['Every Payroll', 'First Half', 'Second Half', 'Monthly']], ['amount', 'Amount of Deduction', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['count', 'Number of Deductions', 'number'], ['total', 'Total Deduction Amount', 'number'], ['accumulated', 'Accumulated Amount', 'number'], ['balance', 'Total Balance', 'number'], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    fields: [['name', 'Deduction Name', 'select', () => configuredNames('deductions', referenceValues('deduction-types'))], ['code', 'Deduction Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amount of Deduction', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS], ['count', 'Number of Deductions', 'number'], ['total', 'Total Deduction Amount', 'number'], ['accumulated', 'Accumulated Amount', 'computed'], ['balance', 'Total Balance', 'computed'], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [{ name: 'Cooperative Dues', amount: '500', startDate: '01/01/2026', endDate: '12/31/2026', count: '24', total: '12000', accumulated: '3000', balance: '9000' }],
   },
   {
     key: 'loans', title: 'Loans', upload: true,
-    columns: [['payItem', 'Pay Item'], ['frequency', 'Payment Frequency'], ['amount', 'Amount'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['loanStatus', 'Loan Status']],
-    fields: [['payItem', 'Loan Reference', 'select', () => referenceValues('loan-types')], ['frequency', 'Payment Frequency', 'select', ['Every Payroll', 'First Half', 'Second Half', 'Monthly']], ['amount', 'Amortization Amount', 'number'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['description', 'Description'], ['dateGranted', 'Date Granted', 'date'], ['reference', 'Reference Number'], ['principal', 'Principal', 'number'], ['interest', 'Interest Amount', 'number'], ['totalLoan', 'Total Loan', 'computed'], ['accumulatedManual', 'Accumulated Payment (Manual)', 'number'], ['accumulatedComputed', 'Accumulated Payment (Computed)', 'number'], ['balance', 'Balance', 'computed'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    columns: [['code', 'Loan Code'], ['payItem', 'Pay Item'], ['frequency', 'Payment Frequency'], ['amount', 'Amortization Amount'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['loanStatus', 'Loan Status']],
+    fields: [['loanSource', 'Loan Source', 'select', ['Company Loan', 'Government Loan']], ['payItem', 'Loan Reference', 'select', draft => (draft.loanSource === 'Government Loan' ? configuredNames('governmentLoans', ['SSS Salary Loan', 'HDMF Multi-Purpose Loan']) : configuredNames('loans', referenceValues('loan-types')))], ['code', 'Loan Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amortization Amount', 'number'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['description', 'Description'], ['dateGranted', 'Date Granted', 'date'], ['reference', 'Reference Number'], ['principal', 'Principal', 'number'], ['interest', 'Interest Amount', 'computed'], ['totalLoan', 'Total Loan', 'computed'], ['accumulatedManual', 'Accumulated Payment (Manual)', 'number'], ['accumulatedComputed', 'Accumulated Payment (Computed)', 'number'], ['balance', 'Balance', 'computed'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [{ payItem: 'SSS Salary Loan', frequency: 'Monthly', amount: '2500', startDate: '01/01/2026', endDate: '12/31/2026', principal: '30000', interest: '1500', accumulatedComputed: '17500', accumulatedManual: '0' }, { payItem: 'Company Salary Loan', frequency: 'Monthly', amount: '1000', startDate: '01/01/2026', endDate: '06/30/2026', principal: '9500', interest: '500', accumulatedComputed: '9400', accumulatedManual: '0' }],
   },
   {
@@ -159,6 +183,8 @@ function formatCell(key, value) {
   if (['scheduledDeduction', 'nonTaxableAmount', 'taxableAmount', 'remainingCeiling'].includes(key)) return value === '' || value === undefined || value === null ? '—' : `₱ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   if (['amount', 'total', 'balance', 'principal', 'grossPay', 'taxableIncome', 'taxWithheld', 'netPay', 'employee', 'employer', 'basicPay', 'taxableBonus', 'nonTaxableBonus', 'deMinimis', 'allowableDeductions', 'annualRate', 'monthlyRate', 'dailyRate', 'hourlyRate', 'minuteRate', 'ecola'].includes(key)) return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   if (key === 'percentage') return `${value}%`;
+  // Date inputs store ISO dates; show them like the rest of the table (MM/DD/YYYY).
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) { const [year, month, day] = value.split('-'); return `${month}/${day}/${year}`; }
   return value || '—';
 }
 
@@ -172,7 +198,7 @@ function EmployeeSidebar({ onBack, module, setModule, closeDetail }) {
   return <aside className="company-sidebar employee-sidebar"><button className="back-link" onClick={onBack}>← Back to Core</button><h2>Employee<br />Masterfile</h2><nav><button className={`side-link ${module === 'employees' ? 'selected' : ''}`} onClick={() => { setModule('employees'); closeDetail(); }}><UserCircle weight={module === 'employees' ? 'fill' : 'regular'} /> Employee Information</button><button className={`side-link ${module === 'accounts' ? 'selected' : ''}`} onClick={() => setModule('accounts')}><IdentificationCard weight={module === 'accounts' ? 'fill' : 'regular'} /> Account Settings Information</button></nav></aside>;
 }
 
-function InputField({ field, value, onChange, draft = {} }) {
+function InputField({ field, value, onChange, draft = {}, required = true }) {
   const [key, label, type = 'text', options = []] = field;
   // Options may be a function so a field can be sourced from another module's
   // register (cost allocation reads the company charge codes, for example).
@@ -181,10 +207,10 @@ function InputField({ field, value, onChange, draft = {} }) {
   // record came from an upload, so editing a row never silently clears it.
   const choices = value && !sourced.includes(value) ? [...sourced, value] : sourced;
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
-  if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
+  if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required={required}><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
   if (type === 'boolean') return <div className="radio-group">{['Yes', 'No'].map(item => <label key={item}><input type="radio" name={key} checked={(value || 'No') === item} onChange={() => onChange(item)} /> {item}</label>)}</div>;
   if (type === 'textarea') return <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="Enter remarks" />;
-  return <input type={type} min={type === 'number' ? '0' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required />;
+  return <input type={type} min={type === 'number' ? '0' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
 }
 
 /** Employee payroll records mix MM/DD/YYYY seed values with ISO date inputs. */
@@ -197,7 +223,14 @@ function toIsoDate(value) {
   return '';
 }
 
-function normalizePayrollRecord(section, draft) {
+function normalizePayrollRecord(section, input) {
+  let draft = ['earnings', 'deductions', 'loans'].includes(section.key) ? migrateSchedule(input) : input;
+  // The code comes from the register the entry names, so it cannot drift from it.
+  const source = section.key === 'earnings' ? configured('earnings').find(item => item.name === draft.name)
+    : section.key === 'bonuses' ? configured('bonuses').find(item => item.name === draft.name)
+      : section.key === 'deductions' ? configured('deductions').find(item => item.name === draft.name)
+        : section.key === 'loans' ? referenceRows('loan-types').find(row => row.name === draft.payItem) : null;
+  if (source?.code) draft = { ...draft, code: source.code };
   if (section.key === 'basicPay' || section.key === 'allowances') {
     const amount = Number(draft.amount || 0);
     const workDays = Math.max(1, Number(draft.workDays || 261));
@@ -270,13 +303,14 @@ function recalculateSection(section, rows, context = {}) {
       const perTransaction = Number(row.transactionThreshold || 0);
       const remainingAnnual = annualCeiling > 0 ? Math.max(0, annualCeiling - used) : amount;
       const cap = perTransaction > 0 ? Math.min(remainingAnnual, perTransaction) : remainingAnnual;
-      const nonTaxable = row.taxability === 'Taxable Bonus' ? 0 : Math.min(amount, Math.max(0, cap));
+      // No Taxability to override it: the remaining ceiling is used first, only the excess is taxable.
+      const nonTaxable = Math.min(amount, Math.max(0, cap));
       used += nonTaxable;
       resolved.set(row.id, {
         nonTaxableAmount: nonTaxable.toFixed(2),
         taxableAmount: Math.max(0, amount - nonTaxable).toFixed(2),
         remainingCeiling: annualCeiling > 0 ? Math.max(0, annualCeiling - used).toFixed(2) : '',
-        thresholdNote: annualCeiling > 0 && nonTaxable < amount && row.taxability !== 'Taxable Bonus' ? 'Ceiling exhausted — excess taxable' : '',
+        thresholdNote: annualCeiling > 0 && nonTaxable < amount ? 'Ceiling exhausted — excess taxable' : '',
       });
     });
     return rows.map(row => ({ ...row, ...(resolved.get(row.id) || {}) }));
@@ -301,26 +335,118 @@ function recalculateSection(section, rows, context = {}) {
   return rows;
 }
 
-function EntryModal({ section, record, onClose, onSave }) {
-  const [draft, setDraft] = useState({ dateCreated: today, ...record });
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft)); }}><div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => <label key={field[0]}>{field[1]} {field[2] !== 'computed' && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} onChange={value => setDraft(prev => ({ ...prev, [field[0]]: value }))} /></label>)}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
+// MWE: the minimum wage for a place and date comes from Settings > MWE Rate Tables.
+const toDay = value => {
+  const text = String(value || '');
+  const parts = text.split('/');
+  const time = Date.parse(parts.length === 3 ? `${parts[2]}-${parts[0]}-${parts[1]}` : text);
+  return Number.isNaN(time) ? 0 : time;
+};
+function applicableMweRate(location, effectiveDate) {
+  if (!location) return null;
+  const when = toDay(effectiveDate) || Date.now();
+  return readRegisterRows('mweRates')
+    .filter(row => row.status === 'Active' && [row.region, row.municipality].includes(location) && toDay(row.effectiveDate) <= when)
+    .sort((a, b) => toDay(b.effectiveDate) - toDay(a.effectiveDate))[0] || null;
+}
+const peso = value => `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+function EntryModal({ section, record, onClose, onSave, preview }) {
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: today, ...(section.key === 'basicPay' && !record?.id ? { workDays: '261', workDaysType: 'Per Year', workHours: '8' } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+  const [reason, setReason] = useState('');
+  // Pay-affecting sections keep an employee-level audit: an edit needs a reason.
+  const audited = AUDITED_SECTIONS.includes(section.key);
+  const reasonRequired = audited && Boolean(record?.id) && !record?.inherited;
+  // De Minimis: warn while the amount is typed, not only after saving (§10.2).
+  const previewed = preview?.(draft);
+  const ceilingWarning = draft.classification === 'De Minimis' && previewed?.thresholdNote
+    ? (Number(previewed.taxableAmount) > 0 ? `Over the De Minimis ceiling: ₱ ${Number(previewed.nonTaxableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} stays non-taxable and ₱ ${Number(previewed.taxableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} is ${previewed.thresholdNote.replace(/^Excess /, '')}.` : `${previewed.thresholdNote} for ${draft.name || 'this benefit'} — the whole amount will be treated as taxable.`)
+    : '';
+  // MWE: warn while the rate is typed when it falls below the minimum wage for the location and date.
+  const mweWarning = (() => {
+    if (section.key !== 'basicPay' || draft.mwe !== 'Yes' || !draft.location) return '';
+    const rate = applicableMweRate(draft.location, draft.effectiveDate);
+    if (!rate) return `No active MWE rate is on file for ${draft.location} on this date.`;
+    const daily = Number(draft.dailyRate || 0);
+    return daily > 0 && daily < Number(rate.dailyRate || 0)
+      ? `The daily rate ${peso(daily)} is below the ${draft.location} minimum wage of ${peso(rate.dailyRate)} (${rate.wageOrder}, effective ${rate.effectiveDate}). Check the rate or the exemption before saving.`
+      : '';
+  })();
+  // Computed values (rates, totals, balances, codes) follow the entry as it is filled in.
+  const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, [key]: value }));
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Reason for change {reasonRequired && <span className="required">*</span>}<textarea value={reason} required={reasonRequired} placeholder={reasonRequired ? 'Why is this being changed? It is kept in the employee change history.' : 'Optional'} onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
 }
 
-function ConfirmDelete({ name, onClose, onDelete }) {
-  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
+function ConfirmDelete({ name, onClose, onDelete, needsReason = false }) {
+  const [reason, setReason] = useState('');
+  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div>{needsReason && <label className="employee-change-reason">Reason for deleting <span className="required">*</span><textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="Kept in the employee change history." /></label>}<div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" disabled={needsReason && !reason.trim()} onClick={() => onDelete(reason.trim())}>Delete</button></div></div></section></div>;
 }
 
-function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpenBulk, context = {} }) {
+/**
+ * The active earnings a covered employee is entitled to, from Earning
+ * Configuration, that the record does not already hold. Editing one saves the
+ * employee's own copy.
+ */
+function inheritedEarnings(rows, employee) {
+  if (!employee) return [];
+  const entry = employeeDirectory.find(item => item.code === employee.id || item.name === employee.name) || { code: employee.id, name: employee.name };
+  const present = new Set(rows.flatMap(row => [row.code, row.name]).filter(Boolean));
+  return configured('earnings')
+    .filter(item => Number(item.defaultAmount || 0) > 0 && coversEmployee(item.applicability, entry))
+    .filter(item => !present.has(item.code) && !present.has(item.name))
+    .map(item => normalizePayrollRecord({ key: 'earnings' }, {
+      id: `cfg-${item.code}`, inherited: true, source: 'From Earning Configuration', dateCreated: today,
+      code: item.code, name: item.name, amount: item.defaultAmount, paymentMode: item.paymentMode, frequency: item.frequency,
+      taxability: item.taxability, classification: item.classification === 'De Minimis' ? 'De Minimis' : item.classification === 'Receivable' ? 'Reimbursement' : 'Regular',
+      effectiveDate: item.effectivityDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate,
+    }));
+}
+
+function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpenBulk, context = {}, employee = null }) {
+  const { actor } = useRole();
+  const audited = AUDITED_SECTIONS.includes(section.key) && Boolean(employee?.id);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [query, setQuery] = useState('');
+  const [filterKey, setFilterKey] = useState('');
+  const [filterValue, setFilterValue] = useState('');
+  const [sort, setSort] = useState({ key: '', dir: 'asc' });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const uploadRef = useRef(null);
-  const save = draft => {
+  const allRows = section.key === 'earnings' ? [...rows, ...inheritedEarnings(rows, employee)] : rows;
+  const cellText = (row, key) => String(formatCell(key, row[key]) ?? '');
+  const matchedRows = allRows
+    .filter(row => !query.trim() || section.columns.some(([key]) => cellText(row, key).toLowerCase().includes(query.trim().toLowerCase())))
+    .filter(row => !filterKey || !filterValue.trim() || cellText(row, filterKey).toLowerCase().includes(filterValue.trim().toLowerCase()))
+    .sort((a, b) => (sort.key ? cellText(a, sort.key).localeCompare(cellText(b, sort.key), undefined, { numeric: true }) * (sort.dir === 'asc' ? 1 : -1) : 0));
+  const pageCount = Math.max(1, Math.ceil(matchedRows.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const shownRows = matchedRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const sortBy = key => setSort(previous => (previous.key === key ? { key, dir: previous.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  const previewRow = draft => {
+    const probe = { ...draft, id: draft.id && !draft.inherited ? draft.id : '__draft' };
+    const siblings = probe.id === '__draft' ? [probe, ...rows] : rows.map(row => (row.id === probe.id ? probe : row));
+    return recalculateSection(section, siblings, context).find(row => row.id === probe.id);
+  };
+  const save = (draft, reason = '') => {
     let completionNote = '';
     if (section.key === 'bankInformation' && rows.some(row => row.id !== draft.id && row.accountNumber && row.accountNumber === draft.accountNumber)) {
       notify({ type: 'error', message: 'This bank account number is already registered for the employee.' }); return;
     }
-    const nextRows = draft.id ? rows.map(row => row.id === draft.id ? draft : row) : [{ ...draft, id: Math.max(0, ...rows.map(row => row.id)) + 1 }, ...rows];
+    if (section.key === 'loans' && draft.reference) {
+      if (!/^[A-Za-z0-9][A-Za-z0-9\-_/]{0,29}$/.test(draft.reference)) {
+        notify({ type: 'error', message: 'Reference Number can have letters, numbers and dashes only, up to 30 characters.' }); return;
+      }
+      if (rows.some(row => row.id !== draft.id && String(row.reference || '').toLowerCase() === draft.reference.toLowerCase())) {
+        notify({ type: 'error', message: `Reference Number ${draft.reference} is already used by another loan of this employee.` }); return;
+      }
+    }
+    const { inherited, ...entry } = draft;
+    const own = inherited ? { ...entry, id: undefined, source: 'From Earning Configuration (edited)' } : entry;
+    const nextRows = own.id ? rows.map(row => row.id === own.id ? own : row) : [{ ...own, id: Math.max(0, ...rows.map(row => Number(row.id) || 0)) + 1 }, ...rows];
     if (section.key === 'costAllocation') {
       const totalPercentage = nextRows.reduce((total, row) => total + Number(row.percentage || 0), 0);
       if (totalPercentage > 100) { notify({ type: 'error', message: 'Cost allocation cannot exceed 100%.' }); return; }
@@ -330,6 +456,11 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       notify({ type: 'error', message: 'Net-pay allotment percentages cannot exceed 100%.' }); return;
     }
     const recalculated = recalculateSection(section, nextRows, context);
+    if (audited) {
+      const before = rows.find(row => row.id === own.id);
+      const changes = recordChanges(section.fields, before || {}, own);
+      if (!before || changes.length) logEmployeeChange({ employeeId: employee.id, section: section.key, action: before ? 'Changed' : inherited ? 'Overridden from configuration' : 'Added', item: own.name || own.payItem || own.type || section.title, reason, changes, actor });
+    }
     const thresholdNote = recalculated.find(row => row.id === draft.id)?.thresholdNote;
     setRows(recalculated);
     setEditing(null); notify({ type: 'success', message: `${section.title} entry ${draft.id ? 'updated' : 'added'} successfully.${completionNote}${thresholdNote ? ` ${thresholdNote}.` : ''}` });
@@ -341,13 +472,19 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
       const headers = lines[0]?.split(',').map(value => value.replaceAll('"', '').trim().toLowerCase()) || [];
       const labels = Object.fromEntries(section.fields.map(field => [field[1].toLowerCase(), field[0]]));
-      const added = lines.slice(1).map((line, index) => {
+      const unknownHeaders = headers.filter(header => header && !labels[header]);
+      const errors = unknownHeaders.map(header => ({ row: 1, field: header, reason: `Column "${header}" is not a ${section.title} field.` }));
+      const parsed = lines.slice(1).map((line, index) => {
         const values = line.split(',').map(value => value.replace(/^"|"$/g, '').trim()); const row = { id: Date.now() + index };
-        headers.forEach((header, i) => { if (labels[header]) row[labels[header]] = values[i]; }); return normalizePayrollRecord(section, row);
-      }).filter(row => Object.keys(row).length > 1);
-      if (!added.length) notify({ type: 'error', message: `No matching ${section.title} rows were found.` });
-      else if (section.key === 'costAllocation' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) notify({ type: 'error', message: 'Imported cost allocation would exceed 100%.' });
-      else if (section.key === 'allotment' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) notify({ type: 'error', message: 'Imported net-pay allotments would exceed 100%.' });
+        headers.forEach((header, i) => { if (labels[header]) row[labels[header]] = values[i]; });
+        if (Object.keys(row).length <= 1) errors.push({ row: index + 2, reason: `No ${section.title} value on this row.` });
+        return normalizePayrollRecord(section, row);
+      });
+      const added = parsed.filter(row => Object.keys(row).length > 1);
+      if (!added.length && !errors.length) errors.push({ reason: `No matching ${section.title} rows were found.` });
+      if (section.key === 'costAllocation' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) errors.push({ field: 'Percentage', reason: 'Imported cost allocation would exceed 100%.' });
+      if (section.key === 'allotment' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) errors.push({ field: 'Percentage', reason: 'Imported net-pay allotments would exceed 100%.' });
+      if (errors.length) rejectUpload(file.name, errors, notify);
       else if (section.key === 'bankInformation' && new Set([...added, ...rows].map(row => row.accountNumber).filter(Boolean)).size !== [...added, ...rows].map(row => row.accountNumber).filter(Boolean).length) notify({ type: 'error', message: 'The import contains a duplicate bank account number.' });
       else { setRows(recalculateSection(section, [...added, ...rows], context)); notify({ type: 'success', message: `${added.length} ${section.title} entries imported.` }); }
     };
@@ -355,13 +492,25 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
   };
   return <section className="employee-data-section">
     <button className="employee-section-heading" onClick={() => setOpen(!open)}><span>{section.title}</span>{open ? <CaretUp /> : <CaretDown />}</button>
-    {open && <div className="employee-section-body"><div className="employee-section-actions"><button className="button secondary" onClick={() => setEditing({})}><Plus /> Add entry</button>{section.upload && <button className="button secondary" onClick={() => onOpenBulk?.(section.key)}><UploadSimple /> Bulk Actions</button>}</div>
-      <div className="employee-table-wrap"><table className="employee-table"><thead><tr>{section.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{rows.length ? rows.map(row => <tr key={row.id}>{section.columns.map(([key]) => <td key={key}>{formatCell(key, row[key])}</td>)}<td><div className="row-actions always"><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button></div></td></tr>) : <tr><td colSpan={section.columns.length + 1}><div className="empty-state compact"><h3>No entries yet</h3><p>Add or upload this employee’s payroll data.</p></div></td></tr>}</tbody></table></div>
-      <div className="employee-pagination"><span>Displaying <strong>{rows.length}</strong> item{rows.length === 1 ? '' : 's'}</span><span>1 of 1</span></div>
+    {open && <div className="employee-section-body"><div className="employee-section-actions"><button className="button secondary" onClick={() => setEditing({})}><Plus /> Add entry</button>{section.upload && <button className="button secondary" onClick={() => onOpenBulk?.(section.key)}><UploadSimple /> Bulk Actions</button>}{audited && <button className="button secondary" onClick={() => setHistoryOpen(true)}>Change history</button>}</div>
+      <div className="employee-table-tools">
+        <div className="employee-table-search"><MagnifyingGlass /><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder="Search" aria-label={`Search ${section.title}`} /></div>
+        <select value={filterKey} onChange={event => { setFilterKey(event.target.value); setFilterValue(''); setPage(1); }} aria-label={`Filter ${section.title} by column`}><option value="">Filter by column</option>{section.columns.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+        {filterKey && <input value={filterValue} onChange={event => { setFilterValue(event.target.value); setPage(1); }} placeholder="Contains" aria-label="Filter value" />}
+        {(query || filterKey || sort.key) && <button className="button secondary" onClick={() => { setQuery(''); setFilterKey(''); setFilterValue(''); setSort({ key: '', dir: 'asc' }); setPage(1); }}>Clear</button>}
+      </div>
+      <div className="employee-table-wrap"><table className="employee-table"><thead><tr>{section.columns.map(([key, label]) => <th key={label} aria-sort={sort.key === key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}><button className="th-sort" onClick={() => sortBy(key)} aria-label={`Sort by ${label}`}>{label}{sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>)}<th>Action</th></tr></thead><tbody>{shownRows.length ? shownRows.map(row => <tr key={row.id}>{section.columns.map(([key]) => <td key={key}>{formatCell(key, row[key])}</td>)}<td><div className="row-actions always"><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button>{!row.inherited && <button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button>}</div></td></tr>) : <tr><td colSpan={section.columns.length + 1}><div className="empty-state compact"><h3>{allRows.length ? 'No entries match' : 'No entries yet'}</h3><p>{allRows.length ? 'Change the search or the filter.' : 'Add or upload this employee’s payroll data.'}</p></div></td></tr>}</tbody></table></div>
+      <div className="employee-pagination"><span>Display <select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }} aria-label="Items per page">{[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · <strong>{matchedRows.length}</strong> item{matchedRows.length === 1 ? '' : 's'}</span><span className="employee-pager"><button onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1} aria-label="Previous page">‹</button>{currentPage} of {pageCount}<button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount} aria-label="Next page">›</button></span></div>
     </div>}
-    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} />}
-    {deleting && <ConfirmDelete name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={() => { setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
+    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} preview={section.key === 'earnings' ? previewRow : undefined} />}
+    {historyOpen && <ChangeHistory section={section} entries={readEmployeeChanges(employee.id, section.key)} onClose={() => setHistoryOpen(false)} />}
+    {deleting && <ConfirmDelete needsReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
   </section>;
+}
+
+function ChangeHistory({ section, entries, onClose }) {
+  const stamp = value => new Date(value).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-history-modal" role="dialog" aria-modal="true" aria-label={`${section.title} change history`}><header><h2>{section.title} — change history</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body">{entries.length ? <table className="employee-table"><thead><tr><th>When</th><th>By</th><th>Action</th><th>Item</th><th>Changes</th><th>Reason</th></tr></thead><tbody>{entries.map(entry => <tr key={entry.id}><td>{stamp(entry.at)}</td><td>{entry.by}</td><td>{entry.action}</td><td>{entry.item}</td><td>{entry.changes.length ? entry.changes.map(change => <div key={change.field}>{change.label}: {change.from || '—'} → {change.to || '—'}</div>) : '—'}</td><td>{entry.reason || '—'}</td></tr>)}</tbody></table> : <div className="empty-state compact"><h3>No changes recorded yet</h3><p>Adds, edits and deletes made here are listed with who made them and why.</p></div>}</div></section></div>;
 }
 
 function CustomExport({ sections, onClose, onExport }) {
@@ -479,7 +628,8 @@ function BulkActions({ employees, setEmployees, notify }) {
       });
       const next = { jobId: `bulk-${Date.now()}`, companyId: bulkCompanyId, operation, fileName: file.name, fileHash: contentHash(raw), attemptNo: 1, selectedFields, uploadedAt: new Date().toISOString(), validatedAt: new Date().toISOString(), totalRows: rows.length, validRows: entries.filter(entry => !errors.some(error => error.employeeCode === entry.employeeCode && error.row > 1)).length, invalidRows: errors.filter(error => error.row > 1).length, status: errors.length ? 'Validation Failed' : 'Ready to Commit', errors, warnings, rows: entries, committedRows: 0 };
       updateJob(next); setStep(2); event.target.value = '';
-      notify({ type: errors.length ? 'error' : 'success', message: errors.length ? `${errors.length} validation issue${errors.length === 1 ? '' : 's'} found. No employee data was changed.` : 'File validated. Review the preview before committing.' });
+      if (errors.length) rejectUpload(file.name, errors, () => {});
+      notify({ type: errors.length ? 'error' : 'success', message: errors.length ? `${errors.length} validation issue${errors.length === 1 ? '' : 's'} found. No employee data was changed; the error log has been downloaded.` : 'File validated. Review the preview before committing.' });
     };
     reader.readAsText(file);
   };
@@ -535,7 +685,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts'];
 
   return <div className="app-shell employee-screen">
-    <BrandRail onHome={onBack} onCore={onBack} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
+    <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
     <main className="employee-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} /><div className="employee-page">
       <div className="employee-module-shortcuts"><button className="button secondary" onClick={() => { setModule('bulk'); setDetailOpen(false); }}><FileCsv /> Bulk Actions</button></div>
       {module === 'bulk' ? <BulkActions employees={employeeList} setEmployees={setEmployeeList} notify={notify} /> : module === 'accounts' ? <AccountSettings notify={notify} /> : !detailOpen ? <EmployeeDirectory employees={employeeList} setEmployees={setEmployeeList} onSelect={selectEmployee} onBulk={() => setModule('bulk')} notify={notify} /> : <>
@@ -552,7 +702,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Contacts' && <Contacts employee={employee} notify={notify} />}
         {activeTab === 'Payroll & Allocation' && <>
           <div className="employee-export-row"><div className="menu-anchor"><button className="button secondary" onClick={() => setExportMenu(!exportMenu)}><DownloadSimple /> Export <CaretDown /></button>{exportMenu && <div className="export-menu employee-export-menu"><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'csv')}>Export All — Excel / CSV</button><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'pdf')}>Export All — PDF / Print</button><button onClick={() => { setCustomExport(true); setExportMenu(false); }}>Custom export…</button></div>}</div></div>
-          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} rows={data[section.key] || []} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
+          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={data[section.key] || []} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}
     </div></main>
