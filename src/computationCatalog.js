@@ -55,7 +55,10 @@ const fieldCatalog = [
   ['late_minutes', 'Late minutes', 25, 'Timekeeping', 'Integer', 'minutes', 'Per timekeeping cutoff', 'Treat as zero'],
   ['undertime_minutes', 'Undertime minutes', 40, 'Timekeeping', 'Integer', 'minutes', 'Per timekeeping cutoff', 'Treat as zero'],
   ['ot_hours', 'Overtime hours', 6, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
+  ['night_hours', 'Night differential hours', 6, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
   ['ot_rate', 'Overtime multiplier', 1.25, 'Reference Source', 'Rate', 'multiplier', 'Effective on payout date', 'Use default'],
+  ['night_diff_rate', 'Night differential rate', 0.1, 'Company Configuration', 'Rate', 'decimal rate', 'Effective on payout date', 'Use default'],
+  ['commission_rate', 'Commission rate', 0.05, 'Company Configuration', 'Rate', 'decimal rate', 'Effective on payout date', 'Use default'],
   ['holiday_hours', 'Holiday hours', 8, 'Timekeeping', 'Decimal', 'hours', 'Per timekeeping cutoff', 'Treat as zero'],
   ['holiday_rate', 'Holiday multiplier', 2, 'Reference Source', 'Rate', 'multiplier', 'Effective on payout date', 'Use default'],
   ['allowance_units', 'Allowance units', 20, 'Payroll Transaction', 'Decimal', 'units', 'Per payroll cutoff', 'Treat as zero'],
@@ -69,6 +72,7 @@ const fieldCatalog = [
   ['loan_amortizations', 'Loan amortizations', 1800, 'Payroll Transaction', 'Currency', '₱', 'Per payroll cutoff', 'Treat as zero'],
   ['tax_rate', 'Tax table rate', 0.2, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
   ['tax_offset', 'Tax table offset', 2083.33, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
+  ['ewt_rate', 'Expanded withholding tax rate', 0.02, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
   ['sss_rate', 'SSS employee rate', 0.05, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
   ['sss_ceiling', 'SSS compensation ceiling', 35000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
   ['philhealth_rate', 'PhilHealth employee rate', 0.025, 'Statutory Reference', 'Rate', 'decimal rate', 'Effective on payout date', 'Required — block payroll'],
@@ -146,7 +150,7 @@ export const coreComputations = [
   ['MWE-001', 'MWE Pay with ECOLA', 'Basic Pay', '{{daily_rate}} * {{days_worked}} + {{ecola_amount}} * {{days_worked}}', 'Computes minimum wage pay together with the applicable daily ECOLA.'],
   ['ERN-001', 'Basic Pay for Period', 'Earnings', '{{monthly_basic}} / 2', 'Computes semi-monthly basic pay.'],
   ['ERN-002', 'Overtime Pay', 'Earnings', '{{hourly_rate}} * {{ot_hours}} * {{ot_rate}}', 'Computes overtime pay using the applicable premium multiplier.'],
-  ['ERN-003', 'Night Differential', 'Earnings', '{{hourly_rate}} * {{ot_hours}} * 0.10', 'Computes night differential earnings.'],
+  ['ERN-003', 'Night Differential', 'Earnings', '{{hourly_rate}} * {{night_hours}} * {{night_diff_rate}}', 'Computes night differential on night hours at the approved night differential rate.'],
   ['ERN-004', 'Variable Allowance Adjustment', 'Earnings', '{{taxable_earnings}} / {{days_worked}}', 'Adjusts a variable allowance using payroll attendance units.'],
   ['ERN-005', 'Variable Allowance by Unit', 'Earnings', '{{allowance_units}} * {{allowance_unit_rate}}', 'Computes variable allowance from uploaded or timekeeping-derived units.'],
   ['ERN-006', 'Holiday Premium Pay', 'Earnings', '{{hourly_rate}} * {{holiday_hours}} * {{holiday_rate}}', 'Computes holiday and rest-day premiums using the assigned reference rate.'],
@@ -164,7 +168,7 @@ export const coreComputations = [
   ['GUP-001', 'Target Net Gross Up', 'Tax', '{{target_net_pay}} / (1 - {{tax_rate}})', 'Back-solves gross taxable pay from the target net pay.'],
   ['TAX-004', 'Fringe Benefit Tax', 'Tax', '{{taxable_earnings}} / 0.65 * 0.35', 'Computes fringe benefit tax for taxable fringe benefits.'],
   ['TAX-005', 'Final Tax', 'Tax', '{{taxable_earnings}} * {{tax_rate}}', 'Computes final tax based on the assigned tax rate.'],
-  ['TAX-006', 'Expanded Withholding Tax', 'Tax', '{{taxable_earnings}} * 0.02', 'Computes expanded withholding tax for configured pay items.'],
+  ['TAX-006', 'Expanded Withholding Tax', 'Tax', '{{taxable_earnings}} * {{ewt_rate}}', 'Computes expanded withholding tax for configured pay items at the BIR expanded withholding rate.'],
   ['TAX-008', 'Annualized Withholding Tax', 'Tax', 'MAX(0, ({{basic_earnings_ytd}} + {{taxable_earnings}}) * {{tax_rate}} - {{tax_offset}} - {{withholding_tax}})', 'Projects remaining annual tax from current and previous-employer year-to-date values.'],
   ['TAX-009', 'Tax Projection with Previous Employer', 'Tax', 'MAX(0, ({{forecasted_annual_income}} + {{previous_employer_taxable}}) * {{tax_rate}} - {{tax_offset}} - {{previous_employer_tax_withheld}})', 'Projects correct annual tax using the employee 2316 and previous-employer balances.'],
   ['TAX-010', 'Scheduled Projected Tax', 'Tax', 'MAX(0, ({{forecasted_annual_income}} + {{previous_employer_taxable}}) * {{tax_rate}} - {{tax_offset}} - {{previous_employer_tax_withheld}}) / {{tax_schedule_periods}}', 'Spreads projected tax across the configured remaining payroll periods or year-end collection.'],
@@ -185,11 +189,51 @@ export const coreComputations = [
   ['BEN-003', 'Pension Fund Contribution', 'Benefits', '{{monthly_basic}} * {{pension_rate}}', 'Computes the configured employer or government pension contribution.'],
   ['BEN-004', 'SSS Sickness Reimbursement', 'Benefits', '{{daily_rate}} * {{sickness_days}}', 'Computes the sickness reimbursement basis from approved benefit days.'],
   ['BEN-005', 'Expanded Maternity Reimbursement', 'Benefits', '{{daily_rate}} * {{maternity_days}}', 'Computes expanded maternity benefit reimbursement from approved days.'],
-  ['INC-001', 'Commission', 'Incentives', '{{taxable_earnings}} * 0.05', 'Computes commission using the configured eligible earnings.'],
+  ['INC-001', 'Commission', 'Incentives', '{{taxable_earnings}} * {{commission_rate}}', 'Computes commission on the configured eligible earnings at the approved commission rate.'],
   ['PCE-001', 'Piece Rate', 'Incentives', '{{piece_units}} * {{piece_unit_rate}}', 'Computes piece-rate earnings using completed units and the configured unit rate.'],
   ['OJT-001', 'OJT Allowance', 'Incentives', '{{ojt_days}} * {{ojt_daily_allowance}}', 'Computes OJT allowance from eligible rendered days.'],
   ['PRT-001', 'Part-Time Pay', 'Incentives', '{{part_time_hours}} * {{hourly_rate}}', 'Computes part-time pay from approved hours and the assigned hourly rate.'],
 ];
+
+/**
+ * The expressions three standards published before their rates became named
+ * parameters. A stored library still carrying one is moved on once, as a new
+ * version, so the old version stays available to the payrolls that used it.
+ */
+export const LEGACY_EXPRESSIONS = Object.freeze({
+  'ERN-003': '{{hourly_rate}} * {{ot_hours}} * 0.10',
+  'INC-001': '{{taxable_earnings}} * 0.05',
+  'TAX-006': '{{taxable_earnings}} * 0.02',
+});
+
+/**
+ * Which values in each Atlas standard a client may change, and within what.
+ *
+ * This is the Controlled Hybrid boundary written down per formula: a variable
+ * listed with `clientEditable: true` may be given a value by the client on
+ * their own pay item, inside `min`–`max`; everything else in the formula stays
+ * with P&A. `default` is what payroll uses until a pay item sets its own value.
+ * Rates are stored as the decimal the formula multiplies by (0.10), never 10.
+ *
+ * A token the payroll engine supplies at run time (`ot_rate`, `holiday_rate`)
+ * is not a parameter — its value comes from Timekeeping and Overtime Rate
+ * Management — so it never appears here.
+ */
+export const coreParameters = Object.freeze({
+  'ERN-003': { night_diff_rate: { clientEditable: true, min: 0.1, max: 0.3, default: 0.1 } },
+  'ERN-005': { allowance_unit_rate: { clientEditable: true, min: 0, max: 5000, default: 150 } },
+  'INC-001': { commission_rate: { clientEditable: true, min: 0, max: 0.5, default: 0.05 } },
+  'PCE-001': { piece_unit_rate: { clientEditable: true, min: 0, max: 10000, default: 35 } },
+  'OJT-001': { ojt_daily_allowance: { clientEditable: true, min: 0, max: 5000, default: 300 } },
+  'BEN-002': { provident_rate: { clientEditable: true, min: 0, max: 0.2, default: 0.05 } },
+  'BEN-003': { pension_rate: { clientEditable: true, min: 0, max: 0.2, default: 0.03 } },
+  // Statutory values: BIR sets them, so they are parameters only P&A maintains.
+  'TAX-006': { ewt_rate: { clientEditable: false, min: 0, max: 0.15, default: 0.02 } },
+  'BON-003': { bonus_tax_ceiling: { clientEditable: false, min: 0, max: 1000000, default: 90000 } },
+  'BON-004': { bonus_tax_ceiling: { clientEditable: false, min: 0, max: 1000000, default: 90000 } },
+});
+
+const cloneParameters = code => JSON.parse(JSON.stringify(coreParameters[code] || {}));
 
 
 /**
@@ -249,6 +293,8 @@ export function seedComputations() {
     description: item[4],
     status: 'Active',
     isBuiltIn: true,
+    scope: 'Atlas standard',
+    parameters: cloneParameters(item[0]),
     version: '1.0',
     effectiveDate: '2026-01-01',
     updatedBy: index % 4 === 0 ? 'P&A Admin' : 'System Standard',
@@ -266,6 +312,8 @@ export function seedComputations() {
       description: `Standard ${category.toLowerCase()} computation included in the controlled Atlas library.`,
       status: index % 17 === 0 ? 'Inactive' : 'Active',
       isBuiltIn: true,
+      scope: 'Atlas standard',
+      parameters: {},
       version: '1.0',
       effectiveDate: '2026-01-01',
       updatedBy: 'System Standard',
@@ -445,4 +493,125 @@ export function referenceProblems(expression, library = [], selfCode = '') {
 /** One library record by code, from the seeded catalogue or a saved library. */
 export function computationByCode(code, library = seedComputations()) {
   return library.find(item => item.code === code) || null;
+}
+
+/* -------------------------------------------------------------- parameters */
+
+const isFiniteValue = value => value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value));
+const tidy = value => Number(Number(value).toFixed(6));
+
+/** How a parameter is typed and shown: a rate as a percentage, a multiplier as ×. */
+export function parameterUnit(token) {
+  const unit = String(fieldMap[token]?.unit || '');
+  if (unit === 'decimal rate') return { kind: 'percent', prefix: '', suffix: '%', factor: 100 };
+  if (unit === 'multiplier') return { kind: 'multiplier', prefix: '', suffix: '×', factor: 1 };
+  if (unit.startsWith('₱')) return { kind: 'amount', prefix: '₱', suffix: unit.slice(1).trim(), factor: 1 };
+  return { kind: 'number', prefix: '', suffix: unit, factor: 1 };
+}
+
+/** The unit as a table column reads it: "%" for a rate, never "decimal rate". */
+export function parameterUnitLabel(token) {
+  if (!fieldMap[token]?.unit) return '—';
+  const unit = parameterUnit(token);
+  if (unit.kind === 'percent') return '%';
+  if (unit.kind === 'multiplier') return '×';
+  if (unit.kind === 'amount') return unit.suffix ? `₱ ${unit.suffix}` : '₱';
+  return unit.suffix || '—';
+}
+
+/** A stored value as the figure an input shows: 0.1 becomes 10 for a rate. */
+export function toDisplayValue(token, value) {
+  if (!isFiniteValue(value)) return '';
+  return tidy(Number(value) * parameterUnit(token).factor);
+}
+
+/** What an input holds, back as the stored value: 10 becomes 0.1 for a rate. */
+export function fromDisplayValue(token, text) {
+  if (!isFiniteValue(text)) return '';
+  return tidy(Number(text) / parameterUnit(token).factor);
+}
+
+export function formatParameterValue(token, value) {
+  if (!isFiniteValue(value)) return '—';
+  const unit = parameterUnit(token);
+  const shown = toDisplayValue(token, value).toLocaleString('en-US', { maximumFractionDigits: 4 });
+  if (unit.kind === 'percent') return `${shown}%`;
+  if (unit.kind === 'multiplier') return `${shown}×`;
+  if (unit.kind === 'amount') return `₱${shown}${unit.suffix ? ` ${unit.suffix}` : ''}`;
+  return unit.suffix ? `${shown} ${unit.suffix}` : shown;
+}
+
+export function describeParameterRange(token, definition = {}) {
+  const low = isFiniteValue(definition?.min);
+  const high = isFiniteValue(definition?.max);
+  if (low && high) return `${formatParameterValue(token, definition.min)} to ${formatParameterValue(token, definition.max)}`;
+  if (low) return `at least ${formatParameterValue(token, definition.min)}`;
+  if (high) return `at most ${formatParameterValue(token, definition.max)}`;
+  return 'No range set';
+}
+
+/** The definitions a formula keeps: only for variables its expression still uses. */
+export function normalizeParameters(expression, parameters = {}) {
+  const used = new Set(usedFields(expression));
+  return Object.fromEntries(Object.entries(parameters || {})
+    .filter(([token]) => used.has(token))
+    .map(([token, definition]) => [token, {
+      clientEditable: Boolean(definition?.clientEditable),
+      ...(isFiniteValue(definition?.min) ? { min: Number(definition.min) } : {}),
+      ...(isFiniteValue(definition?.max) ? { max: Number(definition.max) } : {}),
+      ...(isFiniteValue(definition?.default) ? { default: Number(definition.default) } : {}),
+    }]));
+}
+
+/**
+ * Why a formula's parameter definitions cannot be published.
+ *
+ * A value a client may change needs both bounds: an open-ended rate is a
+ * formula the client can rewrite by typing a large enough number.
+ */
+export function parameterDefinitionProblems(parameters = {}) {
+  const problems = [];
+  Object.entries(parameters || {}).forEach(([token, definition]) => {
+    const label = fieldMap[token]?.label || token;
+    const low = isFiniteValue(definition?.min) ? Number(definition.min) : null;
+    const high = isFiniteValue(definition?.max) ? Number(definition.max) : null;
+    if (definition?.clientEditable && (low === null || high === null)) problems.push(`${label}: give a minimum and a maximum before a client may change it.`);
+    if (low !== null && high !== null && low > high) problems.push(`${label}: the minimum is above the maximum.`);
+    if (isFiniteValue(definition?.default)) {
+      const value = Number(definition.default);
+      if ((low !== null && value < low) || (high !== null && value > high)) problems.push(`${label}: the default ${formatParameterValue(token, value)} is outside its own range.`);
+    }
+  });
+  return problems;
+}
+
+/** Why a value for one parameter is refused, or '' when it is acceptable. */
+export function parameterValueProblem(token, definition, raw) {
+  const label = fieldMap[token]?.label || token;
+  if (!isFiniteValue(raw)) return `Enter a number for ${label}.`;
+  if (!definition) return '';
+  const value = Number(raw);
+  const tooLow = isFiniteValue(definition.min) && value < Number(definition.min) - 1e-9;
+  const tooHigh = isFiniteValue(definition.max) && value > Number(definition.max) + 1e-9;
+  if (tooLow || tooHigh) return `${label} must be ${describeParameterRange(token, definition)}; ${formatParameterValue(token, value)} is outside the range P&A approved.`;
+  return '';
+}
+
+/**
+ * The values a formula falls back to when a payroll step does not supply one.
+ * This is what keeps a rate that moved out of an expression and into a
+ * parameter computing the same figure it always did.
+ */
+export function parameterDefaults(formula) {
+  return Object.fromEntries(Object.entries(formula?.parameters || {})
+    .filter(([, definition]) => isFiniteValue(definition?.default))
+    .map(([token, definition]) => [token, Number(definition.default)]));
+}
+
+/** One line per parameter, so change history can show a definition before and after. */
+export function describeParameters(parameters = {}) {
+  return Object.entries(parameters || {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([token, definition]) => `${token}: ${definition?.clientEditable ? 'client' : 'P&A only'}, ${describeParameterRange(token, definition)}${isFiniteValue(definition?.default) ? `, default ${formatParameterValue(token, definition.default)}` : ''}`)
+    .join('; ');
 }

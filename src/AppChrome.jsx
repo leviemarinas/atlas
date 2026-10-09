@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, CaretDown, Clock, Cube, CurrencyCircleDollar, Gear, House, MagnifyingGlass, PlayCircle, SignOut, Sparkle, Tray, Users } from '@phosphor-icons/react';
-import { RoleSwitch, useRole } from './RoleContext';
+import { RoleSwitch, SIGNED_IN_NAME, useRole } from './RoleContext';
 import { canAccessModule } from './moduleAccess';
 import { readCompanies } from './companyRepository';
 
@@ -44,7 +44,7 @@ export function isEmbeddedScenarioFrame() {
   return new URLSearchParams(window.location.search).get('atlasLiveScenario') === '1';
 }
 
-export function Topbar({ company, companies = [], onSelectCompany, profileName = 'John Doe', profileInitials = 'JD', onNotifications, onAnnouncements }) {
+export function Topbar({ company, companies = [], onSelectCompany, profileName = SIGNED_IN_NAME, profileInitials = 'JD', onNotifications, onAnnouncements }) {
   const [open, setOpen] = useState(false);
   // Read the repository when the menu opens so companies onboarded in another
   // workspace during this session are immediately selectable.

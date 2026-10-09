@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { Info } from '@phosphor-icons/react';
+import { Info, Lock } from '@phosphor-icons/react';
 
 export const money = value => `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const number = value => Number(value || 0);
@@ -144,14 +144,70 @@ export function useFieldScope(helpKey) {
   return useScopeResolver()(helpKey);
 }
 
+/**
+ * Who may change the engine settings below it — the Controlled Hybrid split.
+ *
+ * `null` (the P&A view, or a simulator) leaves every field open. Otherwise a
+ * field is locked unless its parameter key is on `clientEditable`, which comes
+ * from `policyEngineAccess.js`. The lock lives here, in the controls every
+ * engine already uses, so no engine can forget to apply it.
+ */
+export const EngineAccess = createContext(null);
+
+export function useEngineLock() {
+  const access = useContext(EngineAccess);
+  return key => Boolean(access) && !(access.clientEditable || []).includes(key);
+}
+
+/** Simulator and transaction panels are test inputs, not policy, so they stay open to every role. */
+export function OpenForTesting({ children }) {
+  return <EngineAccess.Provider value={null}>{children}</EngineAccess.Provider>;
+}
+
+function SetByPa() {
+  return <span className="pa-owned-tag" title="Maintained by P&A under the Controlled Hybrid approach"><Lock weight="bold" /> Set by P&amp;A</span>;
+}
+
+/** A block of plain inputs — a mapping table, a rank list — that one parameter key governs. */
+export function LockedBlock({ lockKey, children }) {
+  const locked = useEngineLock()(lockKey);
+  if (!locked) return <>{children}</>;
+  return <fieldset className="engine-locked-block" disabled><legend><SetByPa /></legend>{children}</fieldset>;
+}
+
+/** An engine's own on/off switch. Turning a payroll engine on or off is P&A's. */
+export function EngineSwitch({ on, onToggle }) {
+  const locked = useEngineLock()('enabled');
+  return <button type="button" className={`switch ${on ? 'on' : ''}`} disabled={locked} title={locked ? 'Turning this engine on or off is done by P&A.' : undefined} aria-label={on ? 'Engine on' : 'Engine off'} onClick={onToggle}><span /></button>;
+}
+
+/**
+ * Saving an engine records the change: who, what moved from what, and why.
+ * `onSave` returns false when the save was refused, so the reason stays on
+ * screen for the user to correct and retry.
+ */
+export function PolicySaveBar({ label, onSave }) {
+  const [reason, setReason] = useState('');
+  return <div className="policy-save">
+    <input className="policy-save-reason" value={reason} onChange={event => setReason(event.target.value)} placeholder="Reason for change — kept in the audit trail" aria-label="Reason for change" />
+    <button type="button" className="button primary" onClick={() => { if (onSave(reason.trim()) !== false) setReason(''); }}>{label}</button>
+  </div>;
+}
+
 export function FieldLabel({ label, helpKey = label, scopeKey = helpKey, children, className = '' }) {
   const scopeClass = useFieldScope(scopeKey);
+  const locked = useEngineLock()(scopeKey);
+  // A locked field is a group rather than a label: its control sits in a
+  // disabled fieldset, which disables whatever control it holds without each
+  // engine having to pass `disabled` down.
+  if (locked) return <div className={`policy-field engine-locked ${className} ${scopeClass}`}><span className="policy-field-label">{label}<FieldHelp helpKey={helpKey} /><SetByPa /></span><fieldset className="engine-locked-fieldset" disabled>{children}</fieldset></div>;
   return <label className={`policy-field ${className} ${scopeClass}`}><span className="policy-field-label">{label}<FieldHelp helpKey={helpKey} /></span>{children}</label>;
 }
 
 export function Toggle({ value, onChange, label, hint, helpKey = label, scopeKey = helpKey }) {
   const scopeClass = useFieldScope(scopeKey);
-  return <label className={`policy-toggle ${scopeClass}`}><span><strong>{label}<FieldHelp helpKey={helpKey} /></strong>{hint && <small>{hint}</small>}</span><button type="button" className={`switch ${value ? 'on' : ''}`} onClick={() => onChange(!value)}><span /></button></label>;
+  const locked = useEngineLock()(scopeKey);
+  return <label className={`policy-toggle ${scopeClass} ${locked ? 'engine-locked' : ''}`}><span><strong>{label}<FieldHelp helpKey={helpKey} />{locked && <SetByPa />}</strong>{hint && <small>{hint}</small>}</span><button type="button" className={`switch ${value ? 'on' : ''}`} disabled={locked} onClick={() => onChange(!value)}><span /></button></label>;
 }
 
 export function NumberField({ label, value, onChange, suffix, helpKey = label, scopeKey = helpKey }) {
@@ -165,7 +221,9 @@ export function NumberField({ label, value, onChange, suffix, helpKey = label, s
  */
 export function CheckList({ title, helpKey, values, onToggle, keys = {} }) {
   const resolve = useScopeResolver();
-  return <div className="component-checklist"><h3>{title}<FieldHelp helpKey={helpKey} /></h3><div>{Object.entries(values).map(([label, on]) => <label key={label} className={resolve(keys[label])}><input type="checkbox" checked={on} onChange={() => onToggle(label)} /> {label}</label>)}</div></div>;
+  const lock = useEngineLock();
+  const allLocked = Object.keys(values).every(label => lock(keys[label] || helpKey));
+  return <div className="component-checklist"><h3>{title}<FieldHelp helpKey={helpKey} />{allLocked && <SetByPa />}</h3><div>{Object.entries(values).map(([label, on]) => <label key={label} className={resolve(keys[label])}><input type="checkbox" checked={on} disabled={lock(keys[label] || helpKey)} onChange={() => onToggle(label)} /> {label}</label>)}</div></div>;
 }
 
 /**
@@ -175,11 +233,12 @@ export function CheckList({ title, helpKey, values, onToggle, keys = {} }) {
  */
 export function SourceMultiSelect({ title, hint, options, selected, onToggle, emptyMessage, helpKey, scopeKey = helpKey }) {
   const scopeClass = useFieldScope(scopeKey);
+  const locked = useEngineLock()(scopeKey);
   return <div className={`source-multiselect ${scopeClass}`}>
-    <header><div><strong>{title}<FieldHelp helpKey={helpKey} /></strong><small>{hint}</small></div><span>{selected.length} of {options.length} selected</span></header>
+    <header><div><strong>{title}<FieldHelp helpKey={helpKey} />{locked && <SetByPa />}</strong><small>{hint}</small></div><span>{selected.length} of {options.length} selected</span></header>
     {options.length === 0 && <p className="applicability-empty">{emptyMessage}</p>}
     <div className="source-multiselect-options">{options.map(option => <label key={option.value} className={selected.includes(option.value) ? 'selected' : ''}>
-      <input type="checkbox" checked={selected.includes(option.value)} onChange={() => onToggle(option.value)} />
+      <input type="checkbox" checked={selected.includes(option.value)} disabled={locked} onChange={() => onToggle(option.value)} />
       <span><strong>{option.label}</strong><small>{option.detail}</small></span>
     </label>)}</div>
   </div>;

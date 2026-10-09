@@ -82,7 +82,7 @@ const templates = {
     parameter('dailyRateDivisor', 'Daily-rate divisor', 'number', '30', { unit: 'days' }),
     parameter('advanceThirteenthRule', 'Advanced 13th month rule', 'select', 'Deduct any advanced 13th month release', { options: ['Deduct any advanced 13th month release', 'Ignore advanced release', 'Raise for approval'] }),
     parameter('lastCutoffRule', 'Last cutoff rule', 'select', 'Include the unposted last cutoff', { options: ['Include the unposted last cutoff', 'Exclude unposted cutoff', 'Raise for approval'] }),
-    parameter('governmentLoanRule', 'Government loan rule', 'select', 'Offset the full outstanding balance', { options: ['Offset the full outstanding balance', 'Offset scheduled amortization only', 'Raise for approval'] }),
+    parameter('governmentLoanRule', 'Government loan rule', 'select', 'Offset the full outstanding balance', { options: ['Offset the full outstanding balance', 'Offset scheduled amortization only', 'Endorse the balance to the agency'] }),
     parameter('companyLoanRule', 'Company loan rule', 'select', 'Offset the full outstanding balance', { options: ['Offset the full outstanding balance', 'Offset scheduled amortization only', 'Raise for approval'] }),
     parameter('negativeNetPayRule', 'Negative net-pay handling', 'select', 'Raise for approval and bill the employee', { options: ['Raise for approval and bill the employee', 'Create receivable', 'Stop release for review', 'Carry to next settlement'] }),
     parameter('autoOffsetDeductions', 'Automatically offset deductions', 'boolean', 'Yes'),
@@ -306,7 +306,7 @@ const annexParameterAdditions = {
     parameter('allocationMethod', 'Allocation method', 'select', 'Percentage', { options: ['Percentage', 'Fixed Amount'], group: 'Controls' }),
   ],
   'Multi-Currency': [
-    parameter('currencyReference', 'Currency and rate source', 'select', 'REF-027 - Currency and Exchange Rates', { options: ['REF-027 - Currency and Exchange Rates'], group: 'Basis and references' }),
+    parameter('currencyReference', 'Currency source', 'select', 'Reference Table - Currency', { options: ['Reference Table - Currency'], group: 'Basis and references' }),
     parameter('snapshotUsedRate', 'Snapshot the transaction exchange rate', 'boolean', 'Yes', { group: 'Controls' }),
   ],
   'Payroll Calendar': [
@@ -516,9 +516,18 @@ function ParameterValueInput({ item, value, onChange }) {
   return <div className="parameter-value-input"><input type={item.type === 'date' ? 'date' : ['currency', 'percentage', 'number'].includes(item.type) ? 'number' : 'text'} step={['currency', 'percentage', 'number'].includes(item.type) ? '0.01' : undefined} min={item.min} max={item.max} value={value ?? item.defaultValue ?? ''} onChange={event => onChange(event.target.value)} required={item.required} />{item.unit && <span>{item.unit}</span>}</div>;
 }
 
-export function PolicyParameterFields({ schema = [], values = {}, onChange }) {
+const parameterHint = item => item.help || (item.type === 'currency' ? 'Currency amount' : item.type === 'percentage' ? 'Percentage value' : item.type === 'boolean' ? 'Yes or no' : item.type === 'select' ? 'Controlled selection' : item.type);
+
+/**
+ * `isLocked(key)` marks the values only P&A may set (the Controlled Hybrid
+ * split from `policyEngineAccess.js`). A locked value is shown in a disabled
+ * fieldset so it stays readable but cannot be changed.
+ */
+export function PolicyParameterFields({ schema = [], values = {}, onChange, isLocked = () => false }) {
   const groups = [...new Set(schema.map(item => item.group || inferGroup(item.key)))];
-  return <div className="policy-parameter-groups">{groups.map(group => <section className="policy-parameter-group" key={group}><header><strong>{group}</strong><span>{schema.filter(item => (item.group || inferGroup(item.key)) === group).length} field{schema.filter(item => (item.group || inferGroup(item.key)) === group).length === 1 ? '' : 's'}</span></header><div className="policy-parameter-fields">{schema.filter(item => (item.group || inferGroup(item.key)) === group).map(item => <label key={item.key}>{item.label}{item.required && <span className="required">*</span>}<ParameterValueInput item={item} value={values[item.key]} onChange={value => onChange({ ...values, [item.key]: value })} /><small>{item.help || (item.type === 'currency' ? 'Currency amount' : item.type === 'percentage' ? 'Percentage value' : item.type === 'boolean' ? 'Yes or no' : item.type === 'select' ? 'Controlled selection' : item.type)}</small></label>)}</div></section>)}</div>;
+  return <div className="policy-parameter-groups">{groups.map(group => <section className="policy-parameter-group" key={group}><header><strong>{group}</strong><span>{schema.filter(item => (item.group || inferGroup(item.key)) === group).length} field{schema.filter(item => (item.group || inferGroup(item.key)) === group).length === 1 ? '' : 's'}</span></header><div className="policy-parameter-fields">{schema.filter(item => (item.group || inferGroup(item.key)) === group).map(item => isLocked(item.key)
+    ? <div className="policy-parameter-locked" key={item.key}><span>{item.label} <span className="pa-owned-tag">Set by P&amp;A</span></span><fieldset disabled><ParameterValueInput item={item} value={values[item.key]} onChange={() => {}} /></fieldset><small>{parameterHint(item)}</small></div>
+    : <label key={item.key}>{item.label}{item.required && <span className="required">*</span>}<ParameterValueInput item={item} value={values[item.key]} onChange={value => onChange({ ...values, [item.key]: value })} /><small>{parameterHint(item)}</small></label>)}</div></section>)}</div>;
 }
 
 export function PolicyParameterBuilder({ schema, onChange }) {

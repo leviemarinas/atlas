@@ -127,7 +127,7 @@ const RAW_E2E_JOURNEYS = {
 const MODULE_GUIDANCE = {
   HRM: { input: 'Employee or approver record', rule: 'Role, approval, and employee-visibility controls', output: 'Company-scoped HRM result', proof: 'HRM history and employee self-service' },
   Timekeeping: { input: 'Punch, schedule, or approved request', rule: 'Authoritative attendance and approval status', output: 'Payroll-ready time result', proof: 'Timekeeping summary and request history' },
-  Payroll: { input: 'Linked employee, time, register, policy, and table data', rule: 'Governed payroll engine and status workflow', output: 'Calculated or posted payroll result', proof: 'Payroll line, payslip, report, and audit history' },
+  Payroll: { input: 'Linked employee, time, record, policy, and table data', rule: 'Governed payroll engine and status workflow', output: 'Calculated or posted payroll result', proof: 'Payroll line, payslip, report, and audit history' },
   Core: { input: 'Company configuration and assigned policy', rule: 'Effective company policy engine', output: 'Versioned rule consumed by payroll', proof: 'Computational Basis and change history' },
   Settings: { input: 'Controlled formula or effective table', rule: 'Active version and applicability', output: 'Governed source available to companies', proof: 'Settings source library and audit history' },
 };

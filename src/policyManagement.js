@@ -11,7 +11,9 @@ export function normalizePolicy(policy, index = 0, companyId = '') {
     status: active ? 'Active' : 'Inactive',
     enabled: active,
     version: String(policy.version || '1.0'),
-    effectiveFrom: policy.effectiveFrom || '2026-01-01',
+    // Seeded policies carry no date of their own, and the payout calendars start in
+    // 2025: dating them later left a 2025 run with no applicable policies at all.
+    effectiveFrom: policy.effectiveFrom || '2025-01-01',
     effectiveTo: policy.effectiveTo || '',
     supersedesPolicyId: policy.supersedesPolicyId || '',
   };

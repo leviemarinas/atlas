@@ -63,6 +63,27 @@ import { REQUEST_PERMISSIONS, REQUEST_STATUSES } from './requestWorkflow.js';
 import { approveRequest, isActorAuthorizedForDecision, rejectRequest } from './requestService.js';
 import { applyRequestDecision, openClearanceForSeparation, openLoanScheduleForLoan, openQuitClaimForClearance } from './hrmPosting.js';
 import { downloadFile } from './fileDownload.js';
+import { loanPaymentHistory, readPayrollRuns } from './payrollRuns.js';
+import { readActiveCompanyId } from './companyRepository.js';
+
+function LoanPaymentsFromPayroll({ loanCode, totalLoan }) {
+  const history = useMemo(() => loanPaymentHistory(readPayrollRuns(readActiveCompanyId()), loanCode), [loanCode]);
+  const money = value => `₱${(Number(value) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return <div className="loan-payment-matrix">
+    <div className="loan-payment-totals">
+      <span>Accumulated payment (from posted payroll) <strong>{money(history.paid)}</strong></span>
+      {Number(totalLoan) > 0 && <span>Balance <strong>{money(Math.max(0, Number(totalLoan) - history.paid))}</strong></span>}
+      {history.deferred > 0 && <span>Deferred <strong>{money(history.deferred)}</strong></span>}
+    </div>
+    <table className="hrm-table">
+      <thead><tr><th>Payout Period</th><th>Payroll Transaction</th><th className="align-right">Amortization Amount</th><th className="align-right">Paid</th><th className="align-right">Deferred</th><th className="align-right">Balance After</th></tr></thead>
+      <tbody>{history.rows.length ? history.rows.map(row => <tr key={row.key}><td>{row.payoutDate}</td><td>{row.transactionNumber}</td><td className="align-right">{money(row.scheduled)}</td><td className="align-right">{money(row.paid)}</td><td className="align-right">{row.deferred ? money(row.deferred) : '—'}</td><td className="align-right">{money(row.balanceAfter)}</td></tr>)
+        : <tr><td colSpan={6}>No posted payroll has collected on this loan yet.</td></tr>}</tbody>
+    </table>
+    <small>Balance and accumulated payment are computed from posted payroll and cannot be edited.</small>
+  </div>;
+}
+
 import {
   ApprovalLogModal,
   Breadcrumbs,
@@ -1165,9 +1186,9 @@ function CompanyLoanScreen({ screen, data, setData, teamEmployeeIds, actor, onBa
       { label: 'Employee Remarks', value: row.employeeRemarks },
       { label: 'Interest Rate', value: row.interestRate !== null && row.interestRate !== undefined ? `${row.interestRate}%` : '-' },
       { pair: [{ label: 'Payroll Cutoff Start Date', value: formatDate(row.payrollCutoffStart) }, { label: 'Payroll Cutoff End Date', value: formatDate(row.payrollCutoffEnd) }] },
-      { label: 'Deduction Amount', value: peso(row.deductionAmount) },
+      { label: 'Amortization Amount', value: peso(row.deductionAmount) },
       { pair: [{ label: 'Payment Mode', value: row.paymentMode }, { label: 'Frequency', value: row.frequency }] },
-      { label: 'Accumulated Payments', value: row.accumulatedPayments ? peso(row.accumulatedPayments) : '-' },
+      { label: 'Payments from payroll', node: <LoanPaymentsFromPayroll loanCode={row.transactionNo} totalLoan={row.totalLoan} /> },
       { label: 'Attachments', node: <ul className="hrm-file-list readonly">{(row.attachments || []).map(file => <li key={file.name}><span className="hrm-file-name">{file.name}</span><span className="hrm-file-size">{file.size}</span></li>)}</ul> },
       { pair: [{ label: 'Filed By', value: row.employeeName }, { label: 'Actioned By', value: row.actionedBy || '-' }] },
       { label: 'Remarks', value: row.approverRemarks || '-' },
@@ -1333,7 +1354,7 @@ function LoanApplyModal({ title, loanTypes, loanTypeLabel, onClose, onSubmit }) 
       <Field label="Loan Terms (Months)" required>
         <input type="number" min="1" value={values.loanTerms} onChange={event => set('loanTerms', event.target.value)} placeholder="Input months" />
       </Field>
-      <Field label="Deduction Amount">
+      <Field label="Amortization Amount">
         <input type="number" min="0" value={values.deductionAmount} onChange={event => set('deductionAmount', event.target.value)} placeholder="Input amount" />
       </Field>
       <Field label="Payroll Cutoff Start Date">
@@ -1434,7 +1455,7 @@ function GovernmentLoanScreen({ screen, data, setData, teamEmployeeIds, actor, o
       { label: 'Loan Purpose', value: row.purpose },
       { pair: [{ label: 'Interest Rate', value: row.interestRate !== null && row.interestRate !== undefined ? `${row.interestRate}%` : '-' }, { label: 'Interest Amount', value: row.interestAmount ? peso(row.interestAmount) : '-' }] },
       { pair: [{ label: 'Period Start Date', value: row.periodStartDate ? formatDate(row.periodStartDate) : '-' }, { label: 'Period End Date', value: row.periodEndDate ? formatDate(row.periodEndDate) : '-' }] },
-      { label: 'Accumulated Payment', value: row.accumulatedPayment ? peso(row.accumulatedPayment) : '-' },
+      { label: 'Payments from payroll', node: <LoanPaymentsFromPayroll loanCode={row.transactionNo} totalLoan={row.totalLoan} /> },
       { label: 'Employee Remarks', value: row.employeeRemarks },
       { label: 'Attachments', node: <ul className="hrm-file-list readonly">{(row.attachments || []).map(file => <li key={file.name}><span className="hrm-file-name">{file.name}</span><span className="hrm-file-size">{file.size}</span></li>)}</ul> },
       { pair: [{ label: 'Filed By', value: row.filedBy }, { label: 'Actioned By', value: row.actionedBy || '-' }] },

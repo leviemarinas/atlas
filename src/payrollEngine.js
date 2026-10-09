@@ -36,10 +36,12 @@
  *  14  net pay            — PAY-002, then split across the employee's banks
  */
 
-import { computationByCode, evaluateExpression, seedComputations } from './computationCatalog.js';
+import { computationByCode, evaluateExpression, parameterDefaults, seedComputations } from './computationCatalog.js';
 import { ENGINE_SUPPLIED_FIELDS, evaluateBinding } from './computationBindings.js';
 import { coversEmployee, describeScope } from './applicabilityScope.js';
 import { requestAppliesToTransaction, staggeredDue } from './staggeredPayments.js';
+import { correctionItems } from './payrollCorrections.js';
+import { currencyTotalsFor, foreignEarningItems, foreignPayFor, payoutsByCurrency, runCurrenciesOf } from './payrollCurrencies.js';
 import {
   bracketFor,
   graduatedTax,
@@ -90,6 +92,20 @@ export function workingDaysBetween(startIso, endIso) {
 
 /** Payroll periods in a year for each payment mode; the tax table agrees. */
 export const PERIODS_PER_YEAR = Object.freeze({ Daily: 313, Weekly: 52, 'Bi-weekly': 26, 'Semi-monthly': 24, Monthly: 12 });
+
+/** Collect as much of the month's contribution as take-home pay allows in the first payroll; the balance follows. */
+export const STATUTORY_MAX_FIRST = 'Maximum in the first payroll, balance in the next';
+const STATUTORY_LINE_KEYS = Object.freeze(['sssEmployee', 'sssEmployer', 'sssRegularEmployee', 'sssMpfEmployee', 'sssMpfEmployer', 'ec', 'philhealthEmployee', 'philhealthEmployer', 'hdmfEmployee', 'hdmfEmployer']);
+
+/** The contribution amounts a Special transaction can enter by hand, per employee. */
+export const STATUTORY_OVERRIDE_LABELS = Object.freeze({
+  sssEmployee: 'SSS employee share', sssEmployer: 'SSS employer share', ec: 'EC',
+  philhealthEmployee: 'PhilHealth employee share', philhealthEmployer: 'PhilHealth employer share',
+  hdmfEmployee: 'Pag-IBIG employee share', hdmfEmployer: 'Pag-IBIG employer share',
+});
+
+/** Converted leave is non-taxable up to this many days a year when the leave setup defers to the statutory rule. */
+const LEAVE_NON_TAXABLE_DAYS = 10;
 
 /** Overtime premium per type. Timekeeping owns the hours; payroll owns the rate. */
 export const OT_MULTIPLIERS = Object.freeze({ Regular: 1.25, 'Night Differential': 1.1, 'Rest Day': 1.3, Holiday: 2 });
@@ -158,7 +174,9 @@ export function boundResolverFor(context = {}, runtime = {}, employee = null) {
           entries: [],
         };
       }
-      return evaluateBinding({ record: found, library, runtime, references });
+      // The payout date decides which of a client's dated values applies, so a
+      // rate changed from October never reaches a September payroll.
+      return evaluateBinding({ record: found, library, runtime, references, asOf: context.asOf || '' });
     }
     return null;
   };
@@ -235,6 +253,7 @@ export function runtimeFieldsFor({ employee = {}, pay = {}, attendance = {}, con
     late_minutes: number(attendance.tardinessMinutes),
     undertime_minutes: number(attendance.undertimeMinutes),
     ot_hours: round2(overtimeHours.reduce((total, hours) => total + number(hours), 0)),
+    night_hours: number((attendance.overtimeByType || {})['Night Differential']),
     ot_rate: OT_MULTIPLIERS.Regular,
     holiday_hours: number((attendance.overtimeByType || {}).Holiday),
     holiday_rate: OT_MULTIPLIERS.Holiday,
@@ -302,6 +321,10 @@ function makeStepper(library) {
   const steps = [];
   const record = ({ code, label, category, inputs = {}, amount, detail, source, evaluate = true }) => {
     const formula = computationByCode(code, library);
+    // A value the step does not supply falls back to the default the formula
+    // publishes for it — the night differential rate, a commission rate — so a
+    // rate that moved out of an expression and into a parameter still computes.
+    const values = { ...parameterDefaults(formula), ...inputs };
     let value = amount;
     let evaluated = false;
     let error = '';
@@ -309,7 +332,7 @@ function makeStepper(library) {
       try {
         // `library` lets a published formula that builds on another one resolve
         // its references the same way the expression builder previewed it.
-        value = round2(evaluateExpression(formula.expression, inputs, { library }));
+        value = round2(evaluateExpression(formula.expression, values, { library }));
         evaluated = true;
       } catch (cause) {
         // A formula whose mapped fields this step does not supply falls back to
@@ -330,9 +353,9 @@ function makeStepper(library) {
       // against whatever the library says today.
       version: formula?.version || '',
       effectiveDate: formula?.effectiveDate || '',
-      formulaOwner: formula ? (formula.isBuiltIn === false ? 'Company-defined' : 'Atlas standard') : '',
+      formulaOwner: formula ? (formula.scope === 'Client-specific' ? 'Client-specific' : formula.isBuiltIn === false ? 'Company-defined' : 'Atlas standard') : '',
       description: formula?.description || '',
-      inputs,
+      inputs: values,
       amount: round2(value ?? 0),
       evaluated,
       fallbackReason: error,
@@ -579,6 +602,72 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
     .sort((left, right) => left.rank - right.rank);
 }
 
+/* ------------------------------------------- pay items changed on the run */
+
+/** A pay item's key on a transaction: its group and its code (or name). */
+export const payItemKey = (group, item) => `${group}:${item.code || item.name}`;
+
+/** Items the engine produced from setup, as opposed to ones typed on the transaction. */
+const isEncodedItem = item => String(item.source || '').startsWith('Encoded on the transaction');
+
+/**
+ * Applies the transaction's own changes to the pay items setup produced:
+ * an item the run excludes for everyone, or one this employee skips or is paid
+ * a different amount for, this run only. Setup and the registers are never
+ * touched, so a skipped deduction or loan keeps its balance for the next run.
+ * Every change is returned so the line can show what was computed and why it
+ * was changed.
+ */
+export function adjustPayItems(items, group, { excluded = [], changes = {}, amountField = 'amount' } = {}) {
+  const kept = [];
+  const adjustments = [];
+  items.forEach(item => {
+    if (isEncodedItem(item) || item.foreign) { kept.push(item); return; }
+    const key = payItemKey(group, item);
+    const computed = number(item[amountField]);
+    const change = changes[key] || {};
+    if (excluded.includes(key) || change.exclude) {
+      adjustments.push({ key, group, name: item.name, computed, amount: 0, excluded: true, scope: excluded.includes(key) ? 'run' : 'employee', reason: excluded.includes(key) ? '' : change.reason || '' });
+      return;
+    }
+    const wanted = change.amount;
+    if (wanted === '' || wanted === undefined || wanted === null || !Number.isFinite(Number(wanted))) { kept.push({ ...item, key }); return; }
+    let amount = round2(Math.max(0, Number(wanted)));
+    // A deduction or loan still never collects more than is outstanding.
+    const capped = amountField === 'due' && number(item.outstanding) > 0 && amount > number(item.outstanding);
+    if (capped) amount = round2(number(item.outstanding));
+    if (amount === computed) { kept.push({ ...item, key }); return; }
+    adjustments.push({ key, group, name: item.name, computed, amount, excluded: false, scope: 'employee', reason: change.reason || '', capped });
+    kept.push({ ...item, key, [amountField]: amount, computedAmount: computed, adjustedReason: change.reason || '' });
+  });
+  return { items: kept, adjustments };
+}
+
+/**
+ * The take-home policy as this line applies it. The transaction may keep the
+ * policy, set a different protected minimum for this run, or not apply the
+ * protection at all; an employee's own choice wins over the run's.
+ */
+export function takeHomePolicyForLine(policy = {}, runMode = {}, employeeMode = {}) {
+  const chosen = employeeMode.mode && employeeMode.mode !== 'policy' ? { ...employeeMode, scope: 'employee' }
+    : runMode.mode && runMode.mode !== 'policy' ? { ...runMode, scope: 'run' }
+      : null;
+  if (!chosen) return { policy, override: null };
+  if (chosen.mode === 'off') {
+    return {
+      policy: { ...policy, enabled: false, autoDefer: false, deductionCapEnabled: false, loanCapType: 'None', attendanceCapType: 'None', thresholdType: 'Fixed Amount', threshold: 0 },
+      override: { mode: 'off', reason: chosen.reason || '', scope: chosen.scope },
+    };
+  }
+  if (chosen.mode === 'minimum' && Number.isFinite(Number(chosen.minimum))) {
+    return {
+      policy: { ...policy, enabled: true, autoDefer: true, thresholdType: 'Fixed Amount', threshold: Math.max(0, Number(chosen.minimum)) },
+      override: { mode: 'minimum', minimum: round2(Math.max(0, Number(chosen.minimum))), reason: chosen.reason || '', scope: chosen.scope },
+    };
+  }
+  return { policy, override: null };
+}
+
 /* ------------------------------------------------------- take-home policy */
 
 /**
@@ -690,6 +779,20 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const salary = (context.salaryInformation || []).find(row => row.employeeId === employee.employeeId) || null;
   const schedules = context.statutory || {};
   const exceptions = [];
+  // Pay encoded in another of the transaction's currencies, priced in PHP at
+  // the rate typed on the transaction.
+  // Corrections raised against earlier posted payrolls, carried in as adjustments.
+  const corrections = correctionItems(context.corrections || [], employee.employeeId);
+  const foreignPay = foreignPayFor(override.currencyLines || [], runCurrenciesOf(transaction));
+  foreignPay.problems.forEach(message => exceptions.push({ severity: 'Error', message }));
+  // Pay items this run leaves out for everyone, and this employee's own changes.
+  const itemRules = { excluded: config.excludedPayItems || [], changes: override.payItems || {} };
+  const payItemAdjustments = [];
+  const adjustForRun = (items, group, amountField) => {
+    const result = adjustPayItems(items, group, { ...itemRules, amountField });
+    payItemAdjustments.push(...result.adjustments);
+    return result.items;
+  };
 
   const eligibility = eligibilityFor(employee, transaction);
   if (!eligibility.included) {
@@ -702,8 +805,12 @@ export function computeEmployeeLine({ employee, transaction, context }) {
 
   /* 1 — rates ------------------------------------------------------------- */
   const basicRecord = (salary?.basicPay || [])[0] || {};
-  const factorDays = number(config.workDaysPerYear) || number(pay.factorDays) || 261;
-  const workHours = number(config.workHoursPerDay) || number(pay.workHoursPerDay) || 8;
+  // Factor days come from the employee's pay record, then the company default the
+  // run was created with. Hours per day come from the shift the employee works in
+  // the period (Timekeeping), then the pay record, then the company default.
+  const factorDays = number(pay.factorDays) || number(config.workDaysPerYear) || 261;
+  const shift = shiftFor(context.shiftAssignments, employee.employeeId, transaction.periodEnd);
+  const workHours = number(shift?.workHours) || number(pay.workHoursPerDay) || number(config.workHoursPerDay) || 8;
   const monthlyRate = number(basicRecord.monthlyRate) || number(pay.monthlyRate);
   const dailyRate = record({
     code: 'BAS-001', category: 'Basic Pay', source: 'Employee salary record',
@@ -712,7 +819,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   });
   const hourlyRate = record({
     code: 'BAS-002', category: 'Basic Pay', inputs: { daily_rate: dailyRate, work_hours: workHours },
-    detail: `Daily rate ÷ ${workHours} work hours`,
+    detail: `Daily rate ÷ ${workHours} work hours${shift?.workHours ? ` (${shift.name || 'assigned shift'})` : ''}`,
   });
   const minuteRate = record({ code: 'BAS-003', category: 'Basic Pay', inputs: { hourly_rate: hourlyRate }, detail: 'Hourly rate ÷ 60' });
 
@@ -728,6 +835,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const prorated = payableDays < periodWorkingDays;
 
   let basicPay = 0;
+  const ecolaEarnings = [];
   const zeroBasic = override.zeroBasicPay ?? config.zeroBasicPay;
   if (zeroBasic) {
     basicPay = 0;
@@ -740,10 +848,16 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     record({
       code: 'MWE-001', label: pay.mwe === 'Yes' ? 'MWE Pay with ECOLA' : 'Daily-paid basic pay', category: 'Basic Pay',
       inputs: { daily_rate: dailyRate, days_worked: days, ecola_amount: pay.mwe === 'Yes' ? number(pay.ecolaPerDay) : 0 },
-      detail: `${days} rendered ${days === 1 ? 'day' : 'days'} × daily rate${pay.mwe === 'Yes' ? ` + ECOLA ₱${number(pay.ecolaPerDay)}/day` : ''}`,
+      detail: `${days} rendered ${days === 1 ? 'day' : 'days'} × daily rate${pay.mwe === 'Yes' ? (config.ecolaTreatment === 'Separate earning' ? ' (ECOLA paid as a separate earning)' : ` + ECOLA ₱${number(pay.ecolaPerDay)}/day`) : ''}`,
       source: 'Timekeeping punch record',
     });
-    if (pay.mwe === 'Yes') basicPay = round2(basicPay + number(pay.ecolaPerDay) * days);
+    // ECOLA: the company decides in Payroll Controls whether it is part of
+    // Basic Pay or paid as its own (non-taxable) earning line.
+    if (pay.mwe === 'Yes' && number(pay.ecolaPerDay)) {
+      const ecola = round2(number(pay.ecolaPerDay) * days);
+      if (config.ecolaTreatment === 'Separate earning') { if (ecola > 0) ecolaEarnings.push({ code: 'ECOLA', name: 'ECOLA', classification: 'Non-taxable', amount: ecola, source: 'Timekeeping', detail: `${days} days × ₱${number(pay.ecolaPerDay)}` }); }
+      else basicPay = round2(basicPay + ecola);
+    }
   } else if (pay.payType === 'Hourly') {
     const hours = Number.isFinite(Number(override.hoursInPeriod))
       ? Number(override.hoursInPeriod)
@@ -771,7 +885,15 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   // deducting absences and undertime again would collect them twice.
   const priceAttendance = pay.payType === 'Monthly' && !zeroBasic;
   const attendanceItems = [];
-  const adjust = config.computeAttendanceAdjustment || { absences: true, late: true, undertime: true };
+  // A timekeeping-exempt employee keeps attendance on record (it is still shown
+  // on the line) but is not deducted for absences, tardiness or undertime.
+  const timekeepingExempt = pay.timekeepingExempt === 'Yes';
+  const adjust = timekeepingExempt
+    ? { absences: false, late: false, undertime: false }
+    : config.computeAttendanceAdjustment || { absences: true, late: true, undertime: true };
+  if (timekeepingExempt && (attendance.absentDays > 0 || attendance.tardinessMinutes > 0 || attendance.undertimeMinutes > 0)) {
+    exceptions.push({ severity: 'Info', message: `Timekeeping-exempt: ${attendance.absentDays || 0} absent days, ${attendance.tardinessMinutes || 0} late minutes and ${attendance.undertimeMinutes || 0} undertime minutes are recorded but not deducted.` });
+  }
 
   if (priceAttendance && adjust.absences && attendance.absentDays > 0 && pay.absenceClassification !== 'Exempt') {
     const amount = record({ code: 'DED-001', category: 'Deductions', inputs: { daily_rate: dailyRate, absent_days: attendance.absentDays }, detail: `${attendance.absentDays} unpaid ${attendance.absentDays === 1 ? 'absence' : 'absences'} in the timekeeping cutoff`, source: 'Timekeeping punch record' });
@@ -799,7 +921,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       const code = type === 'Night Differential' ? 'ERN-003' : type === 'Holiday' ? 'ERN-006' : 'ERN-002';
       const amount = code === 'ERN-006'
         ? record({ code, category: 'Earnings', inputs: { hourly_rate: hourlyRate, holiday_hours: hours, holiday_rate: multiplier }, detail: `${hours} holiday overtime hours at ${multiplier}×`, source: 'Timekeeping punch record' })
-        : record({ code, category: 'Earnings', inputs: { hourly_rate: hourlyRate, ot_hours: hours, ot_rate: multiplier }, detail: `${hours} approved ${type.toLowerCase()} overtime hours at ${multiplier}×`, source: 'Timekeeping punch record' });
+        : record({ code, category: 'Earnings', inputs: { hourly_rate: hourlyRate, ot_hours: hours, ot_rate: multiplier, ...(code === 'ERN-003' ? { night_hours: hours } : {}) }, detail: `${hours} approved ${type.toLowerCase()} overtime hours at ${multiplier}×`, source: 'Timekeeping punch record' });
       overtimeEarnings.push({ code: `OT-${type.slice(0, 3).toUpperCase()}`, name: `Overtime — ${type}`, classification: 'Taxable Allowance', amount, hours, multiplier, source: 'Timekeeping' });
     });
   }
@@ -845,18 +967,37 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     });
   };
 
+  /* Hourly variable allowances: a rate per hour for each allowance in the Variable Allowance
+   * reference table, times the hours entered — or, when none are entered, the hours
+   * Timekeeping recorded for the cut-off. */
+  const variableAllowanceItems = (override.variableAllowances || []).filter(row => row.code)
+    .map(row => {
+      const reference = (context.variableAllowances || []).find(item => item.code === row.code || item.name === row.code);
+      const hours = row.hours === '' || row.hours === undefined || row.hours === null ? number(attendance.hoursWorked) : number(row.hours);
+      const rate = number(row.rate);
+      return {
+        code: reference?.code || row.code, name: reference?.name || row.code,
+        classification: reference && reference.taxable === 'No' ? 'Non-taxable' : 'Taxable Allowance',
+        amount: round2(rate * hours), hours, rate, source: 'Variable allowance (hourly)',
+        detail: `${hours} ${hours === 1 ? 'hour' : 'hours'} × ₱${rate.toLocaleString()} per hour${row.hours === '' || row.hours === undefined || row.hours === null ? ' (hours from Timekeeping)' : ''}`,
+      };
+    })
+    .filter(item => item.amount > 0);
+
   /* 5 — earnings ---------------------------------------------------------- */
   const configured = withinScope(earningItemsFor({
     salary,
     registerEarnings: (context.registers?.earnings) || [],
-    manual: override.earnings || [],
+    manual: [...(override.earnings || []), ...variableAllowanceItems, ...foreignEarningItems(foreignPay.lines), ...corrections.earnings],
     transaction, employee, resolveBound,
   }), resolveScope, employee, outOfScope);
   configured.forEach(item => recordBinding(item, 'Earnings'));
+  variableAllowanceItems.forEach(item => record({ code: 'ERN-004', label: item.name, category: 'Earnings', amount: item.amount, evaluate: false, inputs: { taxable_earnings: item.amount, days_worked: 0 }, detail: item.detail, source: 'Variable Allowance reference table' }));
+  const configuredForRun = adjustForRun(configured, 'Earning', 'amount');
   const monthIndex = Number(String(toIsoDate(transaction.periodEnd)).slice(5, 7)) || 1;
   const deMinimisVersion = schedules.deMinimis;
   const earnings = [];
-  configured.forEach(item => {
+  configuredForRun.forEach(item => {
     if (config.zeroVariableAllowance && item.source === 'Employee salary record' && item.classification === 'Taxable Allowance') return;
     if (item.classification !== 'De Minimis') { earnings.push(item); return; }
     // A De Minimis benefit is non-taxable only up to its own annual ceiling; the
@@ -876,7 +1017,117 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       exceptions.push({ severity: 'Info', message: `${item.name} exceeded its De Minimis ceiling; ₱${split.taxable.toLocaleString()} was reclassified as taxable.` });
     }
   });
-  const allEarnings = [...earnings, ...overtimeEarnings];
+  // Variable allowances follow the same effective dates as basic pay: a new hire
+  // or a separation is paid the days actually payable, not the whole period.
+  const isVariableAllowance = item => item.source === 'Employee salary record' && item.classification === 'Taxable Allowance';
+  if (prorated && config.computeVariableAllowanceAdjustment !== false) {
+    const factor = payableDays / periodWorkingDays;
+    earnings.forEach((item, index) => {
+      if (!isVariableAllowance(item) || !(item.amount > 0)) return;
+      const adjusted = round2(item.amount * factor);
+      record({
+        code: 'ERN-004', label: `${item.name} adjustment`, category: 'Earnings', amount: adjusted, evaluate: false,
+        inputs: { taxable_earnings: item.amount, days_worked: payableDays },
+        detail: `${payableDays} of ${periodWorkingDays} working days payable — ${item.name} pro-rated from ₱${item.amount.toLocaleString()}`,
+        source: 'Employee Masterfile effective dates',
+      });
+      earnings[index] = { ...item, amount: adjusted, unadjustedAmount: item.amount };
+    });
+  }
+
+  // Earning reclassification. An earning opts in on its Earning Configuration
+  // (eligibility, direction, hierarchy, cap); this run only chooses whether the
+  // step runs and may narrow the pool. Earnings draw on the pool in hierarchy
+  // order, each up to its own cap, so a lower-ranked earning only reclassifies
+  // what the higher-ranked ones left.
+  const reclassification = config.reclassification || {};
+  let reclassifiedNonTaxable = 0;
+  if (reclassification.enabled) {
+    const typedPool = reclassification.poolLimit === '' || reclassification.poolLimit == null ? Infinity : Math.max(0, number(reclassification.poolLimit));
+    // Against the ceiling, the pool is what is left of the non-taxable 13th-month and other-benefits cap.
+    const againstCeiling = reclassification.poolSource === 'ceiling';
+    const ceilingTotal = Number.isFinite(Number(config.thirteenthMonth?.ntThreshold)) && config.thirteenthMonth?.enabled && config.thirteenthMonth.ntThreshold !== '' ? Number(config.thirteenthMonth.ntThreshold) : (number(context.bonusCeiling) || 90000);
+    const ceilingLeft = Math.max(0, round2(ceilingTotal - number(employee.ytd?.bonusPaid) - number(employee.previousEmployer?.nontaxableBonus)));
+    const poolLimit = againstCeiling ? Math.min(typedPool, ceilingLeft) : typedPool;
+    let pool = poolLimit;
+    // This run may reorder the earnings and lower a limit; it never changes the setup,
+    // and a run limit can only tighten the configured one.
+    const runOrder = reclassification.runOrder || [];
+    const runLimits = reclassification.runLimits || {};
+    const rankOf = (setup, order) => { const at = order.indexOf(setup.code); return at >= 0 ? at : order.length + (number(setup.reclassPriority) || 999); };
+    const eligible = earnings
+      .map((item, index) => ({ item, index, setup: resolveScope(item.code, item.name) }))
+      .filter(entry => entry.setup && entry.setup.eligibleForReclassification === 'Yes' && entry.item.amount > 0)
+      .sort((left, right) => rankOf(left.setup, runOrder) - rankOf(right.setup, runOrder));
+    const moved = [];
+    eligible.forEach(({ item, index, setup }) => {
+      const toNonTaxable = (setup.reclassDirection || 'Taxable to non-taxable') === 'Taxable to non-taxable';
+      if (classOf(item.classification).taxable !== toNonTaxable) return;
+      const current = earnings[index];
+      const capBasis = setup.reclassCapBasis || 'No limit';
+      const runLimit = runLimits[setup.code];
+      const hasRunLimit = runLimit !== undefined && runLimit !== '' && Number.isFinite(Number(runLimit));
+      const configured = capBasis === 'Amount per payroll' ? number(setup.reclassCap)
+        : capBasis === 'Percent of the earning' ? round2(current.amount * number(setup.reclassCap) / 100) : Infinity;
+      const lowered = !hasRunLimit ? Infinity : capBasis === 'Percent of the earning' ? round2(current.amount * number(runLimit) / 100) : number(runLimit);
+      const cap = Math.min(configured, lowered);
+      const amount = round2(Math.min(current.amount, cap, pool));
+      if (!(amount > 0)) return;
+      pool = round2(pool - amount);
+      earnings[index] = { ...current, amount: round2(current.amount - amount) };
+      moved.push({ code: `${item.code}-R`, name: `${item.name} (reclassified)`, classification: toNonTaxable ? 'Non-taxable' : 'Taxable Allowance', amount, source: `Reclassified from ${item.name}`, priority: number(setup.reclassPriority) || null, capBasis, cap: capBasis === 'No limit' ? null : cap });
+      record({
+        code: 'RCL-001', label: `${item.name} reclassified`, category: 'Tax', amount, evaluate: false,
+        inputs: { non_taxable_earnings: toNonTaxable ? amount : 0, taxable_earnings: toNonTaxable ? 0 : amount },
+        detail: `${toNonTaxable ? 'Taxable to non-taxable' : 'Non-taxable to taxable'}: ₱${amount.toLocaleString()} of ₱${current.amount.toLocaleString()} (rank ${number(setup.reclassPriority) || '—'}, ${capBasis === 'No limit' ? 'no cap' : capBasis === 'Amount per payroll' ? `cap ₱${cap.toLocaleString()}` : `cap ${number(setup.reclassCap)}% of the earning`}${Number.isFinite(poolLimit) ? `; ₱${pool.toLocaleString()} of the ₱${poolLimit.toLocaleString()} pool left` : ''})`,
+        source: 'Earning Configuration',
+      });
+      exceptions.push({ severity: 'Info', message: `${item.name}: ₱${amount.toLocaleString()} reclassified as ${toNonTaxable ? 'non-taxable' : 'taxable'} (rank ${number(setup.reclassPriority) || '—'}).` });
+    });
+    earnings.push(...moved);
+    if (againstCeiling) reclassifiedNonTaxable = round2(sum(moved.filter(item => item.classification === 'Non-taxable'), item => item.amount));
+  }
+  /* Leave conversion. Days come from HRM (converted credits dated in the conversion
+   * window) unless an uploaded row for the same leave type replaces them — the
+   * upload is for clients with no HRM engagement, and it wins where both exist. */
+  const conversion = config.leaveConversion || {};
+  const conversionPaid = [];
+  if (conversion.enabled) {
+    const window = conversion.window || { start: conversion.startDate, end: conversion.endDate };
+    const inWindow = date => { const at = toIsoDate(date); return !at || ((!window.start || at >= window.start) && (!window.end || at <= window.end)); };
+    const selected = conversion.leaveTypes || [];
+    const wanted = type => !selected.length || selected.includes(type);
+    const uploaded = (override.leaveConversions || []).filter(row => wanted(row.leaveType) && inWindow(row.date));
+    const replaced = new Set(uploaded.map(row => row.leaveType));
+    const fromHrm = (context.leaveBalances || [])
+      .filter(row => row.employeeId === employee.employeeId && number(row.converted) > 0 && wanted(row.leaveType) && !replaced.has(row.leaveType) && inWindow(row.conversionDate))
+      .map(row => ({ leaveType: row.leaveType, days: number(row.converted), source: 'HRM leave balance' }));
+    // Final pay converts every credit still left, whatever the window says.
+    const converted = new Set([...fromHrm.map(row => row.leaveType), ...replaced]);
+    const remaining = eligibility.finalPay
+      ? (context.leaveBalances || [])
+        .filter(row => row.employeeId === employee.employeeId && number(row.available) > 0 && wanted(row.leaveType) && !converted.has(row.leaveType))
+        .filter(row => (context.serviceConfig?.leaveBenefits || []).find(item => item.name === row.leaveType || item.type === row.leaveType)?.cashConvertible !== 'No')
+        .map(row => ({ leaveType: row.leaveType, days: number(row.available), source: 'HRM leave balance (final pay)' }))
+      : [];
+    let nonTaxableDaysLeft = LEAVE_NON_TAXABLE_DAYS;
+    [...fromHrm, ...remaining, ...uploaded.map(row => ({ ...row, source: 'Uploaded' }))].forEach(row => {
+      conversionPaid.push({ leaveType: row.leaveType, days: row.days, source: row.source });
+      const setup = (context.serviceConfig?.leaveBenefits || []).find(item => item.name === row.leaveType || item.type === row.leaveType);
+      const treatment = setup?.taxTreatment || 'Per statutory reference';
+      const amount = record({ code: 'FIN-001', label: `${row.leaveType} conversion`, category: 'Separation', inputs: { daily_rate: dailyRate, unused_leave_days: row.days }, detail: `${row.days} ${row.days === 1 ? 'day' : 'days'} of ${row.leaveType} converted at the daily rate (${row.source})`, source: row.source === 'Uploaded' ? 'Uploaded on the transaction' : 'HRM leave balance' });
+      const nonTaxableDays = treatment === 'Non-taxable' ? row.days : treatment === 'Taxable' ? 0 : Math.min(row.days, nonTaxableDaysLeft);
+      nonTaxableDaysLeft = Math.max(0, nonTaxableDaysLeft - nonTaxableDays);
+      const nonTaxable = round2(amount * nonTaxableDays / row.days);
+      const label = `Leave conversion — ${row.leaveType}`;
+      if (nonTaxable > 0) earnings.push({ code: 'LVC-NT', name: nonTaxable < amount ? `${label} (non-taxable)` : label, classification: 'Non-taxable', amount: nonTaxable, days: nonTaxableDays, source: row.source });
+      if (round2(amount - nonTaxable) > 0) earnings.push({ code: 'LVC-TX', name: nonTaxable > 0 ? `${label} (taxable excess)` : label, classification: 'Taxable Allowance', amount: round2(amount - nonTaxable), days: row.days - nonTaxableDays, source: row.source });
+      const hrmRow = (context.leaveBalances || []).find(item => item.employeeId === employee.employeeId && item.leaveType === row.leaveType && number(item.converted) > 0);
+      if (row.source === 'Uploaded') exceptions.push({ severity: 'Info', message: hrmRow ? `${row.leaveType}: ${row.days} uploaded days replace the ${number(hrmRow.converted)} days HRM holds.` : `${row.leaveType}: ${row.days} days uploaded with no HRM conversion on record, so no HRM balance is deducted.` });
+    });
+  }
+
+  const allEarnings = [...earnings, ...ecolaEarnings, ...adjustForRun(overtimeEarnings, 'Earning', 'amount')];
 
   /* 6 — bonuses ----------------------------------------------------------- */
   const bonusCeiling = number(context.bonusCeiling) || 90000;
@@ -889,12 +1140,16 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       ? Number(configuredThreshold)
       : bonusCeiling;
     const remainingCeiling = record({
-      code: 'BON-004', category: 'Bonus', inputs: { bonus_tax_ceiling: ceiling, bonus_paid_ytd: number(employee.ytd?.bonusPaid) },
-      detail: ceiling === 0 ? 'Threshold set to zero for this run — every bonus is taxable' : 'Non-taxable ceiling less bonuses already paid this year',
+      code: 'BON-004', category: 'Bonus', inputs: { bonus_tax_ceiling: ceiling, bonus_paid_ytd: round2(number(employee.ytd?.bonusPaid) + number(employee.previousEmployer?.nontaxableBonus) + reclassifiedNonTaxable) },
+      detail: ceiling === 0 ? 'Threshold set to zero for this run — every bonus is taxable' : `Non-taxable ceiling less bonuses already paid this year${number(employee.previousEmployer?.nontaxableBonus) ? ' and by the previous employer' : ''}`,
       source: 'Bonus ceiling reference table',
     });
     let available = remainingCeiling;
-    const selected = (config.thirteenthMonth.bonusTypes || ['13th Month Pay']);
+    // The Bonus Ceiling Order reference table decides which bonus uses the
+    // non-taxable ceiling first; types it does not list keep their run order.
+    const order = config.bonusCeilingOrder || [];
+    const rank = type => (order.indexOf(type) + 1) || order.length + 1;
+    const selected = [...(config.thirteenthMonth.bonusTypes || ['13th Month Pay'])].sort((left, right) => rank(left) - rank(right));
     const registerBonuses = ((context.registers?.bonuses) || [])
       .filter(row => String(row.employee || '').startsWith(employee.code) && selected.includes(row.name));
 
@@ -920,6 +1175,10 @@ export function computeEmployeeLine({ employee, transaction, context }) {
         amount = record({ code: 'BON-002', category: 'Bonus', inputs: { basic_earnings_ytd: ytdBasic }, detail: 'Basic earnings year to date ÷ 12', source: 'Employee YTD payroll record' });
       } else {
         amount = number(registerBonuses.find(row => row.name === type)?.amount);
+      }
+      if (amount > 0) {
+        const [kept] = adjustForRun([{ code: '', name: type, amount, source: 'Bonus' }], 'Bonus', 'amount');
+        amount = kept ? kept.amount : 0;
       }
       if (amount <= 0) return;
       const nonTaxable = round2(Math.min(amount, available));
@@ -957,7 +1216,8 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const computeStatutory = override.computeAllowableDeduction ?? config.computeAllowableDeduction;
   const agencies = config.statutoryAgencies || { sss: true, philhealth: true, pagibig: true, sssWisp: true };
   const periodsPerMonth = PERIODS_PER_YEAR[transaction.paymentMode] / 12;
-  const collectStatutory = config.statutorySchedule === 'Every payroll (split)' || !config.statutorySchedule
+  const collectStatutory = config.statutorySchedule === STATUTORY_MAX_FIRST ? 1
+    : config.statutorySchedule === 'Every payroll (split)' || !config.statutorySchedule
     ? 1 / periodsPerMonth
     : (config.statutorySchedule === 'First cutoff only' && transaction.frequency === 'First Half')
       || (config.statutorySchedule === 'Second cutoff only' && transaction.frequency !== 'First Half') ? 1 : 0;
@@ -971,19 +1231,58 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const pagibig = computeStatutory && agencies.pagibig && pay.withHdmf === 'Yes' && !onHoldWithoutContributions
     ? rateContribution(schedules.pagibig, statutoryBasis) : { employee: 0, employer: 0, bracket: null };
 
-  const share = value => round2(number(value) * collectStatutory);
+  // The employee and employer shares are switched on separately: a run may
+  // collect only the employee's share, or book only the employer's.
+  const shares = config.statutoryShares || {};
+  const eeOn = key => shares[key]?.employee !== false;
+  const erOn = key => shares[key]?.employer !== false;
+  const share = (value, on = true) => (on ? round2(number(value) * collectStatutory) : 0);
   const statutoryLine = {
-    sssEmployee: share(agencies.sssWisp === false ? sss.regularEmployee : sss.employee),
-    sssEmployer: share(sss.employer),
-    sssRegularEmployee: share(sss.regularEmployee),
-    sssMpfEmployee: share(agencies.sssWisp === false ? 0 : sss.mpfEmployee),
-    sssMpfEmployer: share(sss.mpfEmployer),
-    ec: share(sss.ec),
-    philhealthEmployee: share(philhealth.employee),
-    philhealthEmployer: share(philhealth.employer),
-    hdmfEmployee: share(pagibig.employee),
-    hdmfEmployer: share(pagibig.employer),
+    // SSS is the regular share plus the WISP / MPF share; each has its own EE and ER switch.
+    sssEmployee: round2(share(sss.regularEmployee, eeOn('sss')) + (agencies.sssWisp === false ? 0 : share(sss.mpfEmployee, eeOn('sssWisp')))),
+    sssEmployer: round2(share(sss.regularEmployer, erOn('sss')) + share(sss.ec, erOn('sss')) + share(sss.mpfEmployer, erOn('sssWisp'))),
+    sssRegularEmployee: share(sss.regularEmployee, eeOn('sss')),
+    sssMpfEmployee: agencies.sssWisp === false ? 0 : share(sss.mpfEmployee, eeOn('sssWisp')),
+    sssMpfEmployer: share(sss.mpfEmployer, erOn('sssWisp')),
+    ec: share(sss.ec, erOn('sss')),
+    philhealthEmployee: share(philhealth.employee, eeOn('philhealth')),
+    philhealthEmployer: share(philhealth.employer, erOn('philhealth')),
+    hdmfEmployee: share(pagibig.employee, eeOn('pagibig')),
+    hdmfEmployer: share(pagibig.employer, erOn('pagibig')),
   };
+  // Maximum first, balance next: the month's figure, less what earlier payrolls this month already
+  // collected, held to what this employee can bear without dropping below the protected take-home pay.
+  if (config.statutorySchedule === STATUTORY_MAX_FIRST) {
+    const earlier = context.statutoryCollected?.[employee.employeeId] || null;
+    if (earlier) STATUTORY_LINE_KEYS.forEach(key => { statutoryLine[key] = round2(Math.max(0, statutoryLine[key] - number(earlier[key]))); });
+    const policy = takeHomePolicyForLine(context.policies?.takeHome || {}, config.takeHome || {}, override.takeHome || {}).policy;
+    const protectedBase = policy.base === 'Basic Pay' ? basicPay
+      : policy.base === 'Gross Pay less Reimbursements' ? round2(grossPay - sum(allEarnings.filter(item => classOf(item.classification).group === 'Receivables / Reimbursements'), item => item.amount))
+      : grossPay;
+    const minimum = policy.enabled === false ? 0
+      : policy.thresholdType === 'Fixed Amount' ? number(policy.threshold) : round2(number(protectedBase) * number(policy.threshold) / 100);
+    const taxed = config.computeTax !== false && pay.withWithholdingTax === 'Yes' && pay.mwe !== 'Yes';
+    const estimatedTax = taxed ? graduatedTax(schedules.tax, round2(basicPay + taxableEarnings + taxableBonus), transaction.paymentMode).tax : 0;
+    const headroom = Math.max(0, round2(grossPay - estimatedTax - minimum));
+    const wanted = round2(statutoryLine.sssEmployee + statutoryLine.philhealthEmployee + statutoryLine.hdmfEmployee);
+    if (wanted > headroom + 0.004) {
+      const factor = wanted > 0 ? headroom / wanted : 0;
+      STATUTORY_LINE_KEYS.forEach(key => { statutoryLine[key] = round2(statutoryLine[key] * factor); });
+      statutoryLine.sssRegularEmployee = round2(Math.max(0, statutoryLine.sssEmployee - statutoryLine.sssMpfEmployee));
+      exceptions.push({ severity: 'Info', message: `Employee contributions of ₱${wanted.toLocaleString()} were held to ₱${round2(wanted * factor).toLocaleString()} to keep take-home pay at or above ₱${minimum.toLocaleString()}; ₱${round2(wanted - wanted * factor).toLocaleString()} is left for the next payroll.` });
+    }
+    record({ code: 'GOV-001', label: 'Contributions: maximum first, balance next', category: 'Government', amount: round2(statutoryLine.sssEmployee + statutoryLine.philhealthEmployee + statutoryLine.hdmfEmployee), evaluate: false, inputs: {}, detail: `${earlier ? 'Month figure less what earlier payrolls collected' : 'First payroll of the month: month figure'}, held to the take-home headroom of ₱${headroom.toLocaleString()}`, source: 'Transaction configuration' });
+  }
+  // A Special transaction may carry typed contribution amounts for an employee, in place of
+  // the computed ones. The line says so; the contribution tables are left alone.
+  const statutoryOverride = transaction.payrollType === 'Special' ? (override.statutory || {}) : {};
+  const overridden = Object.keys(STATUTORY_OVERRIDE_LABELS).filter(key => statutoryOverride[key] !== undefined && statutoryOverride[key] !== '' && Number.isFinite(Number(statutoryOverride[key])));
+  if (overridden.length) {
+    overridden.forEach(key => { statutoryLine[key] = round2(Math.max(0, Number(statutoryOverride[key]))); });
+    if (overridden.includes('sssEmployee')) statutoryLine.sssRegularEmployee = round2(Math.max(0, statutoryLine.sssEmployee - statutoryLine.sssMpfEmployee));
+    record({ code: 'GOV-001', label: 'Contributions entered on a special transaction', category: 'Government', amount: round2(sum(overridden, key => statutoryLine[key])), evaluate: false, inputs: {}, detail: `Entered instead of computed: ${overridden.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${statutoryLine[key].toLocaleString()}`).join(', ')}`, source: 'Special transaction override' });
+    exceptions.push({ severity: 'Info', message: `Contributions were entered on this special transaction instead of computed: ${overridden.map(key => STATUTORY_OVERRIDE_LABELS[key]).join(', ')}.` });
+  }
   // Pag-IBIG above the mandatory share is a voluntary contribution the 201 file
   // carries; it is a company deduction, not a statutory one.
   const voluntaryHdmf = computeStatutory && pay.withHdmf === 'Yes'
@@ -1003,6 +1302,9 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   let taxableIncome = 0;
   let withholdingTax = 0;
   let taxBasis = 'Not computed';
+  let taxAtc = '';
+  let taxRate = null;
+  let taxTableUsed = null;
   const computeTax = config.computeTax !== false;
   const exemptFromTax = pay.withWithholdingTax !== 'Yes' || pay.mwe === 'Yes';
 
@@ -1017,24 +1319,74 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       inputs: { gross_pay: round2(taxableGross + nonTaxableEarnings + nonTaxableBonus), non_taxable_earnings: round2(nonTaxableEarnings + nonTaxableBonus), statutory_deductions: statutoryEmployee },
       detail: 'Taxable gross less non-taxable earnings and the employee statutory share',
     });
-    if (eligibility.finalPay) {
-      // Final pay annualises: the year's taxable income, including previous
+    if (pay.taxType === 'Direct') {
+      // A flat percentage the employee's own record names, on the period's taxable income.
+      const rate = Math.max(0, number(pay.directTaxRate)) / 100;
+      taxRate = rate;
+      withholdingTax = round2(taxableIncome * rate);
+      taxBasis = `Direct ${round2(rate * 100)}% (employee tax type)`;
+      record({ code: 'TAX-002', label: 'Direct withholding tax', category: 'Tax', amount: withholdingTax, evaluate: false, inputs: { taxable_income: taxableIncome, tax_rate: rate }, detail: `${round2(rate * 100)}% of ₱${taxableIncome.toLocaleString()}`, source: 'Employee tax type' });
+      if (!rate) exceptions.push({ severity: 'Warning', message: 'The employee tax type is Direct but no direct tax rate is on the 201 file, so no tax was withheld.' });
+    } else if (pay.taxType === 'Annualized' && !eligibility.finalPay && !config.annualizeTax) {
+      // Project the year from what has been earned and withheld plus this period's income for
+      // every period left, take the annual table's tax, and spread what remains over those periods.
+      const previous = employee.previousEmployer || {};
+      const perYear = PERIODS_PER_YEAR[transaction.paymentMode] || 24;
+      const periodsLeft = Math.max(1, perYear - periodNumberOf(transaction) + 1);
+      const projected = round2(number(employee.ytd?.taxableEarnings) + number(previous.grossTaxableIncome) + taxableIncome * periodsLeft);
+      const due = graduatedTax(schedules.annualTax, projected, 'Annual').tax;
+      const alreadyWithheld = round2(number(employee.ytd?.taxWithheld) + number(previous.taxWithheld));
+      taxTableUsed = schedules.annualTax;
+      withholdingTax = round2(Math.max(0, due - alreadyWithheld) / periodsLeft);
+      taxBasis = 'Annualized (projected year, spread over the periods left)';
+      record({
+        code: 'TAX-008', category: 'Tax', amount: withholdingTax, evaluate: false,
+        inputs: { basic_earnings_ytd: number(employee.ytd?.taxableEarnings), taxable_earnings: taxableIncome, previous_employer_taxable: number(previous.grossTaxableIncome), withholding_tax: alreadyWithheld },
+        detail: `Projected taxable ₱${projected.toLocaleString()} → annual tax ₱${due.toLocaleString()} less ₱${alreadyWithheld.toLocaleString()} withheld, over ${periodsLeft} ${periodsLeft === 1 ? 'period' : 'periods'}`,
+        source: 'BIR annual tax table',
+      });
+    } else if (['Expanded', 'Final'].includes(pay.taxType)) {
+      // Income that is not compensation — a consultant's fees, or income
+      // subject to final tax — is withheld at a flat rate on the taxable
+      // amount, never through the compensation table. The employee's tax
+      // information names the BIR ATC; the rate is that ATC's row in the
+      // effective expanded or final tax table.
+      const expanded = pay.taxType === 'Expanded';
+      const atc = pay.atc || (expanded ? 'WI010' : 'WI360');
+      const tableRow = ((expanded ? schedules.expandedTax : schedules.finalTax)?.rows || []).find(row => row.atcCode === atc);
+      taxTableUsed = expanded ? schedules.expandedTax : schedules.finalTax;
+      const rate = tableRow ? number(tableRow.excessRate) / 100 : number(expanded ? pay.ewtRate : pay.finalTaxRate);
+      if (!tableRow) exceptions.push({ severity: 'Warning', message: `ATC ${atc} is not in the effective ${expanded ? 'expanded' : 'final'} tax table; the rate on the employee record was used.` });
+      taxAtc = atc;
+      taxRate = rate;
+      withholdingTax = round2(taxableIncome * rate);
+      taxBasis = `${expanded ? 'Expanded withholding' : 'Final tax'} ${round2(rate * 100)}% (${atc})`;
+      record({
+        code: 'TAX-002', label: expanded ? 'Expanded withholding tax' : 'Final withholding tax', category: 'Tax', amount: withholdingTax, evaluate: false,
+        inputs: { taxable_income: taxableIncome, tax_rate: rate },
+        detail: `${round2(rate * 100)}% of ₱${taxableIncome.toLocaleString()} under ATC ${atc}`,
+        source: 'Employee tax information',
+      });
+    } else if (eligibility.finalPay || config.annualizeTax) {
+      // Final pay annualises, and so does a year-end adjustment run: the year's taxable income, including previous
       // employer data, against the annual table, less what was already withheld.
       const previous = employee.previousEmployer || {};
       const annualTaxable = round2(number(employee.ytd?.taxableEarnings) + taxableIncome + number(previous.grossTaxableIncome));
       const due = graduatedTax(schedules.annualTax, annualTaxable, 'Annual').tax;
+      taxTableUsed = schedules.annualTax;
       const alreadyWithheld = round2(number(employee.ytd?.taxWithheld) + number(previous.taxWithheld));
       withholdingTax = round2(Math.max(0, due - alreadyWithheld));
-      taxBasis = 'Annualised (BIR annual table) — final pay';
+      taxBasis = eligibility.finalPay ? 'Annualised (BIR annual table) — final pay' : 'Annualised (BIR annual table) — year-end adjustment';
       record({
         code: 'TAX-008', category: 'Tax', amount: withholdingTax, evaluate: false,
         inputs: { basic_earnings_ytd: number(employee.ytd?.taxableEarnings), taxable_earnings: taxableIncome, previous_employer_taxable: number(previous.grossTaxableIncome), withholding_tax: alreadyWithheld },
         detail: `Annual tax due ₱${due.toLocaleString()} on ₱${annualTaxable.toLocaleString()} less ₱${alreadyWithheld.toLocaleString()} already withheld`,
         source: 'BIR annual tax table',
       });
-      if (due < alreadyWithheld) exceptions.push({ severity: 'Info', message: `Over-withholding of ₱${round2(alreadyWithheld - due).toLocaleString()} — a tax refund is due on this final pay.` });
+      if (due < alreadyWithheld) exceptions.push({ severity: 'Info', message: `Over-withholding of ₱${round2(alreadyWithheld - due).toLocaleString()} — a tax refund is due on this ${eligibility.finalPay ? 'final pay' : 'year-end adjustment'}.` });
     } else {
       const result = graduatedTax(schedules.tax, taxableIncome, transaction.paymentMode);
+      taxTableUsed = schedules.tax;
       withholdingTax = result.tax;
       taxBasis = `${transaction.paymentMode} compensation table`;
       record({
@@ -1046,9 +1398,18 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     }
   }
 
+  if ((context.earlierUnposted || []).length && config.ytd?.includePosted !== false) {
+    exceptions.push({ severity: 'Info', message: `Year-to-date excludes ${context.earlierUnposted.join(', ')} (earlier ${transaction.paymentMode} period, not yet posted). Recalculate after it posts.` });
+  }
+
   /* 10 — gross up --------------------------------------------------------- */
   let grossUp = null;
-  if ((config.grossUpAll || pay.grossUp === 'Yes') && computeTax && !exemptFromTax && taxableIncome > 0) {
+  const grossUpWanted = (config.grossUpAll || pay.grossUp === 'Yes') && computeTax && !exemptFromTax && taxableIncome > 0;
+  const periodicCompensation = /compensation table$/.test(taxBasis);
+  if (grossUpWanted && !periodicCompensation) {
+    exceptions.push({ severity: 'Info', message: `Gross up covers periodic compensation tax only, so this line (${taxBasis}) was not grossed up.` });
+  }
+  if (grossUpWanted && periodicCompensation) {
     // Back-solve the gross that leaves the employee whole after tax, iterating
     // against the same table rather than the flat-rate shortcut.
     let candidate = taxableIncome;
@@ -1065,7 +1426,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     withholdingTax = 0;
   }
 
-  if (transaction.payrollType === 'Override' && Number.isFinite(Number(override.withholdingTax))) {
+  if (Number.isFinite(Number(override.withholdingTax)) && override.withholdingTax !== '' && override.withholdingTax !== null) {
     withholdingTax = round2(Math.max(0, Number(override.withholdingTax)));
     taxBasis = 'Manual override transaction';
     record({
@@ -1088,7 +1449,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     salary,
     loanSchedules: (context.loanSchedules || []).filter(row => row.employeeId === employee.employeeId),
     registerDeductions: (context.registers?.deductions) || [],
-    manual: override.deductions || [],
+    manual: [...(override.deductions || []), ...corrections.deductions],
     transaction, employee, hierarchy: context.hierarchy || [], staggeredRequests: context.staggeredRequests || [],
     resolveBound,
   }), resolveScope, employee, outOfScope);
@@ -1098,20 +1459,70 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   });
   // A binding that could not resolve has already raised its exception; keeping
   // a zero-value row in the collection list would only clutter the payslip.
-  const collectible = [...collections.filter(item => item.authorised !== false && item.due > 0), ...attendanceItems];
+  const collectible = [
+    ...adjustForRun(collections.filter(item => item.authorised !== false && item.due > 0 && item.group === 'Loan'), 'Loan', 'due'),
+    ...adjustForRun(collections.filter(item => item.authorised !== false && item.due > 0 && item.group !== 'Loan'), 'Deduction', 'due'),
+    ...adjustForRun(attendanceItems, 'Deduction', 'due'),
+  ].filter(item => number(item.due) > 0).sort((left, right) => left.rank - right.rank);
+  payItemAdjustments.forEach(change => exceptions.push({
+    severity: 'Info',
+    message: change.excluded
+      ? `${change.name} (₱${change.computed.toLocaleString()}) is left out of this run${change.scope === 'run' ? ' for every employee' : ''}${change.reason ? ` — ${change.reason}` : ''}.${['Deduction', 'Loan'].includes(change.group) ? ' Its balance carries to the next run.' : ''}`
+      : `${change.name} is ₱${change.amount.toLocaleString()} this run instead of ₱${change.computed.toLocaleString()}${change.capped ? ' (capped at the balance outstanding)' : ''}${change.reason ? ` — ${change.reason}` : ''}.`,
+  }));
   if (voluntaryHdmf > 0) {
     collectible.push({ code: 'HDMF-VOL', name: 'Pag-IBIG voluntary contribution', group: 'Deduction', kind: 'Company', due: voluntaryHdmf, outstanding: voluntaryHdmf, rank: 50, canAdjust: false, source: 'Employee Masterfile' });
   }
 
+  // Provident and pension funds: the employee share is a deduction, the
+  // employer share an accrual that does not touch net pay.
+  const funds = (config.funds || [])
+    .filter(fund => (pay.funds || []).includes(fund.code))
+    .map(fund => {
+      const basis = fund.basis === 'Gross Pay' ? grossPay : basicPay;
+      return { code: fund.code, name: fund.name, fundType: fund.fundType, basis: fund.basis || 'Basic Pay', basisAmount: round2(basis), employeeRate: number(fund.employeeRate), employerRate: number(fund.employerRate), employee: round2(basis * number(fund.employeeRate) / 100), employer: round2(basis * number(fund.employerRate) / 100) };
+    });
+  funds.filter(fund => fund.employee > 0).forEach(fund => {
+    collectible.push({ code: fund.code, name: `${fund.name} (employee share)`, group: 'Deduction', kind: 'Fund', due: fund.employee, outstanding: fund.employee, rank: 45, canAdjust: false, source: 'Payroll Controls' });
+    record({ code: fund.code, label: `${fund.name} — employee ${fund.employeeRate}%, employer ${fund.employerRate}%`, category: 'Deductions', amount: fund.employee, evaluate: false, inputs: { fund_basis: fund.basisAmount }, detail: `${fund.employeeRate}% of ${fund.basis} withheld; employer accrues ₱${fund.employer.toLocaleString()}`, source: 'Payroll Controls' });
+  });
+
   /* 12 — take-home pay policy --------------------------------------------- */
-  const takeHomePolicy = context.policies?.takeHome || {};
+  const takeHomeChoice = takeHomePolicyForLine(context.policies?.takeHome || {}, config.takeHome || {}, override.takeHome || {});
+  const takeHomePolicy = takeHomeChoice.policy;
+  if (takeHomeChoice.override) {
+    exceptions.push({
+      severity: 'Info',
+      message: takeHomeChoice.override.mode === 'off'
+        ? `Take-home pay protection is not applied ${takeHomeChoice.override.scope === 'run' ? 'on this run' : 'for this employee on this run'}${takeHomeChoice.override.reason ? ` — ${takeHomeChoice.override.reason}` : ''}.`
+        : `Protected minimum take-home pay is ₱${takeHomeChoice.override.minimum.toLocaleString()} for this run instead of the policy's${takeHomeChoice.override.reason ? ` — ${takeHomeChoice.override.reason}` : ''}.`,
+    });
+  }
+  // Forecast tax: an amount the company withholds in advance on top of the computed tax — for
+  // example when the employee had a previous employer. It is switched on for the run and typed
+  // per employee (or uploaded). An annualizing line already settles the whole year's tax, so a
+  // forecast there would be withheld twice and is ignored.
+  let taxForecast = 0;
+  if (config.taxForecast?.enabled && computeTax && !exemptFromTax) {
+    const requested = Math.max(0, number(override.taxForecast));
+    if (requested > 0 && grossUp) {
+      exceptions.push({ severity: 'Info', message: `Forecast tax of ₱${requested.toLocaleString()} was not withheld: this line is grossed up, so the employer carries the tax.` });
+    } else if (requested > 0 && (eligibility.finalPay || config.annualizeTax)) {
+      exceptions.push({ severity: 'Info', message: `Forecast tax of ₱${requested.toLocaleString()} was not withheld: this line annualizes the year's tax, which already settles it.` });
+    } else if (requested > 0) {
+      taxForecast = round2(requested);
+      record({ code: 'TAX-002', label: 'Forecast tax withheld in advance', category: 'Tax', amount: taxForecast, evaluate: false, inputs: { withholding_tax: withholdingTax }, detail: `₱${taxForecast.toLocaleString()} withheld in advance on top of the computed ₱${withholdingTax.toLocaleString()}`, source: override.batchFields?.taxForecast || 'Entered on the transaction' });
+    }
+  }
+  const taxHeld = round2(withholdingTax + taxForecast);
+
   const protectedBase = takeHomePolicy.base === 'Basic Pay' ? basicPay
     : takeHomePolicy.base === 'Gross Pay less Reimbursements' ? round2(grossPay - sum(allEarnings.filter(item => classOf(item.classification).group === 'Receivables / Reimbursements'), item => item.amount))
     : grossPay;
   const applied = applyTakeHomePolicy({
     policy: takeHomePolicy,
     items: collectible,
-    gross: round2(grossPay - withholdingTax),
+    gross: round2(grossPay - taxHeld),
     statutory: statutoryEmployee,
     protectedBase,
   });
@@ -1120,31 +1531,64 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     record({ code: 'THP-002', category: 'Take-Home Pay', amount: applied.deferred, evaluate: false, inputs: { gross_pay: grossPay, statutory_deductions: statutoryEmployee, take_home_base: protectedBase }, detail: 'Controllable deductions deferred so net pay clears the protected minimum', source: 'Take-Home Pay policy engine' });
     exceptions.push({ severity: 'Info', message: `₱${applied.deferred.toLocaleString()} of deductions was deferred to protect the minimum take-home pay.` });
   }
+  // Deferral tracking: how many times each item has now been deferred, when
+  // last, and the due date it first missed.
+  const period = `${toIsoDate(transaction.periodStart)} to ${toIsoDate(transaction.periodEnd)}`;
+  applied.items = applied.items.map(item => {
+    const history = context.deferralHistory?.[`${employee.employeeId}|${item.code || item.name}`];
+    if (!history && !(item.deferred > 0)) return item;
+    const deferredNow = item.deferred > 0;
+    const timesDeferred = (history?.times || 0) + (deferredNow ? 1 : 0);
+    if (deferredNow && timesDeferred >= 3) exceptions.push({ severity: 'Warning', message: `${item.name} has now been deferred ${timesDeferred} times (first due ${history?.originalDueDate || toIsoDate(transaction.payoutDate)}).` });
+    return {
+      ...item, timesDeferred,
+      deferredBefore: history?.total || 0,
+      lastDeferredPeriod: deferredNow ? period : history?.lastPeriod || '',
+      originalDueDate: history?.originalDueDate || (deferredNow ? toIsoDate(transaction.payoutDate) : ''),
+    };
+  });
   if (applied.exception) exceptions.push({ severity: 'Warning', message: `Net pay of ₱${applied.netPay.toLocaleString()} is below the protected minimum of ₱${applied.protectedMinimum.toLocaleString()}.` });
 
   /* 13 — net pay and bank splits ------------------------------------------ */
-  const totalDeductions = round2(statutoryEmployee + withholdingTax + applied.deducted);
+  const totalDeductions = round2(statutoryEmployee + taxHeld + applied.deducted);
   const netPay = record({
     code: 'PAY-002', category: 'Payroll Result',
     inputs: {
-      gross_pay: grossPay, withholding_tax: withholdingTax, statutory_deductions: statutoryEmployee,
+      gross_pay: grossPay, withholding_tax: taxHeld, statutory_deductions: statutoryEmployee,
       other_deductions: round2(sum(applied.items.filter(item => item.group !== 'Loan'), item => item.deducted)),
       loan_amortizations: round2(sum(applied.items.filter(item => item.group === 'Loan'), item => item.deducted)),
     },
     detail: 'Gross pay less tax, statutory contributions, deductions and loan amortisations',
   });
 
+  // With pay in more than one currency, the bank percentages split the PHP
+  // part, and each foreign amount is credited in full to the primary account.
+  const currencyPayouts = foreignPay.lines.length ? payoutsByCurrency(netPay, foreignPay.lines, attendance.hoursWorked) : null;
+  const phpPayout = currencyPayouts ? currencyPayouts[0].amount : netPay;
   const banks = employee.banks || [];
   const bankSplits = banks.map(account => ({
     bankName: account.bankName, accountNumber: account.accountNumber,
     percentOfNetPay: number(account.percentOfNetPay),
-    amount: round2(netPay * number(account.percentOfNetPay) / 100),
+    amount: round2(phpPayout * number(account.percentOfNetPay) / 100),
+    ...(currencyPayouts ? { currency: 'PHP', symbol: currencyPayouts[0].symbol, baseAmount: round2(phpPayout * number(account.percentOfNetPay) / 100) } : {}),
   }));
-  const splitTotal = round2(sum(bankSplits, row => row.percentOfNetPay));
-  if (banks.length && Math.abs(splitTotal - 100) > 0.01) {
+  if (currencyPayouts && phpPayout === 0) bankSplits.splice(0, bankSplits.length);
+  if (currencyPayouts) {
+    const primary = [...banks].sort((left, right) => number(right.percentOfNetPay) - number(left.percentOfNetPay))[0] || { bankName: 'Unassigned', accountNumber: '' };
+    currencyPayouts.slice(1).forEach(payout => bankSplits.push({
+      bankName: primary.bankName, accountNumber: primary.accountNumber, percentOfNetPay: null,
+      currency: payout.currency, symbol: payout.symbol, amount: payout.amount, baseAmount: payout.phpAmount, rate: payout.rate,
+    }));
+  }
+  const splitTotal = round2(sum(bankSplits.filter(row => row.percentOfNetPay != null), row => row.percentOfNetPay));
+  if (banks.length && !(currencyPayouts && phpPayout === 0) && Math.abs(splitTotal - 100) > 0.01) {
     exceptions.push({ severity: 'Warning', message: `Bank allocation totals ${splitTotal}% instead of 100%.` });
   }
   if (netPay < 0) exceptions.push({ severity: 'Error', message: 'Net pay is negative — review the deductions collected on this line.' });
+  (currencyPayouts || []).filter(payout => payout.reducedBy).forEach(payout => exceptions.push({
+    severity: 'Warning',
+    message: `Deductions are larger than the PHP pay, so ₱${payout.reducedBy.phpAmount.toLocaleString()} (${payout.symbol}${payout.reducedBy.amount.toLocaleString()}) was taken from the ${payout.currency} pay.`,
+  }));
 
   return {
     employeeId: employee.employeeId,
@@ -1168,7 +1612,22 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     taxableEarnings, nonTaxableEarnings, taxableBonus, nonTaxableBonus,
     grossPay,
     statutory: { ...statutoryLine, employeeTotal: statutoryEmployee, employerTotal: statutoryEmployer, basis: statutoryBasis, collectedShare: collectStatutory },
-    taxableIncome, withholdingTax, taxBasis,
+    taxableIncome, withholdingTax, taxForecast, taxBasis, taxAtc, taxRate, reclassifiedNonTaxable,
+    leaveConversions: conversionPaid,
+    taxTable: taxTableUsed ? { code: taxTableUsed.code, name: taxTableUsed.name, effectiveDate: taxTableUsed.effectiveDate } : null,
+    // Every statutory and tax table version this line read, for the ledger.
+    tablesUsed: Object.fromEntries(['sss', 'philhealth', 'pagibig', 'tax', 'annualTax', 'expandedTax', 'finalTax', 'deMinimis']
+      .filter(agency => schedules[agency]?.code).map(agency => [agency, { code: schedules[agency].code, effectiveDate: schedules[agency].effectiveDate }])),
+    rounding: 'Each amount rounded half up to 2 decimals as it is computed',
+    // A minimum wage earner's statutory minimum wage and the premiums on it
+    // are exempt, and BIR forms report them separately.
+    mwe: pay.mwe === 'Yes',
+    mweIncome: pay.mwe === 'Yes'
+      ? round2(basicPay + sum(allEarnings.filter(item => item.source === 'Timekeeping' || /^(OT|ND|HOL|ECOLA)/.test(String(item.code || ''))), item => item.amount))
+      : 0,
+    corrections: corrections.ids,
+    funds,
+    timekeepingExempt,
     grossUp,
     deductions: applied.items.filter(item => item.group !== 'Loan'),
     loans: applied.items.filter(item => item.group === 'Loan'),
@@ -1177,8 +1636,18 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     totalEarnings: grossPay,
     totalDeductions,
     netPay,
+    currencyPayouts,
+    payItemAdjustments,
+    takeHomeOverride: takeHomeChoice.override,
     bankSplits,
-    steps,
+    // Each ledger step names the reference table version it read and how it was rounded.
+    steps: steps.map(step => {
+      const agency = /^SSS/.test(step.source) ? 'sss' : /^PhilHealth/.test(step.source) ? 'philhealth' : /^Pag-IBIG/.test(step.source) ? 'pagibig'
+        : /annual tax table/.test(step.source) ? 'annualTax' : /BIR compensation tax table/.test(step.source) ? (taxTableUsed === schedules.expandedTax ? 'expandedTax' : taxTableUsed === schedules.finalTax ? 'finalTax' : 'tax')
+        : /De Minimis statutory table/.test(step.source) ? 'deMinimis' : '';
+      const table = agency && schedules[agency]?.code ? { code: schedules[agency].code, effectiveDate: schedules[agency].effectiveDate } : null;
+      return { ...step, rounding: 'Half up, 2 decimals', ...(table ? { referenceVersion: table } : {}) };
+    }),
     exceptions,
   };
 }
@@ -1220,6 +1689,7 @@ export function runPayroll({ transaction, context }) {
     grossPay: round2(sum(computed, line => line.grossPay)),
     taxableIncome: round2(sum(computed, line => line.taxableIncome)),
     withholdingTax: round2(sum(computed, line => line.withholdingTax)),
+    taxForecast: round2(sum(computed, line => line.taxForecast || 0)),
     statutoryEmployee: round2(sum(computed, line => line.statutory.employeeTotal)),
     statutoryEmployer: round2(sum(computed, line => line.statutory.employerTotal)),
     deductions: round2(sum(computed, line => sum(line.deductions, item => item.deducted))),
@@ -1234,9 +1704,12 @@ export function runPayroll({ transaction, context }) {
     key,
     ['headcount', 'excluded'].includes(key) ? value : convert(value),
   ]));
+  const currencies = runCurrenciesOf(transaction);
   return {
     lines, totals, exceptions,
     baseCurrency: 'PHP', currency, conversionRate, settlementTotals,
+    currencies,
+    currencyTotals: currencyTotalsFor(lines, currencies),
     computationSnapshot: computationSnapshotFor(lines, context),
     calculatedAt: new Date().toISOString(),
   };
@@ -1263,7 +1736,7 @@ export function computationSnapshotFor(lines = [], context = {}) {
       version: step.version || formula?.version || '',
       expression: step.expression || formula?.expression || '',
       effectiveDate: step.effectiveDate || formula?.effectiveDate || '',
-      owner: step.formulaOwner || (formula?.isBuiltIn === false ? 'Company-defined' : 'Atlas standard'),
+      owner: step.formulaOwner || (formula?.scope === 'Client-specific' ? 'Client-specific' : formula?.isBuiltIn === false ? 'Company-defined' : 'Atlas standard'),
       evaluated: Boolean(step.evaluated),
     });
   }));
@@ -1286,7 +1759,7 @@ export function journalFor(result, payCodes = []) {
   const entries = [
     { account: glOf('PAY-BASIC', 'debitGl'), description: 'Salaries and wages', debit: totals.grossPay, credit: 0 },
     { account: '5300-100', description: 'Employer statutory contributions', debit: totals.statutoryEmployer, credit: 0 },
-    { account: '2110-100', description: 'Withholding tax payable', debit: 0, credit: totals.withholdingTax },
+    { account: '2110-100', description: 'Withholding tax payable', debit: 0, credit: round2(totals.withholdingTax + (totals.taxForecast || 0)) },
     { account: '2120-100', description: 'Statutory contributions payable (EE + ER)', debit: 0, credit: round2(totals.statutoryEmployee + totals.statutoryEmployer) },
     { account: '2130-100', description: 'Loan and deduction collections payable', debit: 0, credit: round2(totals.deductions + totals.loans) },
     { account: glOf('PAY-BASIC', 'creditGl'), description: 'Net pay payable', debit: 0, credit: totals.netPay },
@@ -1310,7 +1783,10 @@ export function bankFileFor(result) {
     .map(split => ({
       employeeCode: line.employeeCode, name: line.name,
       bankName: split.bankName, accountNumber: split.accountNumber,
-      currency, amount: convert(split.amount), baseAmount: round2(split.amount), share: `${split.percentOfNetPay}%`,
+      // A line paid in several currencies carries each split's own currency.
+      ...(split.currency
+        ? { currency: split.currency, amount: round2(split.amount), baseAmount: round2(split.baseAmount ?? split.amount), share: split.percentOfNetPay == null ? 'Full amount' : `${split.percentOfNetPay}% of PHP` }
+        : { currency, amount: convert(split.amount), baseAmount: round2(split.amount), share: `${split.percentOfNetPay}%` }),
     })));
 }
 
@@ -1320,11 +1796,37 @@ export function ytdContributionOf(line) {
     taxableEarnings: round2(line.basicPay + line.taxableEarnings + line.taxableBonus),
     basicEarnings: line.basicPay,
     nonTaxableEarnings: round2(line.nonTaxableEarnings + line.nonTaxableBonus),
-    bonusPaid: round2(line.nonTaxableBonus + line.taxableBonus),
-    taxWithheld: line.withholdingTax,
+    bonusPaid: round2(line.nonTaxableBonus + line.taxableBonus + (line.reclassifiedNonTaxable || 0)),
+    taxWithheld: round2(line.withholdingTax + (line.taxForecast || 0)),
     sss: line.statutory.sssEmployee,
     philhealth: line.statutory.philhealthEmployee,
     hdmf: line.statutory.hdmfEmployee,
     netPay: line.netPay,
   };
+}
+
+/** Which pay period of the year a transaction is, 1-based, from its period end. */
+export function periodNumberOf(transaction) {
+  const perYear = PERIODS_PER_YEAR[transaction.paymentMode] || 24;
+  const end = toIsoDate(transaction.periodEnd);
+  const month = Number(end.slice(5, 7)) || 1;
+  if (transaction.paymentMode === 'Monthly') return month;
+  if (transaction.paymentMode === 'Semi-monthly') return month * 2 - (transaction.frequency === 'First Half' ? 1 : 0);
+  const dayOfYear = Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${end.slice(0, 4)}-01-01T00:00:00Z`)) / 86400000) + 1;
+  return Math.min(perYear, Math.max(1, Math.ceil(dayOfYear / 365 * perYear)));
+}
+
+/* --------------------------------------------------------- assigned shift */
+
+/**
+ * The shift an employee works at the end of a period: the latest assignment that
+ * has started and not yet ended. Timekeeping owns the assignment; payroll only
+ * reads the hours it defines.
+ */
+export function shiftFor(assignments = [], employeeId, periodEnd) {
+  const at = toIsoDate(periodEnd);
+  return (assignments || [])
+    .filter(item => item.employeeId === employeeId && number(item.workHours) > 0)
+    .filter(item => (!item.startDate || toIsoDate(item.startDate) <= at) && (!item.endDate || toIsoDate(item.endDate) >= at))
+    .sort((left, right) => String(toIsoDate(right.startDate)).localeCompare(String(toIsoDate(left.startDate))))[0] || null;
 }

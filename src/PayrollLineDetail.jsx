@@ -26,7 +26,58 @@ import {
   SegmentedTabs,
 } from './HRMKit.jsx';
 import { downloadFile } from './fileDownload.js';
+import { formatUsDate } from './textFormat.js';
 import { buildPayrollAuditTrail, traceabilityForStep } from './payrollTraceability.js';
+import { formatCurrency } from './payrollCurrencies.js';
+import { readOperationalRowsForCompany } from './operationalStore.js';
+import { readActiveCompanyId } from './companyRepository';
+import { ytdContributionOf } from './payrollEngine.js';
+
+/** The Payslip Designer's seed template, used until the designer is opened. */
+const DEFAULT_PAYSLIP_TEMPLATE = { code: 'PSL-001', name: 'Standard Atlas Payslip', templateType: 'Standard', layout: 'Detailed', visibleFields: 'Earnings, Deductions, Net Pay, Bank', showYtd: 'Yes', eSignature: 'CFO Signature', status: 'Active' };
+// Names the transaction wizard offered before it read the designer.
+const LEGACY_TEMPLATES = {
+  'Compact Payslip': { layout: 'Compact', showYtd: 'No' },
+  'Detailed Payslip with YTD': { layout: 'Detailed', showYtd: 'Yes' },
+};
+
+/** Every payslip template the Payslip Designer holds for the company. */
+export function payslipTemplates(companyId = readActiveCompanyId()) {
+  let rows = [];
+  try { rows = readOperationalRowsForCompany('payslip', companyId, globalThis.localStorage, [2, 1]); } catch { rows = []; }
+  return rows.length ? rows : [DEFAULT_PAYSLIP_TEMPLATE];
+}
+
+/**
+ * The template a payslip is printed with: the one the transaction chose, or
+ * the company's Active template. Layout decides how much is itemised; Show YTD
+ * adds the year-to-date block; the e-signature signs the footer.
+ */
+export function payslipTemplateFor(run, companyId) {
+  const templates = payslipTemplates(companyId);
+  const chosen = templates.find(item => item.name === run?.config?.payslipTemplate)
+    || (LEGACY_TEMPLATES[run?.config?.payslipTemplate] && { ...DEFAULT_PAYSLIP_TEMPLATE, name: run.config.payslipTemplate, ...LEGACY_TEMPLATES[run.config.payslipTemplate] })
+    || templates.find(item => item.status === 'Active')
+    || DEFAULT_PAYSLIP_TEMPLATE;
+  return { ...DEFAULT_PAYSLIP_TEMPLATE, ...chosen };
+}
+
+const splitAmount = row => (row.currency ? formatCurrency(row.amount, row.currency, row.symbol) : peso(row.amount));
+const splitShare = row => (row.percentOfNetPay == null ? 'Full amount' : `${row.percentOfNetPay}%${row.currency ? ' of PHP' : ''}`);
+
+function CurrencyPayouts({ line }) {
+  if (!line.currencyPayouts) return null;
+  return <MiniTable
+    columns={[
+      { key: 'currency', label: 'Currency', render: row => `${row.currency} (${row.symbol})` },
+      { key: 'hours', label: 'Hours', align: 'right', render: row => row.hours || '—' },
+      { key: 'amount', label: 'Amount', align: 'right', render: row => formatCurrency(row.amount, row.currency, row.symbol) },
+      { key: 'rate', label: 'Rate used', align: 'right', render: row => (row.currency === 'PHP' ? '1.00' : row.rate) },
+      { key: 'phpAmount', label: 'PHP equivalent', align: 'right', render: row => peso(row.phpAmount) },
+    ]}
+    rows={line.currencyPayouts.map(row => ({ ...row, key: row.currency }))}
+  />;
+}
 
 export const peso = amount => `₱${(Number(amount) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const signed = amount => (Number(amount) < 0 ? `(${peso(Math.abs(amount))})` : peso(amount));
@@ -83,7 +134,7 @@ export function FormulaVersionsApplied({ run }) {
         { key: 'code', label: 'Code' },
         { key: 'name', label: 'Computation' },
         { key: 'version', label: 'Version', render: row => (row.version ? `v${row.version}` : 'Not recorded') },
-        { key: 'effectiveDate', label: 'Effective', render: row => row.effectiveDate || '—' },
+        { key: 'effectiveDate', label: 'Effective', render: row => formatUsDate(row.effectiveDate) || '—' },
         { key: 'owner', label: 'Owner' },
         { key: 'expression', label: 'Expression as applied', render: row => <code className="table-formula">{row.expression || 'Table lookup'}</code> },
       ]}
@@ -113,7 +164,7 @@ export function ComputationTrail({ steps = [] }) {
             {/* The version this line actually applied. Payroll must stay
                 explainable with the formula that was in force when it ran, not
                 with whatever the library publishes today. */}
-            {step.version && <code className="version-code-chip" title={`Computation version applied by this payroll line${step.effectiveDate ? `, effective ${step.effectiveDate}` : ''}`}>v{step.version}</code>}
+            {step.version && <code className="version-code-chip" title={`Computation version applied by this payroll line${step.effectiveDate ? `, effective ${formatUsDate(step.effectiveDate)}` : ''}`}>v{step.version}</code>}
             <strong>{step.label}</strong>
             <em>{step.category}</em>
           </span>
@@ -128,8 +179,10 @@ export function ComputationTrail({ steps = [] }) {
             </span>
             <span className="payroll-trail-source">
               {step.evaluated ? 'Evaluated from the Computational Basis library' : 'Resolved by lookup'} · Source: {step.source}
-              {step.version && ` · ${step.code} version ${step.version}${step.effectiveDate ? ` effective ${step.effectiveDate}` : ''}${step.formulaOwner ? ` · ${step.formulaOwner}` : ''}`}
+              {step.version && ` · ${step.code} version ${step.version}${step.effectiveDate ? ` effective ${formatUsDate(step.effectiveDate)}` : ''}${step.formulaOwner ? ` · ${step.formulaOwner}` : ''}`}
               {step.fallbackReason && ` · Library expression not used: ${step.fallbackReason}`}
+              {step.referenceVersion && ` · Reference table ${step.referenceVersion.code} effective ${formatUsDate(step.referenceVersion.effectiveDate)}`}
+              {step.rounding && ` · Rounding: ${step.rounding}`}
             </span>
             <span className="payroll-trail-references">
               <b>{trace.policyApplied ? 'Policy and UI audit references' : 'UI audit references'}</b>
@@ -171,7 +224,11 @@ export function SourcePolicyTrail({ line, run }) {
  * The payslip document. It is generated from the line rather than stored, and
  * printing writes the same rows the screen shows.
  */
-export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employee }) {
+export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employee, template }) {
+  const design = template || payslipTemplateFor(run);
+  const layout = design.layout || 'Detailed';
+  const showYtd = design.showYtd === 'Yes' && layout !== 'Compact';
+  const ytd = ytdContributionOf(line);
   const earnings = [
     { key: 'basic', label: 'Basic Pay', amount: line.basicPay },
     ...line.earnings.map((item, index) => ({ key: `e-${index}`, label: item.name, amount: item.amount })),
@@ -182,6 +239,7 @@ export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employ
     line.statutory.philhealthEmployee && { key: 'phic', label: 'PhilHealth (employee share)', amount: line.statutory.philhealthEmployee },
     line.statutory.hdmfEmployee && { key: 'hdmf', label: 'Pag-IBIG (employee share)', amount: line.statutory.hdmfEmployee },
     line.withholdingTax && { key: 'tax', label: 'Withholding tax', amount: line.withholdingTax },
+    line.taxForecast && { key: 'forecast', label: 'Forecast tax (withheld in advance)', amount: line.taxForecast },
     ...line.deductions.filter(item => item.deducted).map((item, index) => ({ key: `d-${index}`, label: item.name, amount: item.deducted })),
     ...line.loans.filter(item => item.deducted).map((item, index) => ({ key: `l-${index}`, label: item.name, amount: item.deducted })),
   ].filter(Boolean);
@@ -190,12 +248,12 @@ export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employ
     <header className="payslip-head">
       <div>
         <strong>{company}</strong>
-        <span>Payslip · {run.transactionNumber}</span>
+        <span>Payslip · {run.transactionNumber} · {design.name} ({layout})</span>
       </div>
       <div className="payslip-period">
         <span>Payroll period</span>
         <strong>{run.periodStart} to {run.periodEnd}</strong>
-        <span>Payout {run.payoutDate}</span>
+        <span>Payout {formatUsDate(run.payoutDate)}</span>
       </div>
     </header>
     <section className="payslip-identity">
@@ -203,10 +261,21 @@ export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employ
       <div><span>Employee no.</span><strong>{line.employeeCode}</strong></div>
       <div><span>Position</span><strong>{line.position}</strong></div>
       <div><span>Department</span><strong>{line.department}</strong></div>
-      <div><span>Pay type</span><strong>{line.payType}</strong></div>
-      <div><span>TIN</span><strong>{employee?.government?.tin || '—'}</strong></div>
+      {layout !== 'Compact' && <div><span>Pay type</span><strong>{line.payType}</strong></div>}
+      {layout !== 'Compact' && <div><span>TIN</span><strong>{employee?.government?.tin || '—'}</strong></div>}
     </section>
-    <div className="payslip-columns">
+    {layout === 'Compact' ? <div className="payslip-compact">
+      <MiniTable
+        columns={[{ key: 'label', label: 'Summary' }, { key: 'amount', label: 'Amount', align: 'right', render: row => peso(row.amount) }]}
+        rows={[
+          { key: 'gross', label: 'Gross pay', amount: line.grossPay },
+          { key: 'statutory', label: 'SSS, PhilHealth and Pag-IBIG', amount: line.statutory.employeeTotal },
+          { key: 'tax', label: 'Withholding tax', amount: line.withholdingTax },
+          ...(line.taxForecast ? [{ key: 'forecast', label: 'Forecast tax (withheld in advance)', amount: line.taxForecast }] : []),
+          { key: 'other', label: 'Other deductions and loans', amount: Math.round((line.totalDeductions - line.statutory.employeeTotal - line.withholdingTax - (line.taxForecast || 0)) * 100) / 100 },
+        ]}
+      />
+    </div> : <div className="payslip-columns">
       <section>
         <h4>Earnings</h4>
         <MiniTable
@@ -223,23 +292,39 @@ export function PayslipDocument({ line, run, company = 'ABC Company Ltd', employ
         />
         <p className="payslip-total"><span>Total deductions</span><strong>{peso(line.totalDeductions)}</strong></p>
       </section>
-    </div>
+    </div>}
     <p className="payslip-net"><span>Net pay</span><strong>{peso(line.netPay)}</strong></p>
+    {line.currencyPayouts && <section className="payslip-banks">
+      <h4>Paid in</h4>
+      <CurrencyPayouts line={line} />
+    </section>}
     {line.bankSplits.length > 0 && <section className="payslip-banks">
       <h4>Credited to</h4>
       <MiniTable
         columns={[
           { key: 'bankName', label: 'Bank' },
           { key: 'accountNumber', label: 'Account' },
-          { key: 'percentOfNetPay', label: 'Share', render: row => `${row.percentOfNetPay}%` },
-          { key: 'amount', label: 'Amount', align: 'right', render: row => peso(row.amount) },
+          { key: 'percentOfNetPay', label: 'Share', render: splitShare },
+          { key: 'amount', label: 'Amount', align: 'right', render: splitAmount },
         ]}
         rows={line.bankSplits.map((row, index) => ({ ...row, key: `bank-${index}` }))}
       />
     </section>}
+    {showYtd && <section className="payslip-banks">
+      <h4>Year to date</h4>
+      <MiniTable
+        columns={[{ key: 'label', label: 'Balance' }, { key: 'amount', label: 'Including this payslip', align: 'right', render: row => peso(row.amount) }]}
+        rows={[
+          { key: 'taxable', label: 'Taxable earnings', amount: (Number(employee?.ytd?.taxableEarnings) || 0) + ytd.taxableEarnings },
+          { key: 'tax', label: 'Tax withheld', amount: (Number(employee?.ytd?.taxWithheld) || 0) + ytd.taxWithheld },
+          { key: 'contributions', label: 'SSS, PhilHealth and Pag-IBIG', amount: (Number(employee?.ytd?.sss) || 0) + (Number(employee?.ytd?.philhealth) || 0) + (Number(employee?.ytd?.hdmf) || 0) + ytd.sss + ytd.philhealth + ytd.hdmf },
+        ]}
+      />
+    </section>}
     <footer className="payslip-foot">
-      <span>Employer statutory cost this period: {peso(line.statutory.employerTotal)}</span>
-      <span>Tax basis: {line.taxBasis}</span>
+      {layout === 'Detailed' && <span>Employer statutory cost this period: {peso(line.statutory.employerTotal)}</span>}
+      {layout !== 'Compact' && <span>Tax basis: {line.taxBasis}</span>}
+      {design.eSignature && <span>Signed: {design.eSignature}</span>}
     </footer>
   </div>;
 }
@@ -319,7 +404,8 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
     { label: 'Gross pay', value: peso(line.grossPay) },
     { label: 'Statutory (EE)', value: peso(line.statutory.employeeTotal) },
     { label: 'Withholding tax', value: peso(line.withholdingTax) },
-    { label: 'Deductions & loans', value: peso(line.totalDeductions - line.statutory.employeeTotal - line.withholdingTax) },
+    ...(line.taxForecast ? [{ label: 'Forecast tax', value: peso(line.taxForecast) }] : []),
+    { label: 'Deductions & loans', value: peso(line.totalDeductions - line.statutory.employeeTotal - line.withholdingTax - (line.taxForecast || 0)) },
     { label: 'Net pay', value: peso(line.netPay), tone: 'up' },
   ];
 
@@ -425,7 +511,9 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
             { key: 't2', label: 'Less non-taxable earnings and bonuses', value: signed(-(line.nonTaxableEarnings + line.nonTaxableBonus)) },
             { key: 't3', label: 'Less allowable statutory deductions', value: signed(-line.statutory.employeeTotal) },
             { key: 't4', label: 'Taxable income', value: peso(line.taxableIncome) },
-            { key: 't5', label: 'Tax table applied', value: line.taxBasis },
+            { key: 't5', label: 'Tax table applied', value: `${line.taxBasis}${line.taxTable ? ` · ${line.taxTable.code} (effective ${formatUsDate(line.taxTable.effectiveDate)})` : ''}` },
+            { key: 't7', label: 'All tables used', value: Object.entries(line.tablesUsed || {}).map(([agency, table]) => `${agency} ${table.code}`).join(' · ') || '—' },
+            { key: 't8', label: 'Rounding', value: line.rounding || '—' },
             { key: 't6', label: 'Withholding tax', value: peso(line.withholdingTax) },
           ]}
         />
@@ -448,6 +536,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
             { key: 'due', label: 'Scheduled', align: 'right', render: row => peso(row.due) },
             { key: 'deducted', label: 'Collected', align: 'right', render: row => peso(row.deducted) },
             { key: 'deferred', label: 'Deferred', align: 'right', render: row => peso(row.deferred) },
+            { key: 'timesDeferred', label: 'Times deferred', render: row => (row.timesDeferred ? `${row.timesDeferred}× · last ${row.lastDeferredPeriod} · first due ${formatUsDate(row.originalDueDate)}` : '—') },
             { key: 'remaining', label: 'Balance after', align: 'right', render: row => peso(row.remaining) },
           ]}
           rows={line.deductions.map((item, index) => ({ ...item, key: `ded-${index}` }))}
@@ -487,7 +576,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
       </div>
       <MiniTable
         columns={[
-          { key: 'date', label: 'Date' },
+          { key: 'date', label: 'Date', render: row => formatUsDate(row.date) },
           { key: 'status', label: 'Status' },
           { key: 'timeIn', label: 'Time in' },
           { key: 'timeOut', label: 'Time out' },
@@ -504,14 +593,18 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
     </section>}
 
     {tab === 'payout' && <>
+      {line.currencyPayouts && <section className="hrm-section">
+        <h3 className="hrm-section-title">Net pay by currency</h3>
+        <CurrencyPayouts line={line} />
+      </section>}
       <section className="hrm-section">
         <h3 className="hrm-section-title">Crediting instruction</h3>
         <MiniTable
           columns={[
             { key: 'bankName', label: 'Bank' },
             { key: 'accountNumber', label: 'Account number' },
-            { key: 'percentOfNetPay', label: 'Share of net pay', render: row => `${row.percentOfNetPay}%` },
-            { key: 'amount', label: 'Amount', align: 'right', render: row => peso(row.amount) },
+            { key: 'percentOfNetPay', label: 'Share of net pay', render: splitShare },
+            { key: 'amount', label: 'Amount', align: 'right', render: splitAmount },
           ]}
           rows={line.bankSplits.map((row, index) => ({ ...row, key: `split-${index}` }))}
           empty="No bank account is recorded on this employee's masterfile."
@@ -528,7 +621,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
           ]}
           rows={[
             { key: 'y1', label: 'Taxable earnings', opening: peso(ytdOpening?.taxableEarnings), thisRun: peso(line.basicPay + line.taxableEarnings + line.taxableBonus), closing: peso((ytdOpening?.taxableEarnings || 0) + line.basicPay + line.taxableEarnings + line.taxableBonus) },
-            { key: 'y2', label: 'Tax withheld', opening: peso(ytdOpening?.taxWithheld), thisRun: peso(line.withholdingTax), closing: peso((ytdOpening?.taxWithheld || 0) + line.withholdingTax) },
+            { key: 'y2', label: 'Tax withheld', opening: peso(ytdOpening?.taxWithheld), thisRun: peso(line.withholdingTax + (line.taxForecast || 0)), closing: peso((ytdOpening?.taxWithheld || 0) + line.withholdingTax + (line.taxForecast || 0)) },
             { key: 'y3', label: 'SSS contributions', opening: peso(ytdOpening?.sss), thisRun: peso(line.statutory.sssEmployee), closing: peso((ytdOpening?.sss || 0) + line.statutory.sssEmployee) },
             { key: 'y4', label: 'PhilHealth contributions', opening: peso(ytdOpening?.philhealth), thisRun: peso(line.statutory.philhealthEmployee), closing: peso((ytdOpening?.philhealth || 0) + line.statutory.philhealthEmployee) },
             { key: 'y5', label: 'Pag-IBIG contributions', opening: peso(ytdOpening?.hdmf), thisRun: peso(line.statutory.hdmfEmployee), closing: peso((ytdOpening?.hdmf || 0) + line.statutory.hdmfEmployee) },

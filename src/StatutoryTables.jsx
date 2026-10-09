@@ -37,6 +37,9 @@ import { STATUTORY_STORAGE_KEY, versionUsage } from './statutoryService';
 import { agencyDefinitions, agencyGroups, seedStatutoryData as seedData } from './statutorySchedules';
 import { useRole } from './RoleContext';
 import { visibleTiles } from './moduleAccess';
+import { PayrollDashboard } from './PayrollDashboard.jsx';
+import { rejectUpload } from './uploadErrorLog.js';
+import { DateInput } from './DateInput.jsx';
 
 const STORAGE_KEY = STATUTORY_STORAGE_KEY;
 
@@ -109,7 +112,7 @@ function HubCard({ icon: Icon, label, detail, enabled, onClick }) {
 export function SettingsHub({ onOpen, onOpenTax, onOpenReference, onOpenComputationLibrary, onOpenWorkspace }) {
   const { role } = useRole();
   const cards = [
-    { icon: Buildings, label: 'Company Onboarding', detail: 'Register, verify and import startup/YTD data', handler: () => onOpenWorkspace('onboarding') },
+    { icon: Buildings, label: 'Company Onboarding', detail: 'Set up, verify and import startup/YTD data', handler: () => onOpenWorkspace('onboarding') },
     { icon: ArrowLeft, label: 'Company Offboarding', detail: 'Export data and manage company deactivation', handler: () => onOpenWorkspace('offboarding') },
     { icon: Function, label: 'Standard Computation Library', detail: 'Controlled payroll formulas and test calculations', handler: onOpenComputationLibrary },
     { icon: Scales, label: 'Statutory Table', detail: 'SSS, PhilHealth, Pag-IBIG and De Minimis versions', handler: onOpen },
@@ -138,6 +141,8 @@ export function PayrollHub({ onOpen, onOpenTax, onOpenPolicyManagement, onOpenWo
     { icon: MinusCircle, label: 'Deduction Management', detail: 'Track employee deductions, schedules and balances', handler: () => onOpenWorkspace('deductions') },
     { icon: PlusCircle, label: 'Bonus Management', detail: 'Schedule and process 13th month, performance and retention bonuses', handler: () => onOpenWorkspace('bonuses') },
     { icon: Hash, label: 'Paycode Management', detail: 'Payroll code library, classifications and GL mapping', handler: () => onOpenWorkspace('payCodes') },
+    { icon: Receipt, label: 'Fringe Benefits (FBT)', detail: 'Benefits to managerial staff, the 35% FBT and the quarterly 1603Q', handler: () => onOpenWorkspace('fringeBenefits') },
+    { icon: PlusCircle, label: 'SSS Maternity and Sickness', detail: 'Benefit estimates from approved leave and the employer salary differential', handler: () => onOpenWorkspace('sssBenefits') },
     { icon: PaperPlaneTilt, label: 'Remittance Monitoring', detail: 'Track government filings and receipts against posted payouts', handler: () => onOpenWorkspace('remittance') },
     { icon: Receipt, label: 'Payroll Processing', detail: 'Create, recalculate, approve, post and lock payroll', handler: () => onOpenWorkspace('transactions') },
     { icon: Scales, label: 'Policy Management', detail: 'Manage effective-dated policies, versions, applicability and payroll usage locks', handler: onOpenPolicyManagement },
@@ -151,6 +156,7 @@ export function PayrollHub({ onOpen, onOpenTax, onOpenPolicyManagement, onOpenWo
   ];
   return <div className="platform-hub page-content">
     <section className="hero-card payroll-hero"><p className="eyebrow">Operations workspace</p><h1>Payroll</h1><p>Process payroll and use the approved company configuration.</p></section>
+    <PayrollDashboard onOpenWorkspace={onOpenWorkspace} />
     <section className="platform-grid">{visibleTiles(role, cards).map(card => <HubCard key={card.label} icon={card.icon} label={card.label} detail={card.detail} enabled onClick={card.handler} />)}</section>
   </div>;
 }
@@ -311,6 +317,15 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
         });
         return item;
       });
+      const errors = [];
+      rows.forEach((item, index) => {
+        def.fields.forEach(([key, label, type]) => {
+          if (!['text', 'select'].includes(type) && Number.isNaN(Number(item[key]))) errors.push({ row: index + 2, field: label, reason: 'Must be a number.' });
+        });
+        if ('minimum' in item && 'maximum' in item && Number(item.maximum) > 0 && Number(item.minimum) > Number(item.maximum)) errors.push({ row: index + 2, field: 'Minimum', value: item.minimum, reason: 'The minimum cannot be higher than the maximum.' });
+      });
+      if (!rows.length) errors.push({ reason: 'The file has no data rows.' });
+      if (errors.length) { rejectUpload(file.name, errors, notify); return; }
       setDraft(previous => ({ ...previous, rows }));
       notify({ type: 'success', message: `${rows.length} ${def.short} rows imported for review.` });
     };
@@ -341,7 +356,7 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
         {mode === 'settings' && <button className="inline-back" onClick={() => { setSelectedId(null); setDraft(null); }}><ArrowLeft /> {def.short} versions</button>}
         <div className="page-heading"><div><p className="breadcrumb">{mode === 'settings' ? 'Settings' : 'Payroll'} / {groupTitle} / {def.short}</p><h1>{def.name}</h1><p className="page-description">{mode === 'settings' ? `Add or revise ${isTaxGroup ? 'tax brackets and rates' : 'contribution brackets'} before activating this version.` : 'View the active table used by the current payroll computation.'}</p></div>{mode === 'payroll' && <span className="controlled-badge"><CheckCircle weight="fill" /> Active approved version</span>}</div>
         <section className="statutory-version-meta">
-          {mode === 'settings' ? <><label>Code<input value={draft.code} disabled /></label><label>Table Name<input value={draft.name || def.name} onChange={event => setDraft({ ...draft, name: event.target.value })} disabled={!canEdit || locked} /></label><label>Effective Date<input type="date" value={draft.effectiveDate} onChange={event => setDraft({ ...draft, effectiveDate: event.target.value })} disabled={!canEdit || locked} /></label><label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })} disabled={!canEdit || locked}><option>Draft</option><option>Active</option><option>Inactive</option></select></label></> : <><span><small>Effective</small><strong>{activeVersion.effectiveDate}</strong></span><span><small>Version</small><strong>{activeVersion.code}</strong></span><span><small>Status</small><strong>Active</strong></span></>}
+          {mode === 'settings' ? <><label>Code<input value={draft.code} disabled /></label><label>Table Name<input value={draft.name || def.name} onChange={event => setDraft({ ...draft, name: event.target.value })} disabled={!canEdit || locked} /></label><label>Effective Date<DateInput value={draft.effectiveDate} onChange={value => setDraft({ ...draft, effectiveDate: value })} disabled={!canEdit || locked} /></label><label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })} disabled={!canEdit || locked}><option>Draft</option><option>Active</option><option>Inactive</option></select></label></> : <><span><small>Effective</small><strong>{activeVersion.effectiveDate}</strong></span><span><small>Version</small><strong>{activeVersion.code}</strong></span><span><small>Status</small><strong>Active</strong></span></>}
         </section>
         <section className="statutory-table-section"><div className="workspace-copy"><h2>{def.name}</h2><p>{mode === 'settings' ? (isTaxGroup ? 'Tax brackets, rates and fixed amounts.' : 'Contribution brackets and employee/employer shares.') : 'Approved brackets are read-only in Payroll.'}</p></div>{renderTable(tableVersion)}</section>
         {mode === 'settings' && (locked

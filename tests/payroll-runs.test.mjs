@@ -176,14 +176,14 @@ test('only the most recent regular transaction can be re-opened', () => {
   const older = { ...compute(makeRun()), id: 'run-older', payoutDate: '2025-10-31', status: 'Posted' };
   const newer = { ...compute(makeRun()), id: 'run-newer', payoutDate: '2025-11-30', status: 'Posted' };
   const runs = [older, newer];
-  assert.match(applyAction(older, 'reopen', { runs }).error, /most recent regular/);
-  assert.equal(applyAction(newer, 'reopen', { runs }).run.status, 'Open');
+  assert.match(applyAction(older, 'reopen', { runs, isPaAdmin: true }).error, /most recent regular/);
+  assert.equal(applyAction(newer, 'reopen', { runs, isPaAdmin: true }).run.status, 'Open');
 });
 
 test('any special transaction can be re-opened, because they carry no ordering', () => {
   const older = { ...compute(makeRun({ payrollType: 'Special' })), id: 'sp-1', payoutDate: '2025-09-30', status: 'Posted' };
   const newer = { ...compute(makeRun({ payrollType: 'Special' })), id: 'sp-2', payoutDate: '2025-11-30', status: 'Posted' };
-  assert.equal(applyAction(older, 'reopen', { runs: [older, newer] }).run.status, 'Open');
+  assert.equal(applyAction(older, 'reopen', { runs: [older, newer], isPaAdmin: true }).run.status, 'Open');
 });
 
 test('a posted or locked transaction cannot be cancelled', () => {
@@ -205,9 +205,20 @@ test('the action list a status offers matches what the status machine will accep
   });
 });
 
-test('a locked transaction offers no action at all', () => {
+test('a locked transaction offers nothing to anyone but the super admin', () => {
   const locked = { ...compute(makeRun()), status: 'Locked' };
-  assert.equal(actionsFor(locked, [locked], { canReopen: true }).length, 0);
+  const offered = actionsFor(locked, [locked], { canReopen: true }).filter(action => !action.disabled);
+  assert.equal(offered.length, 0);
+  assert.equal(applyAction(locked, 'reopen', { runs: [locked] }).error.includes('only the super admin'), true);
+  const forAdmin = actionsFor(locked, [locked], { canReopen: true, isPaAdmin: true }).filter(action => !action.disabled);
+  assert.deepEqual(forAdmin.map(action => action.key), ['reopen']);
+  assert.equal(applyAction(locked, 'reopen', { runs: [locked], isPaAdmin: true }).run.status, 'Open');
+});
+
+test('a posted transaction can be re-opened only by the super admin', () => {
+  const posted = { ...compute(makeRun()), status: 'Posted' };
+  assert.match(applyAction(posted, 'reopen', { runs: [posted] }).error, /only the super admin/);
+  assert.equal(applyAction(posted, 'reopen', { runs: [posted], isPaAdmin: true }).run.status, 'Open');
 });
 
 test('the status tab strip covers every status the machine can reach', () => {
