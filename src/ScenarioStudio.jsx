@@ -972,7 +972,7 @@ async function performHumanStage(document, stage, report, pace = 1) {
   if (['reject', 'approve', 'payroll-submit'].includes(action)) {
     const rowActions = findControl(document, 'Row actions');
     if (rowActions) { report('Hovering over the transaction actions menu…'); await actOn(document, rowActions, 'click', pace); }
-    const labels = action === 'reject' ? ['Reject'] : action === 'approve' ? ['Approve', 'Post'] : ['Post as Draft', 'Submit for Review', 'Submit for Approval'];
+    const labels = action === 'reject' ? ['Reject'] : action === 'approve' ? ['Approve', 'Post'] : ['Save as Draft', 'Submit for Review', 'Submit for Approval'];
     const target = labels.map(label => findControl(document, label)).find(Boolean);
     if (target) { report(`Selecting ${cleanText(target.textContent)}…`); await actOn(document, target, 'click', pace); }
     const remarks = visibleFieldByLabel(document, 'Remarks') || visibleFieldByLabel(document, 'Approver remarks');

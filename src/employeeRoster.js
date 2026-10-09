@@ -65,6 +65,8 @@ const bank = (bankName, accountNumber, percentOfNetPay, isDefault = false) => ({
  * `taxableEarnings` are what annualisation and BIR 2316 read.
  */
 export const YTD_MONTHS_ELAPSED = 10;
+/** The date the roster's seeded year-to-date balances run through (10 months of 2025). */
+export const YTD_AS_OF = '2025-10-31';
 const STATUTORY_YTD_DATE = '2025-01-01';
 
 function ytdFor(pay, { months = YTD_MONTHS_ELAPSED, deMinimisMonthly = 2700, taxableAllowanceMonthly = 1500 } = {}) {
@@ -93,6 +95,7 @@ function ytdFor(pay, { months = YTD_MONTHS_ELAPSED, deMinimisMonthly = 2700, tax
 }
 
 const classifications = (overrides = {}) => ({
+  timekeepingExempt: 'No',
   absenceClassification: 'Non-exempt',
   tardinessClassification: 'Non-exempt',
   undertimeClassification: 'Non-exempt',
@@ -126,13 +129,14 @@ const rosterDefinitions = [
     reason: 'Retirement', reasonForLeaving: 'Retirement', birSeparationReason: '', memberPlan: 'Company plan member',
     monthlyBasic: 85000, average36Months: 82000,
     payroll: {
+      funds: ['PF-001', 'PEN-001'],
       paymentMode: 'Semi-monthly', ...rates({ monthlyBasic: 85000 }), monthlyBasic: 85000,
       mwe: 'No', ecolaPerDay: 0, mweRegion: '', mweSector: '', grossUp: 'No', currency: 'PHP',
       taxType: 'Compensation', taxExemptionCode: 'S',
       ...statutorySwitches(), ...classifications(),
       hdmfEmployeeContribution: 500, hdmfEmployerContribution: 200,
     },
-    government: { sss: '34-1234567-1', philhealth: '19-050123456-1', hdmf: '1211-0001-0001', tin: '221-334-556-000', rdo: '047', sssLoanLocator: '' },
+    government: { sss: '34-1234567-1', philhealth: '19-050123456-1', hdmf: '1211-0001-0001', mp2: '1040-0012-3456', tin: '221-334-556-000', rdo: '047', sssLoanLocator: '' },
     banks: [bank('BDO Unibank', '••••8472', 100, true)],
     previousEmployer: null,
     earningAmounts: { 47218663: 3000, 47218664: 1500, 47218656: 2000 },
@@ -151,6 +155,7 @@ const rosterDefinitions = [
     reason: 'Retirement', reasonForLeaving: 'Retirement', birSeparationReason: '', memberPlan: 'Statutory plan member',
     monthlyBasic: 62000, average36Months: 60000,
     payroll: {
+      funds: ['PF-001'],
       paymentMode: 'Semi-monthly', ...rates({ monthlyBasic: 62000 }), monthlyBasic: 62000,
       mwe: 'No', ecolaPerDay: 0, mweRegion: '', mweSector: '', grossUp: 'No', currency: 'PHP',
       taxType: 'Compensation', taxExemptionCode: 'S',
@@ -328,6 +333,37 @@ const rosterDefinitions = [
     previousEmployer: null,
     earningAmounts: { 47218663: 800, 47218664: 400, 47218656: 600 },
     finalPay: { unpaidSalary: 5200, thirteenthMonth: 6100, silConversion: 1400, convertibleLeave: 700, offsetAmounts: { 'GL-001': 1200, 'CL-001': 0, 'DED-001': 0 } },
+  },
+  {
+    // A consultant paid monthly through payroll whose fees are not
+    // compensation: no SSS, PhilHealth or Pag-IBIG, and expanded withholding
+    // tax under ATC WI010 (professional fees) instead of the compensation
+    // table — the rate comes from the Expanded Tax table. Paid on a
+    // Monthly run, so the semi-monthly runs never include her.
+    employeeId: 'EMP-1009', employeeCode: '0000112352', code: '0000112352', name: 'Andrea Villanueva', initials: 'AV',
+    position: 'Payroll Systems Consultant', department: 'Finance', division: 'Corporate Services', section: 'Payroll',
+    site: 'Head Office', costCenter: 'CC-FIN-01', jobLevel: 'Consultant', group: 'Consultants',
+    employmentType: 'Project-based Consultant', employmentStatus: 'Active', employeeTagging: 'Consultant',
+    managerId: 'EMP-1001', shiftId: 'shift-morning',
+    dateOfBirth: '1988-09-02', dateHired: `${YEAR}-06-01`, regularizationDate: '',
+    dateHold: '', endDateHold: '', holdReason: '', continueStatutoryOnHold: 'No',
+    rehired: false, priorServiceYears: 0, breakMonths: 0,
+    dateSeparated: '', separationDate: '', retirementDate: '',
+    reason: '', reasonForLeaving: '', birSeparationReason: '', memberPlan: 'Not a plan member',
+    monthlyBasic: 60000, average36Months: 60000,
+    ytdMonths: 0,
+    payroll: {
+      paymentMode: 'Monthly', ...rates({ monthlyBasic: 60000 }), monthlyBasic: 60000,
+      mwe: 'No', ecolaPerDay: 0, mweRegion: '', mweSector: '', grossUp: 'No', currency: 'PHP',
+      taxType: 'Expanded', atc: 'WI010', taxExemptionCode: '',
+      ...statutorySwitches({ withSss: 'No', withPhilhealth: 'No', withHdmf: 'No', withSssWisp: 'No' }), ...classifications(),
+      hdmfEmployeeContribution: 0, hdmfEmployerContribution: 0,
+    },
+    government: { sss: '', philhealth: '', hdmf: '', tin: '305-114-882-000', rdo: '050', sssLoanLocator: '' },
+    banks: [bank('BDO Unibank', '••••9031', 100, true)],
+    previousEmployer: null,
+    earningAmounts: {},
+    finalPay: { unpaidSalary: 0, thirteenthMonth: 0, silConversion: 0, convertibleLeave: 0, offsetAmounts: {} },
   },
 ];
 

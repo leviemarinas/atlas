@@ -53,9 +53,9 @@ function sourceReference(step) {
     const target = step.category === 'Basic Pay' ? PAYROLL_UI_PATHS.salaryBasic : step.category === 'Earnings' ? PAYROLL_UI_PATHS.salaryEarnings : PAYROLL_UI_PATHS.salaryStatutory;
     return ref('Employee value', 'Employee effective-dated salary information', target);
   }
-  if (source === 'Earning Management') return ref('Input register', 'Company earning assignment', PAYROLL_UI_PATHS.earningRegister);
-  if (source === 'Deduction Management') return ref('Input register', 'Company deduction schedule', PAYROLL_UI_PATHS.deductionRegister);
-  if (source === 'Bonus Management') return ref('Input register', 'Bonus configuration', PAYROLL_UI_PATHS.bonusRegister);
+  if (source === 'Earning Management') return ref('Input records', 'Company earning assignment', PAYROLL_UI_PATHS.earningRegister);
+  if (source === 'Deduction Management') return ref('Input records', 'Company deduction schedule', PAYROLL_UI_PATHS.deductionRegister);
+  if (source === 'Bonus Management') return ref('Input records', 'Bonus configuration', PAYROLL_UI_PATHS.bonusRegister);
   if (source === 'Company Loan Management') return ref('Loan schedule', 'Approved company loan configuration', PAYROLL_UI_PATHS.companyLoan);
   if (source === 'Government Loan Management') return ref('Loan schedule', 'Approved government loan configuration', PAYROLL_UI_PATHS.governmentLoan);
   if (source.includes('SSS') || source.includes('PhilHealth') || source.includes('Pag-IBIG') || source.includes('De Minimis')) return ref('Effective reference', source, PAYROLL_UI_PATHS.statutory);
@@ -140,16 +140,16 @@ export function buildPayrollAuditTrail(line, run) {
     auditNode('time', 'Transactional source', 'Read approved timekeeping', 'Used', PAYROLL_UI_PATHS.attendance,
       `${line.attendance?.daysWorked || 0} rendered days · ${line.attendance?.overtimeHours || 0} approved OT hours · ${line.attendance?.tardinessMinutes || 0} late minutes`,
       'Attendance-priced earnings and deductions', steps.filter(step => /^(ERN-002|ERN-003|ERN-006|DED-00)/.test(step.code)).map(step => step.code)),
-    auditNode('earnings', 'Input register', 'Read employee and company earnings', earningAmount ? 'Used' : 'No applicable rows', PAYROLL_UI_PATHS.earningRegister,
+    auditNode('earnings', 'Input records', 'Read employee and company earnings', earningAmount ? 'Used' : 'No applicable rows', PAYROLL_UI_PATHS.earningRegister,
       `${(line.earnings || []).length} applicable ${plural((line.earnings || []).length, 'earning row')}`, `${money(earningAmount)} added outside basic pay`, steps.filter(step => /^(ERN-|DMN-|RCL-)/.test(step.code)).map(step => step.code)),
-    auditNode('deductions', 'Input register', 'Read company deduction configuration', (line.deductions || []).length ? 'Used' : 'No applicable rows', PAYROLL_UI_PATHS.deductionRegister,
+    auditNode('deductions', 'Input records', 'Read company deduction configuration', (line.deductions || []).length ? 'Used' : 'No applicable rows', PAYROLL_UI_PATHS.deductionRegister,
       deductionRows.length ? deductionRows.join(' · ') : '0 applicable company deduction rows', `${money(deductionDue - loanDue)} scheduled before policy adjustment`, (line.deductions || []).map(item => item.code).filter(Boolean)),
-    auditNode('loans', 'Input register', 'Read approved loan configurations and schedules', (line.loans || []).length ? 'Used' : 'No active schedule', loanPath,
+    auditNode('loans', 'Input records', 'Read approved loan configurations and schedules', (line.loans || []).length ? 'Used' : 'No active schedule', loanPath,
       loanRows.length ? loanRows.join(' · ') : 'Company and government loan schedules checked; no active authorised schedule was due', `${money(loanDue)} scheduled for this cutoff`, (line.loans || []).map(item => item.code).filter(Boolean)),
     auditNode('references', 'Reference source', 'Resolve named formula reference sources', referenceCodes.length ? 'Used' : 'Checked', PAYROLL_UI_PATHS.formulaReference,
       referenceCodes.length ? referenceCodes.join(' · ') : 'No additional effective reference was required by the assigned formulas',
       'Versioned values passed to the governed computation steps'),
-    auditNode('reference-register', 'Reference register', 'Cross-check shared company reference values', 'Checked', PAYROLL_UI_PATHS.reference,
+    auditNode('reference-register', 'Reference records', 'Cross-check shared company reference values', 'Checked', PAYROLL_UI_PATHS.reference,
       'Company-wide reference values linked by the formula reference source',
       'Resolved reference ownership without duplicating the source record'),
     auditNode('assignment', 'Company assignment', 'Resolve computations assigned to this employee and frequency', 'Used', PAYROLL_UI_PATHS.assignment,

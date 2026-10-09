@@ -47,6 +47,7 @@ import {
   computationByCode,
   evaluateExpression,
   fieldMap,
+  parameterValueProblem,
   resolvedFields,
   usedComputations,
 } from './computationCatalog.js';
@@ -75,6 +76,7 @@ export const ENGINE_SUPPLIED_FIELDS = Object.freeze([
   'late_minutes',
   'undertime_minutes',
   'ot_hours',
+  'night_hours',
   'ot_rate',
   'holiday_hours',
   'holiday_rate',
@@ -294,6 +296,38 @@ export function normalizeBindings(record = {}, library = [], configFields = []) 
   return Object.fromEntries(tokens.map(token => [token, stored[token] || defaultBindingForToken(token, configFields)]));
 }
 
+/* ------------------------------------------------------ effective values */
+
+/**
+ * The value a fixed binding held on a date.
+ *
+ * A client changing an approved value does not overwrite it: the binding keeps
+ * `valueHistory`, one `{ value, effectiveDate }` per change, so a payroll whose
+ * payout date falls before the change still computes with the value in force
+ * then. Without a date, or without history, the current value applies.
+ */
+export function fixedValueAsOf(binding = {}, asOf = '') {
+  const history = Array.isArray(binding.valueHistory) ? binding.valueHistory : [];
+  if (!asOf || !history.length) return binding.value;
+  const sorted = [...history].sort((left, right) => String(left.effectiveDate || '').localeCompare(String(right.effectiveDate || '')));
+  const inForce = sorted.filter(entry => !entry.effectiveDate || String(entry.effectiveDate) <= String(asOf));
+  return (inForce[inForce.length - 1] || sorted[0]).value;
+}
+
+/**
+ * A fixed binding carrying a new value from an effective date, with the value
+ * it replaces kept. The first change also records the value that applied
+ * before it, from the beginning, so the history reads as one timeline.
+ */
+export function withFixedValueChange(binding = {}, { value, effectiveDate = '' } = {}) {
+  const history = Array.isArray(binding.valueHistory) && binding.valueHistory.length
+    ? binding.valueHistory
+    : [{ value: String(binding.value ?? ''), effectiveDate: '' }];
+  const next = [...history.filter(entry => String(entry.effectiveDate || '') !== String(effectiveDate)), { value: String(value), effectiveDate }]
+    .sort((left, right) => String(left.effectiveDate || '').localeCompare(String(right.effectiveDate || '')));
+  return { ...binding, kind: 'fixed', value: String(next[next.length - 1].value), valueHistory: next };
+}
+
 /* ------------------------------------------------------------- resolution */
 
 /**
@@ -302,8 +336,11 @@ export function normalizeBindings(record = {}, library = [], configFields = []) 
  * `entries` is what both the binding table and the payroll "how was this figure
  * reached?" panel render, so a reviewer sees `{{allowance_unit_rate}} = 150 ·
  * This configuration › Default Amount` rather than an unexplained 150.
+ *
+ * `asOf` is the payout date: a fixed value a client changed from a later date
+ * does not reach a payroll paid before it.
  */
-export function resolveBindingValues({ record = {}, library = [], runtime = {}, references = [], configFields = [] } = {}) {
+export function resolveBindingValues({ record = {}, library = [], runtime = {}, references = [], configFields = [], asOf = '' } = {}) {
   const bindings = normalizeBindings(record, library, configFields);
   // The engine has no field catalogue to hand, so an unlabelled key still reads
   // as the field it names rather than as `undefined`.
@@ -347,7 +384,7 @@ export function resolveBindingValues({ record = {}, library = [], runtime = {}, 
         problem: resolved.reason,
       };
     }
-    const value = numericFromText(binding.value);
+    const value = numericFromText(fixedValueAsOf(binding, asOf));
     return {
       ...base,
       value: value ?? 0,
@@ -384,13 +421,39 @@ export function bindingProblems({ record = {}, library = [], references = [], co
 }
 
 /**
+ * Values on this configuration outside the range P&A approved for the bound
+ * formula. Checked at save for every role: P&A sets the range, and a P&A
+ * configuration has to sit inside it too.
+ */
+export function parameterValueProblems({ record = {}, library = [], configFields = [] } = {}) {
+  const code = String(record.computationCode || '').trim().toUpperCase();
+  if (!code) return [];
+  const computation = computationByCode(code, library);
+  if (!computation) return [];
+  const bindings = normalizeBindings(record, library, configFields);
+  const labelOf = key => configFields.find(field => field.key === key)?.label || key;
+  return Object.entries(computation.parameters || {}).flatMap(([token, definition]) => {
+    const binding = bindings[token];
+    if (binding?.kind === 'fixed') {
+      const problem = parameterValueProblem(token, definition, numericFromText(binding.value));
+      return problem ? [problem] : [];
+    }
+    if (binding?.kind === 'config' && binding.field) {
+      const problem = parameterValueProblem(token, definition, numericFromText(record[binding.field]));
+      return problem ? [`${problem} (set on ${labelOf(binding.field)})`] : [];
+    }
+    return [];
+  });
+}
+
+/**
  * Run a bound configuration and return the amount with its evidence.
  *
  * Returns `null` when nothing is bound, which is what keeps the binding
  * optional: a configuration with no `computationCode` behaves exactly as it did
  * before this module existed, and the engine falls back to its own arithmetic.
  */
-export function evaluateBinding({ record = {}, library = [], runtime = {}, references = [], configFields = [] } = {}) {
+export function evaluateBinding({ record = {}, library = [], runtime = {}, references = [], configFields = [], asOf = '' } = {}) {
   const code = String(record.computationCode || '').trim().toUpperCase();
   if (!code) return null;
   const computation = computationByCode(code, library);
@@ -405,7 +468,7 @@ export function evaluateBinding({ record = {}, library = [], runtime = {}, refer
       entries: [],
     };
   }
-  const { entries, values } = resolveBindingValues({ record, library, runtime, references, configFields });
+  const { entries, values } = resolveBindingValues({ record, library, runtime, references, configFields, asOf });
   const blocked = entries.filter(entry => !entry.resolved);
   if (blocked.length) {
     return { code, amount: null, resolved: false, problem: blocked[0].problem, entries, computation };

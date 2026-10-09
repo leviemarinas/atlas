@@ -64,7 +64,7 @@ export const referenceSeeds = [
   ['REF-024', 'Holiday Calendar and Types', 'Time', 'default'],
   ['REF-025', 'Shift and Work Schedule Codes', 'Time', 'default'],
   ['REF-026', 'Leave Types and Conversion Rules', 'Leave', 'default'],
-  ['REF-027', 'Currency and Exchange Rates', 'Payroll', 'rate'],
+  ['REF-027', 'Currencies', 'Payroll', 'rate'],
   ['REF-028', 'Cost Centers and Allocation Dimensions', 'Accounting', 'default'],
   ['REF-029', 'Payment Frequencies and Payroll Periods', 'Payroll', 'default'],
   ['REF-030', 'Separation Reasons and Final Pay Treatments', 'Separation', 'default'],

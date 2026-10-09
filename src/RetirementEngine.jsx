@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ArrowsDownUp, Calculator, CheckCircle, Table, Users, Warning } from '@phosphor-icons/react';
 import { readServiceConfiguration } from './serviceModules';
 import { ApplicabilityPanel, coveredEmployees, describeAssignment, normalizeAssignment } from './PolicyApplicability';
-import { difference, FieldLabel, money, number, NumberField, roundServiceYears, SourceMultiSelect, Toggle } from './PolicyFields';
+import { difference, EngineSwitch, FieldLabel, money, number, NumberField, OpenForTesting, PolicySaveBar, roundServiceYears, SourceMultiSelect, Toggle } from './PolicyFields';
 import { plural } from './textFormat';
 
 export const salaryBasisSources = ['Monthly basic pay only', 'Earnings classified as Retirement', 'Selected earnings'];
@@ -132,7 +132,7 @@ export function RetirementEngine({ policy, setPolicy, onSave }) {
 
   return <div className="policy-engine-grid retirement-engine">
     <section className="policy-config-card">
-      <header><span><Table weight="duotone" /></span><div><h2>Retirement Pay</h2><p>Eligibility, salary basis and company-plan inputs around the controlled retirement formulas.</p></div><button className={`switch ${policy.enabled ? 'on' : ''}`} onClick={() => update('enabled', !policy.enabled)}><span /></button></header>
+      <header><span><Table weight="duotone" /></span><div><h2>Retirement Pay</h2><p>Eligibility, salary basis and company-plan inputs around the controlled retirement formulas.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
 
       <ApplicabilityPanel assignment={assignment} onChange={value => update('assignment', value)} engineLabel="Retirement Pay" />
 
@@ -187,10 +187,10 @@ export function RetirementEngine({ policy, setPolicy, onSave }) {
       <p className="policy-inline-note">Service data comes from the Employee Masterfile. The rule above only decides how prior service and a break between engagements are credited — it does not restate the employment record.</p>
 
       <div className="formula-flow"><span><small>Statutory value</small><code>daily rate × {policy.statutoryDays} × rounded service years</code></span><ArrowsDownUp /><span><small>Company-plan value</small><code>(basic pay + included earnings) ÷ divisor × {policy.companyDays} × years + benefits</code></span><strong>{policy.planType}</strong></div>
-      <div className="policy-save"><button className="button primary" onClick={() => onSave(result)}>Save retirement policy</button></div>
+      <PolicySaveBar label="Save retirement policy" onSave={reason => onSave(result, reason)} />
     </section>
 
-    <aside className="policy-simulator">
+    <OpenForTesting><aside className="policy-simulator">
       <header><Calculator weight="duotone" /><div><h2>Retirement scenario</h2><p>Eligibility, salary basis and tax trace. The qualifying result is what Final Pay consumes.</p></div></header>
       <div className="policy-test-grid retirement-test">
         <FieldLabel label="Date of birth" helpKey="dateOfBirth"><input type="date" value={policy.test.dateOfBirth} onChange={event => updateTest('dateOfBirth', event.target.value)} /></FieldLabel>
@@ -257,6 +257,6 @@ export function RetirementEngine({ policy, setPolicy, onSave }) {
         </div>
         <p className="policy-inline-note">Every selected employee is evaluated individually against eligibility, the applicable engine, taxability and their own assignment. A bulk transaction never gives every employee the same result.{engineCalculated ? '' : ' Manual, uploaded and overridden amounts stay marked against the engine-calculated value for audit.'}</p>
       </div>
-    </aside>
+    </aside></OpenForTesting>
   </div>;
 }

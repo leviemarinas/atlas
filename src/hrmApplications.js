@@ -570,7 +570,7 @@ export const applicationDefinitions = Object.freeze([
     ],
     fields: [
       { key: 'applicationDate', label: 'Application Date', type: 'date', readOnly: true },
-      { key: 'documentType', label: 'Document Type', type: 'select', required: true, options: ['BIR Form 2316 (Certificate of Compensation/Tax Withheld)', 'PhilHealth MDR (Member Data Record)', 'SSS Certificate of Contributions', 'Pag-IBIG Contribution Summary', 'Service Record / Work History', 'Company ID Replacement', 'Official Payslip Certified Copy'] },
+      { key: 'documentType', label: 'Document Type', type: 'select', required: true, options: ['BIR Form 2316 (Certificate of Compensation/Tax Withheld)', 'BIR Form 2307 (Certificate of Creditable Tax Withheld at Source)', 'PhilHealth MDR (Member Data Record)', 'PhilHealth Contribution Certificate', 'SSS Certificate of Contributions', 'SSS Loan Certificate', 'Pag-IBIG Contribution Summary', 'Pag-IBIG Loan Certificate', 'Service Record / Work History', 'Company ID Replacement', 'Official Payslip Certified Copy'] },
       { key: 'deliveryMethod', label: 'Preferred Delivery', type: 'select', required: true, options: ['Electronic (Digital PDF via Portal & Email)', 'Hard Copy (Printed & Stamped by HR)'] },
       { key: 'dateNeeded', label: 'Date Needed', type: 'date', required: true },
       { key: 'purpose', label: 'Reason / Purpose', type: 'textarea', required: true, placeholder: 'Explain purpose for the document request' },

@@ -83,21 +83,24 @@ test('a new company computation is created Inactive and needs no description', (
 
 /* ------------------------------------------------------- company isolation */
 
-test('two companies never read each other\'s computations', () => {
+test('two companies never read each other\'s client-specific formulas', () => {
   writeCompanyComputations(COMPANY, [{ code: 'ERN-051', name: 'A allowance', expression: '{{basic_pay}}', status: 'Active', version: '1.0' }]);
   writeCompanyComputations(OTHER, [{ code: 'ERN-052', name: 'B allowance', expression: '{{basic_pay}}', status: 'Active', version: '1.0' }]);
-  const a = readComputationLibrary(COMPANY).filter(item => item.isBuiltIn === false).map(item => item.code);
-  const b = readComputationLibrary(OTHER).filter(item => item.isBuiltIn === false).map(item => item.code);
+  const a = readComputationLibrary(COMPANY).filter(item => item.scope === 'Client-specific').map(item => item.code);
+  const b = readComputationLibrary(OTHER).filter(item => item.scope === 'Client-specific').map(item => item.code);
   assert.deepEqual(a, ['ERN-051']);
   assert.deepEqual(b, ['ERN-052']);
 });
 
-test('an Atlas standard exists once and is applied to a company, never copied into it', () => {
+test('an Atlas standard exists once and is assigned to a company, never copied into it', () => {
   const central = readStandardLibrary();
   assert.ok(central.some(item => item.code === 'BAS-001'));
-  // Applied by default — the confirmed model is centrally available, activated per company.
-  assert.deepEqual(applicabilityFor('BAS-001', COMPANY), { applied: true, status: 'Active' });
+  // Controlled Hybrid: nothing is assigned until P&A (or the onboarding baseline) assigns it.
+  assert.deepEqual(applicabilityFor('BAS-001', COMPANY), { applied: false, status: 'Active' });
+  assert.ok(readAppliedStandards(COMPANY).some(item => item.code === 'BAS-001'), 'the core set is the onboarding baseline');
+  assert.equal(applicabilityFor('BAS-001', COMPANY).applied, true);
 
+  readAppliedStandards(OTHER);
   setApplicability('BAS-001', OTHER, { applied: false });
   assert.ok(readAppliedStandards(COMPANY).some(item => item.code === 'BAS-001'));
   assert.ok(!readAppliedStandards(OTHER).some(item => item.code === 'BAS-001'));
@@ -106,6 +109,7 @@ test('an Atlas standard exists once and is applied to a company, never copied in
 });
 
 test('a company deactivating a standard does not deactivate it elsewhere', () => {
+  readAppliedStandards(COMPANY);
   setApplicability('BAS-001', COMPANY, { status: 'Inactive' });
   assert.equal(readAppliedStandards(COMPANY).find(item => item.code === 'BAS-001').status, 'Inactive');
   assert.equal(readAppliedStandards(OTHER).find(item => item.code === 'BAS-001').status, 'Active');
@@ -169,19 +173,45 @@ test('an Atlas standard is read-only inside a company but editable centrally whi
   const inCompany = computationGuards(record, { companyId: COMPANY, usage: usageFromRuns('BAS-001', []), versions: [] });
   assert.equal(inCompany.canEdit, false);
   assert.equal(inCompany.canDelete, false);
-  assert.match(inCompany.editReason, /activated or deactivated/);
+  assert.match(inCompany.editReason, /maintained by P&A/);
 
   const centrally = computationGuards(record, { context: 'standard', usage: usageFromRuns('BAS-001', []), versions: [] });
   assert.equal(centrally.canEdit, true);
   assert.equal(centrally.canDelete, true);
 });
 
-test('a standard a posted transaction used is locked even for a P&A Admin', () => {
+test('a standard a posted transaction used is edited centrally only as a new version', () => {
   const record = { code: 'BAS-001', name: 'Daily Rate', isBuiltIn: true, version: '1.0', status: 'Active' };
   const usage = usageFromRuns('BAS-001', [runWith('PR-2026-08-001', 'Posted', [{ code: 'BAS-001', version: '1.0', expression: 'x', label: 'Daily Rate' }])]);
   const centrally = computationGuards(record, { context: 'standard', usage, versions: [] });
-  assert.equal(centrally.canEdit, false);
-  assert.equal(centrally.canDelete, false);
+  assert.equal(centrally.canEdit, true, 'P&A publishes a new version rather than being locked out');
+  assert.match(centrally.versionNotice, /PR-2026-08-001/);
+  assert.match(centrally.versionNotice, /version 1\.1/);
+  assert.equal(centrally.canDelete, false, 'the posted payroll still resolves it');
+
+  const inCompany = computationGuards(record, { companyId: COMPANY, usage, versions: [] });
+  assert.equal(inCompany.canEdit, false, 'inside a company the formula stays read-only');
+  assert.equal(inCompany.versionNotice, '');
+});
+
+test('a company formula a posted transaction used stays locked outside the central library', () => {
+  const record = { code: 'ERN-057', name: 'Legacy', isBuiltIn: false, version: '1.0', status: 'Active' };
+  const usage = usageFromRuns('ERN-057', [runWith('PR-2026-08-003', 'Posted', [{ code: 'ERN-057', version: '1.0', expression: 'x', label: 'Legacy' }])]);
+  assert.equal(computationGuards(record, { companyId: COMPANY, usage, versions: [] }).canEdit, false);
+  assert.equal(computationGuards(record, { context: 'standard', usage, versions: [] }).canEdit, true);
+});
+
+test('a central edit names the runs a recalculation would move to the new version', () => {
+  const record = { code: 'BAS-001', name: 'Daily Rate', isBuiltIn: true, version: '1.2', status: 'Active' };
+  const step = [{ code: 'BAS-001', version: '1.2', expression: 'x', label: 'Daily Rate' }];
+  const usage = usageFromRuns('BAS-001', [
+    runWith('PR-2026-09-001', 'For Review', step),
+    runWith('PR-2026-09-002', 'Approved', step),
+    runWith('PR-2026-09-003', 'Cancelled', step),
+  ]);
+  const centrally = computationGuards(record, { context: 'standard', usage, versions: [] });
+  assert.deepEqual(centrally.recalculableRuns, ['PR-2026-09-001'], 'an approved run no longer recalculates; a cancelled one never counts');
+  assert.equal(centrally.versionNotice, '', 'nothing posted, so there is no version notice');
 });
 
 test('a code with published version history is retired, not deleted', () => {

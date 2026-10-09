@@ -17,7 +17,7 @@ export function ModulesFeaturesTab({ onOpenModule }) {
 
   return <section className="module-feature-register">
     <div className="module-feature-heading">
-      <div><span className="module-feature-kicker"><SealCheck weight="fill" /> Phase 2 implementation register</span><h2>Modules & Features</h2><p>Only project-plan requirements with an implemented Atlas screen or control are listed. Planned-only and Phase 1 self-service items are intentionally excluded.</p></div>
+      <div><span className="module-feature-kicker"><SealCheck weight="fill" /> Phase 2 implementation list</span><h2>Modules & Features</h2><p>Only project-plan requirements with an implemented Atlas screen or control are listed. Planned-only and Phase 1 self-service items are intentionally excluded.</p></div>
       <div className="module-feature-summary" aria-label="Implementation summary">
         <div><strong>{moduleFeatureCatalog.length}</strong><span>implemented {plural(moduleFeatureCatalog.length, 'module')}</span></div>
         <div><strong>{featureCount}</strong><span>traced {plural(featureCount, 'feature group')}</span></div>

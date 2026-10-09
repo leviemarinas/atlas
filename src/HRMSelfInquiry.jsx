@@ -66,8 +66,11 @@ import { downloadFile } from './fileDownload.js';
 import { findEmployee } from './hrmData.js';
 import { acknowledgeAuthorityToDeduct, leaveLedgerFor } from './hrmPosting.js';
 import { employeeRoster } from './employeeRoster.js';
-import { readPayrollRuns } from './payrollRuns.js';
+import { loanPaymentHistory, readPayrollRuns } from './payrollRuns.js';
 import { PayslipDocument, peso } from './PayrollLineDetail.jsx';
+import { CERTIFICATE_TYPES, buildCertificate, certificateYears, contributionSummary } from './payrollCertificates.js';
+import { effectiveStatutorySet } from './statutoryService.js';
+import { readActiveCompany, readActiveCompanyId } from './companyRepository.js';
 
 const toCsv = (headers, rows) => [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
 
@@ -212,6 +215,24 @@ function AuthorityToDeductPanel({ loan, setData, onNotify }) {
   </div>;
 }
 
+function LoanPaymentsFromPayroll({ loanCode, totalLoan }) {
+  const history = useMemo(() => loanPaymentHistory(readPayrollRuns(readActiveCompanyId()), loanCode), [loanCode]);
+  const money = value => `₱${(Number(value) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return <div className="loan-payment-matrix">
+    <div className="loan-payment-totals">
+      <span>Accumulated payment (from posted payroll) <strong>{money(history.paid)}</strong></span>
+      {Number(totalLoan) > 0 && <span>Balance <strong>{money(Math.max(0, Number(totalLoan) - history.paid))}</strong></span>}
+      {history.deferred > 0 && <span>Deferred <strong>{money(history.deferred)}</strong></span>}
+    </div>
+    <table className="hrm-table">
+      <thead><tr><th>Payout Period</th><th>Payroll Transaction</th><th className="align-right">Amortization Amount</th><th className="align-right">Paid</th><th className="align-right">Deferred</th><th className="align-right">Balance After</th></tr></thead>
+      <tbody>{history.rows.length ? history.rows.map(row => <tr key={row.key}><td>{row.payoutDate}</td><td>{row.transactionNumber}</td><td className="align-right">{money(row.scheduled)}</td><td className="align-right">{money(row.paid)}</td><td className="align-right">{row.deferred ? money(row.deferred) : '—'}</td><td className="align-right">{money(row.balanceAfter)}</td></tr>)
+        : <tr><td colSpan={6}>No posted payroll has collected on this loan yet.</td></tr>}</tbody>
+    </table>
+    <small>Balance and accumulated payment are computed from posted payroll and cannot be edited.</small>
+  </div>;
+}
+
 function ViewLoanDetailsScreen({ loan, setData, onBack, onNotify }) {
   const table = useTableState();
   const matrixRows = loan.deductionMatrix || [];
@@ -227,7 +248,7 @@ function ViewLoanDetailsScreen({ loan, setData, onBack, onNotify }) {
   const pageMatrix = paginate(filteredMatrix, table.page, table.pageSize);
 
   function exportMatrix(format) {
-    const headers = ['Payout Period', 'Deduction Amount'];
+    const headers = ['Payout Period', 'Amortization Amount'];
     const rows = filteredMatrix.map(row => [row.payoutPeriod, row.deductionAmount]);
     downloadFile(`loan-${loan.transactionNumber}-deductions.${format === 'PDF' ? 'txt' : 'csv'}`, toCsv(headers, rows));
     onNotify(`Deduction matrix exported to ${format}.`);
@@ -278,7 +299,7 @@ function ViewLoanDetailsScreen({ loan, setData, onBack, onNotify }) {
       <DataTable
         columns={[
           { key: 'payoutPeriod', label: 'Payout Period', type: 'date' },
-          { key: 'deductionAmount', label: 'Deduction Amount', type: 'currency' },
+          { key: 'deductionAmount', label: 'Amortization Amount', type: 'currency' },
         ]}
         rows={pageMatrix}
         total={filteredMatrix.length}
@@ -289,6 +310,12 @@ function ViewLoanDetailsScreen({ loan, setData, onBack, onNotify }) {
         onPageSizeChange={table.setPageSize}
         empty="No deduction matrix items."
       />
+    </div>
+
+    {/* Payment matrix: what posted payroll actually collected */}
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '18px 20px', marginBottom: 20 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 14px' }}>Payments from Payroll</h3>
+      <LoanPaymentsFromPayroll loanCode={loan.transactionNumber || loan.id} totalLoan={loan.totalLoan} />
     </div>
 
     {/* Authority to Deduct (HT130 / HT141) */}
@@ -1043,6 +1070,126 @@ function PayslipInquiryScreen({ user, access, companyId, onNotify }) {
   </div>;
 }
 
+/* ------------------------------------------ Statutory contributions & certificates */
+
+/**
+ * Whose records a screen may open: an employee sees their own; an approver or
+ * administrator picks from the people they may see (the "management" half of
+ * each inquiry in the BRD).
+ */
+function useInquiryEmployee(user, access) {
+  const canPick = Boolean(access?.canApproveTeamRequests);
+  const people = useMemo(() => {
+    const visible = new Set(access?.visibleEmployeeIds || [user?.employeeId]);
+    return employeeRoster.filter(employee => visible.has(employee.employeeId));
+  }, [access, user]);
+  const [employeeId, setEmployeeId] = useState(user?.employeeId || people[0]?.employeeId || '');
+  const employee = employeeRoster.find(item => item.employeeId === employeeId) || people[0] || null;
+  return { canPick, people, employee, setEmployeeId };
+}
+
+function InquiryPicker({ canPick, people, employee, setEmployeeId, year, years, setYear, children }) {
+  return <div className="hrm-toolbar">
+    <div className="hrm-toolbar-left inquiry-pickers">
+      {canPick && <label className="payroll-field inline"><span>Employee</span>
+        <select value={employee?.employeeId || ''} onChange={event => setEmployeeId(event.target.value)}>{people.map(item => <option key={item.employeeId} value={item.employeeId}>{item.name} ({item.employeeCode})</option>)}</select>
+      </label>}
+      <label className="payroll-field inline"><span>Year</span>
+        <select value={year} onChange={event => setYear(event.target.value)}>{(years.length ? years : [year]).map(value => <option key={value}>{value}</option>)}</select>
+      </label>
+    </div>
+    <div className="hrm-toolbar-right">{children}</div>
+  </div>;
+}
+
+/** Summary statutory contribution inquiry (HTP166) and its management view (HTP167). */
+function ContributionInquiryScreen({ user, access, companyId, onNotify }) {
+  const runs = useMemo(() => readPayrollRuns(companyId), [companyId]);
+  const years = useMemo(() => certificateYears(runs), [runs]);
+  const [year, setYear] = useState(years[0] || String(new Date().getFullYear()));
+  const pick = useInquiryEmployee(user, access);
+  const { rows, totals } = useMemo(() => (pick.employee ? contributionSummary(runs, pick.employee.employeeId, year) : { rows: [], totals: {} }), [runs, pick.employee, year]);
+  const columns = [
+    { key: 'month', label: 'Month' }, { key: 'transactions', label: 'Payroll Transactions' },
+    { key: 'sssEe', label: 'SSS EE', align: 'right' }, { key: 'sssEr', label: 'SSS ER', align: 'right' }, { key: 'ec', label: 'EC', align: 'right' },
+    { key: 'phicEe', label: 'PhilHealth EE', align: 'right' }, { key: 'phicEr', label: 'PhilHealth ER', align: 'right' },
+    { key: 'hdmfEe', label: 'Pag-IBIG EE', align: 'right' }, { key: 'hdmfEr', label: 'Pag-IBIG ER', align: 'right' },
+    { key: 'tax', label: 'Tax Withheld', align: 'right' },
+  ];
+  const money = new Set(columns.slice(2).map(column => column.key));
+  const display = rows.map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, money.has(key) ? peso(value) : value])));
+  return <div className="hrm-ss-screen">
+    <PageHeading title="Statutory Contributions" info="SSS, PhilHealth and Pag-IBIG employee and employer shares, and the tax withheld, per month from posted payroll." />
+    <InquiryPicker {...pick} year={year} years={years} setYear={setYear}>
+      <ExportMenu disabled={!rows.length} onExport={() => {
+        downloadFile(`statutory-contributions-${pick.employee?.employeeCode}-${year}.csv`, toCsv(columns.map(column => column.label), rows.map(row => columns.map(column => row[column.key]))), 'text/csv');
+        onNotify?.('Statutory contributions exported.');
+      }} />
+    </InquiryPicker>
+    <StatCardRow>
+      <StatCard label="SSS (EE + ER + EC)" value={peso((totals.sssEe || 0) + (totals.sssEr || 0) + (totals.ec || 0))} />
+      <StatCard label="PhilHealth (EE + ER)" value={peso((totals.phicEe || 0) + (totals.phicEr || 0))} />
+      <StatCard label="Pag-IBIG (EE + ER)" value={peso((totals.hdmfEe || 0) + (totals.hdmfEr || 0))} />
+      <StatCard label="Tax withheld" value={peso(totals.tax || 0)} />
+    </StatCardRow>
+    <DataTable columns={columns} rows={display} rowKey={row => row.key} page={1} pageSize={24} total={display.length} empty={`No posted payroll for ${pick.employee?.name || 'this employee'} in ${year}.`} />
+  </div>;
+}
+
+/** Payroll certificates generated from posted payroll (HTP171-177). */
+function PayrollCertificatesScreen({ user, access, companyId, onNotify }) {
+  const runs = useMemo(() => readPayrollRuns(companyId), [companyId]);
+  const years = useMemo(() => certificateYears(runs), [runs]);
+  const [year, setYear] = useState(years[0] || String(new Date().getFullYear()));
+  const [type, setType] = useState(CERTIFICATE_TYPES[0].key);
+  const pick = useInquiryEmployee(user, access);
+  const certificate = useMemo(() => (pick.employee ? buildCertificate({
+    type, employee: pick.employee, runs, year, company: readActiveCompany() || {}, statutory: effectiveStatutorySet(`${year}-12-31`),
+  }) : null), [type, pick.employee, runs, year]);
+  const format = (column, value) => (column.money && typeof value === 'number' ? peso(value) : value);
+  const download = () => {
+    const lines = [
+      [certificate.title], [`Employer: ${certificate.header.employer} (TIN ${certificate.header.employerTin})`],
+      [`Employee: ${certificate.header.employee} (${certificate.header.employeeCode}) · TIN ${certificate.header.tin} · SSS ${certificate.header.sss} · PhilHealth ${certificate.header.philhealth} · Pag-IBIG ${certificate.header.hdmf}`],
+      [`Year: ${certificate.header.year} · From posted payroll: ${certificate.transactions.join(', ')}`], [],
+    ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
+    const table = toCsv(certificate.columns.map(column => column.label), [
+      ...certificate.rows.map(row => certificate.columns.map(column => row[column.key])),
+      ...(certificate.totals ? [certificate.columns.map((column, index) => (index === 0 ? 'TOTAL' : certificate.totals[column.key] ?? ''))] : []),
+    ]);
+    downloadFile(`${certificate.key}-${certificate.header.employeeCode}-${year}.csv`, [...lines, table].join('\n'), 'text/csv');
+    onNotify?.(`${certificate.title} downloaded.`);
+  };
+  return <div className="hrm-ss-screen">
+    <PageHeading title="Payroll Certificates" info="BIR 2316 and 2307, and SSS, PhilHealth and Pag-IBIG contribution and loan certificates, generated from posted payroll." />
+    <InquiryPicker {...pick} year={year} years={years} setYear={setYear}>
+      <PrimaryButton onClick={download} disabled={!certificate?.rows.length}>Download certificate</PrimaryButton>
+    </InquiryPicker>
+    <div className="hrm-toolbar"><div className="hrm-toolbar-left">
+      <label className="payroll-field inline"><span>Certificate</span>
+        <select value={type} onChange={event => setType(event.target.value)}>{CERTIFICATE_TYPES.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select>
+      </label>
+    </div></div>
+    {certificate && <section className="hrm-section payroll-certificate">
+      <h3 className="hrm-section-title">{certificate.title}</h3>
+      <DetailList groups={[
+        { label: 'Employer', value: `${certificate.header.employer}${certificate.header.employerTin ? ` · TIN ${certificate.header.employerTin}` : ''}` },
+        { label: 'Employee', value: `${certificate.header.employee} (${certificate.header.employeeCode})` },
+        { label: 'TIN', value: certificate.header.tin || '—' },
+        { label: 'SSS / PhilHealth / Pag-IBIG', value: [certificate.header.sss, certificate.header.philhealth, certificate.header.hdmf].map(value => value || '—').join(' / ') },
+        { label: 'Year', value: certificate.header.year },
+        { label: 'From posted payroll', value: certificate.transactions.join(', ') || '—' },
+      ]} />
+      {certificate.note && <EmptyState title="Nothing to certify" icon={FileText}>{certificate.note}</EmptyState>}
+      {!certificate.note && <div className="hrm-table-block"><div className="hrm-table-scroll"><table className="hrm-table">
+        <thead><tr>{certificate.columns.map(column => <th key={column.key} className={column.money ? 'align-right' : ''}>{column.label}</th>)}</tr></thead>
+        <tbody>{certificate.rows.map(row => <tr key={row.key}>{certificate.columns.map(column => <td key={column.key} className={column.money ? 'align-right' : ''}>{format(column, row[column.key])}</td>)}</tr>)}</tbody>
+        {certificate.totals && <tfoot><tr>{certificate.columns.map((column, index) => <td key={column.key} className={column.money ? 'align-right' : ''}><strong>{index === 0 ? 'Total' : column.key in certificate.totals ? peso(certificate.totals[column.key]) : ''}</strong></td>)}</tr></tfoot>}
+      </table></div></div>}
+    </section>}
+  </div>;
+}
+
 /* -------------------------------------------------- Root Workspace & Dispatcher */
 
 export function SelfInquirySidebar({ subView = 'loan-inquiry', onSelectSubView, onBack }) {
@@ -1051,6 +1198,8 @@ export function SelfInquirySidebar({ subView = 'loan-inquiry', onSelectSubView, 
     { key: 'leave-ledger', label: 'Leave Balances & Ledger', icon: Suitcase },
     { key: 'attendance-summary', label: 'Attendance Summary', icon: Clock },
     { key: 'payslips', label: 'Payslips & Payroll History', icon: Coins },
+    { key: 'contributions', label: 'Statutory Contributions', icon: ListNumbers },
+    { key: 'certificates', label: 'Payroll Certificates', icon: FileText },
   ];
 
   return <aside className="hrm-ss-sidebar">
@@ -1082,5 +1231,7 @@ export function SelfInquiryWorkspace({ data, setData, requests = [], user, acces
     {subView === 'leave-ledger' && <LeaveLedgerScreen data={data} requests={requests} user={user} access={access} onNavigateSelfService={onNavigateSelfService} onNotify={onNotify} />}
     {subView === 'attendance-summary' && <AttendanceSummaryScreen data={data} user={user} access={access} onNotify={onNotify} />}
     {subView === 'payslips' && <PayslipInquiryScreen user={user} access={access} companyId={companyId} onNotify={onNotify} />}
+    {subView === 'contributions' && <ContributionInquiryScreen user={user} access={access} companyId={companyId} onNotify={onNotify} />}
+    {subView === 'certificates' && <PayrollCertificatesScreen user={user} access={access} companyId={companyId} onNotify={onNotify} />}
   </div>;
 }

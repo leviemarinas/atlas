@@ -40,7 +40,9 @@ export const companyRuleTaxonomy = {
 
 const rule = (id, category, subcategory, text, policyCode, enabled = true) => ({
   id, category, subcategory, rule: text, policyCode, parameter: policyCode, enabled,
-  status: enabled ? 'Active' : 'Inactive', version: '1.0', effectiveFrom: '2026-01-01', effectiveTo: '',
+  // Effective from 2025 so the seeded 2025 payout calendars have policies that apply;
+  // a policy only reaches a run whose payroll period its effective window covers.
+  status: enabled ? 'Active' : 'Inactive', version: '1.0', effectiveFrom: '2025-01-01', effectiveTo: '',
   groupBy: 'All Employees', groupValue: 'ABC Company Ltd', source: 'BRD / Annex B',
 });
 

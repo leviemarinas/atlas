@@ -2778,6 +2778,33 @@ textarea { min-height: 72px; resize: vertical; }
 .payroll-fieldset .payroll-field-grid { margin-top: 10px; }
 .payroll-checkrow { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
 .payroll-checkrow label { display: flex; align-items: center; gap: 6px; font-size: 9.5px; }
+/* One size for every control in Payroll Processing. The global input rule
+   (full width, 40px) otherwise stretches checkboxes, and grid rows stretch
+   fields to the height of the tallest neighbour's hint. */
+.payroll-field { align-content: start; }
+:where(.payroll-processing) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) { box-sizing: border-box; height: 32px; min-height: 32px; padding: 0 9px; border: 1px solid #ddd8e3; border-radius: 6px; background: #fff; color: #2f2937; font-size: 9.5px; }
+:where(.payroll-processing) textarea { box-sizing: border-box; min-height: 62px; padding: 7px 9px; border: 1px solid #ddd8e3; border-radius: 6px; font-size: 9.5px; }
+:where(.payroll-processing) :is(input[type="checkbox"], input[type="radio"]) { flex: none; width: 14px; height: 14px; min-height: 0; margin: 0; padding: 0; accent-color: var(--violet); }
+.payroll-policy-list input[type="checkbox"] { margin-top: 1px; }
+.status-pill.backdated { color: #9a4a12; background: #fdebdc; }
+.status-pill.backdated.pending { color: #fff; background: #c2621f; }
+.payroll-status-cell { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.payroll-filed-by { margin: 4px 0 0; color: var(--muted); font-size: 9.5px; }
+.payroll-filed-by strong { color: #46384f; font-weight: 600; }
+.payroll-backdate-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 320px); gap: 14px; align-items: start; margin: 14px 0 0; padding: 11px 14px; border: 1px solid #f1cfb2; border-left: 3px solid #c2621f; border-radius: 8px; background: #fff8f2; }
+.payroll-run-head + .payroll-backdate-note { grid-template-columns: 1fr; margin: 0 0 14px; }
+.payroll-backdate-note strong { display: flex; align-items: center; gap: 7px; color: #6e3a12; font-size: 10px; }
+.payroll-backdate-note p { margin: 5px 0 0; color: #6d5c50; font-size: 9px; line-height: 1.5; }
+@media (max-width: 760px) { .payroll-backdate-note { grid-template-columns: 1fr; } }
+.payroll-currency-list { display: grid; gap: 8px; justify-items: start; margin-top: 8px; }
+.payroll-currency-list .hrm-table-block { width: 100%; }
+.payroll-currency-list select { min-width: 190px; }
+.payroll-currency-list input[type="number"] { width: 120px; }
+.payroll-currency-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.payroll-muted { color: var(--muted); font-size: 9px; }
+.payroll-edit .hrm-table input[type="number"] { width: 110px; }
+.payroll-edit .hrm-table input:not([type]) { min-width: 150px; }
+.payroll-run-items-controls { margin-top: 10px; }
 .payroll-note { margin: 10px 0 0; color: var(--muted); font-size: 8.5px; line-height: 1.55; }
 
 .payroll-switch { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 10px; padding: 7px 0; cursor: pointer; }
@@ -3433,3 +3460,193 @@ code.diff-after { padding: 1px 5px; border-radius: 4px; color: #167a4f; backgrou
 .reference-version-note { margin: 9px 0 0; color: var(--muted); font-size: 8px; line-height: 1.5; }
 /* A caption and its Optional chip are one line, not two grid rows. */
 .label-caption { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Controlled Hybrid: formula scope, parameters and P&A-owned configuration fields. */
+.computation-source.client-specific { color: #0f6e56; background: #e1f5ee; }
+.parameter-workspace { display: grid; gap: 12px; }
+.parameter-table td { vertical-align: middle; }
+.parameter-input { display: inline-flex; align-items: center; gap: 4px; }
+.parameter-input input { width: 84px; height: 28px; padding: 0 7px; border: 1px solid #d9d3df; border-radius: 4px; font-size: 8.5px; }
+.parameter-input em { color: var(--muted); font-size: 8px; font-style: normal; }
+.parameter-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 8.5px; white-space: nowrap; }
+.parameter-toggle input { accent-color: var(--violet); }
+.parameter-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9px; font-size: 8px; font-weight: 600; white-space: nowrap; }
+.parameter-chip svg { width: 11px; height: 11px; }
+.parameter-chip.client { color: #0f6e56; background: #e1f5ee; }
+.parameter-chip.locked { color: #5a4d64; background: #f1eef3; }
+.parameter-runtime td { color: var(--muted); }
+.locked-value { display: flex; align-items: center; min-height: 32px; padding: 0 9px; border: 1px dashed #d9d3df; border-radius: 4px; color: #5a4d64; background: #faf8fb; font-size: 9px; font-weight: 400; }
+.pa-owned-tag { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; color: var(--violet); font-size: 7.5px; font-weight: 600; }
+.pa-owned-tag svg { width: 10px; height: 10px; }
+.change-details { display: grid; grid-template-columns: 180px 1fr; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.change-details label { display: grid; gap: 4px; font-size: 9px; }
+.change-details input { height: 32px; padding: 0 8px; border: 1px solid #d9d3df; border-radius: 4px; font-size: 9px; }
+.change-log { display: grid; gap: 8px; }
+.change-log article { padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; font-size: 8.5px; }
+.change-log small { display: block; margin-top: 3px; color: var(--muted); }
+.change-log ul { margin: 5px 0 0; padding-left: 14px; }
+.governed-notice { margin-bottom: 10px; }
+/* The formula editor's posted-payroll notice: one line per consequence, not one run-on sentence. */
+.version-notice > span { display: grid; gap: 3px; }
+.version-notice > span > strong, .version-notice > span > small { display: block; }
+.switch:disabled { opacity: .55; cursor: not-allowed; }
+/* The Parameters tab shares the test tab's intro block, so it carries the same type scale. */
+.parameter-workspace .test-copy h3 { margin: 0 0 3px; font-size: 12px; }
+.parameter-workspace .test-copy p { margin: 0; color: var(--muted); font-size: 8.5px; font-weight: 400; line-height: 1.5; }
+.parameter-workspace .test-copy svg { width: 24px; height: 24px; flex: 0 0 auto; }
+
+/* Controlled Hybrid on the policy engines: P&A-owned settings, save bar with a reason. */
+.policy-field.engine-locked .policy-field-label { color: #6d6772; }
+.engine-locked-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.engine-locked-fieldset select, .engine-locked-fieldset input, .engine-locked-block input, .engine-locked-block select, .policy-parameter-locked select, .policy-parameter-locked input { background: #f6f4f8; color: #6d6772; cursor: not-allowed; }
+.engine-locked-block { min-width: 0; margin: 0; padding: 0; border: 0; }
+.engine-locked-block > legend { padding: 0 15px 4px; }
+.policy-toggle.engine-locked strong { color: #6d6772; }
+.component-checklist input:disabled, .source-multiselect-options input:disabled { cursor: not-allowed; }
+.policy-save { gap: 8px; align-items: center; }
+.policy-save-reason { flex: 1; max-width: 420px; height: 32px; padding: 0 9px; border: 1px solid #d9d3df; border-radius: 4px; font-size: 8.5px; }
+.policy-parameter-locked { display: grid; gap: 4px; color: #6d6772; font-size: 8.5px; }
+.policy-parameter-locked fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.pa-only-note { margin: 8px 0; }
+/* A locked engine field is a <div>, not a <label>, so it takes the label's grid layout and type size explicitly. */
+.policy-form-grid > .policy-field.engine-locked, .policy-test-grid > .policy-field.engine-locked { display: grid; gap: 5px; min-width: 0; color: #4e4954; font-size: 8px; font-weight: 500; }
+.policy-form-grid > .policy-field.engine-locked.wide { grid-column: 1 / -1; }
+.engine-locked-fieldset select, .engine-locked-fieldset input { width: 100%; }
+
+/* Payment mode + frequency checklist, and multi-select lists, on configuration forms. */
+.config-form-grid .frequency-checklist, .frequency-checklist { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 6px 0 2px; }
+.config-form-grid .frequency-checklist label, .frequency-checklist label { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
+.config-form-grid .frequency-checklist input, .frequency-checklist input { width: auto; min-height: 0; margin: 0; }
+.frequency-single { padding: 8px 10px; border: 1px dashed #ddd8e6; border-radius: 6px; color: #6e6878; font-weight: 500; }
+.inquiry-pickers { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.inquiry-pickers select, .hrm-ss-screen .payroll-field.inline select { min-width: 180px; }
+.payroll-certificate .hrm-detail-list { margin-bottom: 12px; }
+/* Payroll dashboard (Payroll hub) */
+.payroll-dashboard { display: grid; gap: 14px; margin: 0 0 18px; }
+.payroll-dashboard .tk-kpi-row { margin: 0; }
+.payroll-dashboard .tone-down { color: #c3384f; }
+.payroll-dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.payroll-dashboard-card { padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; display: grid; gap: 10px; align-content: start; }
+.payroll-dashboard-card > header { display: flex; align-items: center; gap: 8px; color: var(--violet); }
+.payroll-dashboard-card > header h3 { margin: 0; flex: 1; color: #2f2937; font-size: 12px; }
+.payroll-task-list, .payroll-note-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.payroll-task-list li, .payroll-note-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 8px 10px; border: 1px solid #eee9f2; border-radius: 8px; }
+.payroll-task-list li svg { color: var(--violet); }
+.payroll-task-list li.urgent { border-color: #f1cfb2; background: #fff8f2; }
+.payroll-task-list li.urgent svg { color: #c2621f; }
+.payroll-task-list strong, .payroll-note-list strong { display: block; font-size: 10px; font-weight: 600; color: #2f2937; }
+.payroll-task-list small, .payroll-note-list small { color: var(--muted); font-size: 8.5px; }
+.payroll-task-list li.more, .payroll-note-list li.more { display: block; color: var(--muted); font-size: 9px; border-style: dashed; }
+.payroll-note-list li.resolved { opacity: .65; }
+.payroll-note-form { display: grid; grid-template-columns: 90px 140px minmax(0, 1fr) auto; gap: 6px; }
+.payroll-note-form select, .payroll-note-form input { width: 100%; height: 32px; min-height: 32px; padding: 0 8px; font-size: 9.5px; border: 1px solid #ddd8e3; border-radius: 6px; }
+@media (max-width: 760px) { .payroll-note-form { grid-template-columns: 1fr; } }
+.payroll-dashboard-actions { display: flex; justify-content: flex-end; }
+.payroll-calculator { display: grid; gap: 12px; }
+.payroll-calculator .payroll-field input, .payroll-calculator .payroll-field select { height: 32px; min-height: 32px; padding: 0 9px; font-size: 9.5px; }
+.payroll-calculator-result td { font-size: 10px; }
+.payroll-calculator-result tr.strong td { font-weight: 700; border-top: 1px solid var(--line); }
+.payroll-auto-compute { display: inline-flex; align-items: center; gap: 6px; font-size: 9.5px; color: #4e4954; cursor: pointer; }
+.payroll-bulk-progress { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 40%); gap: 14px; align-items: center; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #faf8fc; }
+.payroll-bulk-progress strong { display: block; font-size: 10px; }
+.payroll-bulk-progress small { color: var(--muted); font-size: 8.5px; }
+.payroll-bulk-bar { height: 8px; border-radius: 999px; background: #ebe6f0; overflow: hidden; }
+.payroll-bulk-bar span { display: block; height: 100%; background: var(--violet); transition: width .2s ease; }
+.payroll-tables-note { display: grid; gap: 3px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid #e3def0; border-left: 3px solid var(--violet); border-radius: 8px; background: #faf8fd; }
+.payroll-tables-note strong { font-size: 10px; color: #46384f; }
+.payroll-tables-note span { font-size: 9px; color: var(--muted); line-height: 1.5; }
+.loan-payment-matrix { display: grid; gap: 8px; }
+.loan-payment-totals { display: flex; flex-wrap: wrap; gap: 18px; font-size: 11px; color: var(--muted); }
+.loan-payment-totals strong { margin-left: 6px; color: #2f2937; }
+.loan-payment-matrix small { color: var(--muted); font-size: 10px; }
+
+.deminimis-warning { margin: 0 0 12px; padding: 9px 12px; border-radius: 6px; font-size: 11px; line-height: 1.45; }
+.employee-change-reason { grid-column: 1 / -1; }
+.employee-change-reason textarea { min-height: 56px; }
+.delete-modal .employee-change-reason { display: grid; gap: 6px; margin: 12px 0; font-size: 11px; }
+.employee-history-modal { width: min(920px, calc(100vw - 32px)); }
+.employee-history-modal .modal-body { max-height: 70vh; overflow: auto; }
+.engine-version-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 12px 0; padding: 10px 14px; border: 1px solid var(--line, #dfe3ea); border-radius: 8px; background: #f8fafc; font-size: 12px; }
+.engine-version-bar label { display: inline-flex; align-items: center; gap: 6px; }
+.engine-version-bar input[type=date] { height: 32px; }
+.engine-version-bar small { flex-basis: 100%; color: #667085; }
+.engine-version-history { margin-top: 18px; }
+.engine-version-history header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.engine-version-history header span, .engine-version-history td small { color: #667085; font-size: 11px; display: block; }
+.engine-version-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.engine-version-actions input[type=date] { height: 30px; }
+.status-pill.scheduled { color: #1d5fa8; background: #e8f1fc; }
+.status-pill.superseded { color: #667085; background: #f0f2f5; }
+.government-loan-treatments { margin: 14px 0; }
+.government-loan-treatments h4 { margin: 0 0 4px; font-size: 13px; }
+.government-loan-treatments select { min-width: 250px; height: 32px; }
+.test-cases { margin-top: 18px; }
+.test-cases header { display: flex; justify-content: space-between; align-items: baseline; }
+.test-cases header span { color: #667085; font-size: 11px; }
+.test-case-add { display: flex; gap: 8px; margin: 8px 0; }
+.test-case-add input { flex: 1; height: 34px; }
+.test-case-table small { color: #667085; }
+.scheduled-hint { color: #1d5fa8; }
+.version-compare-pickers { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 8px; }
+.version-compare-pickers label { display: grid; gap: 4px; font-size: 11px; }
+.version-compare-pickers span { color: #667085; font-size: 11px; }
+.version-compare-table code { white-space: pre-wrap; word-break: break-word; font-size: 11px; }
+.version-compare-table tr.changed td { background: #fff8e6; }
+.section-heading-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.company-assignment-table input[type=date], .company-assignment-table input:not([type]), .company-assignment-table select { height: 30px; min-width: 110px; }
+.company-assignment-table .priority-input { width: 64px; min-width: 64px; height: 30px; }
+.conflict-note { display: flex; gap: 4px; align-items: center; color: #c2410c; font-size: 10px; margin-top: 4px; }
+.assignment-history { margin-top: 14px; }
+.assignment-history header { display: flex; justify-content: space-between; align-items: center; }
+.applicability-modal .table-wrap { overflow-x: auto; }
+
+/* Employee Masterfile saved tables: search, filter, sort, pagination */
+.employee-table-tools { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; flex-wrap: wrap; }
+.employee-table-tools select, .employee-table-tools input { height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font-size: 11px; background: #fff; }
+.employee-table-search { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; background: #fff; }
+.employee-table-search input { border: 0; height: 28px; outline: 0; }
+.th-sort { all: unset; cursor: pointer; font-weight: 700; }
+.employee-pagination select { height: 24px; border: 1px solid var(--line); border-radius: 6px; font-size: 10px; margin: 0 4px; }
+.employee-pager { display: inline-flex; gap: 8px; align-items: center; }
+.employee-pager button { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 24px; height: 24px; cursor: pointer; }
+.employee-pager button:disabled { opacity: .4; cursor: default; }
+.employee-table-tools { display: flex !important; flex-direction: row; gap: 8px; align-items: center; }
+.employee-table-tools .employee-table-search { width: 220px; flex: none; min-height: 32px; padding: 0 10px; }
+.employee-table-tools .employee-table-search input { width: 100%; height: 30px; min-height: 0; border: 0; padding: 0; box-shadow: none; }
+.employee-table-tools > select { width: 180px; flex: none; height: 32px; min-height: 0; padding: 0 8px; font-size: 11px; }
+.employee-table-tools > input { width: 160px; flex: none; height: 32px; min-height: 0; }
+.employee-table-tools > button { height: 32px; min-height: 0; padding: 0 12px; }
+.employee-pagination > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.employee-pagination select { width: 56px !important; height: 24px !important; min-height: 0 !important; padding: 0 4px !important; display: inline-block !important; font-size: 10px; }
+.employee-pager button { min-height: 0; padding: 0; }
+
+/* mm/dd/yyyy date field (DateInput.jsx) */
+.date-input { position: relative; display: inline-flex; align-items: center; width: 100%; }
+.date-input > input[type="text"] { width: 100%; padding-right: 32px; }
+.date-input > input.invalid { border-color: #c0392b; }
+.date-input-picker { position: absolute; right: 6px; display: inline-flex; align-items: center; border: 0; background: transparent; color: inherit; opacity: .65; cursor: pointer; padding: 2px; }
+.date-input-picker:hover:not(:disabled) { opacity: 1; }
+.date-input-native { position: absolute; right: 6px; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* statutory EE / ER share grid and a warning note on the payroll wizard */
+.payroll-share-grid { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 10px; }
+.payroll-share-grid th, .payroll-share-grid td { padding: 6px 10px; border-bottom: 1px solid #eee9f2; text-align: left; }
+.payroll-share-grid thead th { color: var(--muted); font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; }
+.payroll-share-grid td { text-align: center; }
+.payroll-share-grid thead th:not(:first-child) { text-align: center; }
+.payroll-note-warn { color: #b3261e; font-weight: 600; }
+
+/* extra transactions in a Multiple batch */
+.payroll-batch-row { border: 1px solid #eee9f2; border-radius: 10px; padding: 12px; margin-top: 10px; background: #fcfbfd; }
+.payroll-batch-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 11px; }
+.payroll-calendar-multi { flex-wrap: wrap; gap: 6px 14px; }
+
+/* a transaction number that opens its transaction */
+.link-button { border: 0; background: transparent; padding: 0; color: var(--violet); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.link-button:hover { opacity: .8; }
+
+/* an overlapping period warns; it never blocks */
+.payroll-overlap-note { margin: 12px 0; padding: 10px 14px; border: 1px solid #f0c36d; border-left-width: 4px; border-radius: 10px; background: #fff8e8; color: #5b4a1c; font-size: 10px; line-height: 1.55; }
+.payroll-overlap-note strong { display: block; margin-bottom: 4px; font-size: 11px; }
+.payroll-overlap-note ul { margin: 0 0 4px 16px; padding: 0; }
+.payroll-overlap-note p { margin: 4px 0 0; }

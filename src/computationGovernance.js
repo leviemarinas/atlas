@@ -3,16 +3,22 @@
  * it applies to, which version a payroll transaction actually used, and what
  * that usage then forbids.
  *
- * The shape this module enforces, decided in the Computational Basis meeting:
+ * The shape this module enforces is P&A's Controlled Hybrid approach, agreed on
+ * 1 September 2026:
  *
- *   Atlas standard  — one central definition, held once in Settings ›
- *                     Standard Computation Library. It is never copied per
- *                     company. A company record only says whether the standard
- *                     is applied to that company and whether it is currently
- *                     Active there.
- *   Company-defined — created by an admin inside one company's Computational
- *                     Basis. Editable and deletable while no posted payroll
- *                     transaction has used it.
+ *   One central library — every formula is held once, in Settings › Standard
+ *        Computation Library, and authored only by P&A. Its scope is either an
+ *        Atlas standard (assignable to any company) or client-specific (built
+ *        by P&A for one client and only ever assigned to that client).
+ *   Assigned, never copied — a company sees and uses only the formulas P&A
+ *        assigned to it. The company record says whether a formula is assigned
+ *        there and whether it is Active there.
+ *   Parameters, not logic — a client changes only the values a formula marks as
+ *        client-editable, inside the approved range, on its own pay items. It
+ *        never edits an expression.
+ *
+ * A formula a company authored before that rule is moved into the central
+ * library as a client-specific formula owned by that company.
  *
  * Everything a company owns — its own computations, applicability decisions,
  * assignments, formula reference sources, published versions and change history
@@ -25,11 +31,17 @@
  */
 
 import {
+  LEGACY_EXPRESSIONS,
   categoryPrefixes,
+  coreComputations,
+  coreParameters,
+  describeParameters,
   nextComputationCode,
+  normalizeParameters,
   prefixForCategory,
   seedComputations,
 } from './computationCatalog.js';
+import { BINDABLE_MODULES } from './computationBindings.js';
 import { PAYROLL_RUNS_KEY } from './payrollRuns.js';
 import { seedReferences } from './referenceSources.js';
 
@@ -85,22 +97,98 @@ const normalizeCode = code => String(code || '').trim().toUpperCase();
 
 /* --------------------------------------------------- the standard library */
 
-const asStandard = record => ({ ...record, isBuiltIn: true });
+export const FORMULA_SCOPES = Object.freeze(['Atlas standard', 'Client-specific']);
 
 /**
- * The central standard library. Seeded from `seedComputations()` the first time
- * it is read, and migrated from the v3 combined library when one exists so a
- * preview that already had edited standards does not lose them.
+ * Atlas standard or client-specific. A record from before the Controlled
+ * Hybrid decision that a company authored itself reads as client-specific.
+ */
+export function computationScope(record) {
+  return record?.scope === 'Client-specific' || record?.isBuiltIn === false ? 'Client-specific' : 'Atlas standard';
+}
+
+export const companyLabel = company => company?.displayName || company?.legalName || company?.companyCode || company?.companyId || '';
+
+const asStandard = record => ({ ...record, isBuiltIn: true, scope: computationScope(record), parameters: record.parameters || {} });
+
+const clone = value => JSON.parse(JSON.stringify(value));
+
+/**
+ * Bring a stored library up to the published standards.
+ *
+ * Three standards used to carry a rate typed into the expression (night
+ * differential 10 %, commission 5 %, expanded withholding 2 %), which a client
+ * could only change by editing the formula. Those rates are now named
+ * parameters, so a stored library still holding the old expression is moved on
+ * once — as a new version, with the old one kept for the payrolls that used it.
+ * Parameter definitions a stored core standard lacks are filled in.
+ */
+function upgradeStandardLibrary(list) {
+  let changed = false;
+  const upgraded = list.map(record => {
+    const code = normalizeCode(record.code);
+    const seed = coreComputations.find(([seedCode]) => seedCode === code);
+    let next = record;
+    if (!next.scope) { next = { ...next, scope: computationScope(next) }; changed = true; }
+    const legacy = LEGACY_EXPRESSIONS[code];
+    if (seed && legacy && computationScope(next) === 'Atlas standard'
+      && String(next.expression || '').replace(/\s+/g, '') === legacy.replace(/\s+/g, '')) {
+      const previous = { ...next, isBuiltIn: true };
+      next = {
+        ...next,
+        expression: seed[3],
+        description: seed[4],
+        version: (Number(next.version || '1.0') + 0.1).toFixed(1),
+        parameters: clone(coreParameters[code] || {}),
+        updatedBy: 'P&A Admin',
+        updatedAt: displayDate(),
+      };
+      publishUpgrade(previous, { ...next, isBuiltIn: true });
+      changed = true;
+    }
+    if (seed && coreParameters[code] && !Object.keys(next.parameters || {}).length) {
+      const parameters = normalizeParameters(next.expression, coreParameters[code]);
+      if (Object.keys(parameters).length) { next = { ...next, parameters }; changed = true; }
+    }
+    if (!next.parameters) { next = { ...next, parameters: {} }; changed = true; }
+    return next;
+  });
+  return { list: upgraded, changed };
+}
+
+/** Both ends of an upgrade go into version history, so the old expression stays resolvable. */
+function publishUpgrade(previous, next) {
+  const code = normalizeCode(previous.code);
+  if (!readVersions('standard', true).some(item => item.code === code && item.version === previous.version)) {
+    appendVersion('standard', previous, { note: 'Published version before its rate became a named parameter.', actor: 'System Standard' });
+  }
+  appendVersion('standard', next, {
+    note: 'Atlas standard update: the rate typed into the expression is now a named parameter with an approved range.',
+    changes: diffComputation(previous, next),
+    actor: 'P&A Admin',
+  });
+}
+
+/**
+ * The central library — every formula, Atlas standard and client-specific
+ * alike. Seeded from `seedComputations()` the first time it is read, and
+ * migrated from the v3 combined library when one exists so a preview that
+ * already had edited standards does not lose them.
  */
 export function readStandardLibrary() {
   const saved = readJson(STANDARD_LIBRARY_KEY, null);
-  if (Array.isArray(saved) && saved.length) return saved.map(asStandard);
+  if (Array.isArray(saved) && saved.length) {
+    const { list, changed } = upgradeStandardLibrary(saved);
+    if (changed) writeJson(STANDARD_LIBRARY_KEY, list.map(asStandard));
+    return list.map(asStandard);
+  }
   const legacy = readJson(LEGACY_KEYS.computations, null);
   const migrated = Array.isArray(legacy) && legacy.length
     ? legacy.filter(item => item.isBuiltIn !== false).map(asStandard)
     : seedComputations();
-  writeJson(STANDARD_LIBRARY_KEY, migrated);
-  return migrated;
+  const stored = upgradeStandardLibrary(migrated).list.map(asStandard);
+  writeJson(STANDARD_LIBRARY_KEY, stored);
+  return stored;
 }
 
 export function writeStandardLibrary(library) {
@@ -112,11 +200,12 @@ export function writeStandardLibrary(library) {
 /**
  * `{ [code]: { [companyId]: { applied, status, updatedBy, updatedAt } } }`.
  *
- * An absent entry means the standard is centrally available and Active: the
- * confirmed model is that Atlas publishes a standard once and each company
- * activates or deactivates it, rather than each company receiving a copy.
+ * `applied` is P&A's assignment of a formula to a company. Under the
+ * Controlled Hybrid approach a company sees and uses only what P&A assigned,
+ * so an absent entry means *not assigned*. A company's onboarding baseline is
+ * written as explicit entries by `ensureOnboardingBaseline`.
  */
-export const DEFAULT_APPLICABILITY = Object.freeze({ applied: true, status: 'Active' });
+export const DEFAULT_APPLICABILITY = Object.freeze({ applied: false, status: 'Active' });
 
 export function readApplicability() {
   const saved = readJson(APPLICABILITY_KEY, {});
@@ -136,15 +225,64 @@ export function setApplicability(code, companyId, patch, actor = 'P&A Admin') {
   const key = normalizeCode(code);
   const scope = companyId || 'default';
   const map = readApplicability();
+  const current = applicabilityFor(key, scope, map);
+  // Status history: every change to an assignment, who made it and when.
+  const changed = Object.entries(patch).filter(([field, value]) => field !== 'history' && String(current[field] ?? '') !== String(value ?? ''));
+  const history = changed.length
+    ? [{ at: stamp(), by: actor, changes: changed.map(([field, value]) => ({ field, from: current[field] ?? '', to: value })) }, ...(current.history || [])]
+    : current.history || [];
   const next = {
     ...map,
     [key]: {
       ...(map[key] || {}),
-      [scope]: { ...applicabilityFor(key, scope, map), ...patch, updatedBy: actor, updatedAt: stamp() },
+      [scope]: { ...current, ...patch, history, updatedBy: actor, updatedAt: stamp() },
     },
   };
   writeApplicability(next);
   return applicabilityFor(key, scope, next);
+}
+
+const BASELINE_KEY = 'atlas-computation-onboarding-baseline-v1';
+
+/** Every formula code a company's own payroll, pipeline or pay items already use. */
+function codesInUse(companyId) {
+  const fromRuns = Object.keys(usageIndexFromRuns(readCompanyRuns(companyId)));
+  const assignments = readJson(companyKey('assignments', companyId), []);
+  const fromAssignments = Array.isArray(assignments) ? assignments.map(item => item?.computationCode) : [];
+  const fromConfigurations = Object.keys(BINDABLE_MODULES).flatMap(moduleKey => {
+    const records = readJson(`atlas-service-${moduleKey}:${companyId}`, []);
+    return Array.isArray(records) ? records.map(record => record?.computationCode) : [];
+  });
+  return [...fromRuns, ...fromAssignments, ...fromConfigurations].filter(Boolean);
+}
+
+/**
+ * The formulas a company is assigned at onboarding.
+ *
+ * A company opened for the first time — or one that predates the Controlled
+ * Hybrid rule — is given its baseline once: the core Atlas payroll set the
+ * engine computes with, plus any code its own payroll, pipeline assignments or
+ * pay items already use. Nothing it relies on today is withdrawn; the optional
+ * standards arrive only when P&A assigns them. The baseline is recorded, so a
+ * formula P&A later withdraws is not assigned again on the next read, and an
+ * explicit decision already on file is never overwritten.
+ */
+export function ensureOnboardingBaseline(companyId) {
+  const scope = companyId || 'default';
+  const key = `${BASELINE_KEY}:${scope}`;
+  if (readJson(key, null)) return false;
+  const map = readApplicability();
+  const next = { ...map };
+  const wanted = new Set([...coreComputations.map(([code]) => code), ...codesInUse(scope)].map(normalizeCode));
+  let assigned = 0;
+  wanted.forEach(code => {
+    if (next[code]?.[scope]) return;
+    next[code] = { ...(next[code] || {}), [scope]: { applied: true, status: 'Active', updatedBy: 'Onboarding baseline', updatedAt: stamp() } };
+    assigned += 1;
+  });
+  writeApplicability(next);
+  writeJson(key, { recordedAt: stamp(), assigned });
+  return true;
 }
 
 /* ------------------------------------------------- company-defined records */
@@ -183,12 +321,70 @@ export function writeCompanyComputations(companyId, list) {
 }
 
 /**
- * The Atlas standards applied to one company, carrying that company's own
- * Active/Inactive decision. The central record is shared, never copied.
+ * Move a company's own formulas into the central library.
+ *
+ * Before the Controlled Hybrid decision a company could author formulas in its
+ * own store. Every formula now lives once, centrally, owned by P&A, so each of
+ * those records becomes a client-specific formula owned by that company and
+ * assigned only to it — same code, same versions, same status. A code another
+ * formula already holds centrally is renumbered from the category and keeps
+ * `formerCode`. It runs on every read and is idempotent: the company store is
+ * emptied as its records move.
+ */
+export function migrateCompanyComputations(companyId) {
+  const scope = companyId || 'default';
+  const own = readCompanyComputations(scope);
+  if (!own.length) return [];
+  const central = readStandardLibrary();
+  const taken = new Set(central.map(item => normalizeCode(item.code)));
+  const renamed = new Map();
+  const moved = own.map(record => {
+    const original = normalizeCode(record.code);
+    let code = original;
+    if (taken.has(code)) code = nextComputationCode(record.category, [...taken].map(item => ({ code: item })));
+    taken.add(code);
+    renamed.set(original, code);
+    return {
+      ...record,
+      code,
+      ...(code !== original ? { formerCode: original } : {}),
+      id: record.id ?? `${scope}-${code}`,
+      isBuiltIn: true,
+      scope: 'Client-specific',
+      ownerCompanyId: scope,
+      parameters: record.parameters || {},
+    };
+  });
+  writeStandardLibrary([...moved, ...central]);
+
+  const companyVersions = readVersions(scope, false);
+  const carried = companyVersions
+    .filter(item => renamed.has(item.code))
+    .map(item => ({ ...item, code: renamed.get(item.code), isBuiltIn: true, scope: 'Client-specific', ownerCompanyId: scope }));
+  writeJson(STANDARD_VERSIONS_KEY, [...carried, ...readVersions(scope, true)]);
+  writeJson(companyKey('versions', scope), companyVersions.filter(item => !renamed.has(item.code)));
+
+  const map = readApplicability();
+  moved.forEach(record => {
+    map[record.code] = { ...(map[record.code] || {}), [scope]: { applied: true, status: record.status === 'Inactive' ? 'Inactive' : 'Active', updatedBy: 'Moved to the central library', updatedAt: stamp() } };
+  });
+  writeApplicability(map);
+  writeCompanyComputations(scope, []);
+  return moved;
+}
+
+/**
+ * The formulas assigned to one company, carrying that company's own
+ * Active/Inactive status. The central record is shared, never copied.
  */
 export function readAppliedStandards(companyId) {
+  ensureOnboardingBaseline(companyId);
   const applicability = readApplicability();
+  const owner = companyId || 'default';
   return readStandardLibrary()
+    // A client-specific formula is only ever visible to the client it was built
+    // for, whatever an assignment record might say.
+    .filter(record => computationScope(record) !== 'Client-specific' || record.ownerCompanyId === owner)
     .map(record => ({ record, scope: applicabilityFor(record.code, companyId, applicability) }))
     .filter(({ scope }) => scope.applied)
     .map(({ record, scope }) => ({
@@ -209,6 +405,7 @@ export function readAppliedStandards(companyId) {
  * render and the list the payroll engine resolves codes against.
  */
 export function readComputationLibrary(companyId) {
+  migrateCompanyComputations(companyId);
   return [...readCompanyComputations(companyId), ...readAppliedStandards(companyId)];
 }
 
@@ -331,12 +528,16 @@ const TRACKED_FIELDS = [
   ['name', 'Computation name'],
   ['category', 'Category'],
   ['description', 'Description'],
+  ['parameters', 'Parameters'],
 ];
+
+// Parameters are an object, so they are compared and shown as one readable line.
+const trackedValue = (key, record) => (key === 'parameters' ? describeParameters(record?.parameters || {}) : record?.[key] ?? '');
 
 export function diffComputation(previous, next) {
   if (!previous) return [];
   return TRACKED_FIELDS
-    .map(([key, label]) => ({ field: label, from: previous[key] ?? '', to: next[key] ?? '' }))
+    .map(([key, label]) => ({ field: label, from: trackedValue(key, previous), to: trackedValue(key, next) }))
     .filter(change => String(change.from) !== String(change.to));
 }
 
@@ -369,7 +570,7 @@ export function readVersions(companyId, isBuiltIn = false) {
   return Array.isArray(saved) ? saved : [];
 }
 
-export function appendVersion(companyId, record, { test = null, changes = [], note = '', actor = 'Client Admin' } = {}) {
+export function appendVersion(companyId, record, { test = null, changes = [], note = '', actor = 'Client Admin', source = 'Screen', approvalRef = '' } = {}) {
   const isBuiltIn = record.isBuiltIn !== false;
   const key = versionsKey(companyId, isBuiltIn);
   const existing = readVersions(companyId, isBuiltIn);
@@ -383,11 +584,18 @@ export function appendVersion(companyId, record, { test = null, changes = [], no
     status: record.status,
     effectiveDate: record.effectiveDate,
     isBuiltIn,
+    scope: computationScope(record),
+    ownerCompanyId: record.ownerCompanyId || '',
+    parameters: record.parameters || {},
     publishedAt: stamp(),
     publishedBy: actor,
     note,
     changes,
     test,
+    // Where the change came from and the approval it was made under.
+    source,
+    approvalRef,
+    testCases: record.testCases || [],
   };
   const next = [snapshot, ...existing.filter(item => !(item.code === snapshot.code && item.version === snapshot.version))];
   writeJson(key, next);
@@ -422,6 +630,24 @@ export function resolveComputationVersion(code, version, companyId, library = nu
 /* ------------------------------------------------------------ payroll usage */
 
 const POSTED_STATUSES = ['Posted', 'Locked'];
+// The statuses whose `recalculate` capability is on in payrollRuns.js: a run in
+// one of them computes against the current library the next time it is run.
+const RECALCULABLE_STATUSES = ['Open', 'For Review', 'For Approval'];
+
+/**
+ * The pay items, across the given companies, that compute with a formula.
+ * A new version that adds a variable leaves each of them to be told where the
+ * new value comes from, so the formula editor names them.
+ */
+export function payItemsUsing(code, companies = []) {
+  const wanted = normalizeCode(code);
+  return companies.flatMap(company => Object.keys(BINDABLE_MODULES).flatMap(moduleKey => {
+    const records = readJson(`atlas-service-${moduleKey}:${company.companyId}`, []);
+    return (Array.isArray(records) ? records : [])
+      .filter(record => normalizeCode(record?.computationCode) === wanted)
+      .map(record => ({ companyId: company.companyId, companyName: companyLabel(company), moduleKey, code: record.code, name: record.name || record.code }));
+  }));
+}
 
 /**
  * Which payroll transactions referenced a computation code.
@@ -584,8 +810,8 @@ export function computationGuards(record, {
   versions = null,
   // 'company' is the Computational Basis screen, where a standard is read-only.
   // 'standard' is Settings › Standard Computation Library, where the central
-  // definition itself is edited — still only while no posted transaction, in
-  // any company, has applied it.
+  // definition itself is edited. Once a posted transaction in any company has
+  // applied it, a save publishes a new version rather than being refused.
   context = 'company',
 } = {}) {
   const code = normalizeCode(record?.code);
@@ -598,15 +824,30 @@ export function computationGuards(record, {
   const editReasons = [];
   if (built && !central) {
     editReasons.push(isPaAdmin
-      ? `${code} is an Atlas standard. Edit the central definition in Settings › Standard Computation Library — a company never holds its own copy.`
-      : `${code} is a built-in Atlas standard. It can only be activated or deactivated for this company.`);
+      ? `${code} is edited in Settings › Standard Computation Library, where every formula is maintained once, centrally — a company never holds its own copy.`
+      : `${code} is maintained by P&A. You can see the formula and the values you may change, but you can't change its logic — for a new formula or a change in logic, contact P&A.`);
   }
-  if (use.posted.length) {
-    editReasons.push(`${code} was used by ${use.posted.length} posted payroll ${use.posted.length === 1 ? 'transaction' : 'transactions'} (${use.posted.map(item => item.transactionNumber).join(', ')}). Publish a new version instead of changing the one payroll already applied.`);
+  // Inside a company, a formula a posted payroll used is history. Centrally it
+  // is not frozen: saving publishes a new version, and every posted run keeps
+  // explaining itself with the version it captured (`libraryForRun`), so a new
+  // version can never change a payroll already released.
+  const runLabel = item => (item.companyName ? `${item.transactionNumber} · ${item.companyName}` : item.transactionNumber);
+  const postedRuns = use.posted.map(runLabel).join(', ');
+  const postedCount = `${use.posted.length} posted payroll ${use.posted.length === 1 ? 'transaction' : 'transactions'}`;
+  if (use.posted.length && !central) {
+    editReasons.push(`${code} was used by ${postedCount} (${postedRuns}). Publish a new version instead of changing the one payroll already applied.`);
   }
+  const versionNotice = central && use.posted.length
+    ? `${code} was used by ${postedCount} (${postedRuns}). Saving publishes version ${(Number(record?.version || 1) + 0.1).toFixed(1)}; posted payrolls keep the version they ran on.`
+    : '';
+  // A run still open or in review computes against the current library, so a
+  // recalculation after this save picks the new version up.
+  const recalculableRuns = central
+    ? use.transactions.filter(item => RECALCULABLE_STATUSES.includes(item.status)).map(runLabel)
+    : [];
 
   const deleteReasons = [];
-  if (built && !central) deleteReasons.push(`${code} is a built-in Atlas standard and is never deleted from a company. Deactivate it instead.`);
+  if (built && !central) deleteReasons.push(`${code} is never deleted from a company. P&A withdraws its assignment in Settings › Standard Computation Library instead.`);
   if (use.posted.length) deleteReasons.push(`${code} appears in ${use.posted.length} posted payroll ${use.posted.length === 1 ? 'transaction' : 'transactions'} (${use.posted.map(item => item.transactionNumber).join(', ')}). Set it Inactive instead — historical payroll must keep resolving it.`);
   else if (use.transactions.length) deleteReasons.push(`${code} is referenced by payroll ${use.transactions.map(item => item.transactionNumber).join(', ')}. Set it Inactive instead of deleting it.`);
   if (published.length > 1) deleteReasons.push(`${code} has ${published.length} published versions. A code with version history is retired by deactivating it, not by deleting it.`);
@@ -626,6 +867,8 @@ export function computationGuards(record, {
     canEdit: !editReasons.length,
     canDelete: !deleteReasons.length,
     canDeactivate: !deactivateReasons.length,
+    versionNotice,
+    recalculableRuns,
     editReason: editReasons[0] || '',
     deleteReason: deleteReasons[0] || '',
     deactivateReason: deactivateReasons[0] || '',
@@ -651,6 +894,32 @@ export function newCompanyComputation({ category = 'Earnings', library = [], cat
     status: 'Inactive',
     isBuiltIn: false,
     isNew: true,
+    version: '0.0',
+    effectiveDate: today(),
+    updatedBy: actor,
+    updatedAt: 'Not saved',
+    lastTest: null,
+  };
+}
+
+/**
+ * A formula P&A is about to add to the central library: category-driven code,
+ * Inactive until reviewed, and either an Atlas standard or built for one client.
+ */
+export function newStandardComputation({ category = 'Earnings', library = [], catalogue = categoryPrefixes, scope = 'Atlas standard', ownerCompanyId = '', actor = 'P&A Admin' } = {}) {
+  return {
+    id: null,
+    code: nextComputationCode(category, library, catalogue),
+    name: '',
+    category,
+    expression: '',
+    description: '',
+    status: 'Inactive',
+    isBuiltIn: true,
+    isNew: true,
+    scope,
+    ownerCompanyId,
+    parameters: {},
     version: '0.0',
     effectiveDate: today(),
     updatedBy: actor,

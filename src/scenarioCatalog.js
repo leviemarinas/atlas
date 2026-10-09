@@ -248,7 +248,7 @@ export const SCENARIOS = [
     step('Policy simulator', 'Run impacted employees', 'Atlas compares before and after net pay and deferred deductions.', 'Policy impact calculated'),
   ], ['policy engine', 'take-home pay', 'impact']),
   scenario('client-rule', 'client_admin', 'Company rules', 'Apply a governed company rule', 'map a rule to a policy code and employee scope', 'company behavior stays traceable to reusable logic', [
-    step('Payroll', 'Open Policy Management', 'Select the versioned payroll policy register.'),
+    step('Payroll', 'Open Policy Management', 'Select the versioned payroll policy list.'),
     step('Policy Management', 'Click Add Policy', 'Enter policy details, activation, effective period, and sub-category.'),
     step('Policy mapping', 'Select policy-engine code', 'Enter only the parameters governed by that code.'),
     step('Review rule', 'Apply', 'Atlas saves the assignment and audit event.', 'Company rule applied'),
@@ -324,12 +324,12 @@ export const SCENARIOS = [
     step('Payroll', 'Open Billing', 'Select the client and service period.'),
     step('Billing', 'Add transaction', 'Enter service, basis, quantity, rate, and references.'),
     step('Billing review', 'Validate totals', 'Atlas checks the billed company and period.'),
-    step('Billing review', 'Save transaction', 'The P&A-only register is updated.', 'Billing transaction saved'),
+    step('Billing review', 'Save transaction', 'The P&A-only list is updated.', 'Billing transaction saved'),
   ], ['billing', 'P&A only', 'client']),
   scenario('pa-multi-company', 'pa_admin', 'Multi-company operations', 'Switch companies safely', 'move between client contexts without carrying the prior company’s data', 'every action stays correctly company-scoped', [
-    step('Payroll', 'Open Payroll Processing', 'Start on a company-scoped register so the switch is observable.'),
+    step('Payroll', 'Open Payroll Processing', 'Start on a company-scoped list so the switch is observable.'),
     step('Top bar', 'Open company switcher and select Northstar Retail', 'Atlas refreshes the live company list and every company-scoped repository changes context.'),
-    step('Payroll Processing', 'Review the Northstar register', 'Only Northstar transactions appear.'),
+    step('Payroll Processing', 'Review the Northstar transaction list', 'Only Northstar transactions appear.'),
     step('Top bar', 'Switch back to ABC Company Ltd', 'ABC data is restored without cross-company leakage.', 'Company scope verified'),
   ], ['company switcher', 'scope', 'security']),
   scenario('pa-audit', 'pa_admin', 'Audit & security', 'Investigate a governed data change', 'filter audit events by actor, module, record, and date', 'I can reconstruct who changed payroll-affecting data', [

@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { ArrowsDownUp, Calculator, CheckCircle, Table, Users, Warning } from '@phosphor-icons/react';
+import { ArrowsDownUp, Calculator, CheckCircle, Table, Info, Users, Warning } from '@phosphor-icons/react';
 import { readServiceConfiguration } from './serviceModules';
 import { readPayrollCollectionDefinitions } from './payrollIntegration';
 import { ApplicabilityPanel, coveredEmployees, describeAssignment, employeeDirectory, normalizeAssignment, separationReasons } from './PolicyApplicability';
-import { CheckList, difference, FieldLabel, money, number, NumberField, SourceMultiSelect, Toggle, useFieldScope } from './PolicyFields';
+import { CheckList, difference, EngineSwitch, FieldLabel, LockedBlock, money, number, NumberField, OpenForTesting, PolicySaveBar, SourceMultiSelect, Toggle, useFieldScope } from './PolicyFields';
 import { SeparationRuleTable, separationPayResult, separationTrace } from './SeparationRules';
 import { retirementResult } from './RetirementEngine';
 import { plural } from './textFormat';
@@ -39,8 +39,15 @@ export function finalPayDeductionOptions() {
     outstanding: record.outstanding,
     rank: record.rank,
     group: record.group,
+    kind: record.kind,
+    due: record.due,
   }));
 }
+
+export const GOVERNMENT_LOAN_TREATMENTS = ['Offset the full outstanding balance', 'Offset scheduled amortization only', 'Endorse the balance to the agency'];
+
+/** The final-pay treatment for one government loan: its own setting, else the engine default. */
+export const governmentLoanTreatment = (policy, code) => policy.governmentLoanTreatments?.[code] || policy.governmentLoanRule || GOVERNMENT_LOAN_TREATMENTS[0];
 
 /** Offsets in the order the applicable hierarchy adjusts them. */
 export function finalPayOffsets(policy) {
@@ -82,10 +89,16 @@ export function finalPayResult(policy, { retirementValue = 0, test = policy.test
     ? Boolean(test.computeStatutory)
     : policy.statutoryRule === statutoryRules[0];
 
-  const configuredOffsets = finalPayOffsets(policy).map(option => ({
-    label: option.label, code: option.value, rank: option.rank, type: 'Offset',
-    value: number(test.offsetAmounts?.[option.value] ?? option.outstanding),
-  }));
+  // Each government loan type keeps its own treatment: SSS and Pag-IBIG may be
+  // offset in full, cut to the scheduled amortization, or endorsed to the agency
+  // for the employee to settle directly (nothing is deducted from final pay).
+  const configuredOffsets = finalPayOffsets(policy).map(option => {
+    const outstanding = number(test.offsetAmounts?.[option.value] ?? option.outstanding);
+    if (option.kind !== 'Government') return { label: option.label, code: option.value, rank: option.rank, type: 'Offset', value: outstanding };
+    const treatment = governmentLoanTreatment(policy, option.value);
+    const value = treatment === GOVERNMENT_LOAN_TREATMENTS[2] ? 0 : treatment === GOVERNMENT_LOAN_TREATMENTS[1] ? Math.min(outstanding, number(option.due)) : outstanding;
+    return { label: `${option.label} — ${treatment.replace('Offset the ', 'offset ').replace('Offset ', 'offset ').replace('Endorse the balance', 'endorsed')}`, code: option.value, rank: option.rank, type: 'Government loan', treatment, value, endorsed: Math.round((outstanding - value) * 100) / 100 };
+  });
   // Statutory contributions and final tax keep the highest priority: they are
   // never the items left unrecovered when the settlement runs short.
   const deductions = [
@@ -111,6 +124,7 @@ export function finalPayResult(policy, { retirementValue = 0, test = policy.test
 
   return {
     service, separation, earnings, deductions: applied,
+    endorsedToAgency: applied.filter(item => item.endorsed > 0).map(item => ({ label: item.label, code: item.code, amount: item.endorsed, treatment: item.treatment })),
     grossFinalPay, totalDeductions, totalRecovered, unrecovered,
     netFinalPay, negative: netFinalPay < 0,
     computeStatutory, statutoryDecidedAtTransaction,
@@ -187,7 +201,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
 
   return <div className="policy-engine-grid final-pay-engine">
     <section className="policy-config-card">
-      <header><span><Table weight="duotone" /></span><div><h2>Final Pay</h2><p>Consolidates the components that apply on separation and the offsets recovered against them.</p></div><button className={`switch ${policy.enabled ? 'on' : ''}`} onClick={() => update('enabled', !policy.enabled)}><span /></button></header>
+      <header><span><Table weight="duotone" /></span><div><h2>Final Pay</h2><p>Consolidates the components that apply on separation and the offsets recovered against them.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
 
       <ApplicabilityPanel assignment={assignment} onChange={value => update('assignment', value)} engineLabel="Final Pay" />
 
@@ -218,7 +232,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
       />
 
       <h3 className="policy-subheading">Separation treatment</h3>
-      <div className={separationScope}><SeparationRuleTable rules={policy.separationRules} onChange={value => update('separationRules', value)} /></div>
+      <LockedBlock lockKey="separationRules"><div className={separationScope}><SeparationRuleTable rules={policy.separationRules} onChange={value => update('separationRules', value)} /></div></LockedBlock>
 
       <h3 className="policy-subheading">Deduction hierarchy for final pay</h3>
       <div className="policy-form-grid">
@@ -230,7 +244,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
           ? <>Final pay uses its own order. A regular payroll hierarchy is <strong>not</strong> assumed to apply to a final settlement.</>
           : <>Final pay reuses the regular payroll order from <strong>REF-011</strong>. Change this if the settlement collects balances in a different sequence.</>}</span>
       </div>
-      {policy.hierarchySource === HIERARCHY_SOURCES[1] && offsets.length > 0 && <div className="deduction-rank-table">
+      {policy.hierarchySource === HIERARCHY_SOURCES[1] && offsets.length > 0 && <LockedBlock lockKey="finalPayRanks"><div className="deduction-rank-table">
         <h4>Final pay adjustment order</h4>
         <table>
           <thead><tr><th>Priority</th><th>Collection</th><th>Outstanding balance</th><th>Source</th></tr></thead>
@@ -241,7 +255,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
             <td><small>{option.group}</small></td>
           </tr>)}</tbody>
         </table>
-      </div>}
+      </div></LockedBlock>}
       {policy.hierarchySource === HIERARCHY_SOURCES[1] && !offsets.length && <p className="applicability-empty">Select the deductions and loans final pay recovers before ranking them.</p>}
 
       <h3 className="policy-subheading">Statutory contributions</h3>
@@ -256,19 +270,20 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
         <NumberField label="Daily rate divisor" helpKey="dailyRateDivisor" value={policy.dailyRateDivisor} onChange={value => update('dailyRateDivisor', value)} suffix="days" />
         <FieldLabel label="Advance 13th month rule" scopeKey="advanceThirteenthRule"><select value={policy.advanceThirteenthRule} onChange={event => update('advanceThirteenthRule', event.target.value)}><option>Deduct any advanced 13th month release</option><option>Do not recover</option></select></FieldLabel>
         <FieldLabel label="Last cutoff rule" scopeKey="lastCutoffRule"><select value={policy.lastCutoffRule} onChange={event => update('lastCutoffRule', event.target.value)}><option>Include the unposted last cutoff</option><option>Process the last cutoff separately</option></select></FieldLabel>
-        <FieldLabel label="Government loan balance" scopeKey="governmentLoanRule"><select value={policy.governmentLoanRule} onChange={event => update('governmentLoanRule', event.target.value)}><option>Offset the full outstanding balance</option><option>Endorse the balance to the agency</option></select></FieldLabel>
+        <FieldLabel label="Government loan balance (default)" scopeKey="governmentLoanRule"><select value={policy.governmentLoanRule} onChange={event => update('governmentLoanRule', event.target.value)}>{GOVERNMENT_LOAN_TREATMENTS.map(option => <option key={option}>{option}</option>)}</select></FieldLabel>
         <FieldLabel label="Company loan balance" scopeKey="companyLoanRule"><select value={policy.companyLoanRule} onChange={event => update('companyLoanRule', event.target.value)}><option>Offset the full outstanding balance</option><option>Convert to a receivable</option></select></FieldLabel>
         <FieldLabel className="wide" label="Net pay rule when negative" helpKey="negativeNetPayRule"><select value={policy.negativeNetPayRule} onChange={event => update('negativeNetPayRule', event.target.value)}><option>Raise for approval and bill the employee</option><option>Write off the difference</option><option>Hold the final pay release</option></select></FieldLabel>
       </div>
+      <GovernmentLoanTreatments policy={policy} update={update} />
       <p className="policy-inline-note">Leave conversion eligibility and any maximum convertible days stay in Leave Configuration. Final Pay consumes the resulting eligible amount instead of restating the leave rules.</p>
       <div className="policy-toggle-list">
         <Toggle value={policy.autoOffsetDeductions} onChange={value => update('autoOffsetDeductions', value)} helpKey="autoOffsetDeductions" label="Auto-offset authorized deductions" hint="Offset loan balances and property accountabilities before net final pay." />
         <Toggle value={policy.notifyAdmin} onChange={value => update('notifyAdmin', value)} scopeKey="notifyAdmin" label="Notify admin on release" hint="Alert payroll administrators when a final pay breakdown is ready." />
       </div>
-      <div className="policy-save"><button className="button primary" onClick={() => onSave(result)}>Save final pay policy</button></div>
+      <PolicySaveBar label="Save final pay policy" onSave={reason => onSave(result, reason)} />
     </section>
 
-    <aside className="policy-simulator">
+    <OpenForTesting><aside className="policy-simulator">
       <header><Calculator weight="duotone" /><div><h2>Final pay breakdown</h2><p>Separation date and reason drive the computation; retirement pay is consumed from the Retirement engine.</p></div></header>
       <div className="policy-test-grid">
         <FieldLabel className="wide" label="Load from Employee Masterfile"><select value={policy.test.employeeCode || ''} onChange={event => loadEmployee(event.target.value)}>{employeeDirectory.map(employee => <option key={employee.code} value={employee.code}>{employee.code} — {employee.name} ({employee.reasonForLeaving})</option>)}</select></FieldLabel>
@@ -312,6 +327,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
           </tbody>
         </table>
       </div>
+      {result.endorsedToAgency.length > 0 && <div className="payslip-note"><Info /><div><strong>Endorsed to the agency, not deducted</strong><span>{result.endorsedToAgency.map(item => `${item.label.split(' — ')[0]}: ${money(item.amount)}`).join(' · ')}. The employee settles these directly with SSS or Pag-IBIG.</span></div></div>}
       {result.unrecovered > 0 && <div className="payslip-note"><Warning /><div><strong>{money(result.unrecovered)} could not be recovered from this final pay</strong><span>The balance stays outstanding under the negative net pay rule: {policy.negativeNetPayRule}.</span></div></div>}
 
       <div className="eligible-roster">
@@ -338,6 +354,20 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
         </div>
         <p className="policy-inline-note">{selectedRows.length} of {roster.length} covered {plural(roster.length, 'employee')} selected. Separation date and Reason for Leaving come from the Employee Masterfile, so an uploaded batch carries the same information.</p>
       </div>
-    </aside>
+    </aside></OpenForTesting>
+  </div>;
+}
+
+/** One final-pay treatment per government loan type, defaulting to the engine's setting. */
+function GovernmentLoanTreatments({ policy, update }) {
+  const loans = finalPayDeductionOptions().filter(option => option.kind === 'Government');
+  if (!loans.length) return null;
+  const set = (code, value) => update('governmentLoanTreatments', { ...(policy.governmentLoanTreatments || {}), [code]: value });
+  return <div className="government-loan-treatments">
+    <h4>Government loans on separation</h4>
+    <p className="policy-inline-note">Set how each loan type is settled from final pay. A loan endorsed to the agency is not deducted; it is listed on the final pay so the employee settles it with SSS or Pag-IBIG.</p>
+    <table className="data-table"><thead><tr><th>Loan</th><th>Agency code</th><th>Scheduled amortization</th><th>Final pay treatment</th></tr></thead><tbody>
+      {loans.map(loan => <tr key={loan.value}><td>{loan.label}</td><td><code>{loan.value}</code></td><td>₱ {Number(loan.due || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td><td><select aria-label={`Final pay treatment for ${loan.label}`} value={governmentLoanTreatment(policy, loan.value)} onChange={event => set(loan.value, event.target.value)}>{GOVERNMENT_LOAN_TREATMENTS.map(option => <option key={option}>{option}</option>)}</select></td></tr>)}
+    </tbody></table>
   </div>;
 }

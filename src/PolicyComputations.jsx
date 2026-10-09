@@ -23,14 +23,17 @@ import { codeParameterScopes, completeParameterSchema, defaultParameterSchema, d
 import { configuredCollectionByCode } from './payrollIntegration';
 import { applyTakeHomePolicy } from './payrollEngine';
 import {
-  BASE_OPTIONS, baseAmount, EngineScope, FieldHelp, FieldLabel, money, number, NumberField, Toggle,
+  BASE_OPTIONS, baseAmount, EngineAccess, EngineScope, EngineSwitch, FieldHelp, FieldLabel, money, number, NumberField, OpenForTesting, PolicySaveBar, Toggle,
 } from './PolicyFields';
+import { clientEditViolations, diffPolicySection, engineAccessFor } from './policyEngineAccess';
+import { useRole } from './RoleContext';
 import { describeAssignment, normalizeAssignment, seedAssignment, ApplicabilityPanel } from './PolicyApplicability';
 import { DeferredRecoveryPanel, seedRecovery } from './DeferredDeductions';
 import { RetirementEngine, retirementResult } from './RetirementEngine';
 import { FinalPayEngine, finalPayResult, HIERARCHY_SOURCES, statutoryRules } from './FinalPayEngine';
 import { seedSeparationRules } from './SeparationRules';
-import { defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
+import { appendAuditEvent, defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
+import { activateEngineVersion, engineHistory, engineValuesAsOf, readEngineVersions, recordEngineVersion } from './policyEngineVersions.js';
 
 export { retirementResult, finalPayResult };
 export { roundServiceYears } from './PolicyFields';
@@ -88,7 +91,7 @@ const baseSeedPolicyCodes = [
   { code: 'TIN-001', name: 'Duplicate TIN Validation', category: 'Government & Company Compliance', subcategory: 'Duplicate TIN Validation', engine: 'Compliance', description: 'Warns when a TIN is already assigned to another employee.', status: 'Active' },
   { code: 'MWE-001', name: 'Minimum Wage and ECOLA', category: 'Government & Company Compliance', subcategory: 'Minimum Wage and ECOLA', engine: 'Government', description: 'Applies the effective regional minimum wage and ECOLA.', status: 'Active' },
   { code: 'CST-001', name: 'Cost Allocation Validation', category: 'Payroll Administration & Controls', subcategory: 'Cost Allocation', engine: 'Payroll', description: 'Requires payroll allocation percentages to total 100%.', status: 'Active' },
-  { code: 'CUR-001', name: 'Effective Exchange Rate', category: 'Payroll Administration & Controls', subcategory: 'Multi-Currency', engine: 'Payroll', description: 'Converts payroll using the effective processing or payout-date rate.', status: 'Active' },
+  { code: 'CUR-001', name: 'Transaction Exchange Rate', category: 'Payroll Administration & Controls', subcategory: 'Multi-Currency', engine: 'Payroll', description: 'Pays a transaction in up to three currencies from the Currency reference table, at the rate entered on the payroll transaction.', status: 'Active' },
   { code: 'CAL-002', name: 'Company Payroll Calendar', category: 'Payroll Administration & Controls', subcategory: 'Payroll Calendar', engine: 'Payroll', description: 'Controls payout, processing, cutoff, statutory, and billing dates.', status: 'Active' },
   { code: 'NOT-001', name: 'Payroll Exception Notification', category: 'Payroll Administration & Controls', subcategory: 'Notifications', engine: 'Payroll', description: 'Notifies the configured audience about payroll exceptions and deadlines.', status: 'Active' },
   { code: 'APR-001', name: 'Payroll Approval Hierarchy', category: 'Payroll Administration & Controls', subcategory: 'Approval Hierarchy', engine: 'Payroll', description: 'Routes overrides and exceptions to the configured approvers.', status: 'Active' },
@@ -291,6 +294,7 @@ const seedPolicies = {
     advanceThirteenthRule: 'Deduct any advanced 13th month release',
     lastCutoffRule: 'Include the unposted last cutoff',
     governmentLoanRule: 'Offset the full outstanding balance',
+    governmentLoanTreatments: {},
     companyLoanRule: 'Offset the full outstanding balance',
     negativeNetPayRule: 'Raise for approval and bill the employee',
     autoOffsetDeductions: true,
@@ -367,11 +371,19 @@ const mergeSection = (seed, saved = {}) => ({
   ...(seed.separationRules ? { separationRules: saved.separationRules?.length ? saved.separationRules : seed.separationRules } : {}),
 });
 
-export function readPolicies(companyId = readActiveCompanyId()) {
+/**
+ * The policy set in force on a date (today by default). A version scheduled
+ * for a later date is left out; a backdated run reads the version that was in
+ * force on its payout date.
+ */
+export function readPolicies(companyId = readActiveCompanyId(), asOf) {
   try {
-    const saved = readCompanyValue(STORAGE_KEY, companyId);
-    if (!saved) return seedPolicies;
-    return Object.fromEntries(Object.entries(seedPolicies).map(([key, seed]) => [key, mergeSection(seed, saved[key])]));
+    const saved = readCompanyValue(STORAGE_KEY, companyId) || {};
+    const versions = readEngineVersions(companyId);
+    return Object.fromEntries(Object.entries(seedPolicies).map(([key, seed]) => {
+      const inForce = engineValuesAsOf(versions, key, asOf || undefined);
+      return [key, mergeSection(seed, inForce ? inForce.values : saved[key])];
+    }));
   } catch { return seedPolicies; }
 }
 
@@ -550,7 +562,7 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
   const outstandingRows = result.ledger.filter(item => item.deferred > 0 || item.priorDeferred > 0);
   return <div className="policy-engine-grid">
     <section className="policy-config-card">
-      <header><span><ShieldCheck weight="duotone" /></span><div><h2>Minimum Take-Home Pay</h2><p>Company policy controls; formula execution remains in Computational Basis.</p></div><button className={`switch ${policy.enabled ? 'on' : ''}`} onClick={() => update('enabled', !policy.enabled)}><span /></button></header>
+      <header><span><ShieldCheck weight="duotone" /></span><div><h2>Minimum Take-Home Pay</h2><p>Company policy controls; formula execution remains in Computational Basis.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
 
       <ApplicabilityPanel assignment={normalizeAssignment(policy.assignment)} onChange={value => update('assignment', value)} engineLabel="Take-Home Pay" />
 
@@ -600,10 +612,10 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
         payrollDate={policy.test.nextPayrollDate}
       />}
 
-      <div className="policy-save"><button className="button primary" onClick={() => onSave(result)}>Save take-home policy</button></div>
+      <PolicySaveBar label="Save take-home policy" onSave={reason => onSave(result, reason)} />
     </section>
 
-    <aside className="policy-simulator">
+    <OpenForTesting><aside className="policy-simulator">
       <header><Calculator weight="duotone" /><div><h2>Scenario simulator</h2><p>Run the BRD decision sequence before using it in payroll.</p></div></header>
       <div className="policy-test-grid">
         <NumberField label="Basic pay" helpKey="basicPay" value={policy.test.basicPay} onChange={value => updateTest('basicPay', value)} />
@@ -653,7 +665,7 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
           </table>
         </div>
       </div>}
-    </aside>
+    </aside></OpenForTesting>
   </div>;
 }
 
@@ -664,7 +676,7 @@ function GrossUpEngine({ policy, setPolicy, onSave }) {
   const updateTest = (key, value) => setPolicy(previous => ({ ...previous, test: { ...previous.test, [key]: value } }));
   return <div className="policy-engine-grid gross-up-engine">
     <section className="policy-config-card">
-      <header><span><Calculator weight="duotone" /></span><div><h2>Gross Up</h2><p>Guarantees a net amount by solving the gross taxable pay and the withholding the employer absorbs.</p></div><button className={`switch ${policy.enabled ? 'on' : ''}`} onClick={() => update('enabled', !policy.enabled)}><span /></button></header>
+      <header><span><Calculator weight="duotone" /></span><div><h2>Gross Up</h2><p>Guarantees a net amount by solving the gross taxable pay and the withholding the employer absorbs.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
       <ApplicabilityPanel assignment={normalizeAssignment(policy.assignment)} onChange={value => update('assignment', value)} engineLabel="Gross Up" />
       <div className="policy-form-grid">
         <FieldLabel label="Guaranteed target" helpKey="targetType"><select value={policy.targetType} onChange={event => update('targetType', event.target.value)}><option>Net pay</option><option>Net benefit</option></select></FieldLabel>
@@ -679,10 +691,10 @@ function GrossUpEngine({ policy, setPolicy, onSave }) {
       </div>
       <div className="policy-toggle-list"><Toggle value={policy.includeStatutoryInTaxable} onChange={value => update('includeStatutoryInTaxable', value)} helpKey="includeStatutoryInTaxable" label="Deduct mandatory contributions before tax" hint="Employee statutory share reduces taxable compensation before the bracket is applied." /></div>
       <div className="formula-flow"><span><small>Solve for</small><code>gross taxable pay</code></span><ArrowsDownUp /><span><small>Constraint</small><code>gross + non-taxable − statutory − employee-borne tax = target net</code></span><strong>{policy.taxMethod === 'Flat / final tax rate' ? 'Single rate' : 'Iterated against the effective BIR table'}</strong></div>
-      <div className="policy-save"><button className="button primary" onClick={() => onSave(result)}>Save gross-up policy</button></div>
+      <PolicySaveBar label="Save gross-up policy" onSave={reason => onSave(result, reason)} />
     </section>
 
-    <aside className="policy-simulator">
+    <OpenForTesting><aside className="policy-simulator">
       <header><Calculator weight="duotone" /><div><h2>Gross-up scenario</h2><p>The iteration trace shows each candidate gross until the net converges within tolerance.</p></div></header>
       <div className="policy-test-grid">
         <NumberField label="Target net" helpKey="targetNet" value={policy.test.targetNet} onChange={value => updateTest('targetNet', value)} />
@@ -702,7 +714,7 @@ function GrossUpEngine({ policy, setPolicy, onSave }) {
           <tbody>{result.iterations.map(row => <tr key={row.step}><td>{row.step}</td><td>{money(row.gross)}</td><td>{money(row.tax)}</td><td>{money(row.net)}</td><td>{money(row.gap)}</td></tr>)}</tbody>
         </table>
       </div>
-    </aside>
+    </aside></OpenForTesting>
   </div>;
 }
 
@@ -750,7 +762,12 @@ export const policyEngines = [
 const policyEngineTabForCode = item =>
   policyEngines.find(engine => item?.subcategory === engine.label || item?.engine === engine.label)?.key || '';
 
-function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
+/**
+ * `canManage` is the P&A view. A policy code is a governed configuration of an
+ * engine template, so creating, editing or deleting one is P&A's; a client
+ * reads the library and opens the engines.
+ */
+function PolicyCodeLibrary({ codes, canManage = false, onCreate, onDelete, onOpenEngine }) {
   const [open, setOpen] = useState(false);
   const [editingCode, setEditingCode] = useState('');
   const [query, setQuery] = useState('');
@@ -833,7 +850,9 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
     <section className="policy-code-library">
       <header>
         <div><span className="policy-code-icon"><Table weight="duotone" /></span><div><h2>Policy engine codes</h2><p>Create reusable codes once, then assign them in Payroll Policy Management by sub-category.</p></div></div>
-        <button className="button primary" onClick={() => openCreator()}><Plus /> Create policy code</button>
+        {canManage
+          ? <button className="button primary" onClick={() => openCreator()}><Plus /> Create policy code</button>
+          : <span className="policy-code-lock"><Lock /> Codes are maintained by P&amp;A</span>}
       </header>
       <div className="policy-code-summary">
         <span><strong>{codes.length}</strong><small>Available codes</small></span>
@@ -853,7 +872,7 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
           const governs = codeParameterScopes[item.code];
           const owned = governs?.keys?.length;
           const label = owned ? `${owned} of ${completeSchema.length} parameters — ${governs.governs}` : `${completeSchema.length} configurable parameters`;
-          return <tr key={item.code}><td><code>{item.code}</code></td><td><strong>{item.name}</strong><small>{item.description}</small></td><td><strong>{item.subcategory}</strong><small>{item.category}</small></td><td><span className="policy-count" title={label} aria-label={label}>{owned ? `${owned}/${completeSchema.length}` : completeSchema.length}</span>{governs?.governs && <small className="policy-governs">{governs.governs}</small>}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="policy-code-actions"><button type="button" className="policy-code-open" onClick={() => policyEngineTabForCode(item) ? onOpenEngine?.(item) : openCreator(item)}>{policyEngineTabForCode(item) ? 'Open engine' : 'Create variant'}</button>{item.isBuiltIn ? <span className="policy-code-lock"><Lock /> Standard</span> : <div className="row-actions always"><button type="button" onClick={() => openEditor(item)} aria-label={`Edit ${item.code}`}><PencilSimple /></button><button type="button" onClick={() => onDelete(item)} aria-label={`Delete ${item.code}`}><Trash /></button></div>}</div></td></tr>; })}</tbody>
+          return <tr key={item.code}><td><code>{item.code}</code></td><td><strong>{item.name}</strong><small>{item.description}</small></td><td><strong>{item.subcategory}</strong><small>{item.category}</small></td><td><span className="policy-count" title={label} aria-label={label}>{owned ? `${owned}/${completeSchema.length}` : completeSchema.length}</span>{governs?.governs && <small className="policy-governs">{governs.governs}</small>}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="policy-code-actions">{(policyEngineTabForCode(item) || canManage) && <button type="button" className="policy-code-open" onClick={() => policyEngineTabForCode(item) ? onOpenEngine?.(item) : openCreator(item)}>{policyEngineTabForCode(item) ? 'Open engine' : 'Create variant'}</button>}{item.isBuiltIn ? <span className="policy-code-lock"><Lock /> Standard</span> : canManage ? <div className="row-actions always"><button type="button" onClick={() => openEditor(item)} aria-label={`Edit ${item.code}`}><PencilSimple /></button><button type="button" onClick={() => onDelete(item)} aria-label={`Delete ${item.code}`}><Trash /></button></div> : <span className="policy-code-lock"><Lock /> P&amp;A</span>}</div></td></tr>; })}</tbody>
       </table></div>
     </section>
     {open && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setOpen(false); }}>
@@ -878,14 +897,21 @@ function PolicyCodeLibrary({ codes, onCreate, onDelete, onOpenEngine }) {
 }
 
 export function PolicyComputations({ companyId = readActiveCompanyId(), notify, addHistory, references, onManageHierarchy, onOpenService, initialTab = 'take-home' }) {
+  const { isPaAdmin, actor } = useRole();
   const [policies, setPolicies] = useState(() => readPolicies(companyId));
   const [codes, setCodes] = useState(() => readPolicyCodes(companyId));
   const [tab, setTab] = useState(initialTab);
   const [openedFrom, setOpenedFrom] = useState('');
   const [showWholeEngine, setShowWholeEngine] = useState(false);
+  const [versions, setVersions] = useState(() => readEngineVersions(companyId));
+  const [saveMode, setSaveMode] = useState({ mode: 'activate', effectiveDate: new Date().toISOString().slice(0, 10) });
 
   const engineSectionRef = useRef(null);
-  useEffect(() => localStorage.setItem(scopedPolicyKey(STORAGE_KEY, companyId), JSON.stringify(policies)), [policies, companyId]);
+  // The last saved policy set. Edits on screen are a draft until Save: a
+  // change reaches payroll only by passing through the check and the audit
+  // entry in `savePolicy`, never by being typed.
+  const savedRef = useRef(policies);
+  const accessFor = section => engineAccessFor(section, { isPaAdmin });
 
   const hierarchyTable = references?.find(item => item.code === HIERARCHY_REFERENCE_CODE);
   const hierarchy = useMemo(() => readHierarchy(references), [references]);
@@ -893,18 +919,69 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
 
   const setSection = key => value => setPolicies(previous => ({ ...previous, [key]: typeof value === 'function' ? value(previous[key]) : value }));
 
-  const savePolicy = (label, summary) => {
-    addHistory?.({ item: label, type: 'Policy', action: summary, version: '—' });
-    notify({ type: 'success', message: `${label} saved and recorded in Change history.` });
+  /**
+   * Save one engine: refuse what a client may not change, require a reason,
+   * then persist and record who changed what, from what, to what.
+   */
+  const savePolicy = (section, label, summary, reason) => {
+    const { mode, effectiveDate } = saveMode;
+    const before = savedRef.current[section];
+    const after = policies[section];
+    const changes = diffPolicySection(before, after);
+    if (!isPaAdmin) {
+      const refused = clientEditViolations(section, before, after);
+      if (refused.length) {
+        notify({ type: 'error', message: `${refused.map(change => change.field).join(', ')} ${refused.length === 1 ? 'is' : 'are'} maintained by P&A and cannot be changed here.` });
+        return false;
+      }
+    }
+    if (!changes.length) { notify({ type: 'info', message: `${label} has no policy change to save.` }); return false; }
+    if (!reason) { notify({ type: 'error', message: 'Give a reason for this change. It is kept, with your name and the values before and after, in the audit trail.' }); return false; }
+    if (mode === 'activate' && !effectiveDate) { notify({ type: 'error', message: 'Choose the date this version takes effect.' }); return false; }
+    const recorded = changes.map(({ field, from, to }) => ({ field, from, to }));
+    const version = recordEngineVersion(companyId, section, { values: after, mode, effectiveDate, by: actor, reason, changes: recorded });
+    setVersions(readEngineVersions(companyId));
+    if (version.status !== 'Active') {
+      addHistory?.({ item: label, type: 'Policy', action: `${reason} · v${version.version} ${version.status === 'Draft' ? 'saved as draft' : `scheduled for ${version.effectiveDate}`}`, version: version.version, changes: recorded });
+      appendAuditEvent({ companyId, actor, action: version.status === 'Draft' ? 'PolicyEngineDraftSaved' : 'PolicyEngineScheduled', entityType: 'Policy engine', entityId: section, summary: `${label} v${version.version} · ${reason}`, changes: recorded, reason });
+      notify({ type: 'success', message: version.status === 'Draft' ? `${label} v${version.version} saved as a draft. Payroll keeps using the active version until it is activated.` : `${label} v${version.version} is scheduled to take effect on ${version.effectiveDate}.` });
+      return true;
+    }
+    const next = { ...savedRef.current, [section]: after };
+    writePolicies(companyId, next);
+    savedRef.current = next;
+    addHistory?.({ item: label, type: 'Policy', action: `${reason} · ${summary}`, version: version.version, changes: recorded });
+    appendAuditEvent({ companyId, actor, action: 'PolicyEngineUpdated', entityType: 'Policy engine', entityId: section, summary: `${label} · ${reason}`, changes: recorded, reason });
+    notify({ type: 'success', message: `${label} v${version.version} is active from ${version.effectiveDate} and recorded in Change history.` });
+    return true;
+  };
+
+  const activateVersion = (section, item, effectiveDate) => {
+    const activated = activateEngineVersion(companyId, section, item.version, { effectiveDate, by: actor });
+    setVersions(readEngineVersions(companyId));
+    if (activated.status === 'Active') {
+      const next = { ...savedRef.current, [section]: activated.values };
+      writePolicies(companyId, next);
+      savedRef.current = next;
+      setPolicies(previous => ({ ...previous, [section]: mergeSection(seedPolicies[section], activated.values) }));
+    }
+    appendAuditEvent({ companyId, actor, action: 'PolicyEngineActivated', entityType: 'Policy engine', entityId: section, summary: `v${item.version} ${activated.status === 'Active' ? 'activated' : `scheduled for ${effectiveDate}`}`, reason: item.reason });
+    notify({ type: 'success', message: `v${item.version} ${activated.status === 'Active' ? 'is now the active version' : `is scheduled for ${effectiveDate}`}.` });
+  };
+  const loadVersion = (section, item) => {
+    setPolicies(previous => ({ ...previous, [section]: mergeSection(seedPolicies[section], item.values) }));
+    notify({ type: 'info', message: `v${item.version} is loaded on screen. Save it to make it a new version.` });
   };
 
   const createCode = record => {
+    if (!isPaAdmin) { notify({ type: 'error', message: 'Policy codes are created by P&A.' }); return; }
     const exists = codes.some(item => item.code === record.code && !item.isBuiltIn);
     setCodes(savePolicyCode(record, companyId));
     addHistory?.({ item: record.name, type: 'Policy code', action: `${record.code} ${exists ? 'updated' : 'created'} for ${record.subcategory}`, version: exists ? '1.1' : '1.0' });
     notify({ type: 'success', message: `${record.code} ${exists ? 'updated and remains' : 'is now'} available in Payroll Policy Management.` });
   };
   const removeCode = record => {
+    if (!isPaAdmin) { notify({ type: 'error', message: 'Policy codes are deleted by P&A.' }); return; }
     let rules = [];
     try { rules = JSON.parse(localStorage.getItem('atlas-company-rules-v3')) || []; } catch { /* no saved rules */ }
     if (rules.some(rule => (rule.policyCode || rule.parameter) === record.code)) { notify({ type: 'error', message: `${record.code} is assigned to a company rule and cannot be deleted.` }); return; }
@@ -936,11 +1013,13 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
 
   return <section className="policy-workspace">
     <GovernanceFlow />
-    <PolicyCodeLibrary codes={codes} onCreate={createCode} onDelete={removeCode} onOpenEngine={openEngine} />
+    <PolicyCodeLibrary codes={codes} canManage={isPaAdmin} onCreate={createCode} onDelete={removeCode} onOpenEngine={openEngine} />
     <div className="policy-engine-detail" ref={engineSectionRef}>
       <div className="policy-tabs">
       {policyEngines.map(engine => <button key={engine.key} className={tab === engine.key ? 'active' : ''} onClick={() => setTab(engine.key)}>{engine.label} <span>{engine.code}</span></button>)}
       </div>
+
+      {!isPaAdmin && <div className="linked-reference-note governed-notice"><Lock weight="duotone" /><span>You can change each engine&apos;s approved values — caps, thresholds, amounts, notifications and who it applies to. Fields marked “Set by P&amp;A” — the basis, method, conditions, statutory treatment, the deduction order and turning an engine on or off — are maintained by P&amp;A. The simulators stay open for testing, and every saved change is recorded with your name.</span></div>}
 
       {engineCodes.length > 0 && tab !== 'take-home' && <div className="engine-code-note">
         <Info weight="fill" />
@@ -957,36 +1036,72 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
 
       {tab === 'take-home' && scopedCode && <div className="engine-context-bar"><span><strong>{scopedCode.code}</strong> · {codeParameterScopes[scopedCode.code].governs}</span><button type="button" onClick={() => setShowWholeEngine(value => !value)}>{engineScope ? 'Show all take-home settings' : `Show ${scopedCode.code} settings`}</button></div>}
 
+      <EngineVersionBar saveMode={saveMode} onChange={setSaveMode} />
+
       <EngineScope.Provider value={engineScope}>
-      {tab === 'take-home' && <TakeHomeEngine
+      {tab === 'take-home' && <EngineAccess.Provider value={accessFor('takeHome')}><TakeHomeEngine
       policy={policies.takeHome}
       setPolicy={setSection('takeHome')}
       hierarchy={hierarchy}
       sourced={sourced && Boolean(hierarchyTable)}
       onManageHierarchy={onManageHierarchy}
       onOpenService={onOpenService}
-      onSave={result => savePolicy('Minimum Take-Home Pay policy', `Threshold ${policies.takeHome.thresholdType === 'Percentage' ? `${policies.takeHome.threshold}%` : money(policies.takeHome.threshold)} · ${describeAssignment(policies.takeHome.assignment)} · ${money(result.deferred)} deferred in the saved scenario`)}
-    />}
+      onSave={(result, reason) => savePolicy('takeHome', 'Minimum Take-Home Pay policy', `Threshold ${policies.takeHome.thresholdType === 'Percentage' ? `${policies.takeHome.threshold}%` : money(policies.takeHome.threshold)} · ${describeAssignment(policies.takeHome.assignment)} · ${money(result.deferred)} deferred in the saved scenario`, reason)}
+    /></EngineAccess.Provider>}
 
-      {tab === 'retirement' && <RetirementEngine
+      {tab === 'retirement' && <EngineAccess.Provider value={accessFor('retirement')}><RetirementEngine
       policy={policies.retirement}
       setPolicy={setSection('retirement')}
-      onSave={result => savePolicy('Retirement Pay policy', `${policies.retirement.planType} · ${describeAssignment(policies.retirement.assignment)} · scenario ${money(result.selected)} · ${result.taxExempt ? 'tax exempt' : 'taxable'} (${result.taxBasis})`)}
-    />}
+      onSave={(result, reason) => savePolicy('retirement', 'Retirement Pay policy', `${policies.retirement.planType} · ${describeAssignment(policies.retirement.assignment)} · scenario ${money(result.selected)} · ${result.taxExempt ? 'tax exempt' : 'taxable'} (${result.taxBasis})`, reason)}
+    /></EngineAccess.Provider>}
 
-      {tab === 'gross-up' && <GrossUpEngine
+      {tab === 'gross-up' && <EngineAccess.Provider value={accessFor('grossUp')}><GrossUpEngine
       policy={policies.grossUp}
       setPolicy={setSection('grossUp')}
-      onSave={result => savePolicy('Gross Up policy', `${policies.grossUp.taxMethod} · ${describeAssignment(policies.grossUp.assignment)} · gross ${money(result.grossTaxable)} for ${money(result.targetNet)} net`)}
-      />}
+      onSave={(result, reason) => savePolicy('grossUp', 'Gross Up policy', `${policies.grossUp.taxMethod} · ${describeAssignment(policies.grossUp.assignment)} · gross ${money(result.grossTaxable)} for ${money(result.targetNet)} net`, reason)}
+      /></EngineAccess.Provider>}
 
-      {tab === 'final-pay' && <FinalPayEngine
+      {tab === 'final-pay' && <EngineAccess.Provider value={accessFor('finalPay')}><FinalPayEngine
       policy={policies.finalPay}
       setPolicy={setSection('finalPay')}
       retirementPolicy={policies.retirement}
-      onSave={result => savePolicy('Final Pay policy', `${describeAssignment(policies.finalPay.assignment)} · ${result.separation.applied.reason} → ${result.separation.applied.formula} · net ${money(result.netFinalPay)} · retirement pay ${policies.finalPay.components['Retirement pay'] ? 'included' : 'excluded'}`)}
-      />}
+      onSave={(result, reason) => savePolicy('finalPay', 'Final Pay policy', `${describeAssignment(policies.finalPay.assignment)} · ${result.separation.applied.reason} → ${result.separation.applied.formula} · net ${money(result.netFinalPay)} · retirement pay ${policies.finalPay.components['Retirement pay'] ? 'included' : 'excluded'}`, reason)}
+      /></EngineAccess.Provider>}
       </EngineScope.Provider>
+      <EngineVersionHistory label={activeEngine?.label} history={engineHistory(versions, ENGINE_SECTIONS[tab])} onActivate={(item, date) => activateVersion(ENGINE_SECTIONS[tab], item, date)} onLoad={item => loadVersion(ENGINE_SECTIONS[tab], item)} />
     </div>
+  </section>;
+}
+
+const ENGINE_SECTIONS = { 'take-home': 'takeHome', retirement: 'retirement', 'gross-up': 'grossUp', 'final-pay': 'finalPay' };
+
+/** How the next Save is recorded: active from a date (a future date schedules it) or a draft. */
+function EngineVersionBar({ saveMode, onChange }) {
+  return <div className="engine-version-bar">
+    <strong>When saved</strong>
+    <label><input type="radio" name="engine-save-mode" checked={saveMode.mode === 'activate'} onChange={() => onChange({ ...saveMode, mode: 'activate' })} /> Activate from</label>
+    <input type="date" aria-label="Effective date" value={saveMode.effectiveDate} disabled={saveMode.mode !== 'activate'} onChange={event => onChange({ ...saveMode, effectiveDate: event.target.value })} />
+    <label><input type="radio" name="engine-save-mode" checked={saveMode.mode === 'draft'} onChange={() => onChange({ ...saveMode, mode: 'draft' })} /> Save as draft</label>
+    <small>A future date schedules the version; payroll runs paid out before it keep the current version.</small>
+  </div>;
+}
+
+function EngineVersionHistory({ label, history, onActivate, onLoad }) {
+  const [dates, setDates] = useState({});
+  const todayIso = new Date().toISOString().slice(0, 10);
+  return <section className="engine-version-history">
+    <header><h3>{label} — version history</h3><span>{history.length ? `${history.length} ${history.length === 1 ? 'version' : 'versions'}` : 'No saved versions yet — the standard values apply.'}</span></header>
+    {history.length > 0 && <div className="table-wrap"><table className="data-table"><thead><tr><th>Version</th><th>Status</th><th>Effective</th><th>Saved by</th><th>Reason</th><th>Changes</th><th>Action</th></tr></thead><tbody>{history.map(item => <tr key={item.version}>
+      <td><strong>v{item.version}</strong></td>
+      <td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span>{item.supersededBy && <small> by v{item.supersededBy}</small>}</td>
+      <td>{item.effectiveDate || '—'}</td>
+      <td>{item.by}<small>{new Date(item.savedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</small></td>
+      <td>{item.reason || '—'}</td>
+      <td>{item.changes?.length ? item.changes.slice(0, 4).map(change => <div key={change.field}>{change.field}: {String(change.from ?? '—')} → {String(change.to ?? '—')}</div>) : '—'}{item.changes?.length > 4 && <small>+{item.changes.length - 4} more</small>}</td>
+      <td><div className="engine-version-actions">
+        {item.status === 'Draft' && <><input type="date" aria-label={`Effective date for v${item.version}`} value={dates[item.version] || todayIso} onChange={event => setDates(previous => ({ ...previous, [item.version]: event.target.value }))} /><button type="button" className="button secondary" onClick={() => onActivate(item, dates[item.version] || todayIso)}>Activate</button></>}
+        <button type="button" className="button secondary" onClick={() => onLoad(item)}>Load on screen</button>
+      </div></td>
+    </tr>)}</tbody></table></div>}
   </section>;
 }

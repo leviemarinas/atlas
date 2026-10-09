@@ -35,8 +35,16 @@ export const ROLES = {
   },
 };
 
+/**
+ * The person the top bar names. The prototype has one signed-in persona, and
+ * keeping the name here means an audit entry and the top bar can never
+ * disagree about who made a change.
+ */
+export const SIGNED_IN_NAME = 'John Doe';
+
 const RoleContext = createContext({
   role: 'client_admin',
+  actor: `${SIGNED_IN_NAME} (Client Admin)`,
   isAdmin: false,
   isPaAdmin: false,
   isClientAdmin: false,
@@ -69,6 +77,9 @@ export function RoleProvider({ children }) {
     const isAdmin = isPaAdmin || isClientAdmin;
     return {
       role,
+      // Change history records a named person, not just a role, so "who
+      // changed this rate" has an answer a reviewer can follow up.
+      actor: `${SIGNED_IN_NAME} (${ROLES[role]?.label || (isPaAdmin ? 'P&A Admin' : 'Client Admin')})`,
       setRole,
       isAdmin,
       isPaAdmin,

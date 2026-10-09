@@ -217,7 +217,7 @@ export const SCENARIO_LIVE_PLANS = Object.freeze({
   // selector rather than by a label that changes with the session.
   'pa-multi-company': planWith('Payroll', ['Payroll Processing'], {
     1: { kind: 'open', targets: ['css:.company-switch'], after: ['Northstar Retail'], narration: 'Opening the real top-bar company switcher and selecting Northstar Retail.' },
-    2: { kind: 'inspect', targets: ['Payroll Processing'], narration: 'Reading Northstar’s own Payroll Processing register to prove the scope changed.' },
+    2: { kind: 'inspect', targets: ['Payroll Processing'], narration: 'Reading Northstar’s own Payroll Processing transaction list to prove the scope changed.' },
     3: { kind: 'open', targets: ['css:.company-switch'], after: ['ABC Company Ltd'], narration: 'Switching the live session back to ABC Company Ltd — a scope change, not a write, so Atlas completes it.' },
   }),
   'pa-audit': plan('Settings', 'Audit Log'),

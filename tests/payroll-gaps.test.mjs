@@ -71,7 +71,7 @@ test('batch validation supports typed items and prevents duplicates or regular-r
   assert.equal(valid.errors.length, 0);
   assert.equal(valid.entries.length, 2);
   const invalid = parsePayrollBatch('Employee Code,Pay Item Type,Pay Item,Amount\n0011223345,Withholding Tax,Tax,100\n0011223345,Withholding Tax,Tax,100', { employees: employeeRoster, payrollType: 'Regular' });
-  assert.ok(invalid.errors.some(error => /only on an Override/.test(error)));
+  assert.ok(!invalid.errors.some(error => /Override/.test(error)), 'withholding tax can be overridden on a regular transaction');
   assert.ok(invalid.errors.some(error => /duplicate/.test(error)));
 });
 
@@ -86,9 +86,9 @@ test('committing and rolling back a typed batch changes only that batch', () => 
   assert.equal(rolledBack[employee.employeeId].daysInPeriod, undefined);
 });
 
-test('override payroll may replace withholding tax and records the source', () => {
+test('a regular transaction may replace withholding tax and records the source', () => {
   const employee = employeeRoster[0];
-  const run = transaction({ payrollType: 'Override', population: { mode: 'Selected Employees', included: [employee.employeeId] }, overrides: { [employee.employeeId]: { withholdingTax: 1234.56 } } });
+  const run = transaction({ payrollType: 'Regular', population: { mode: 'Selected Employees', included: [employee.employeeId] }, overrides: { [employee.employeeId]: { withholdingTax: 1234.56 } } });
   const result = runPayroll({ transaction: run, context: contextFor(run) });
   const line = result.lines.find(row => row.employeeId === employee.employeeId);
   assert.equal(line.withholdingTax, 1234.56);

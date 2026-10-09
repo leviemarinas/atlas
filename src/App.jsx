@@ -54,6 +54,7 @@ import { BrandRail, Topbar } from './AppChrome';
 import { readPolicies, readPolicyCodes, savePolicyCode } from './PolicyComputations';
 import { describeAssignment } from './PolicyApplicability';
 import { completeParameterSchema, defaultParameterValues, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
+import { engineSectionForCode, isClientEditableEngineParameter } from './policyEngineAccess';
 import { getPolicyLinkage } from './policyGovernance';
 import { companyRuleTaxonomy, requirementRuleSeeds } from './requirementsCatalog';
 import { OperationalWorkspace } from './OperationalWorkspaces';
@@ -404,7 +405,7 @@ function CompanyInformation({ data, setData, completed, setCompleted, setToast, 
              if (!company) return;
              const saved = onSaveCompany({ ...company, documents });
              setData(companyRecordToData(saved));
-             setToast({ type: 'success', message: 'Company document register updated.' });
+             setToast({ type: 'success', message: 'Company document list updated.' });
            }}
          />
       )}
@@ -421,10 +422,10 @@ function CompanyDocumentEditor({ documents = [], onChange }) {
   };
   const updateDocument = (documentId, changes) => onChange(documents.map(document => document.documentId === documentId ? { ...document, ...changes } : document));
   const removeDocument = document => {
-    if (!window.confirm(`Remove ${document.filename} from the permanent document register?`)) return;
+    if (!window.confirm(`Remove ${document.filename} from the permanent document list?`)) return;
     onChange(documents.filter(item => item.documentId !== document.documentId));
   };
-  return <section className="company-document-editor"><div className="company-collection-toolbar"><div><strong>Permanent document register</strong><small>Upload metadata, verify the evidence, and keep the lifecycle readiness gate auditable.</small></div><label className="button secondary upload-button"><Plus /> Add document<input className="sr-only" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={addDocument} /></label></div>{documents.length ? <div className="company-document-list">{documents.map(document => <div key={document.documentId} className="company-document-row"><div><strong>{document.filename}</strong><small>{document.documentType} · uploaded {String(document.uploadedAt || '').slice(0, 10)}</small></div><select aria-label={`Document status for ${document.filename}`} value={document.status || 'Pending'} onChange={event => updateDocument(document.documentId, { status: event.target.value })}><option>Pending</option><option>Validated</option><option>Rejected</option></select><button type="button" className="icon-button" onClick={() => removeDocument(document)} aria-label={`Remove ${document.filename}`}><Trash /></button></div>)}</div> : <p className="company-document-empty">No permanent documents registered yet.</p>}</section>;
+  return <section className="company-document-editor"><div className="company-collection-toolbar"><div><strong>Permanent document list</strong><small>Upload metadata, verify the evidence, and keep the lifecycle readiness gate auditable.</small></div><label className="button secondary upload-button"><Plus /> Add document<input className="sr-only" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={addDocument} /></label></div>{documents.length ? <div className="company-document-list">{documents.map(document => <div key={document.documentId} className="company-document-row"><div><strong>{document.filename}</strong><small>{document.documentType} · uploaded {String(document.uploadedAt || '').slice(0, 10)}</small></div><select aria-label={`Document status for ${document.filename}`} value={document.status || 'Pending'} onChange={event => updateDocument(document.documentId, { status: event.target.value })}><option>Pending</option><option>Validated</option><option>Rejected</option></select><button type="button" className="icon-button" onClick={() => removeDocument(document)} aria-label={`Remove ${document.filename}`}><Trash /></button></div>)}</div> : <p className="company-document-empty">No permanent documents registered yet.</p>}</section>;
 }
 
 function CompanyForm({ sectionId, title, values, onClose, onSave, readOnlyFields = [], documents = [], onDocumentsChange }) {
@@ -499,7 +500,7 @@ function DerivedPolicies({ onOpenPolicies }) {
   return (
     <section className="derived-policies">
       <header>
-        <div><ShieldCheck weight="duotone" /><div><h2>Derived from Computational Basis</h2><p>These qualifiers are read-only here. Edit them in the policy engines so the rule register and the computations cannot drift apart.</p></div></div>
+        <div><ShieldCheck weight="duotone" /><div><h2>Derived from Computational Basis</h2><p>These qualifiers are read-only here. Edit them in the policy engines so the rule list and the computations cannot drift apart.</p></div></div>
         <button className="button secondary" onClick={onOpenPolicies}>Open policy engines <ArrowRight /></button>
       </header>
       <table>
@@ -569,7 +570,7 @@ function RulesPage({ rules, setRules, setToast, onOpenPolicies, onOpenModule }) 
       </div>
       {tab === 'Rules' ? (
         <>
-          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>Versioned policy register</strong><span>An Active policy stays editable until a payroll transaction uses it. Used policies are locked; create a new version to change future payroll.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
+          <div className="unified-register-note"><ShieldCheck weight="duotone" /><div><strong>Versioned policy list</strong><span>An Active policy stays editable until a payroll transaction uses it. Used policies are locked; create a new version to change future payroll.</span></div><button onClick={onOpenPolicies}>Manage policy engines <ArrowRight /></button></div>
           <div className="rules-toolbar">
             <div className="search-box"><input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} placeholder="Search rules..." /><MagnifyingGlass /></div>
             <button className={`filter-button ${(category !== 'All categories' || subcategory !== 'All sub-categories' || enabledOnly) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
@@ -641,6 +642,12 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
   const availableCodes = codes.filter(item => item.category === draft.category && item.subcategory === draft.subcategory && item.status === 'Active');
   const selectedCode = codes.find(item => item.code === (draft.policyCode || draft.parameter));
   const selectedTemplateSize = selectedCode ? completeParameterSchema(selectedCode).length : 0;
+  // The same Controlled Hybrid split the policy engines use: on a code that
+  // carries an engine's settings, a client sets only the approved values, and
+  // creating a code is P&A's.
+  const { isPaAdmin } = useRole();
+  const ruleEngineSection = engineSectionForCode(selectedCode || draft);
+  const lockParameter = key => !isPaAdmin && Boolean(ruleEngineSection) && !isClientEditableEngineParameter(ruleEngineSection, key);
   const linkage = getPolicyLinkage(draft);
   const engineForSelection = () => linkage.engine;
   const templateCandidates = codes.filter(item => item.status === 'Active' && item.isBuiltIn && item.parameterSchema?.length && item.category === draft.category && item.subcategory === draft.subcategory);
@@ -661,6 +668,7 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
     setCreatingCode(true); setError('');
   };
   const createCode = () => {
+    if (!isPaAdmin) return setError('A new policy code is created by P&A.');
     const code = codeDraft.code.trim().toUpperCase();
     if (!code || !codeDraft.name.trim() || !codeDraft.description.trim()) return setError('Complete the code, name, and description.');
     if (codes.some(item => item.code === code)) return setError('That policy-engine code already exists.');
@@ -701,17 +709,17 @@ function RuleForm({ rule, onClose, onSave, onOpenPolicies }) {
           {hasConflictCopy && <p className="warning-copy">It looks like some rules are overlapping. Review the wording before continuing.</p>}
         </div>}
         {step === 2 && <div className="wizard-panel">
-          <div className="wizard-heading"><span>Step {2} of {ruleWizardSteps.length}</span><h3>Select the computation behind this rule</h3><p>Choose an active governed code mapped to <strong>{draft.subcategory}</strong>. To make a variant, copy the complete approved template and change only its company values.</p></div>
+          <div className="wizard-heading"><span>Step {2} of {ruleWizardSteps.length}</span><h3>Select the computation behind this rule</h3><p>Choose an active governed code mapped to <strong>{draft.subcategory}</strong>. P&amp;A creates and assigns the codes. A client picks one and updates only its approved values.</p></div>
           <div className="rule-linkage-card"><div><small>Policy engine</small><strong>{linkage.engine}</strong></div><div><small>Standard computations</small><strong>{linkage.computations.length ? linkage.computations.join(', ') : 'Policy control — no arithmetic formula'}</strong></div><div><small>Reference sources</small><strong>{linkage.references.length ? linkage.references.join(', ') : 'No table dependency'}</strong></div><button type="button" className="button secondary" onClick={onOpenPolicies}>Open Policy Engine library <ArrowRight /></button></div>
           {availableCodes.length ? <div className="policy-code-picker">{availableCodes.map(item => <button type="button" key={item.code} className={draft.policyCode === item.code ? 'selected' : ''} onClick={() => selectCode(item)}><span className="code-radio">{draft.policyCode === item.code && <Check weight="bold" />}</span><span><code>{item.code}</code><strong>{item.name}</strong><small>{item.description} · {completeParameterSchema(item).length} template fields{item.parameterSchema.length < completeParameterSchema(item).length ? ` · ${item.parameterSchema.length} governed by this code` : ''}</small></span><span className="status-pill active">{item.engine}</span></button>)}</div> : <div className="no-policy-codes"><Info weight="duotone" /><h3>No active code for {draft.subcategory}</h3><p>Create one here and it will also be added to the Policy Engine library.</p></div>}
-          {!creatingCode ? <button type="button" className="button secondary create-code-inline" onClick={beginCreateCode}><Plus /> Create configured code variant</button> : <div className="inline-code-creator">
+          {!isPaAdmin ? <p className="field-hint pa-only-note">A new policy code is created by P&amp;A. Choose one of the codes above.</p> : !creatingCode ? <button type="button" className="button secondary create-code-inline" onClick={beginCreateCode}><Plus /> Create configured code variant</button> : <div className="inline-code-creator">
             <div className="inline-code-heading"><div><strong>Create a configured code from an existing template</strong><span>Definitions stay governed by the {draft.subcategory} engine; this new code only changes its configuration values.</span></div><button type="button" className="icon-button" onClick={() => setCreatingCode(false)}><X /></button></div>
             <div className="wizard-field-grid"><label className="wide">Existing policy template<span className="required">*</span><select value={codeDraft.templateCode} onChange={e => { const template = templateCandidates.find(item => item.code === e.target.value); if (!template) return; const schema = completeParameterSchema(template); setCodeDraft(previous => ({ ...previous, templateCode: template.code, description: template.description, parameterSchema: schema, parameterValues: { ...defaultParameterValues(schema), ...(template.parameterValues || {}) } })); }} required><option value="">Choose a governed code template</option>{templateCandidates.map(item => <option key={item.code} value={item.code}>{item.code} - {item.name}</option>)}</select><small className="policy-template-help">This copies the full {draft.subcategory} schema, including its basis, thresholds, effective period, controls, and audit fields.</small></label><label>New code<span className="required">*</span><input value={codeDraft.code} onChange={e => setCodeDraft(previous => ({ ...previous, code: e.target.value.toUpperCase() }))} placeholder="e.g. THP-003" /></label><label>Name<span className="required">*</span><input value={codeDraft.name} onChange={e => setCodeDraft(previous => ({ ...previous, name: e.target.value }))} placeholder="Company variant name" /></label><label className="wide">Description<span className="required">*</span><textarea value={codeDraft.description} onChange={e => setCodeDraft(previous => ({ ...previous, description: e.target.value }))} /></label></div>
             {codeTemplate && <div className="policy-template-meta inline-template-meta"><span><small>Template</small><strong>{codeTemplate.code}</strong></span><span><small>Engine</small><strong>{codeTemplate.engine}</strong></span><span><small>Sub-category</small><strong>{draft.subcategory}</strong></span></div>}
             {codeTemplate && <div className="policy-template-parameters inline-template-parameters"><div className="policy-template-parameters-heading"><div><strong>Configure the new code</strong><span>Adjust all {codeDraft.parameterSchema.length} predefined values below. The governed definitions cannot be removed or renamed here.</span></div><span className="policy-template-locked">Complete template</span></div><PolicyParameterFields schema={codeDraft.parameterSchema} values={codeDraft.parameterValues || {}} onChange={parameterValues => setCodeDraft(previous => ({ ...previous, parameterValues }))} /></div>}
             <div className="inline-code-actions"><button type="button" className="button secondary" onClick={() => setCreatingCode(false)}>Cancel</button><button type="button" className="button primary" onClick={createCode}>Create & select code</button></div>
           </div>}
-          {selectedCode && !creatingCode && <section className="rule-parameter-configuration"><header><div><strong>Configure {selectedCode.code} for this rule</strong><span>{selectedCode.parameterSchema.length < selectedTemplateSize ? `This standard code owns ${selectedCode.parameterSchema.length} of ${selectedTemplateSize} engine fields. Open the Policy Engine library to adjust the whole engine, or create a variant to configure every field.` : 'The code schema is reusable; these values apply only to this company rule.'}</span></div><span>{selectedCode.parameterSchema.length}/{selectedTemplateSize} fields</span></header><PolicyParameterFields schema={selectedCode.parameterSchema} values={configuredValues} onChange={parameterValues => update('parameterValues', parameterValues)} /></section>}
+          {selectedCode && !creatingCode && <section className="rule-parameter-configuration"><header><div><strong>Configure {selectedCode.code} for this rule</strong><span>{selectedCode.parameterSchema.length < selectedTemplateSize ? `This standard code owns ${selectedCode.parameterSchema.length} of ${selectedTemplateSize} engine fields. Open the Policy Engine library to adjust the whole engine, or create a variant to configure every field.` : 'The code schema is reusable; these values apply only to this company rule.'}</span></div><span>{selectedCode.parameterSchema.length}/{selectedTemplateSize} fields</span></header><PolicyParameterFields schema={selectedCode.parameterSchema} values={configuredValues} onChange={parameterValues => update('parameterValues', parameterValues)} isLocked={lockParameter} /></section>}
         </div>}
         {step === 3 && <div className="wizard-panel">
           <div className="wizard-heading"><span>Step {3} of {ruleWizardSteps.length}</span><h3>Review the rule before applying it</h3><p>Confirm the audience, rule wording, and governed computation link.</p></div>

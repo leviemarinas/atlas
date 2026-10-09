@@ -84,6 +84,10 @@ test('payment mode decides who is even in the transaction', () => {
   const monthly = baseTransaction({ paymentMode: 'Monthly' });
   employeeRoster.forEach(employee => {
     const eligibility = eligibilityFor(employee, monthly);
+    if (employee.payroll.paymentMode === 'Monthly') {
+      assert.equal(eligibility.included, true, `${employee.name} is paid monthly`);
+      return;
+    }
     assert.equal(eligibility.included, false, `${employee.name} is semi-monthly, not monthly`);
     assert.match(eligibility.reason, /Payment mode/);
   });
@@ -116,9 +120,13 @@ test('rates are derived from the salary record, not typed in', () => {
   assert.equal(line.rates.hourlyRate, Number((line.rates.dailyRate / 8).toFixed(2)));
 });
 
-test('changing factor days on the run changes every derived rate', () => {
+test('the employee pay record sets factor days, and the company default fills in when it is blank', () => {
   const standard = lineFor('EMP-1001');
-  const shorter = lineFor('EMP-1001', baseTransaction({ config: { workDaysPerYear: 313 } }));
+  const blank = { ...findRosterEmployee('EMP-1001'), payroll: { ...findRosterEmployee('EMP-1001').payroll, factorDays: undefined } };
+  const fromDefault = computeEmployeeLine({ employee: blank, transaction: baseTransaction({ config: { workDaysPerYear: 313 } }), context: context() });
+  assert.ok(fromDefault.rates.dailyRate < standard.rates.dailyRate);
+  const own = { ...findRosterEmployee('EMP-1001'), payroll: { ...findRosterEmployee('EMP-1001').payroll, factorDays: 313 } };
+  const shorter = computeEmployeeLine({ employee: own, transaction: baseTransaction({ config: { workDaysPerYear: 261 } }), context: context() });
   assert.ok(shorter.rates.dailyRate < standard.rates.dailyRate);
   assert.equal(shorter.rates.dailyRate, Number((standard.rates.monthlyRate * 12 / 313).toFixed(2)));
 });
@@ -370,7 +378,7 @@ test('a settled or closed loan is not collected again', () => {
   assert.ok(closed.length > 0, 'the seed contains a settled loan');
   closed.forEach(loan => {
     const line = lineFor(loan.employeeId);
-    assert.equal(line.loans.some(item => item.name === loan.loanName && item.code === loan.transactionNumber), false);
+    assert.equal((line.loans || []).some(item => item.name === loan.loanName && item.code === loan.transactionNumber), false);
   });
 });
 
