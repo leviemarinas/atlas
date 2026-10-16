@@ -52,7 +52,7 @@ import { readHrmData, updateHrmData } from './hrmData.js';
 import { readApprovalHierarchy, readCalendars } from './CanonicalWorkspaces';
 import { ROLE_LABEL, flowFor, joinLabels, signaturesAt, stageOf, waitingLabels } from './payrollApprovalFlow.js';
 import { readActiveCompany, readActiveCompanyId, appendAuditEvent } from './companyRepository';
-import { employeeRoster } from './employeeRoster.js';
+import { currentRoster } from './employeeRoster.js';
 import { readHierarchy, readPolicies } from './PolicyComputations';
 import { readComputationLibrary, readReferences, resolveReferenceVersion } from './computationGovernance.js';
 import { BINDABLE_MODULES } from './computationBindings.js';
@@ -508,7 +508,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
   };
 
   const batchModes = useMemo(() => [...new Set([draft.paymentMode, ...(draft.transactionMode === 'Multiple' ? (draft.additional || []).map(row => row.paymentMode) : [])])], [draft.paymentMode, draft.transactionMode, draft.additional]);
-  const eligible = useMemo(() => employeeRoster.filter(employee => batchModes.includes(employee.payroll.paymentMode)), [batchModes]);
+  const eligible = useMemo(() => currentRoster().filter(employee => batchModes.includes(employee.payroll.paymentMode)), [batchModes]);
   const included = eligible.filter(employee => !draft.population.excluded.includes(employee.employeeId));
   const excluded = eligible.filter(employee => draft.population.excluded.includes(employee.employeeId));
 
@@ -1414,7 +1414,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
   const result = run.result;
   const lock = lockHeldBy(run, sessionId);
   const selectedLine = result?.lines.find(line => line.employeeId === selectedEmployeeId) || null;
-  const selectedEmployee = employeeRoster.find(employee => employee.employeeId === selectedEmployeeId) || null;
+  const selectedEmployee = currentRoster().find(employee => employee.employeeId === selectedEmployeeId) || null;
 
   const rows = useMemo(() => (result?.lines || []).map(line => ({
     id: line.employeeId,
@@ -1459,7 +1459,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
     const sheet = await readTable(file, ['employee code'], { columnsHint: 'Use the downloaded template: Employee Code, Pay Item Type, Pay Item, Amount, Conversion Date, Rate.' });
     if (sheet.error) { onNotify(sheet.error, 'bad'); return { ok: false, message: sheet.error }; }
     {
-      const { entries: parsed, errors } = parsePayrollBatch(toCsvText(sheet.headers, sheet.rows), { employees: employeeRoster, payrollType: run.payrollType, conversion: { enabled: Boolean(run.config?.leaveConversion?.enabled), leaveTypes: run.config?.leaveConversion?.leaveTypes || [], window: run.config?.leaveConversion?.window || {} } });
+      const { entries: parsed, errors } = parsePayrollBatch(toCsvText(sheet.headers, sheet.rows), { employees: currentRoster(), payrollType: run.payrollType, conversion: { enabled: Boolean(run.config?.leaveConversion?.enabled), leaveTypes: run.config?.leaveConversion?.leaveTypes || [], window: run.config?.leaveConversion?.window || {} } });
       onSaveOverride({
         batch: {
           id: `batch-${Date.now()}`,
@@ -1710,7 +1710,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
           { key: 'authority', label: 'Authority to deduct', render: row => (row.authorityToDeduct?.acknowledged === false ? 'Not acknowledged' : 'Acknowledged') },
           { key: 'status', label: 'Status' },
         ]}
-        rows={(hrmData.loanInquiries || []).map(row => ({ ...row, key: row.id, employeeName: employeeRoster.find(employee => employee.employeeId === row.employeeId)?.name || '—' }))}
+        rows={(hrmData.loanInquiries || []).map(row => ({ ...row, key: row.id, employeeName: currentRoster().find(employee => employee.employeeId === row.employeeId)?.name || '—' }))}
         empty="No loan schedules are recorded in HRM."
       />
     </section>}
@@ -2026,7 +2026,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       const { balances, deducted } = leaveBalancesAfterConversion(readHrmData(companyId).leaveBalances || [], outcome.run);
       if (deducted.length) {
         updateHrmData(companyId, data => ({ ...data, leaveBalances: balances }));
-        commit(withAudit(outcome.run, { action: 'Leave credits converted', actor, detail: `${deducted.length} ${deducted.length === 1 ? 'balance' : 'balances'} reduced in HRM: ${deducted.map(item => `${employeeRoster.find(employee => employee.employeeId === item.employeeId)?.name || item.employeeId} ${item.leaveType} ${item.days} days`).join('; ')}` }));
+        commit(withAudit(outcome.run, { action: 'Leave credits converted', actor, detail: `${deducted.length} ${deducted.length === 1 ? 'balance' : 'balances'} reduced in HRM: ${deducted.map(item => `${currentRoster().find(employee => employee.employeeId === item.employeeId)?.name || item.employeeId} ${item.leaveType} ${item.days} days`).join('; ')}` }));
       }
     }
     toast(outcome.message);
@@ -2147,12 +2147,12 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       const changes = Object.entries(payload.override?.payItems || {}).map(([key, change]) => `${itemNames.get(key) || key.split(':').slice(1).join(':')}: ${change.exclude ? 'skipped' : `₱${Number(change.amount).toLocaleString()}`} (${change.reason})`);
       const entered = Object.keys(payload.override?.statutory || {});
       if (entered.length) {
-        const name = employeeRoster.find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
+        const name = currentRoster().find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
         next = withAudit(next, { action: 'Contributions entered for one employee', actor, detail: `${name} — ${entered.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${Number(payload.override.statutory[key]).toLocaleString()}`).join(', ')}` });
       }
       const takeHome = payload.override?.takeHome;
       if (changes.length || takeHome) {
-        const name = employeeRoster.find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
+        const name = currentRoster().find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
         next = withAudit(next, { action: 'Pay items changed for one employee', actor, detail: `${name} — ${[...changes, takeHome ? `take-home: ${takeHome.mode === 'off' ? 'not applied' : `minimum ₱${Number(takeHome.minimum).toLocaleString()}`} (${takeHome.reason})` : ''].filter(Boolean).join('; ')}` });
       }
     }
@@ -2186,7 +2186,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     if (payload.commitBatch) {
       const batch = (next.batches || []).find(row => row.id === payload.commitBatch);
       if (!batch) { toast('The selected batch no longer exists.', 'bad'); return; }
-      const overrides = applyPayrollBatch(next.overrides || {}, batch.entries || [], employeeRoster, batch.name);
+      const overrides = applyPayrollBatch(next.overrides || {}, batch.entries || [], currentRoster(), batch.name);
       next = {
         ...next,
         overrides,

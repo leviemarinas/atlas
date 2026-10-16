@@ -824,6 +824,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const shift = shiftFor(context.shiftAssignments, employee.employeeId, transaction.periodEnd);
   const workHours = number(shift?.workHours) || number(pay.workHoursPerDay) || number(config.workHoursPerDay) || 8;
   const monthlyRate = number(basicRecord.monthlyRate) || number(pay.monthlyRate);
+  if (!monthlyRate && employee.addedInMasterfile) exceptions.push({ severity: 'Warning', message: 'No basic pay yet. Enter it in Employee Masterfile › Payroll & Allocation › Basic Pay.' });
   const dailyRate = record({
     code: 'BAS-001', category: 'Basic Pay', source: 'Employee salary record',
     inputs: { monthly_basic: monthlyRate, factor_days: factorDays },

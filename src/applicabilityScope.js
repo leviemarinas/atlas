@@ -22,7 +22,7 @@
  *     group, department, employees: [employeeCode] }
  */
 
-import { departments, employeeGroups, employeeRoster } from './employeeRoster.js';
+import { MASTERFILE_STORAGE_KEY, currentRoster, departments, employeeGroups, readMasterfileList } from './employeeRoster.js';
 
 export { departments, employeeGroups };
 
@@ -62,12 +62,22 @@ export function describeScope(scope) {
  * picker that handed back whole 201 records would invite screens to read salary
  * data they have no business touching.
  */
-export const employeeDirectory = employeeRoster.map(employee => ({
-  code: employee.code,
-  name: employee.name,
-  group: employee.group,
-  department: employee.department,
-}));
+export const employeeDirectory = [];
+
+export { MASTERFILE_STORAGE_KEY };
+
+/**
+ * Rebuilds the directory from the Masterfile list (the seeded roster until the
+ * Masterfile has saved one). Rebuilt in place so every screen holding the
+ * array sees the change on its next render.
+ */
+export function refreshEmployeeDirectory(masterfile = readMasterfileList()) {
+  const rows = currentRoster(masterfile).map(employee => ({ code: employee.code, name: employee.name, group: employee.group, department: employee.department }));
+  employeeDirectory.splice(0, employeeDirectory.length, ...rows);
+  return employeeDirectory;
+}
+
+refreshEmployeeDirectory();
 
 export function coveredEmployees(scope) {
   return employeeDirectory.filter(employee => coversEmployee(scope, employee));
