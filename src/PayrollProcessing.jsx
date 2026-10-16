@@ -45,15 +45,18 @@ import {
 import { MiniTable, PayrollLineDetail, payslipTemplates, peso } from './PayrollLineDetail.jsx';
 import { downloadFile } from './fileDownload.js';
 import { applyPayrollBatch, parsePayrollBatch, rollbackPayrollBatch } from './payrollBatch.js';
+import { ImportDialog } from './ImportDialog';
+import { readTable, toCsvText, messagesByRow, downloadErrorWorkbook, downloadTemplate } from './importFlow.js';
 import { simpleTablePdf, spreadsheetXml } from './payrollExports.js';
 import { readHrmData, updateHrmData } from './hrmData.js';
-import { readCalendars } from './CanonicalWorkspaces';
+import { readApprovalHierarchy, readCalendars } from './CanonicalWorkspaces';
+import { ROLE_LABEL, flowFor, joinLabels, signaturesAt, stageOf, waitingLabels } from './payrollApprovalFlow.js';
 import { readActiveCompany, readActiveCompanyId, appendAuditEvent } from './companyRepository';
 import { employeeRoster } from './employeeRoster.js';
 import { readHierarchy, readPolicies } from './PolicyComputations';
 import { readComputationLibrary, readReferences, resolveReferenceVersion } from './computationGovernance.js';
 import { BINDABLE_MODULES } from './computationBindings.js';
-import { toIsoDate, STATUTORY_OVERRIDE_LABELS, STATUTORY_MAX_FIRST } from './payrollEngine.js';
+import { toIsoDate, OT_MULTIPLIERS, STATUTORY_OVERRIDE_LABELS, STATUTORY_MAX_FIRST } from './payrollEngine.js';
 import { readServiceConfiguration } from './serviceModules.jsx';
 import { payItemKey } from './payrollEngine.js';
 import { effectiveStatutorySet } from './statutoryService';
@@ -80,9 +83,9 @@ import { REQUEST_STATUSES, REQUEST_TYPES } from './requestWorkflow.js';
 import { useRole } from './RoleContext';
 import { plural, formatUsDate, stampUs } from './textFormat';
 import { DateInput } from './DateInput.jsx';
+import './payrollApprovals.css';
 import { leaveBalancesAfterConversion, leaveConversionWindow, ytdWindow, overlapWarnings, batchProblems, batchDrafts, newBatchRow, numberBatch, toggleBatchCalendar } from './payrollRuns.js';
 import { policyAppliesToRun, policySelectionConflicts, policySnapshot, readManagedPolicies } from './policyManagement';
-import { rejectUpload } from './uploadErrorLog.js';
 import { referenceRows } from './ReferenceTables';
 import {
   MONTHS,
@@ -90,6 +93,10 @@ import {
   acquireLock,
   actionsFor,
   applyAction,
+  levelsForCalendar,
+  levelsOf,
+  pendingLevel,
+  hasSetLevels,
   backdatedAgainst,
   buildPayrollContext,
   capabilitiesOf,
@@ -290,6 +297,7 @@ const REGISTER_COLUMNS = [
 ];
 
 function RegisterScreen({ runs, onOpen, onCreate, onAction, onNotify, canCreate, isPaAdmin, bulk, autoCompute, onToggleAutoCompute, onRecalculateOpen }) {
+  const { role } = useRole();
   const table = useTableState();
   const [tab, setTab] = useState('All');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -391,7 +399,7 @@ function RegisterScreen({ runs, onOpen, onCreate, onAction, onNotify, canCreate,
           : row[column.key])}
       actions={row => [
         { label: capabilitiesOf(row.run).edit ? 'Update Entry' : 'View Transaction', kind: 'view', onSelect: () => onOpen(row.run) },
-        ...actionsFor(row.run, runs, { canReopen: true, isPaAdmin })
+        ...actionsFor(row.run, runs, { canReopen: true, isPaAdmin, role })
           .filter(action => !['updateEntry', 'approveBackdate', 'rejectBackdate'].includes(action.key))
           .map(action => ({
             label: action.label,
@@ -427,7 +435,9 @@ const LEAVE_TYPES = ['Vacation Leave', 'Sick Leave', 'Service Incentive Leave'];
 function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, onCreate, requiresApproval, isPaAdmin }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  const [draft, setDraft] = useState(() => newPayrollRun({ runs, companyId: readActiveCompanyId() }));
+  // The non-taxable bonus threshold starts at the company's Bonus Ceiling (a reference table); the run can change it.
+  const companyBonusCeiling = (() => { const value = referenceRows('bonus-ceilings')[0]?.ceiling; return value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 90000; })();
+  const [draft, setDraft] = useState(() => { const fresh = newPayrollRun({ runs, companyId: readActiveCompanyId() }); return { ...fresh, config: { ...fresh.config, thirteenthMonth: { ...fresh.config.thirteenthMonth, ntThreshold: companyBonusCeiling } } }; });
   const monthNumber = MONTHS.indexOf(draft.month) + 1 || 1;
   const transactionNumber = nextTransactionNumber(runs, draft.year, monthNumber);
   const availablePolicies = useMemo(() => managedPolicies.filter(policy => draft.periodStart && draft.periodEnd ? policyAppliesToRun(policy, draft) : policy.status === 'Active'), [managedPolicies, draft.periodStart, draft.periodEnd, draft.payoutDate]);
@@ -504,9 +514,11 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
 
   const validate = () => {
     if (step === 0) {
+      if (!(Number.isInteger(draft.year) && draft.year >= 2000 && draft.year <= 2100)) return 'Enter a four-digit year between 2000 and 2100.';
       if (!draft.periodStart || !draft.periodEnd) return 'Payroll period start and end are required.';
       if (draft.periodEnd < draft.periodStart) return 'The payroll period end cannot fall before its start.';
       if (!draft.timekeepingStart || !draft.timekeepingEnd) return 'A timekeeping cut-off is required — the run prices attendance from it.';
+      if (draft.timekeepingEnd < draft.timekeepingStart) return 'The timekeeping cut-off end cannot fall before its start.';
       if (!draft.payoutDate) return 'A payout date is required; it selects the statutory version the run computes on.';
       if (draft.lockDate && draft.lockDate < draft.payoutDate) return 'The transaction lock date cannot fall before its payout date.';
       { const currencyProblem = runCurrencyProblem(withBase(draft.currencies)); if (currencyProblem) return currencyProblem; }
@@ -517,6 +529,14 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
     if (step === 1) {
       if (draft.config.leaveConversion.enabled && conversionWindow.source === 'Transaction' && conversionWindow.problem) return conversionWindow.problem;
       if (draft.config.ytd?.includePosted !== false && ytdRange.problem) return ytdRange.problem;
+      if (draft.config.computeOvertimeAdjustment) {
+        const bad = Object.entries(draft.config.overtimeRates || {}).find(([, value]) => value !== '' && value !== undefined && !(Number(value) > 0));
+        if (bad) return `The ${bad[0] === 'Night Differential' ? 'night differential' : bad[0] === 'Rest Day' ? 'rest day overtime' : bad[0] === 'Holiday' ? 'holiday overtime' : 'regular overtime'} rate must be more than 0, or left blank to use the company's rate.`;
+      }
+      if (draft.config.thirteenthMonth.enabled) {
+        if (!(Number(draft.config.thirteenthMonth.ntThreshold) >= 0)) return 'The non-taxable threshold must be 0 or more.';
+        if (draft.config.thirteenthMonth.basis !== 'Custom / uploaded value' && !draft.config.thirteenthMonth.bonusTypes.length) return 'Choose at least one bonus type, or switch 13th month pay off.';
+      }
       { const pool = draft.config.reclassification.poolLimit; if (draft.config.reclassification.enabled && pool !== '' && pool != null && !(Number(pool) >= 0)) return 'The reclassification pool must be zero or more, or left blank for no limit.'; }
     }
     if (step === 2 && !included.length) return 'At least one employee must be included in the transaction.';
@@ -560,7 +580,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
           <p>The payout calendar is the reference for the period, the cut-off and the payout date. The payout date decides which statutory and tax version this run computes on.</p>
         </div>
         <div className="payroll-field-grid">
-          <FieldRow label={multiple ? 'Payroll calendars' : 'Payroll calendar'} hint={multiple ? 'Tick every payout to create. Each ticked calendar becomes its own transaction, filled from the calendar' : 'From Calendar Settings ▸ Payout calendars'}>
+          <FieldRow label={multiple ? 'Payroll calendars' : 'Payroll calendar'} hint={multiple ? 'Tick every payout to create. Each ticked calendar becomes its own transaction, filled from the calendar' : `From Calendar Settings ▸ Payout calendars${levelsForCalendar(calendars, draft.calendarCode) ? ` · ${levelsForCalendar(calendars, draft.calendarCode)} ${levelsForCalendar(calendars, draft.calendarCode) === 1 ? 'level' : 'levels'} of approval` : ''}`}>
             {multiple
               ? <div className="payroll-checkrow payroll-calendar-multi" role="group" aria-label="Payroll calendars">
                 {calendars.map(row => <label key={row.calendarCode}>
@@ -642,7 +662,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
         </fieldset>}
         {draft.payoutDate && <div className="payroll-tables-note">
           <strong>Tables for payout date {formatUsDate(draft.payoutDate)}</strong>
-          <span>{tablesFor(draft.payoutDate).map(table => `${table.label}: ${table.code} (effective ${formatUsDate(table.effectiveDate)})`).join(' · ')}</span>
+          <span>{tablesFor(draft.periodEnd || draft.payoutDate).map(table => `${table.label}: ${table.code} (effective ${formatUsDate(table.effectiveDate)})`).join(' · ')}</span>
         </div>}
         <fieldset className="payroll-fieldset">
           <legend>Currencies in this run</legend>
@@ -689,7 +709,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
           <table className="payroll-share-grid">
             <thead><tr><th scope="col">Agency</th><th scope="col">Compute</th><th scope="col">Employee share (EE)</th><th scope="col">Employer share (ER)</th></tr></thead>
             <tbody>
-              {[['sss', 'SSS'], ['sssWisp', 'SSS WISP / MPF'], ['philhealth', 'PhilHealth'], ['pagibig', 'Pag-IBIG']].map(([key, label]) => {
+              {[['sss', 'SSS'], ['sssWisp', 'SSS MPF'], ['philhealth', 'PhilHealth'], ['pagibig', 'Pag-IBIG']].map(([key, label]) => {
                 const on = draft.config.computeAllowableDeduction && draft.config.statutoryAgencies[key];
                 return <tr key={key}>
                   <th scope="row">{label}</th>
@@ -715,6 +735,11 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
           <Switch label="Compute basic pay adjustment" hint="Pro-rates new hires, separations, salary increases and end-of-hold from their effective dates" checked={draft.config.computeBasicPayAdjustment} onChange={value => setConfig('computeBasicPayAdjustment', value)} />
           <Switch label="Compute variable allowance adjustment" hint="Pro-rates variable allowances for new hires and separations from the same effective dates as basic pay" checked={draft.config.computeVariableAllowanceAdjustment !== false} onChange={value => setConfig('computeVariableAllowanceAdjustment', value)} />
           <Switch label="Compute overtime" hint="Approved overtime hours in the cut-off, at the premium for each type" checked={draft.config.computeOvertimeAdjustment} onChange={value => setConfig('computeOvertimeAdjustment', value)} />
+          {draft.config.computeOvertimeAdjustment && <div className="payroll-field-grid">
+            {[['Regular', 'Regular overtime'], ['Night Differential', 'Night differential'], ['Rest Day', 'Rest day overtime'], ['Holiday', 'Holiday overtime']].map(([type, label]) => <FieldRow key={type} label={`${label} (× hourly rate)`} hint="Blank uses the company's Overtime Rate Management">
+              <input type="number" min="0" step="0.01" placeholder={`${OT_MULTIPLIERS[type]} (standard)`} value={draft.config.overtimeRates?.[type] ?? ''} onChange={event => setNested('overtimeRates', type, event.target.value === '' ? '' : Number(event.target.value))} />
+            </FieldRow>)}
+          </div>}
           <div className="payroll-checkrow">
             {[['absences', 'Absences'], ['late', 'Tardiness'], ['undertime', 'Undertime']].map(([key, label]) => <label key={key}>
               <input type="checkbox" checked={draft.config.computeAttendanceAdjustment[key]} onChange={event => setNested('computeAttendanceAdjustment', key, event.target.checked)} />
@@ -735,7 +760,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
                 </select>
               </FieldRow>
               <FieldRow label="Non-taxable threshold for the period" hint="₱90,000 is the statutory ceiling; 0 makes every bonus taxable">
-                <input type="number" value={draft.config.thirteenthMonth.ntThreshold} onChange={event => setNested('thirteenthMonth', 'ntThreshold', Number(event.target.value))} />
+                <input type="number" min="0" step="any" value={draft.config.thirteenthMonth.ntThreshold} onChange={event => setNested('thirteenthMonth', 'ntThreshold', Number(event.target.value))} />
               </FieldRow>
             </div>
             <div className="payroll-checkrow">
@@ -763,7 +788,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
           <Switch label="Compute final pay" hint="Brings in separated employees and puts them on the annualised tax table" checked={draft.config.computeFinalPay} onChange={value => setConfig('computeFinalPay', value)} />
           <Switch label="Annualize tax (year-end adjustment)" hint="Computes each employee's tax for the whole year on the BIR annual table — year-to-date plus this run — and withholds the difference, or refunds an over-withholding. Use on the last payroll of the year." checked={draft.config.annualizeTax} onChange={value => setConfig('annualizeTax', value)} />
           <Switch label="Withhold forecast tax in advance" hint="Adds an editable forecast tax amount per employee, as its own column, withheld on top of the computed tax — for example after a previous employer. Not applied on annualizing lines" checked={Boolean(draft.config.taxForecast?.enabled)} onChange={value => setNested('taxForecast', 'enabled', value)} />
-          <Switch label="Gross up every employee" hint="Otherwise only employees tagged for gross-up in the 201 file are grossed up" checked={draft.config.grossUpAll} onChange={value => setConfig('grossUpAll', value)} />
+          <Switch label="Gross up every employee" hint="Otherwise only employees tagged for gross-up in the 201 file are grossed up. The Gross Up policy sets the method, what is guaranteed and who bears the tax." checked={draft.config.grossUpAll} onChange={value => setConfig('grossUpAll', value)} />
         </fieldset>
 
         <fieldset className="payroll-fieldset">
@@ -913,7 +938,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
                 { key: 'r5', label: 'Payout date', value: formatUsDate(draft.payoutDate) },
                 { key: 'r6', label: 'Lock date', value: formatUsDate(draft.lockDate) || 'Not set' },
                 { key: 'r7', label: 'Currencies', value: currencySummary(withBase(draft.currencies)) },
-                { key: 'r7b', label: 'Statutory shares', value: draft.config.computeAllowableDeduction ? [['sss', 'SSS'], ['sssWisp', 'WISP/MPF'], ['philhealth', 'PhilHealth'], ['pagibig', 'Pag-IBIG']].filter(([key]) => draft.config.statutoryAgencies[key]).map(([key, label]) => `${label}: ${[draft.config.statutoryShares?.[key]?.employee !== false && 'EE', draft.config.statutoryShares?.[key]?.employer !== false && 'ER'].filter(Boolean).join(' + ') || 'none'}`).join(' · ') || 'None' : 'Not computed' },
+                { key: 'r7b', label: 'Statutory shares', value: draft.config.computeAllowableDeduction ? [['sss', 'SSS'], ['sssWisp', 'MPF'], ['philhealth', 'PhilHealth'], ['pagibig', 'Pag-IBIG']].filter(([key]) => draft.config.statutoryAgencies[key]).map(([key, label]) => `${label}: ${[draft.config.statutoryShares?.[key]?.employee !== false && 'EE', draft.config.statutoryShares?.[key]?.employer !== false && 'ER'].filter(Boolean).join(' + ') || 'none'}`).join(' · ') || 'None' : 'Not computed' },
                 ...(overlaps.length ? [{ key: 'r0w', label: 'Overlap warning', value: overlaps.join(' ') }] : []),
                 { key: 'r7e', label: 'Forecast tax', value: draft.config.taxForecast?.enabled ? 'Withheld in advance, entered per employee' : 'Off' },
                 { key: 'r7d', label: 'Year to date', value: draft.config.ytd?.includePosted === false ? 'Employee record only' : (ytdRange.problem ? 'Needs attention' : `Employee record + posted payouts ${ytdRange.start ? `${formatUsDate(ytdRange.start)} to ${formatUsDate(ytdRange.end)}` : '(set the payout date)'}`) },
@@ -935,7 +960,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
                 { key: 'c4', label: 'Zero basic pay', value: draft.config.zeroBasicPay ? 'Yes' : 'No' },
                 { key: 'c5', label: '13th month / bonus', value: draft.config.thirteenthMonth.enabled ? `${draft.config.thirteenthMonth.bonusTypes.join(', ')} · ceiling ${peso(draft.config.thirteenthMonth.ntThreshold)}` : 'Not computed' },
                 { key: 'c6', label: 'Tax', value: draft.config.computeTax ? 'Per employee tax type, on the tax table effective on the payout date' : 'Not computed' },
-                { key: 'c6b', label: 'Tables applied', value: tablesFor(draft.payoutDate).map(table => `${table.label} ${table.code}`).join(' · ') || 'Choose a payout date' },
+                { key: 'c6b', label: 'Tables applied', value: tablesFor(draft.periodEnd || draft.payoutDate).map(table => `${table.label} ${table.code}`).join(' · ') || 'Choose a payout date' },
                 { key: 'c7', label: 'Final pay', value: draft.config.computeFinalPay ? 'Computed on the annualised table' : 'Not computed' },
                 { key: 'c8', label: 'Employees', value: `${included.length} included, ${excluded.length} excluded` },
               ]}
@@ -1329,7 +1354,49 @@ function RunPayItemsPanel({ run, result, editable, isPaAdmin, onNotify, onSave }
   </section>;
 }
 
+
+/** Who has signed, and who is next, across the levels this transaction needs. */
+function ApprovalProgress({ run }) {
+  const total = levelsOf(run);
+  const waiting = pendingLevel(run);
+  const list = run.approvals || [];
+  const decisions = list.map(item => item.decision);
+  const start = Math.max(decisions.lastIndexOf('Rejected'), decisions.lastIndexOf('Re-opened'));
+  const round = list.slice(start + 1);
+  const legacy = ['Submitted', 'Reviewed', 'Approved'];
+  const finished = ['Approved', 'Posted', 'Locked'].includes(run.status);
+  const inChain = ['For Review', 'For Approval'].includes(run.status);
+  const levels = Array.from({ length: total }, (_, index) => {
+    const level = index + 1;
+    const stage = stageOf(run, level);
+    const signers = !run.approvalFlow
+      ? [round.filter(item => legacy.includes(item.decision))[index]].filter(Boolean)
+      : level === 1 ? round.filter(item => item.decision === 'Submitted') : signaturesAt(run, level);
+    const done = finished || (inChain && level < waiting);
+    const state = done ? 'done' : inChain && level === waiting ? 'waiting' : 'upcoming';
+    const label = level === 1 ? 'Prepared and submitted' : level === total ? 'Final approval' : `Level ${level} review`;
+    const who = stage && !stage.preparer ? (stage.approvers.length ? `${stage.mode === 'Any one of them' ? 'Any one of' : stage.mode}: ${stage.approvers.join(', ')}` : 'Anyone with payroll access') : '';
+    const left = stage && !stage.preparer && state === 'waiting' ? waitingLabels(stage, signers) : [];
+    return { level, state, label, signers, who, left };
+  });
+  return <div className="approval-progress" aria-label="Approval levels">
+    <p className="payroll-note">{hasSetLevels(run)
+      ? `This transaction has ${total} levels, set by its payout calendar: the person who prepares it, ${total > 2 ? `${total - 2} ${total === 3 ? 'reviewer' : 'reviewers'}, ` : ''}and the final approver.${run.approvalFlow ? ' Each level is signed by the approvers in the approval hierarchy.' : ''} Each level has to be a different person.`
+      : 'This transaction goes through the standard three levels: prepare, review, approve.'}</p>
+    <ol>{levels.map(item => <li key={item.level} className={item.state}>
+      <span className="approval-step-number">{item.state === 'done' ? '✓' : item.level}</span>
+      <div><strong>{item.label}</strong>
+        {item.who && <small className="approval-who">{item.who}</small>}
+        {item.signers.map((signer, signerIndex) => <small key={signerIndex}>✓ {signer.actor} · {stampUs(signer.at)}</small>)}
+        {item.state === 'waiting' && <small>{item.left.length ? `Waiting for ${joinLabels(item.left)}` : 'Waiting for sign-off'}</small>}
+        {item.state === 'upcoming' && !item.who && <small>Not started</small>}
+        {item.state === 'done' && !item.signers.length && <small>Signed off</small>}</div>
+    </li>)}</ol>
+  </div>;
+}
+
 function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, onSaveOverride, actor, isPaAdmin, onRaiseCorrection, onCancelCorrection }) {
+  const { role } = useRole();
   const [tab, setTab] = useState('employees');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [editing, setEditing] = useState(null);
@@ -1341,7 +1408,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
   const [correctionsVersion, setCorrectionsVersion] = useState(0);
   const correctionsHere = useMemo(() => readCorrections(readActiveCompanyId()), [correctionsVersion, run.id, run.status]);
   const table = useTableState();
-  const uploadRef = useRef(null);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
 
   const capability = capabilitiesOf(run);
   const result = run.result;
@@ -1387,12 +1454,12 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
     onNotify(`${report.label} exported for ${run.transactionNumber}.`);
   };
 
-  const uploadBatch = event => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const { entries: parsed, errors } = parsePayrollBatch(String(reader.result || ''), { employees: employeeRoster, payrollType: run.payrollType, conversion: { enabled: Boolean(run.config?.leaveConversion?.enabled), leaveTypes: run.config?.leaveConversion?.leaveTypes || [], window: run.config?.leaveConversion?.window || {} } });
+  /** The Import step of the Upload dialog: an Excel workbook is read, validated as a whole, and committed only if every row passes. */
+  const uploadBatch = async file => {
+    const sheet = await readTable(file, ['employee code'], { columnsHint: 'Use the downloaded template: Employee Code, Pay Item Type, Pay Item, Amount, Conversion Date, Rate.' });
+    if (sheet.error) { onNotify(sheet.error, 'bad'); return { ok: false, message: sheet.error }; }
+    {
+      const { entries: parsed, errors } = parsePayrollBatch(toCsvText(sheet.headers, sheet.rows), { employees: employeeRoster, payrollType: run.payrollType, conversion: { enabled: Boolean(run.config?.leaveConversion?.enabled), leaveTypes: run.config?.leaveConversion?.leaveTypes || [], window: run.config?.leaveConversion?.window || {} } });
       onSaveOverride({
         batch: {
           id: `batch-${Date.now()}`,
@@ -1408,11 +1475,14 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
           entries: errors.length ? [] : parsed,
         },
       });
-      if (errors.length) { rejectUpload(file.name, errors, () => {}); onNotify(`${file.name}: ${errors.length} ${plural(errors.length, 'problem')} found, nothing was committed. The error log has been downloaded — ${errors[0]}`, 'bad'); return; }
+      if (errors.length) {
+        downloadErrorWorkbook(file.name, 'Batch', sheet.headers, sheet.rows, messagesByRow(errors, sheet.rows.length));
+        onNotify(`${file.name}: ${errors.length} ${plural(errors.length, 'problem')} found, nothing was committed. Check the downloaded file for details — ${errors[0]}`, 'bad');
+        return { ok: false, message: `${errors.length} ${plural(errors.length, 'problem')} found, so nothing was committed. Check the downloaded file for details.` };
+      }
       onNotify(`${file.name} validated — ${parsed.length} ${plural(parsed.length, 'row')} ready to commit.`, 'ok');
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+      return { ok: true, message: `${parsed.length} ${plural(parsed.length, 'row')} validated and ready to commit.` };
+    }
   };
 
   // The dialogs belong to the whole screen, not to one of its views: the edit
@@ -1512,7 +1582,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
         {run.createdBy && <p className="payroll-filed-by">Filed by <strong>{run.createdBy}</strong>, {filedOn(run.createdAt)}</p>}
       </div>
       <div className="payroll-run-actions">
-        {actionsFor(run, runs, { canReopen: true, isPaAdmin }).filter(action => action.key !== 'updateEntry').map(action => <button
+        {actionsFor(run, runs, { canReopen: true, isPaAdmin, role }).filter(action => action.key !== 'updateEntry').map(action => <button
           key={action.key}
           type="button"
           className={`hrm-btn ${action.tone === 'danger' ? 'danger' : action.key === 'recalculate' ? 'primary' : 'outline'}`}
@@ -1650,11 +1720,16 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
         <div className="hrm-toolbar-left"><h3 className="hrm-section-title">Batch uploads</h3></div>
         <div className="hrm-toolbar-right">
           <GhostButton onClick={() => {
-            downloadFile('payroll-batch-template.csv', 'Employee Code,Pay Item Type,Pay Item,Amount,Conversion Date,Rate\n0011223345,Earning,Sample allowance,0,,\n0011223345,Leave Conversion,Vacation Leave,5,11/15/2025,\n0011223345,Variable Allowance,Lecture Fee,12,,100\n0011223345,Tax Forecast,Forecast tax,1500,,\n', 'text/csv');
+            downloadTemplate('payroll-batch-template.xlsx', 'Batch', ['Employee Code', 'Pay Item Type', 'Pay Item', 'Amount', 'Conversion Date', 'Rate'], [
+              ['0011223345', 'Earning', 'Sample allowance', '0', '', ''],
+              ['0011223345', 'Leave Conversion', 'Vacation Leave', '5', '11/15/2025', ''],
+              ['0011223345', 'Variable Allowance', 'Lecture Fee', '12', '', '100'],
+              ['0011223345', 'Tax Forecast', 'Forecast tax', '1500', '', ''],
+            ]);
             onNotify('Batch template downloaded.');
           }}>Download template</GhostButton>
-          <button type="button" className="hrm-btn outline" disabled={!capability.edit} onClick={() => uploadRef.current?.click()}>Upload batch</button>
-          <input ref={uploadRef} type="file" accept=".csv" hidden onChange={uploadBatch} />
+          <button type="button" className="hrm-btn outline" disabled={!capability.edit} onClick={() => setBatchDialogOpen(true)}>Upload batch</button>
+          {batchDialogOpen && <ImportDialog historyKey={`payroll-batch:${run.transactionNumber}`} onImport={uploadBatch} onClose={() => setBatchDialogOpen(false)} />}
         </div>
       </div>
       <p className="page-description">A batch is validated before it is committed, and a committed batch can be rolled back while the transaction is still open — which is exactly the condition Annex C's rollback rules set.</p>
@@ -1795,6 +1870,7 @@ function RunDetail({ run, runs, context, hrmData, onBack, onAction, onNotify, on
       </section>
       <section className="hrm-section">
         <h3 className="hrm-section-title">Review and approval</h3>
+        <ApprovalProgress run={run} />
         <MiniTable
           columns={[
             { key: 'level', label: 'Level' },
@@ -1879,7 +1955,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       .filter(item => item.type === 'Approval Hierarchy' && item.status !== 'Inactive');
     return !controls.length || controls.some(item => item.backdatedApproval !== 'No');
   }, [companyId]);
-  const canCreate = ['pa_admin', 'admin', 'client_admin'].includes(role);
+  const canCreate = ['pa_admin', 'pa_superadmin', 'admin', 'client_admin'].includes(role);
 
   const hrmData = useMemo(() => readHrmData(companyId), [companyId]);
   const calendars = useMemo(() => readCalendars(companyId, 'Payout'), [companyId]);
@@ -1937,7 +2013,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
   const publishTakeHomeWarnings = run => minimumTakeHomeNotifications({ run, result: run.result, rules: readNotificationRules(companyId) }).forEach(event => publishNotificationEvent({ eventKey: notificationEventKeys.MinimumTakeHomePayRisk, companyId, actor: 'Payroll Engine', ...event }));
 
   const handleAction = (run, actionKey, remarks = '') => {
-    const outcome = applyAction(run, actionKey, { actor, remarks, runs, isPaAdmin, context: contextFor(run) });
+    const outcome = applyAction(run, actionKey, { actor, role, remarks, runs, isPaAdmin, context: contextFor(run) });
     if (outcome.error) { toast(outcome.error, 'bad'); return; }
     if (actionKey === 'generateBankFile') {
       const file = bankFileFor(outcome.run.result);
@@ -1954,6 +2030,12 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       }
     }
     toast(outcome.message);
+    const notice = outcome.notice;
+    if (notice && notice.kind !== 'returned') {
+      publishNotificationEvent?.({ eventKey: 'PayrollApprovalRequested', companyId, correlationId: `${run.id}:level-${notice.level}`, summary: `${run.transactionNumber} is waiting for ${notice.final || notice.level === notice.total ? 'final approval' : `level ${notice.level} of ${notice.total}`}${notice.labels?.length ? ` from ${joinLabels(notice.labels)}` : ''}.`, actor });
+    } else if (notice) {
+      publishNotificationEvent?.({ eventKey: 'PayrollApprovalReturned', companyId, correlationId: `${run.id}:returned`, summary: `${run.transactionNumber} was returned to Open by ${actor}${remarks ? `: ${remarks}` : '.'}`, actor });
+    }
     appendAuditEvent?.({ entity: 'Payroll Transaction', entityId: run.transactionNumber, action: actionKey, actor, detail: outcome.message });
     if (actionKey === 'post') {
       const carried = (outcome.run.result?.lines || []).flatMap(line => line.corrections || []);
@@ -2039,7 +2121,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     const failures = [];
     drafts.forEach((item, index) => {
     const warnings = overlapWarnings({ ...item, transactionMode: 'Single', additional: undefined }, [...runs, ...filed]);
-    const created = withWarnings(fileRun({ ...item, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, funds } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
+    const created = withWarnings(fileRun({ ...item, approvalLevels: levelsForCalendar(calendars, item.calendarCode), approvalFlow: levelsForCalendar(calendars, item.calendarCode) ? flowFor(readApprovalHierarchy(companyId), levelsForCalendar(calendars, item.calendarCode)) : undefined, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, funds, bonusCeiling: draft.config.bonusCeiling ?? (() => { const value = referenceRows('bonus-ceilings')[0]?.ceiling; return Number.isFinite(Number(value)) && value !== '' ? Number(value) : 90000; })() } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
     const outcome = applyAction(created, 'recalculate', { actor, runs: [...runs, ...filed], context: contextFor(created) });
     const stored = outcome.error ? created : outcome.run;
     commit(stored);

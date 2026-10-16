@@ -34,41 +34,45 @@ export const agencyDefinitions = {
     name: 'PhilHealth', short: 'PhilHealth', prefix: 'PHIC',
     fields: [
       ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'],
-      ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'],
-      ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate'],
+      ['eeRate', 'Employee Percentage Rate'], ['erRate', 'Employer Percentage Rate'],
+      ['minimumEmployeeShare', 'Employee Share (in Range) - Minimum'], ['maximumEmployeeShare', 'Employee Share (in Range) - Maximum'],
+      ['minimumEmployerShare', 'Employer Share (in Range) - Minimum'], ['maximumEmployerShare', 'Employer Share (in Range) - Maximum'],
     ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share']],
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share'], ['monthlyPremium', 'Monthly Premium']],
+    note: 'PhilHealth \u20b10.01 rounding difference: when the total premium cannot be split equally, the \u20b10.01 is assigned to the Employer Share so the total stays exact.',
   },
   pagibig: {
     name: 'Pag-IBIG', short: 'Pag-IBIG', prefix: 'HDMF',
     fields: [
       ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'],
-      ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'],
-      ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate'],
+      ['eeRate', 'Employee Percentage Rate'], ['erRate', 'Employer Percentage Rate'],
+      ['minimumEmployeeShare', 'Employee Contribution - Minimum'], ['maximumEmployeeShare', 'Employee Contribution - Maximum'],
+      ['minimumEmployerShare', 'Employer Contribution - Minimum'], ['maximumEmployerShare', 'Employer Contribution - Maximum'],
     ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share']],
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Contribution'], ['employerShare', 'Employer Contribution'], ['totalContribution', 'Total Contribution']],
+    note: 'The maximum fund amount is \u20b110,000.00. For example, an employee who earns \u20b130,000.00 has the contribution worked out on the maximum fund amount.',
   },
   tax: {
-    name: 'BIR Compensation Tax Table', short: 'Compensation Tax', prefix: 'BIR',
-    fields: [['minimum', 'Minimum Taxable Compensation'], ['maximum', 'Maximum Taxable Compensation'], ['fixedTax', 'Fixed Tax'], ['excessRate', 'Rate on Excess (%)'], ['frequency', 'Payroll Frequency', 'select', ['Daily', 'Weekly', 'Semi-monthly', 'Monthly', 'Annual']]],
-    columns: [['minimum', 'Minimum Taxable Compensation'], ['maximum', 'Maximum Taxable Compensation'], ['fixedTax', 'Fixed Tax'], ['excessRate', 'Excess Rate'], ['frequency', 'Frequency']],
+    name: 'BIR Compensation Tax Table', short: 'Compensation Tax', prefix: 'WTC',
+    fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax'], ['frequency', 'Payment Mode', 'select', ['Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly', 'Annual']]],
+    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax'], ['frequency', 'Payment Mode']],
   },
   annualTax: {
     name: 'BIR Annual Tax Table', short: 'Annual Tax', prefix: 'WTA',
-    fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate on Excess (%)'], ['fixedTax', 'Fixed Tax']],
-    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate on Excess (%)'], ['fixedTax', 'Fixed Tax']],
+    fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax']],
+    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax']],
   },
   expandedTax: {
     name: 'BIR Expanded Withholding Tax Table', short: 'Expanded Tax', prefix: 'WTE',
-    fields: [['incomePayment', 'Nature of Income Payment', 'text'], ['atcCode', 'ATC Code', 'text'], ['excessRate', 'Withholding Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['incomePayment', 'Nature of Income Payment'], ['atcCode', 'ATC Code'], ['excessRate', 'Withholding Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    columns: [['taxType', 'Tax Type'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    taxType: 'WE',
   },
   finalTax: {
     name: 'BIR Final Tax Table', short: 'Final Tax', prefix: 'WTF',
-    fields: [['incomePayment', 'Nature of Income Payment', 'text'], ['atcCode', 'ATC Code', 'text'], ['excessRate', 'Final Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['incomePayment', 'Nature of Income Payment'], ['atcCode', 'ATC Code'], ['excessRate', 'Final Tax Rate (%)'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    columns: [['taxType', 'Tax Type'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    taxType: 'WF',
   },
   deMinimis: {
     name: 'De Minimis Benefits', short: 'De Minimis', prefix: 'DMN',
@@ -129,9 +133,9 @@ function sssRows(rate) {
 function philhealthRows(rate, floor, ceiling) {
   const half = round2(rate / 2);
   return [
-    { id: 1, minimum: 0, maximum: floor, unit: 'Amount (₱)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(floor * half / 100), maximumEmployeeShare: round2(floor * half / 100), minimumEmployerShare: round2(floor * half / 100), maximumEmployerShare: round2(floor * half / 100) },
+    { id: 1, minimum: 0, maximum: floor, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(floor * half / 100), maximumEmployeeShare: round2(floor * half / 100), minimumEmployerShare: round2(floor * half / 100), maximumEmployerShare: round2(floor * half / 100) },
     { id: 2, minimum: round2(floor + 0.01), maximum: round2(ceiling - 0.01), unit: 'Percentage (%)', eeRate: half, erRate: half, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
-    { id: 3, minimum: ceiling, maximum: 9999999, unit: 'Amount (₱)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(ceiling * half / 100), maximumEmployeeShare: round2(ceiling * half / 100), minimumEmployerShare: round2(ceiling * half / 100), maximumEmployerShare: round2(ceiling * half / 100) },
+    { id: 3, minimum: ceiling, maximum: 9999999, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(ceiling * half / 100), maximumEmployeeShare: round2(ceiling * half / 100), minimumEmployerShare: round2(ceiling * half / 100), maximumEmployerShare: round2(ceiling * half / 100) },
   ];
 }
 
@@ -140,7 +144,7 @@ function pagibigRows(cap) {
   return [
     { id: 1, minimum: 0, maximum: 1500, unit: 'Percentage (%)', eeRate: 1, erRate: 2, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
     { id: 2, minimum: 1500.01, maximum: round2(cap - 0.01), unit: 'Percentage (%)', eeRate: 2, erRate: 2, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
-    { id: 3, minimum: cap, maximum: 9999999, unit: 'Amount (₱)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(cap * 0.02), maximumEmployeeShare: round2(cap * 0.02), minimumEmployerShare: round2(cap * 0.02), maximumEmployerShare: round2(cap * 0.02) },
+    { id: 3, minimum: cap, maximum: 9999999, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(cap * 0.02), maximumEmployeeShare: round2(cap * 0.02), minimumEmployerShare: round2(cap * 0.02), maximumEmployerShare: round2(cap * 0.02) },
   ];
 }
 
@@ -155,11 +159,11 @@ const ANNUAL_BRACKETS = [
 ];
 
 /** Periods per year for each payroll frequency the compensation table carries. */
-export const TAX_PERIODS_PER_YEAR = Object.freeze({ Daily: 313, Weekly: 52, 'Semi-monthly': 24, Monthly: 12, Annual: 1 });
+export const TAX_PERIODS_PER_YEAR = Object.freeze({ Daily: 313, Weekly: 52, 'Bi-weekly': 26, 'Semi-monthly': 24, Monthly: 12, Annual: 1 });
 
 function compensationRows() {
   const rows = [];
-  ['Daily', 'Weekly', 'Semi-monthly', 'Monthly'].forEach(frequency => {
+  ['Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'].forEach(frequency => {
     const periods = TAX_PERIODS_PER_YEAR[frequency];
     ANNUAL_BRACKETS.forEach(([minimum, maximum, fixedTax, excessRate], index) => {
       rows.push({
@@ -180,36 +184,41 @@ function annualRows() {
 }
 
 /**
- * De Minimis ceilings per RR 11-2018. The frequency is the ceiling's own
- * frequency, which is what `deMinimisSplit` compares year-to-date usage against.
+ * De Minimis ceilings. 2025 keeps the RR 11-2018 figures; from 2026 the ceilings follow
+ * Annex A (effective 15 days after 22 December 2025). The frequency is the ceiling's own
+ * frequency, which is what `deMinimisSplit` compares year-to-date usage against, so the
+ * monthly and per-semester amounts of the annex are shown as their annual totals.
  */
-function deMinimisRows() {
-  return [
-    { id: 1, benefitCode: 'DM-RICE', benefitName: 'Rice Subsidy', ceiling: 24000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 2, benefitCode: 'DM-UNIFORM', benefitName: 'Uniform and Clothing Allowance', ceiling: 7000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 3, benefitCode: 'DM-MED', benefitName: 'Medical Cash Allowance to Dependents', ceiling: 3000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 4, benefitCode: 'DM-LAUNDRY', benefitName: 'Laundry Allowance', ceiling: 3600, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 5, benefitCode: 'DM-MEAL', benefitName: 'Meal Allowance (overtime / night shift)', ceiling: 30000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 6, benefitCode: 'DM-ACHIEVE', benefitName: 'Employee Achievement Award', ceiling: 10000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 7, benefitCode: 'DM-GIFT', benefitName: 'Christmas and Anniversary Gifts', ceiling: 5000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
-    { id: 8, benefitCode: 'DM-MEDICAL', benefitName: 'Actual Medical Assistance', ceiling: 10000, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' },
+function deMinimisRows(year = 2026) {
+  const later = Number(year) >= 2026;
+  const rows = [
+    ['DM-RICE', 'Rice Subsidy', later ? 30000 : 24000],
+    ['DM-UNIFORM', 'Uniform and Clothing Allowance', later ? 8000 : 7000],
+    ['DM-MED', 'Medical Cash Allowance to Dependents', later ? 4000 : 3000],
+    ['DM-LAUNDRY', 'Laundry Allowance', later ? 4800 : 3600],
+    ['DM-MEAL', 'Meal Allowance (overtime / night shift)', 30000],
+    ['DM-ACHIEVE', 'Employee Achievement Award', later ? 12000 : 10000],
+    ['DM-GIFT', 'Christmas and Anniversary Gifts', later ? 6000 : 5000],
+    ['DM-MEDICAL', 'Actual Medical Assistance', later ? 12000 : 10000],
+    ...(later ? [['DM-CBA', 'CBA and Productivity Incentive Schemes', 12000]] : []),
   ];
+  return rows.map(([benefitCode, benefitName, ceiling], index) => ({ id: index + 1, benefitCode, benefitName, ceiling, frequency: 'Annual', excessTreatment: 'Reclassify as Taxable' }));
 }
 
 function expandedRows() {
   return [
-    { id: 1, incomePayment: 'Professional fees (individual)', atcCode: 'WI010', excessRate: 5, minimum: 0, maximum: 3000000 },
-    { id: 2, incomePayment: 'Professional fees (individual, above threshold)', atcCode: 'WI011', excessRate: 10, minimum: 3000000.01, maximum: 100000000 },
-    { id: 3, incomePayment: 'Rentals', atcCode: 'WI100', excessRate: 5, minimum: 0, maximum: 100000000 },
-    { id: 4, incomePayment: 'Income payments to certain contractors', atcCode: 'WI120', excessRate: 2, minimum: 0, maximum: 100000000 },
+    { id: 1, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Professional fees (individual)', atcCode: 'WI010', excessRate: 5, minimum: 0, maximum: 3000000 },
+    { id: 2, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Professional fees (individual, above threshold)', atcCode: 'WI011', excessRate: 10, minimum: 3000000.01, maximum: 100000000 },
+    { id: 3, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Rentals', atcCode: 'WI100', excessRate: 5, minimum: 0, maximum: 100000000 },
+    { id: 4, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Income payments to certain contractors', atcCode: 'WI120', excessRate: 2, minimum: 0, maximum: 100000000 },
   ];
 }
 
 function finalRows() {
   return [
-    { id: 1, incomePayment: 'Interest on bank deposits', atcCode: 'WI170', excessRate: 20, minimum: 0, maximum: 100000000 },
-    { id: 2, incomePayment: 'Cash dividends (individual)', atcCode: 'WI180', excessRate: 10, minimum: 0, maximum: 100000000 },
-    { id: 3, incomePayment: 'Fringe benefit tax (grossed-up)', atcCode: 'WI360', excessRate: 35, minimum: 0, maximum: 100000000 },
+    { id: 1, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Interest on bank deposits', atcCode: 'WI170', excessRate: 20, minimum: 0, maximum: 100000000 },
+    { id: 2, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Cash dividends (individual)', atcCode: 'WI180', excessRate: 10, minimum: 0, maximum: 100000000 },
+    { id: 3, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Fringe benefit tax (grossed-up)', atcCode: 'WI360', excessRate: 35, minimum: 0, maximum: 100000000 },
   ];
 }
 
@@ -239,9 +248,10 @@ export function seedVersion(agency, year, index = 1, active = false) {
     : agency === 'annualTax' ? annualRows()
     : agency === 'expandedTax' ? expandedRows()
     : agency === 'finalTax' ? finalRows()
-    : deMinimisRows();
+    : deMinimisRows(year);
   return {
     id: `${agency}-${year}-${index}`,
+    agency,
     code: `${def.prefix}-${year}-${String(index).padStart(3, '0')}`,
     name: `${def.name} ${year}`,
     effectiveDate: `${year}-01-01`,
@@ -276,12 +286,16 @@ export function effectiveVersionIn(data = {}, agency, asOf = new Date().toISOStr
   return sorted.find(item => String(item.effectiveDate) <= String(asOf)) || sorted[sorted.length - 1];
 }
 
-/** The bracket a monthly compensation falls into, or the last one above it. */
+/**
+ * The bracket a monthly compensation falls into: the last one that starts at or below it. Brackets end at
+ * x.99 and the next starts at the following peso, so a value inside that centavo gap belongs to the lower
+ * bracket, and a negative value belongs to the first. Above the top bracket's maximum the top bracket applies.
+ */
 export function bracketFor(version, compensation) {
   const rows = [...(version?.rows || [])].sort((a, b) => number(a.minimum) - number(b.minimum));
   if (!rows.length) return null;
   const amount = number(compensation);
-  return rows.find(row => amount >= number(row.minimum) && amount <= number(row.maximum)) || rows[rows.length - 1];
+  return [...rows].reverse().find(row => amount >= number(row.minimum)) || rows[0];
 }
 
 /**
@@ -309,8 +323,15 @@ export function sssContribution(version, monthlyCompensation) {
 export function rateContribution(version, monthlyCompensation) {
   const row = bracketFor(version, monthlyCompensation);
   if (!row) return { employee: 0, employer: 0, bracket: null };
-  const amount = number(monthlyCompensation);
-  const isPercentage = (row.unit || 'Amount (₱)') === 'Percentage (%)';
+  const amount = Math.max(0, number(monthlyCompensation));
+  const isPercentage = (row.unit || 'Amount (Php)') === 'Percentage (%)';
+  if (isPercentage && (version?.agency === 'philhealth' || /^PHIC/.test(version?.code || ''))) {
+    // The total premium is exact; the employee share is rounded down to the centavo and the employer takes the odd centavo.
+    const rateTotal = number(row.eeRate) + number(row.erRate);
+    const total = round2(amount * rateTotal / 100);
+    const employee = rateTotal > 0 ? Math.floor(total * number(row.eeRate) / rateTotal * 100 + 1e-9) / 100 : 0;
+    return { employee: round2(employee), employer: round2(total - employee), bracket: row };
+  }
   return {
     employee: round2(isPercentage ? amount * number(row.eeRate) / 100 : number(row.minimumEmployeeShare)),
     employer: round2(isPercentage ? amount * number(row.erRate) / 100 : number(row.minimumEmployerShare)),

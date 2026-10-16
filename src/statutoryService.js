@@ -20,10 +20,11 @@ import {
   sssContribution,
 } from './statutorySchedules.js';
 
+// v5: Unit reads Percentage (%) or Amount (Php), the tax tables carry Payment Mode and Tax Type, and a version records its agency.
 // v4: the seeded tables are the real SSS / PhilHealth / Pag-IBIG / BIR
 // schedules rather than three sample brackets, so a v3 payload cannot satisfy
 // a payroll computation and must not be carried forward.
-export const STATUTORY_STORAGE_KEY = 'atlas-statutory-tables-v4';
+export const STATUTORY_STORAGE_KEY = 'atlas-statutory-tables-v7';
 
 export function readStatutoryData() {
   try {
@@ -76,7 +77,7 @@ export function readPayrollTransactions() {
       const key = localStorage.key(index);
       if (!key || !key.startsWith('atlas-payroll-runs-v1')) continue;
       const saved = JSON.parse(localStorage.getItem(key));
-      (Array.isArray(saved) ? saved : []).forEach(run => rows.push({ code: run.transactionNumber, status: run.status, payoutDate: run.payoutDate }));
+      (Array.isArray(saved) ? saved : []).forEach(run => rows.push({ code: run.transactionNumber, status: run.status, payoutDate: run.payoutDate, periodEnd: run.periodEnd }));
     }
   } catch { /* an unreadable store contributes no rows */ }
   return rows;
@@ -85,8 +86,9 @@ export function readPayrollTransactions() {
 export function versionUsage(agency, version, data = readStatutoryData()) {
   if (!version?.effectiveDate) return { used: false, transactions: [] };
   const consuming = readPayrollTransactions().filter(row => {
-    if (!row.payoutDate || row.status === 'Cancelled') return false;
-    return effectiveVersion(agency, row.payoutDate, data)?.id === version.id;
+    if (!(row.periodEnd || row.payoutDate) || row.status === 'Cancelled') return false;
+    // A run uses the version in force for its payroll period (its cut-off), not the day it is paid.
+    return effectiveVersion(agency, row.periodEnd || row.payoutDate, data)?.id === version.id;
   });
   return { used: consuming.length > 0, transactions: consuming.map(row => `${row.code} (${row.status})`) };
 }

@@ -22,7 +22,7 @@ export const PAYROLL_UI_PATHS = Object.freeze({
   policy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines'),
   takeHome: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Minimum Take-Home Pay'),
   deductionHierarchy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Deduction and Loan Hierarchy'),
-  basicPayConfig: path('Core', 'Company Configuration', 'Services Information', 'Basic Pay & Pay Rates'),
+  basicPayConfig: path('Core', 'Employee Masterfile', 'Payroll & Allocation', 'Basic Pay'),
   salaryBasic: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Basic Pay'),
   salaryEarnings: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Earnings'),
   salaryStatutory: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Statutory Deductions'),
@@ -67,7 +67,7 @@ function sourceReference(step) {
 
 function featureFor(step) {
   const code = String(step?.code || '');
-  if (/^(BAS-|ERN-001|MWE-|PRT-)/.test(code)) return { kind: 'Configuration + computation', feature: 'Basic Pay & Pay Rates', extra: [ref('Company configuration', 'Pay type, factor days, and rate derivation', PAYROLL_UI_PATHS.basicPayConfig)] };
+  if (/^(BAS-|ERN-001|MWE-|PRT-)/.test(code)) return { kind: 'Configuration + computation', feature: 'Basic Pay', extra: [ref('Employee Masterfile', 'Pay type, factor days, and rate derivation', PAYROLL_UI_PATHS.basicPayConfig)] };
   if (/^(ERN-002|ERN-003|ERN-006)/.test(code)) return { kind: 'Computation', feature: 'Overtime and premium earnings', extra: [ref('Approved time', 'Overtime Summary', PAYROLL_UI_PATHS.overtime)] };
   if (/^DED-00/.test(code)) return { kind: 'Computation', feature: 'Attendance deductions', extra: [ref('Attendance input', 'Time & Attendance Summary', PAYROLL_UI_PATHS.attendance)] };
   if (/^(DMN-|RCL-)/.test(code)) return { kind: 'Effective reference', feature: 'De Minimis tax treatment', extra: [ref('Effective table', 'De Minimis statutory version', PAYROLL_UI_PATHS.statutory), ref('Earning source', 'Employee or company earning record', PAYROLL_UI_PATHS.earningRegister)] };
@@ -131,7 +131,7 @@ export function buildPayrollAuditTrail(line, run) {
     auditNode('run', 'Run configuration', 'Resolve payroll transaction controls', 'Used', PAYROLL_UI_PATHS.transaction,
       `${run?.paymentMode || line.payType} mode · payout ${run?.payoutDate || '—'} · time cutoff ${run?.timekeepingStart || '—'} to ${run?.timekeepingEnd || '—'}`,
       'Calculation switches, population, payout date, and effective-date basis'),
-    auditNode('basic-config', 'Company configuration', 'Resolve the company pay basis', 'Used', PAYROLL_UI_PATHS.basicPayConfig,
+    auditNode('basic-config', 'Employee configuration', 'Resolve the employee pay basis', 'Used', PAYROLL_UI_PATHS.basicPayConfig,
       `${line.payType} paid · factor days ${line.rates?.factorDays || '—'} · ${line.rates?.workHours || '—'} work hours per day`,
       `Monthly-to-daily-to-hourly rate method for ${line.name}`, steps.filter(step => /^(BAS-|MWE-|PRT-)/.test(step.code)).map(step => step.code)),
     auditNode('basic', 'Employee configuration', 'Read effective employee basic pay', 'Used', PAYROLL_UI_PATHS.salaryBasic,

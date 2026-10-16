@@ -90,7 +90,7 @@ export function signedInUser(data = {}) {
  * Legacy 'client' dynamically maps to approver if employee has direct reports, or employee if individual.
  */
 export function accessFor(role, data = {}, employeeId = SIGNED_IN_EMPLOYEE_ID) {
-  const isPaAdmin = role === 'admin' || role === 'pa_admin';
+  const isPaAdmin = role === 'admin' || role === 'pa_admin' || role === 'pa_superadmin';
   const isClientAdmin = role === 'client_admin';
   const directReports = (data.employees || []).filter(employee => text(employee.managerId) === text(employeeId));
   

@@ -1,0 +1,22 @@
+/* Approval levels on a payroll transaction */
+#root .approval-progress { margin: 0 0 14px; }
+#root .approval-progress ol { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; }
+#root .approval-progress li { display: flex; align-items: center; gap: 10px; min-width: 190px; padding: 10px 12px; border: 1px solid #e3deea; border-radius: 10px; background: #ffffff; }
+#root .approval-progress li.done { border-color: #bfe3d0; background: #f4fbf7; }
+#root .approval-progress li.waiting { border-color: #f0d9a8; background: #fffdf7; }
+#root .approval-progress li.upcoming { color: #8a828f; }
+#root .approval-progress .approval-step-number { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #efeaf5; color: #4f2d7f; font-size: 11.7px; font-weight: 600; }
+#root .approval-progress li.done .approval-step-number { background: #147d4f; color: #ffffff; }
+#root .approval-progress li.waiting .approval-step-number { background: #96590d; color: #ffffff; }
+#root .approval-progress li strong { display: block; font-size: 11.7px; }
+#root .approval-progress li small { display: block; margin-top: 2px; color: #8a828f; }
+#root .approval-progress .approval-who { color: #6b647a; font-style: italic; }
+#root .approval-progress li > div { display: grid; gap: 2px; }
+#root .approver-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#root .approver-chips label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid #d9d2e4; border-radius: 999px; background: #ffffff; color: #514a6b; font-size: 11.7px; cursor: pointer; }
+#root .approver-chips label.on { border-color: #4f2d7f; background: #f1eafb; color: #4f2d7f; font-weight: 600; }
+#root .approver-chips input { width: 14px; min-height: 0; height: 14px; margin: 0; }
+#root .approver-note { color: #6b647a; font-size: 11.7px; }
+#root .approver-help { margin: 12px 0 0; color: #6b647a; font-size: 11.2px; line-height: 1.5; }
+#root .approver-problem { margin: 8px 0 0; color: #b4232f; font-size: 11.7px; }
+#root .approval-progress li small { font-size: 10.6px; line-height: 1.35; }

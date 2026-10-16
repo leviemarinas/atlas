@@ -25,6 +25,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { downloadFile } from './fileDownload';
+import { configFieldProblems, maxLengthOf, usedInPayroll } from './configValidation.js';
 import { appendAuditEvent, defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
 import { useRole } from './RoleContext';
 import { referenceValues } from './ReferenceTables';
@@ -194,6 +195,8 @@ const baseModuleDefinitions = {
           { key: 'unit', label: 'Unit', type: 'select', options: ['in Minutes', 'in Hours', 'in Days', 'Fixed Amount'], half: true, visible: draft => draft.autoCompute === 'Yes' },
           { key: 'variableAllowance', label: 'Variable Allowance', type: 'select', options: ['Variable Allowance 1', 'Variable Allowance 2', 'Not applicable'], half: true },
           { key: 'negativeComputation', label: 'Negative Computation?', type: 'boolean', half: true },
+          // Which earning a "specific earning" Gross Up applies to. The Gross Up policy decides how and for whom.
+          { key: 'grossUp', label: 'Gross up this earning?', type: 'boolean', half: true },
           { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true, half: true },
           { key: 'classification', label: 'Earning Classification', type: 'select', options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, half: true },
           { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, half: true, visible: draft => draft.taxability === 'Taxable' || ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
@@ -239,7 +242,7 @@ const baseModuleDefinitions = {
     // A taxability change keeps only a classification that taxability still allows.
     derive: (draft, key) => (key === 'taxability' && !(EARNING_CLASSIFICATIONS[draft.taxability] || []).includes(draft.classification)
       ? { classification: EARNING_CLASSIFICATIONS[draft.taxability]?.[0] || '' } : null),
-    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
+    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'No', grossUp: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance', { defaultAmount: '1500' }], ['47218662', 'Night Differential', 'Normal'],
       // Tagged for retirement so the Retirement engine can resolve its salary
@@ -327,23 +330,6 @@ const baseModuleDefinitions = {
     defaults: { type: 'Salary Loan', principal: '100000', interest: '5', terms: '12', interestAmount: '5000', amortization: '8750', paymentMode: 'Monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, balanceHandling: 'Partial Deduction', hierarchyPriority: '10', interestMethod: 'Simple', status: 'Active' },
     rows: [['CL-001', 'Employee Salary Loan', 'Salary Loan', { principal: '30000', interestAmount: '1500', amortization: '2500', hierarchyPriority: '11' }], ['CL-002', 'Emergency Assistance', 'Emergency Loan', { principal: '15000', interestAmount: '750', amortization: '1500', hierarchyPriority: '12' }], ['CL-003', 'School Support Loan', 'Educational Loan', { principal: '18000', interestAmount: '900', amortization: '1500', hierarchyPriority: '13' }], ['CL-004', 'Calamity Assistance', 'Calamity Loan', { principal: '12000', interestAmount: '600', amortization: '1000', hierarchyPriority: '14' }]],
   },
-  basicPay: {
-    title: 'Basic Pay and Pay Rate Configuration',
-    plural: 'basic pay rates',
-    description: 'Define pay types, factor days, work hours, MWE and ECOLA treatment, and effective-dated rate policies.',
-    table: [['code', 'Rate Code'], ['name', 'Rate Name'], ['type', 'Pay Type'], ['factorDays', 'Factor Days'], ['mwe', 'MWE'], ['status', 'Status']],
-    steps: [{ title: 'Pay Rate Details', fields: [
-      { key: 'code', label: 'Rate Code', required: true, half: true }, { key: 'name', label: 'Rate Name', required: true, half: true },
-      { key: 'type', label: 'Pay Type', type: 'select', options: ['Monthly', 'Weekly', 'Daily', 'Hourly', 'Flat Rate', 'Piece Rate', 'Part-Time', 'OJT Allowance'], required: true, half: true },
-      { key: 'factorDays', label: 'Factor Days per Year', type: 'number', required: true, half: true }, { key: 'workHours', label: 'Work Hours per Day', type: 'number', required: true, half: true },
-      { key: 'mwe', label: 'Minimum Wage Earner?', type: 'boolean', half: true }, { key: 'ecola', label: 'ECOLA Eligible?', type: 'boolean', half: true },
-      { key: 'region', label: 'Minimum Wage Region', type: 'select', options: ['NCR', 'CAR', 'Region III', 'Region IV-A', 'Region VII', 'Region XI'], required: true },
-      { key: 'effectiveDate', label: 'Effective Date', type: 'date', required: true, half: true }, { key: 'period', label: 'Applicable Payroll Period', type: 'select', options: ['Every Payroll', 'First Half', 'Second Half'], required: true, half: true },
-      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
-    ] }],
-    defaults: { type: 'Monthly', factorDays: '261', workHours: '8', mwe: 'No', ecola: 'No', region: 'NCR', effectiveDate: '2026-01-01', period: 'Every Payroll', status: 'Active' },
-    rows: [['BAS-001', 'Monthly Basic Pay', 'Monthly'], ['BAS-002', 'Daily Basic Pay', 'Daily'], ['BAS-003', 'Hourly Basic Pay', 'Hourly'], ['BAS-004', 'MWE with ECOLA', 'Daily'], ['PCE-001', 'Piece-Rate Pay', 'Piece Rate'], ['PRT-001', 'Part-Time Pay', 'Part-Time'], ['OJT-001', 'OJT Allowance Rate', 'OJT Allowance']],
-  },
   allowances: {
     title: 'Variable Allowance Configuration',
     plural: 'variable allowances',
@@ -424,7 +410,7 @@ const baseModuleDefinitions = {
       ] },
     ],
     defaults: { type: 'Regular Workday', effectiveDate: '2026-01-01', status: 'Active', workDaysPerYear: '261', preShift: '125', regularOvertime: '125', nightShiftDifferential: '110', regularOTWithNSD: '137.5', firstXHours: '125', excessOverXHours: '130', attendanceCondition: 'Approved overtime only', approvalRequired: 'Yes', approvalLevel: 'Supervisor' },
-    rows: [['OT-001', 'Regular Day Overtime', 'Regular Workday'], ['OT-002', 'Rest Day Overtime', 'Rest Day'], ['OT-003', 'Special Holiday Overtime', 'Special Non-working Holiday'], ['OT-004', 'Regular Holiday Overtime', 'Regular Holiday']],
+    rows: [['OT-001', 'Regular Day Overtime', 'Regular Workday'], ['OT-002', 'Rest Day Overtime', 'Rest Day', { regularOvertime: '130' }], ['OT-003', 'Special Holiday Overtime', 'Special Non-working Holiday', { regularOvertime: '130' }], ['OT-004', 'Regular Holiday Overtime', 'Regular Holiday', { regularOvertime: '200' }]],
   },
   leaveBenefits: {
     title: 'Benefits & Leave Configuration',
@@ -544,7 +530,6 @@ export const PA_OWNED_CONFIGURATION_FIELDS = Object.freeze({
   bonuses: ['type', 'thresholdSplitting'],
   deductions: ['type', 'basis', 'partOfNetPay', 'tax', 'takeHomeTreatment', 'hierarchyPriority'],
   loans: ['type', 'balanceHandling', 'hierarchyPriority'],
-  basicPay: ['type', 'mwe', 'ecola', 'region'],
   allowances: ['type', 'timekeeping', 'taxability'],
   governmentLoans: ['type', 'priority', 'balanceHandling'],
   leaveBenefits: ['type', 'carryover', 'forfeiture', 'cashConvertible', 'conversionBasis', 'taxTreatment'],
@@ -611,12 +596,11 @@ const serviceTabs = Object.freeze({
   ],
   Payroll: [
     { key: 'computations', short: 'Computational Basis', detail: 'Standard formulas, client assignments, test calculations and reference tables' },
-    { key: 'basicPay', short: 'Basic Pay & Pay Rates', detail: 'Pay types, factor days, MWE, ECOLA and effective-dated rates' },
-    { key: 'earnings', short: 'Earnings', detail: 'Earning types, taxability, computation and GL setup' },
+    { key: 'earnings', short: 'Earning Configuration', detail: 'Earning types, taxability, computation and GL setup' },
     { key: 'allowances', short: 'Variable Allowances', detail: 'Allowance basis, derived rates and timekeeping integration' },
-    { key: 'deductions', short: 'Deductions', detail: 'Deduction basis, recurring schedules and GL setup' },
-    { key: 'bonuses', short: 'Bonuses', detail: 'Bonus schedules, non-taxable thresholds and GL setup' },
-    { key: 'loans', short: 'Company Loans', detail: 'Principal, interest, terms, amortization and balances' },
+    { key: 'deductions', short: 'Deduction Configuration', detail: 'Deduction basis, recurring schedules and GL setup' },
+    { key: 'bonuses', short: 'Bonus Configuration', detail: 'Bonus schedules, non-taxable thresholds and GL setup' },
+    { key: 'loans', short: 'Company Loan Configuration', detail: 'Principal, interest, terms, amortization and balances' },
     { key: 'governmentLoans', short: 'Government Loans', detail: 'SSS and HDMF loan references, collection schedules and priority' },
     { key: 'payrollControls', short: 'Payroll Controls', detail: 'Calendars, currencies, deduction order, approvals and payslips' },
   ],
@@ -1146,7 +1130,7 @@ function Field({ field, value, onChange, draft, def, catalog, companyId }) {
     </div>
   );
   if (field.type === 'date') return <DateInput value={value ?? ''} onChange={onChange} />;
-  return <input {...common} type={field.type ?? 'text'} min={field.type === 'number' ? '0' : undefined} placeholder={field.placeholder ?? (field.type === 'number' ? '0.00' : `Input ${field.label.toLowerCase()}`)} />;
+  return <input {...common} maxLength={(field.type ?? 'text') === 'text' ? maxLengthOf(field) : undefined} type={field.type ?? 'text'} min={field.type === 'number' ? '0' : undefined} step={field.type === 'number' ? 'any' : undefined} placeholder={field.placeholder ?? (field.type === 'number' ? '0.00' : `Input ${field.label.toLowerCase()}`)} />;
 }
 
 /**
@@ -1184,12 +1168,16 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     event.preventDefault();
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
+    // Each step is checked as it is left: a blank-looking code, a negative amount or an end date before its start never gets to the next step.
+    const stepProblems = configFieldProblems(moduleKey, draft, [current]);
+    if (stepProblems.length) { setError(stepProblems[0]); return; }
     if (step < def.steps.length - 1) { setStep(step + 1); return; }
     // A half-bound formula is refused here rather than at payroll: an unbound
     // variable resolves to nothing, and a deduction that silently computes zero
     // is worse than one that never saved.
     const configFields = bindableConfigFields(def);
     const problems = [
+      ...configFieldProblems(moduleKey, draft, def.steps),
       ...bindingProblems({ record: draft, library: catalog.library, references: catalog.references, configFields }),
       // A value outside the range P&A approved is refused for every role.
       ...parameterValueProblems({ record: draft, library: catalog.library, configFields }),
@@ -1201,9 +1189,10 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
       return;
     }
     setError('');
+    const trimmed = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, typeof value === 'string' && def.steps.some(step => step.fields.some(field => field.key === key && (field.type ?? 'text') === 'text')) ? value.trim() : value]));
     const saved = editing
-      ? { ...draft, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
-      : draft;
+      ? { ...trimmed, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
+      : trimmed;
     onSave(saved, { changes: pendingChanges, reason: changeReason.trim(), effectiveDate: changeEffective });
   };
   return (
@@ -1337,6 +1326,8 @@ function ExportMenu({ onExport }) {
   </div>}</div>;
 }
 
+const readUsedRuns = companyId => { try { return JSON.parse(localStorage.getItem(`atlas-payroll-runs-v1:${companyId || 'default'}`) || '[]'); } catch { return []; } };
+
 function DeleteDialog({ def, record, onClose, onDelete }) {
   return <div className="modal-backdrop" role="presentation"><section className="modal delete-modal" role="dialog" aria-modal="true"><header><h2>Delete {def.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete “{record.name}”?</h3><p>This removes the configuration from the working list. This action cannot be undone.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
 }
@@ -1383,6 +1374,8 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const save = (draft, audit = {}) => {
     const duplicate = records.some(record => record.id !== draft.id && record.code.toLowerCase() === draft.code.toLowerCase());
     if (duplicate) { notify({ type: 'error', message: `${draft.code} already exists. Use a unique code.` }); return; }
+    const sameName = draft.name && records.find(record => record.id !== draft.id && String(record.name || '').trim().toLowerCase() === String(draft.name).trim().toLowerCase());
+    if (sameName) { notify({ type: 'error', message: `${draft.name} already exists as ${sameName.code}. Use a unique name.` }); return; }
     // Deductions and loans share one hierarchy, so a rank can be held by only one of them.
     if (['deductions', 'loans'].includes(moduleKey) && draft.hierarchyPriority) {
       const others = [...records.filter(record => record.id !== draft.id), ...readServiceConfiguration(moduleKey === 'deductions' ? 'loans' : 'deductions', companyId)];
@@ -1438,11 +1431,31 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
         headers.forEach((header, headerIndex) => { if (expected[header]) next[expected[header]] = values[headerIndex]; });
         return next;
       });
-      const errors = added.flatMap((row, index) => [
-        !row.code && { row: index + 2, field: 'Code', reason: 'Code is required.' },
-        !row.name && { row: index + 2, field: 'Name', reason: 'Name is required.' },
-        row.code && records.some(existing => existing.code === row.code) && { row: index + 2, field: 'Code', value: row.code, reason: 'This code already exists.' },
-      ].filter(Boolean));
+      const seen = new Map();
+      // Deductions and loans share one ranking, so an uploaded rank must be free in both and in the rows above it.
+      const heldRanks = new Map();
+      if (['deductions', 'loans'].includes(moduleKey)) {
+        [...records, ...readServiceConfiguration(moduleKey === 'deductions' ? 'loans' : 'deductions', companyId)].forEach(record => { if (record.hierarchyPriority) heldRanks.set(String(record.hierarchyPriority), `${record.code} · ${record.name}`); });
+      }
+      const errors = added.flatMap((row, index) => {
+        const rank = String(row.hierarchyPriority || '');
+        const rankHolder = rank ? heldRanks.get(rank) : '';
+        if (rank && !rankHolder) heldRanks.set(rank, `${row.code || 'the row above'} · ${row.name || ''}`.trim());
+        const firstRow = row.code ? seen.get(row.code.toLowerCase()) : undefined;
+        if (row.code && firstRow === undefined) seen.set(row.code.toLowerCase(), index + 2);
+        return [
+          firstRow !== undefined && { row: index + 2, field: 'Code', value: row.code, reason: `This code is already on row ${firstRow} of the file.` },
+          rankHolder && { row: index + 2, field: 'Hierarchy Rank', value: rank, reason: `Hierarchy Rank ${rank} is already held by ${rankHolder}. Two items can’t share a rank.` },
+          !row.code && { row: index + 2, field: 'Code', reason: 'Code is required.' },
+          !row.name && { row: index + 2, field: 'Name', reason: 'Name is required.' },
+          row.code && records.some(existing => existing.code === row.code) && { row: index + 2, field: 'Code', value: row.code, reason: 'This code already exists.' },
+          // An uploaded row meets the same rules as a typed one: amounts, rates and dates, and a dropdown value that is on its list.
+          ...configFieldProblems(moduleKey, row, def.steps).map(reason => ({ row: index + 2, field: 'Row', reason })),
+          ...def.steps.flatMap(step => step.fields)
+            .filter(field => field.type === 'select' && Array.isArray(field.options) && row[field.key] && !field.options.includes(row[field.key]))
+            .map(field => ({ row: index + 2, field: field.label, value: row[field.key], reason: `${field.label} must be one of: ${field.options.join(', ')}.` })),
+        ].filter(Boolean);
+      });
       if (errors.length) { rejectUpload(file.name, errors, notify); return; }
       setRecords(previous => [...added, ...previous]);
       notify({ type: 'success', message: `${added.length} ${def.plural} imported from ${file.name}.` });
@@ -1480,7 +1493,10 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
       {editing && <ConfigurationForm def={def} moduleKey={moduleKey} record={editing.id ? editing : null} companyId={companyId} clientView={clientLocked} onClose={() => setEditing(null)} onSave={save} />}
       {viewing && <ViewDrawer def={def} record={viewing} companyId={companyId} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
-      {deleting && !clientLocked && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => { setRecords(previous => previous.filter(record => record.id !== deleting.id)); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
+      {deleting && !clientLocked && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
+        const holder = usedInPayroll(deleting, readUsedRuns(companyId));
+        if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} · ${deleting.name} is already used in ${holder.transactionNumber}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
+        setRecords(previous => previous.filter(record => record.id !== deleting.id)); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
       {filterOpen && <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />}
     </div>
   );

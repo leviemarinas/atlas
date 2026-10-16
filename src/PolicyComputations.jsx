@@ -19,6 +19,8 @@ import {
 import { companyRuleTaxonomy } from './requirementsCatalog';
 import { getPolicyLinkage, policyCoverageCatalog } from './policyGovernance';
 import { withholdingTax } from './statutoryService';
+import { takeHomeFieldProblems } from './configValidation.js';
+import { CUSTOM_INCOME, DEDUCTION_TREATMENTS, GROSS_UP_METHODS, GROSS_UP_TARGETS, TREATMENT_HINT, approvedRate, grossUpFieldProblems, grossUpResult, incomesFor, normalizeGrossUpPolicy } from './grossUp.js';
 import { codeParameterScopes, completeParameterSchema, defaultParameterSchema, defaultParameterValues, hydratePolicyCode, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
 import { configuredCollectionByCode } from './payrollIntegration';
 import { applyTakeHomePolicy } from './payrollEngine';
@@ -255,8 +257,11 @@ const seedPolicies = {
   grossUp: {
     enabled: true,
     assignment: seedAssignment(),
-    targetType: 'Net pay',
-    taxMethod: 'Graduated withholding table',
+    method: 'Periodic Compensation',
+    targetType: 'Total net pay',
+    targetEarning: '',
+    incomeType: '',
+    deductionTreatment: 'Added to the required gross',
     frequency: 'Monthly',
     effectiveDate: '2026-08-31',
     flatRate: 25,
@@ -265,7 +270,7 @@ const seedPolicies = {
     roundingMode: 'Round to centavo',
     tolerance: 0.01,
     maxIterations: 50,
-    test: { targetNet: 50000, statutoryEmployee: 1875, nonTaxableAllowance: 0, ytdTaxableIncome: 0 },
+    test: { targetNet: 50000, statutoryEmployee: 1875, nonTaxableAllowance: 0, ytdTaxableIncome: 0, ytdTaxWithheld: 0, allowableDeductions: 0, targetCurrency: 'PHP', exchangeRate: 1, rateDate: '', rateSource: '' },
   },
   finalPay: {
     enabled: true,
@@ -449,69 +454,7 @@ export function takeHomeResult(policy, hierarchy) {
   };
 }
 
-export function grossUpResult(policy, test = policy.test) {
-  const targetNet = number(test.targetNet);
-  const statutory = number(test.statutoryEmployee);
-  const nonTaxable = number(test.nonTaxableAllowance);
-  const ytd = number(test.ytdTaxableIncome);
-  const employerShare = Math.min(100, Math.max(0, number(policy.employerSharePercent))) / 100;
-  const tolerance = Math.max(0.0001, number(policy.tolerance));
-  const maxIterations = Math.max(1, Math.round(number(policy.maxIterations)));
-  const flat = policy.taxMethod === 'Flat / final tax rate';
-
-  // Withholding on a candidate gross, using the effective table or a flat rate.
-  const taxOn = gross => {
-    const taxable = Math.max(0, gross + (policy.includeStatutoryInTaxable ? 0 : statutory) - (policy.includeStatutoryInTaxable ? statutory : 0));
-    if (flat) return { tax: Math.max(0, taxable * number(policy.flatRate) / 100), bracket: null, taxable };
-    const period = withholdingTax(taxable + ytd, policy.frequency, policy.effectiveDate);
-    const base = ytd > 0 ? withholdingTax(ytd, policy.frequency, policy.effectiveDate).tax : 0;
-    return { tax: Math.max(0, period.tax - base), bracket: period.bracket, taxable };
-  };
-
-  // Net the employee actually receives for a candidate gross.
-  const netOf = gross => {
-    const { tax } = taxOn(gross);
-    return gross + nonTaxable - statutory - tax * (1 - employerShare);
-  };
-
-  const iterations = [];
-  let gross = targetNet + statutory - nonTaxable;
-  let converged = false;
-  for (let step = 0; step < maxIterations; step += 1) {
-    const { tax, bracket, taxable } = taxOn(gross);
-    const net = gross + nonTaxable - statutory - tax * (1 - employerShare);
-    const gap = targetNet - net;
-    iterations.push({ step: step + 1, gross, taxable, tax, net, gap, bracket });
-    if (Math.abs(gap) <= tolerance) { converged = true; break; }
-    // Newton-style step using the local slope of net with respect to gross.
-    const probe = gross + 1;
-    const slope = netOf(probe) - net;
-    gross += Math.abs(slope) > 1e-9 ? gap / slope : gap;
-    if (gross < 0) gross = 0;
-  }
-
-  const rounded = policy.roundingMode === 'Round to peso' ? Math.round(gross) : Math.round(gross * 100) / 100;
-  const final = taxOn(rounded);
-  const employerAbsorbed = final.tax * employerShare;
-  const employeeWithheld = final.tax - employerAbsorbed;
-  return {
-    targetNet,
-    grossTaxable: rounded,
-    taxableCompensation: final.taxable,
-    withholdingTax: final.tax,
-    employerAbsorbed,
-    employeeWithheld,
-    statutory,
-    nonTaxable,
-    employeeNet: rounded + nonTaxable - statutory - employeeWithheld,
-    employerCost: rounded + nonTaxable + employerAbsorbed,
-    bracket: final.bracket,
-    iterations,
-    converged,
-    method: flat ? 'Flat / final tax rate' : 'Graduated withholding table',
-    tableMissing: !flat && !final.bracket,
-  };
-}
+export { grossUpResult };
 
 function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, onOpenService, sourced }) {
   const groups = [
@@ -553,6 +496,7 @@ function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, on
 
 function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarchy, onOpenService, onSave }) {
   const result = useMemo(() => takeHomeResult(policy, hierarchy), [policy, hierarchy]);
+  const fieldProblems = useMemo(() => takeHomeFieldProblems(policy), [policy]);
   const update = (key, value) => setPolicy(previous => ({ ...previous, [key]: value }));
   const updateTest = (key, value) => setPolicy(previous => ({ ...previous, test: { ...previous.test, [key]: value } }));
   const updateScenario = (name, key, value) => setPolicy(previous => ({ ...previous, scenario: { ...previous.scenario, [name]: { ...previous.scenario[name], [key]: value } } }));
@@ -612,7 +556,8 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
         payrollDate={policy.test.nextPayrollDate}
       />}
 
-      <PolicySaveBar label="Save take-home policy" onSave={reason => onSave(result, reason)} />
+      {fieldProblems.map(message => <p key={message} className="approver-problem" role="alert">{message}</p>)}
+      <PolicySaveBar label="Save take-home policy" onSave={reason => (fieldProblems.length ? false : onSave(result, reason))} />
     </section>
 
     <OpenForTesting><aside className="policy-simulator">
@@ -670,45 +615,91 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
 }
 
 /** Small roster used to demonstrate automatic identification of eligible retirees. */
-function GrossUpEngine({ policy, setPolicy, onSave }) {
-  const result = useMemo(() => grossUpResult(policy), [policy]);
+const GROSS_UP_CURRENCIES = ['PHP', 'USD', 'EUR', 'JPY', 'SGD', 'AUD', 'GBP'];
+const GROSS_UP_FORMULA = {
+  'Periodic Compensation': 'gross + non-taxable − contributions − employee share of tax = target net',
+  'Annualized Compensation': 'gross + non-taxable − contributions − (tax due on the year to date − tax already withheld) = target net',
+  'Final Tax': 'gross − final tax at the approved rate = target net',
+  'Expanded Tax': 'gross − expanded tax at the approved rate = target net',
+};
+
+function GrossUpEngine({ policy: saved, setPolicy, onSave }) {
+  const policy = useMemo(() => normalizeGrossUpPolicy(saved), [saved]);
+  const result = useMemo(() => grossUpResult(saved), [saved]);
+  const fieldProblems = useMemo(() => grossUpFieldProblems(saved), [saved]);
   const update = (key, value) => setPolicy(previous => ({ ...previous, [key]: value }));
   const updateTest = (key, value) => setPolicy(previous => ({ ...previous, test: { ...previous.test, [key]: value } }));
+  const changeMethod = value => setPolicy(previous => ({ ...previous, method: value, incomeType: incomesFor(value)[0]?.code || '' }));
+  const flat = policy.method === 'Final Tax' || policy.method === 'Expanded Tax';
+  const annualized = policy.method === 'Annualized Compensation';
+  const test = policy.test;
+  const incomes = incomesFor(policy.method);
+  const rate = approvedRate(policy.method, policy.incomeType, policy.flatRate);
+  const ready = result.converged && !result.tableMissing && !result.problems.length;
   return <div className="policy-engine-grid gross-up-engine">
     <section className="policy-config-card">
-      <header><span><Calculator weight="duotone" /></span><div><h2>Gross Up</h2><p>Guarantees a net amount by solving the gross taxable pay and the withholding the employer absorbs.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
+      <header><span><Calculator weight="duotone" /></span><div><h2>Gross Up</h2><p>Guarantees a net amount by solving the gross taxable pay and the tax the employer absorbs or shares.</p></div><EngineSwitch on={policy.enabled} onToggle={() => update('enabled', !policy.enabled)} /></header>
       <ApplicabilityPanel assignment={normalizeAssignment(policy.assignment)} onChange={value => update('assignment', value)} engineLabel="Gross Up" />
       <div className="policy-form-grid">
-        <FieldLabel label="Guaranteed target" helpKey="targetType"><select value={policy.targetType} onChange={event => update('targetType', event.target.value)}><option>Net pay</option><option>Net benefit</option></select></FieldLabel>
-        <FieldLabel label="Tax method" helpKey="taxMethod"><select value={policy.taxMethod} onChange={event => update('taxMethod', event.target.value)}><option>Graduated withholding table</option><option>Flat / final tax rate</option></select></FieldLabel>
-        <FieldLabel label="Payroll frequency" helpKey="grossUpFrequency"><select value={policy.frequency} onChange={event => update('frequency', event.target.value)}><option>Weekly</option><option>Semi-monthly</option><option>Monthly</option><option>Annual</option></select></FieldLabel>
-        <FieldLabel label="Table effective date" helpKey="grossUpEffectiveDate"><input type="date" value={policy.effectiveDate} onChange={event => update('effectiveDate', event.target.value)} /></FieldLabel>
-        <NumberField label="Flat / final tax rate" helpKey="flatRate" value={policy.flatRate} onChange={value => update('flatRate', value)} suffix="%" />
+        <FieldLabel label="Method" helpKey="grossUpMethod"><select value={policy.method} onChange={event => changeMethod(event.target.value)}>{GROSS_UP_METHODS.map(option => <option key={option}>{option}</option>)}</select></FieldLabel>
+        <FieldLabel label="What is guaranteed" helpKey="targetType"><select value={policy.targetType} onChange={event => update('targetType', event.target.value)}>{GROSS_UP_TARGETS.map(option => <option key={option}>{option}</option>)}</select></FieldLabel>
+        {policy.targetType === 'Specific earning or allowance' && <FieldLabel className="wide" label="Earning or allowance" helpKey="targetEarning"><input value={policy.targetEarning} onChange={event => update('targetEarning', event.target.value)} placeholder="e.g. Rice subsidy, Housing allowance" /></FieldLabel>}
+        {flat && <FieldLabel label="Income or recipient type" helpKey="incomeType"><select value={policy.incomeType} onChange={event => update('incomeType', event.target.value)}>{incomes.map(row => <option key={row.code} value={row.code}>{row.name} · {row.rate}%</option>)}<option value={CUSTOM_INCOME}>Rate set by P&amp;A · {number(policy.flatRate)}%</option></select></FieldLabel>}
+        {flat && <FieldLabel label="Approved rate" helpKey="approvedRate"><input readOnly value={rate === null ? '—' : `${rate}%`} /></FieldLabel>}
+        {!flat && <FieldLabel label="Payroll frequency" helpKey="grossUpFrequency"><select value={annualized ? 'Annual' : policy.frequency} disabled={annualized} onChange={event => update('frequency', event.target.value)}><option>Weekly</option><option>Semi-monthly</option><option>Monthly</option><option>Annual</option></select><small className="field-hint">{annualized ? 'The annual table is used.' : 'The payroll frequency picks the periodic table.'}</small></FieldLabel>}
+        {!flat && <FieldLabel label="Table effective date" helpKey="grossUpEffectiveDate"><input readOnly value={policy.effectiveDate} /><small className="field-hint">Picked automatically from the tax type, payment mode and payroll period.</small></FieldLabel>}
         <NumberField label="Employer-absorbed share" helpKey="employerSharePercent" value={policy.employerSharePercent} onChange={value => update('employerSharePercent', value)} suffix="%" />
+        <NumberField label="Employee share" helpKey="employeeSharePercent" value={Math.round((100 - number(policy.employerSharePercent)) * 100) / 100} onChange={value => update('employerSharePercent', Math.round((100 - Math.min(100, Math.max(0, number(value)))) * 100) / 100)} suffix="%" />
+        {!flat && <FieldLabel className="wide" label="SSS, PhilHealth and Pag-IBIG" helpKey="deductionTreatment"><select value={policy.deductionTreatment} onChange={event => update('deductionTreatment', event.target.value)}>{DEDUCTION_TREATMENTS.map(option => <option key={option}>{option}</option>)}</select><small className="field-hint">{TREATMENT_HINT[policy.deductionTreatment]}</small></FieldLabel>}
         <NumberField label="Convergence tolerance" helpKey="tolerance" value={policy.tolerance} onChange={value => update('tolerance', value)} suffix="PHP" />
         <NumberField label="Maximum iterations" helpKey="maxIterations" value={policy.maxIterations} onChange={value => update('maxIterations', value)} />
         <FieldLabel className="wide" label="Rounding" helpKey="roundingMode"><select value={policy.roundingMode} onChange={event => update('roundingMode', event.target.value)}><option>Round to centavo</option><option>Round to peso</option></select></FieldLabel>
       </div>
-      <div className="policy-toggle-list"><Toggle value={policy.includeStatutoryInTaxable} onChange={value => update('includeStatutoryInTaxable', value)} helpKey="includeStatutoryInTaxable" label="Deduct mandatory contributions before tax" hint="Employee statutory share reduces taxable compensation before the bracket is applied." /></div>
-      <div className="formula-flow"><span><small>Solve for</small><code>gross taxable pay</code></span><ArrowsDownUp /><span><small>Constraint</small><code>gross + non-taxable − statutory − employee-borne tax = target net</code></span><strong>{policy.taxMethod === 'Flat / final tax rate' ? 'Single rate' : 'Iterated against the effective BIR table'}</strong></div>
-      <PolicySaveBar label="Save gross-up policy" onSave={reason => onSave(result, reason)} />
+      <div className="gross-up-presets" role="group" aria-label="Who bears the tax">
+        <small>Who bears the tax</small>
+        {[[100, 'Employer pays all'], [50, '50% employee, 50% employer'], [0, 'Employee pays all']].map(([value, label]) => <button key={value} type="button" className={`button ${number(policy.employerSharePercent) === value ? 'primary' : 'secondary'} small`} onClick={() => update('employerSharePercent', value)}>{label}</button>)}
+      </div>
+      {!flat && <div className="policy-toggle-list"><Toggle value={policy.includeStatutoryInTaxable !== false} onChange={value => update('includeStatutoryInTaxable', value)} helpKey="includeStatutoryInTaxable" label="Deduct mandatory contributions before tax" hint="Employee statutory share reduces taxable compensation before the bracket is applied." /></div>}
+      <div className="formula-flow"><span><small>Solve for</small><code>gross taxable pay</code></span><ArrowsDownUp /><span><small>Constraint</small><code>{GROSS_UP_FORMULA[policy.method]}</code></span><strong>{flat ? 'Single approved rate' : annualized ? 'Annual table, year-to-date inputs' : 'Iterated against the effective BIR table'}</strong></div>
+      <div className="gross-up-ownership">
+        <div><strong>Set by the client, within what P&amp;A approved</strong><small>The target, the employer share, the table effective date, who it applies to and how contributions are treated.</small></div>
+        <div><strong>Controlled by P&amp;A</strong><small>The method, tax logic and tables, the approved rates, the iteration logic and the formula dependencies. A client cannot change them.</small></div>
+      </div>
+      {fieldProblems.map(message => <p key={message} className="approver-problem" role="alert">{message}</p>)}
+      <PolicySaveBar label="Save gross-up policy" onSave={reason => (fieldProblems.length ? false : onSave(result, reason))} />
     </section>
 
     <OpenForTesting><aside className="policy-simulator">
-      <header><Calculator weight="duotone" /><div><h2>Gross-up scenario</h2><p>The iteration trace shows each candidate gross until the net converges within tolerance.</p></div></header>
+      <header><Calculator weight="duotone" /><div><h2>Gross-up scenario</h2><p>The proof shows that gross less the employee's tax and deductions equals the agreed net.</p></div></header>
       <div className="policy-test-grid">
-        <NumberField label="Target net" helpKey="targetNet" value={policy.test.targetNet} onChange={value => updateTest('targetNet', value)} />
-        <NumberField label="Employee statutory share" helpKey="statutoryEmployee" value={policy.test.statutoryEmployee} onChange={value => updateTest('statutoryEmployee', value)} />
-        <NumberField label="Non-taxable allowance" helpKey="nonTaxableAllowance" value={policy.test.nonTaxableAllowance} onChange={value => updateTest('nonTaxableAllowance', value)} />
-        <NumberField label="YTD taxable income" helpKey="ytdTaxableIncome" value={policy.test.ytdTaxableIncome} onChange={value => updateTest('ytdTaxableIncome', value)} />
+        <NumberField label={policy.targetType === 'Specific earning or allowance' ? `Target net of ${policy.targetEarning || 'the earning'}` : 'Target net pay'} helpKey="targetNet" value={test.targetNet} onChange={value => updateTest('targetNet', value)} />
+        <FieldLabel label="Target currency" helpKey="targetCurrency"><select value={test.targetCurrency} onChange={event => updateTest('targetCurrency', event.target.value)}>{GROSS_UP_CURRENCIES.map(code => <option key={code}>{code}</option>)}</select></FieldLabel>
+        {test.targetCurrency !== 'PHP' && <NumberField label={`Exchange rate (PHP per ${test.targetCurrency})`} helpKey="exchangeRate" value={test.exchangeRate} onChange={value => updateTest('exchangeRate', value)} />}
+        {test.targetCurrency !== 'PHP' && <FieldLabel label="Rate date" helpKey="rateDate"><input type="date" value={test.rateDate} onChange={event => updateTest('rateDate', event.target.value)} /></FieldLabel>}
+        {test.targetCurrency !== 'PHP' && <FieldLabel className="wide" label="Rate source" helpKey="rateSource"><input value={test.rateSource} onChange={event => updateTest('rateSource', event.target.value)} placeholder="e.g. BSP reference rate" /></FieldLabel>}
+        {!flat && <NumberField label="Employee statutory share" helpKey="statutoryEmployee" value={test.statutoryEmployee} onChange={value => updateTest('statutoryEmployee', value)} />}
+        <NumberField label="Non-taxable allowance" helpKey="nonTaxableAllowance" value={test.nonTaxableAllowance} onChange={value => updateTest('nonTaxableAllowance', value)} />
+        {!flat && <NumberField label="YTD taxable income" helpKey="ytdTaxableIncome" value={test.ytdTaxableIncome} onChange={value => updateTest('ytdTaxableIncome', value)} />}
+        {annualized && <NumberField label="YTD tax withheld" helpKey="ytdTaxWithheld" value={test.ytdTaxWithheld} onChange={value => updateTest('ytdTaxWithheld', value)} />}
+        {annualized && <NumberField label="Allowable deductions" helpKey="allowableDeductions" value={test.allowableDeductions} onChange={value => updateTest('allowableDeductions', value)} />}
       </div>
-      <div className="policy-results"><span><small>Gross taxable pay</small><strong>{money(result.grossTaxable)}</strong></span><span><small>Withholding tax</small><strong>{money(result.withholdingTax)}</strong></span><span><small>Employer absorbs</small><strong>{money(result.employerAbsorbed)}</strong></span><span className="highlight"><small>Employee net</small><strong>{money(result.employeeNet)}</strong></span></div>
-      <div className={`policy-outcome ${result.converged && !result.tableMissing ? 'success' : 'error'}`}>{result.converged && !result.tableMissing ? <CheckCircle weight="fill" /> : <Warning weight="fill" />}<span><strong>{result.tableMissing ? 'No effective tax table' : result.converged ? `Converged in ${result.iterations.length} iteration${result.iterations.length === 1 ? '' : 's'}` : `Did not converge within ${policy.maxIterations} iterations`}</strong><small>{result.tableMissing ? `Publish an Active BIR withholding table for ${policy.frequency} payroll before using the graduated method.` : `Employer cost ${money(result.employerCost)} to guarantee ${money(result.targetNet)} net.`}</small></span></div>
+      <div className="policy-results"><span><small>Gross taxable pay</small><strong>{money(result.grossTaxable)}</strong></span><span><small>Withholding tax</small><strong>{money(result.withholdingTax)}</strong></span><span><small>Employee tax share · {result.employeeSharePercent}%</small><strong>{money(result.employeeTaxShare)}</strong></span><span><small>Employer tax share · {result.employerSharePercent}%</small><strong>{money(result.employerTaxShare)}</strong></span><span className="highlight"><small>Employee net</small><strong>{money(result.employeeNet)}</strong></span><span><small>Total employer cost</small><strong>{money(result.employerCost)}</strong></span></div>
+      {result.problems.map(message => <div key={message} className="policy-outcome error"><Warning weight="fill" /><span><strong>Needs attention</strong><small>{message}</small></span></div>)}
+      <div className={`policy-outcome ${ready ? 'success' : 'error'}`}>{ready ? <CheckCircle weight="fill" /> : <Warning weight="fill" />}<span><strong>{result.tableMissing ? 'No effective tax table' : result.converged ? `Converged in ${result.iterations.length} iteration${result.iterations.length === 1 ? '' : 's'}` : `Did not converge within ${policy.maxIterations} iterations`}</strong><small>{result.tableMissing ? `Publish an Active BIR withholding table for ${annualized ? 'annual' : policy.frequency} payroll before using this method.` : `Employer cost ${money(result.employerCost)} to guarantee ${money(result.targetNet)} net.`}</small></span></div>
+      <div className={`gross-up-proof ${result.proof.holds ? 'holds' : 'fails'}`}>
+        <h3>Proof of net pay <span>{result.proof.holds ? 'Holds' : 'Does not hold'}</span></h3>
+        <table><tbody>{result.proof.lines.map(line => <tr key={line.label} className={line.label === 'Employee net' ? 'total' : ''}><td>{line.label}</td><td>{line.amount < 0 ? `− ${money(-line.amount)}` : money(line.amount)}</td></tr>)}</tbody></table>
+        <p>{result.treatment === 'Included in the target net' && !flat ? 'Guaranteed before contributions' : 'Guaranteed'}: {money(result.proof.guaranteed)} against an agreed {money(result.proof.target)}. {result.proof.employerLine}.</p>
+      </div>
       <div className="calculation-trace">
         <h3>Calculation trace</h3>
-        <p>Method: <strong>{result.method}</strong>{result.bracket && <> using the bracket from <strong>{money(result.bracket.minimum)}</strong> with fixed tax {money(result.bracket.fixedTax)} plus {result.bracket.excessRate}% on the excess</>}.</p>
-        <p>Taxable compensation after mandatory contributions: <strong>{money(result.taxableCompensation)}</strong>.</p>
-        <p>Employer absorbs <strong>{policy.employerSharePercent}%</strong> of the withholding ({money(result.employerAbsorbed)}); the employee bears {money(result.employeeWithheld)}.</p>
+        <p>Method: <strong>{result.method}</strong> · {result.targetType === 'Specific earning or allowance' ? <>grossing up <strong>{result.targetEarning || 'a specific earning or allowance'}</strong></> : <>grossing up <strong>total net pay</strong></>}.</p>
+        {result.currency.foreign && <p>Target entered as <strong>{result.currency.code} {result.currency.source.toLocaleString()}</strong> at {result.currency.rate} PHP per {result.currency.code} ({result.currency.rateDate || 'no date'}, {result.currency.rateSource || 'no source'}) = <strong>{money(result.currency.converted)}</strong>.</p>}
+        {flat && <p>Approved rate for <strong>{result.incomeName || 'the chosen income type'}</strong>: <strong>{result.rate}%</strong> of the gross, withheld at source.</p>}
+        {!flat && result.bracket && <p>Bracket from <strong>{money(result.bracket.minimum)}</strong> with fixed tax {money(result.bracket.fixedTax)} plus {result.bracket.excessRate}% on the excess.</p>}
+        {!flat && <p>Taxable compensation after mandatory contributions: <strong>{money(result.taxableCompensation)}</strong>. Contributions: <strong>{result.treatment}</strong>.</p>}
+        {result.annualized && <p>Annualized inputs — YTD taxable income {money(result.annualized.ytdTaxableIncome)}, this payroll {money(result.annualized.thisPayroll)}, allowable deductions {money(result.annualized.allowableDeductions)}, annual taxable income {money(result.annualized.annualTaxableIncome)}, tax due on the year {money(result.annualized.annualTaxDue)}, less tax already withheld {money(result.annualized.ytdTaxWithheld)} = <strong>{result.annualized.remaining < 0 ? `refundable ${money(-result.annualized.remaining)}` : `remaining tax due ${money(result.annualized.remaining)}`}</strong>.</p>}
+        <p>The employer bears <strong>{result.employerSharePercent}%</strong> of the tax ({money(result.employerTaxShare)}) and the employee <strong>{result.employeeSharePercent}%</strong> ({money(result.employeeTaxShare)}).</p>
         <table className="iteration-table">
           <thead><tr><th>#</th><th>Candidate gross</th><th>Tax</th><th>Net</th><th>Gap to target</th></tr></thead>
           <tbody>{result.iterations.map(row => <tr key={row.step}><td>{row.step}</td><td>{money(row.gross)}</td><td>{money(row.tax)}</td><td>{money(row.net)}</td><td>{money(row.gap)}</td></tr>)}</tbody>
@@ -1058,7 +1049,7 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
       {tab === 'gross-up' && <EngineAccess.Provider value={accessFor('grossUp')}><GrossUpEngine
       policy={policies.grossUp}
       setPolicy={setSection('grossUp')}
-      onSave={(result, reason) => savePolicy('grossUp', 'Gross Up policy', `${policies.grossUp.taxMethod} · ${describeAssignment(policies.grossUp.assignment)} · gross ${money(result.grossTaxable)} for ${money(result.targetNet)} net`, reason)}
+      onSave={(result, reason) => savePolicy('grossUp', 'Gross Up policy', `${result.method} · ${describeAssignment(policies.grossUp.assignment)} · gross ${money(result.grossTaxable)} for ${money(result.targetNet)} net`, reason)}
       /></EngineAccess.Provider>}
 
       {tab === 'final-pay' && <EngineAccess.Provider value={accessFor('finalPay')}><FinalPayEngine

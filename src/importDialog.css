@@ -1,0 +1,30 @@
+/* Upload / Import dialog (same look as the Atlas Import dialog) */
+#root .import-dialog { --modal-width: 640px; }
+#root .import-dialog .modal-body { display: grid; gap: 14px; }
+
+#root .import-dropzone {
+  padding: 36px 24px; border: 2px dashed #4f2d7f; border-radius: 10px; background: #dde4fc;
+  text-align: center; display: grid; gap: 6px; color: #514a6b; font-size: 12.5px;
+}
+#root .import-dropzone.dragging { background: #cdd7fb; border-style: solid; }
+#root .import-dropzone p { margin: 0; }
+#root .import-dropzone span { color: #6c757d; font-size: 11.7px; }
+#root .import-browse { padding: 0; border: 0; background: none; color: #4f2d7f; font: inherit; text-decoration: underline; cursor: pointer; }
+
+#root .import-file { padding: 12px 14px; border: 1px solid #dee2e6; border-radius: 10px; display: grid; gap: 6px; font-size: 12.5px; }
+#root .import-file.success { border-color: #198754; }
+#root .import-file.error { border-color: #dc3545; }
+#root .import-file-message { display: inline-flex; align-items: center; gap: 6px; font-size: 11.7px; color: #6c757d; }
+#root .import-file.success .import-file-message { color: #198754; }
+#root .import-file.error .import-file-message { color: #dc3545; }
+#root .import-progress { height: 6px; border-radius: 3px; background: #eaeef7; overflow: hidden; }
+#root .import-progress > div { height: 100%; background: #ffc23d; transition: width .3s; }
+#root .import-file.success .import-progress > div { background: #198754; }
+
+#root .import-history h3 { margin: 0 0 8px; font-size: 12.5px; color: #212529; }
+#root .import-history table { table-layout: auto; }
+#root .import-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10.4px; font-weight: 700; color: #fff; line-height: 1; }
+#root .import-badge.imported { background: #00a4b3; }
+#root .import-badge.failed { background: #dc3545; }
+
+#root .import-actions { justify-content: flex-end; gap: 8px; padding: 0 19px 19px; }

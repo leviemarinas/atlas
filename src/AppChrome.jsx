@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, CaretDown, Clock, Cube, CurrencyCircleDollar, Gear, House, MagnifyingGlass, PlayCircle, SignOut, Sparkle, Tray, Users } from '@phosphor-icons/react';
-import { RoleSwitch, SIGNED_IN_NAME, useRole } from './RoleContext';
+import { PA_ADMIN_NAME, RoleSwitch, SIGNED_IN_NAME, SUPERADMIN_NAME, useRole } from './RoleContext';
 import { canAccessModule } from './moduleAccess';
 import { readCompanies } from './companyRepository';
 
@@ -45,6 +45,11 @@ export function isEmbeddedScenarioFrame() {
 }
 
 export function Topbar({ company, companies = [], onSelectCompany, profileName = SIGNED_IN_NAME, profileInitials = 'JD', onNotifications, onAnnouncements }) {
+  const { isPaSuperAdmin, role } = useRole();
+  // The P&A Admin and the P&A SuperAdmin are two named people, so a change one of them makes can be approved by the other.
+  const isPaAdminSeat = role === 'pa_admin';
+  const shownName = isPaSuperAdmin ? SUPERADMIN_NAME : isPaAdminSeat ? PA_ADMIN_NAME : profileName;
+  const shownInitials = isPaSuperAdmin ? 'MS' : isPaAdminSeat ? 'PR' : profileInitials;
   const [open, setOpen] = useState(false);
   // Read the repository when the menu opens so companies onboarded in another
   // workspace during this session are immediately selectable.
@@ -73,8 +78,8 @@ export function Topbar({ company, companies = [], onSelectCompany, profileName =
         <button className="icon-button" aria-label="Search"><MagnifyingGlass /></button>
         <button className="icon-button notification" aria-label="Notifications" onClick={onNotifications}><Bell /></button>
         {onAnnouncements && <button className="icon-button" aria-label="Announcements" onClick={onAnnouncements}><Tray /></button>}
-        <div className="avatar">{profileInitials}</div>
-        <button className="profile">{profileName} <CaretDown weight="bold" /></button>
+        <div className="avatar">{shownInitials}</div>
+        <button className="profile">{shownName} <CaretDown weight="bold" /></button>
       </div>
     </header>
   );

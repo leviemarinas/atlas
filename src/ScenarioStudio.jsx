@@ -40,7 +40,7 @@ import {
   seedProductionSampleData,
 } from './endToEndDemo';
 
-const roleIcons = { employee: User, approver: UserCheck, client_admin: Buildings, pa_admin: ShieldStar };
+const roleIcons = { employee: User, approver: UserCheck, client_admin: Buildings, pa_admin: ShieldStar, pa_superadmin: ShieldStar };
 const pointerPositions = [
   ['18%', '31%'],
   ['72%', '23%'],

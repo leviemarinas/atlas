@@ -26,6 +26,8 @@ export const notificationEventCatalog = Object.freeze([
   { key: 'WellnessCheckinSubmitted', label: 'Wellness check-in submitted', defaultRecipient: 'Administrator' },
   { key: 'MdoEnrollmentUpdated', label: 'MDO enrollment updated', defaultRecipient: 'Employee' },
   { key: 'MinimumTakeHomePayRisk', label: 'Minimum take-home pay risk detected', defaultRecipient: 'Employee' },
+  { key: 'PayrollApprovalRequested', label: 'Payroll waiting for sign-off', defaultRecipient: 'Approver' },
+  { key: 'PayrollApprovalReturned', label: 'Payroll returned to the preparer', defaultRecipient: 'Preparer' },
 ]);
 
 export const notificationEventKeys = Object.freeze(Object.fromEntries(notificationEventCatalog.map(event => [event.key, event.key])));
@@ -45,6 +47,8 @@ export const defaultNotificationRules = [
   { id: 'not-011', name: 'Wellness check-in submitted', eventKey: notificationEventKeys.WellnessCheckinSubmitted, channel: 'Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Administrator', template: 'Wellness check-in submitted', status: 'Active' },
   { id: 'not-012', name: 'MDO enrollment updated', eventKey: notificationEventKeys.MdoEnrollmentUpdated, channel: 'Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Employee', template: 'MDO enrollment updated', status: 'Active' },
   { id: 'not-013', name: 'Minimum take-home pay warning', eventKey: notificationEventKeys.MinimumTakeHomePayRisk, channel: 'Email and Dashboard', frequency: 'Once per payroll cutoff', leadTime: '5 days before', leadTimeDays: 5, recipient: 'Employee', template: 'Your projected take-home pay is below the company minimum. You may submit a Staggered Payment Request for eligible deductions.', status: 'Active' },
+  { id: 'not-014', name: 'Payroll waiting for sign-off', eventKey: notificationEventKeys.PayrollApprovalRequested, channel: 'Email and Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Approver', template: 'A payroll transaction is waiting for your sign-off', status: 'Active' },
+  { id: 'not-015', name: 'Payroll returned to the preparer', eventKey: notificationEventKeys.PayrollApprovalReturned, channel: 'Email and Dashboard', frequency: 'Immediate', leadTime: 'Immediate', recipient: 'Preparer', template: 'A payroll transaction was returned with remarks', status: 'Active' },
 ];
 
 export function minimumTakeHomeNotifications({ run, result, rules = [], today = new Date().toISOString().slice(0, 10) } = {}) {

@@ -124,7 +124,22 @@ const PERIODS = { Monthly: 1, 'Semi-monthly': 2, Weekly: 52 / 12 };
  * statutory tables. It is an estimate for planning — it is not a payroll
  * transaction and nothing is saved.
  */
-export function calculatePay({ monthlyBasic = 0, frequency = 'Semi-monthly', taxableAllowances = 0, nonTaxableAllowances = 0, otherDeductions = 0, minimumWage = false }, statutory = {}) {
+/** The amount fields of the calculator and what is wrong with them: none may be negative. */
+export const CALCULATOR_AMOUNTS = Object.freeze([['monthlyBasic', 'Monthly basic pay'], ['taxableAllowances', 'Taxable allowances'], ['nonTaxableAllowances', 'Non-taxable allowances'], ['otherDeductions', 'Other deductions']]);
+export function calculatorProblems(input = {}) {
+  return CALCULATOR_AMOUNTS
+    .filter(([key]) => input[key] !== '' && input[key] !== undefined && (!Number.isFinite(Number(input[key])) || Number(input[key]) < 0))
+    .map(([key, label]) => `${label}: enter an amount of zero or more.`);
+}
+
+export function calculatePay(rawInput, statutory = {}) {
+  // A blank amount counts as zero; a negative or non-numeric one is refused by `calculatorProblems` and counted as zero here.
+  const input = { ...rawInput };
+  CALCULATOR_AMOUNTS.forEach(([key]) => { const value = Number(input[key]); input[key] = Number.isFinite(value) && value > 0 ? value : 0; });
+  return calculatePayFor(input, statutory);
+}
+
+function calculatePayFor({ monthlyBasic = 0, frequency = 'Semi-monthly', taxableAllowances = 0, nonTaxableAllowances = 0, otherDeductions = 0, minimumWage = false }, statutory = {}) {
   const periods = PERIODS[frequency] || 2;
   const basis = Number(monthlyBasic) || 0;
   const sss = statutory.sss ? sssContribution(statutory.sss, basis) : { employee: 0, employer: 0, ec: 0 };

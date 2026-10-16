@@ -1,12 +1,12 @@
 /**
  * Employee-level change audit for the pay-affecting masterfile sections
- * (Basic Pay, Earnings, Bonuses, Loans): who changed what, from and to which
+ * (Basic Pay, Earnings, Bonuses, Company Deductions, Loans): who changed what, from and to which
  * value, when, and why. Edits and deletes need a reason; adds may carry one.
  */
 
 const KEY = 'atlas-employee-change-log-v1';
 
-export const AUDITED_SECTIONS = Object.freeze(['basicPay', 'earnings', 'bonuses', 'loans']);
+export const AUDITED_SECTIONS = Object.freeze(['basicPay', 'earnings', 'bonuses', 'deductions', 'loans']);
 
 const read = (storage = globalThis.localStorage) => {
   try { return JSON.parse(storage?.getItem(KEY) || '[]'); } catch { return []; }

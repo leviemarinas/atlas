@@ -23,8 +23,11 @@
 import { readHrmData } from './hrmData.js';
 import { employeeRoster, YTD_AS_OF } from './employeeRoster.js';
 import { seedComputations } from './computationCatalog.js';
+import { pickVersion } from './formulaVersioning.js';
+import { ROLE_LABEL, canRejectAt, canSignAt, joinLabels, levelComplete, neededSignatures, signaturesAt, stageOf, waitingLabels } from './payrollApprovalFlow.js';
 import { effectiveStatutorySet } from './statutoryService.js';
 import { graduatedTax } from './statutorySchedules.js';
+import { inheritedEarningRows, overlayMasterfile, readEmployeePayrollStore } from './employeePayrollBridge.js';
 import { readCorrections } from './payrollCorrections.js';
 import { bankFileFor, journalFor, round2, runPayroll, ytdContributionOf } from './payrollEngine.js';
 
@@ -66,6 +69,86 @@ export function capabilitiesOf(run) {
   return CAPABILITIES[run?.status] || CAPABILITIES.Cancelled;
 }
 
+/* ------------------------------------------------------ review and approval levels */
+
+/**
+ * A payout calendar sets how many levels a transaction goes through, 2 to 6, counting the person who
+ * prepares it as level 1 (the same way the company's approval hierarchy counts: Preparer, Checker or
+ * Reviewer, then the final approver). The last level is the final approval (status For Approval);
+ * every level between is a review (status For Review). A transaction filed without a calendar level
+ * keeps the standard three: prepare, review, approve.
+ */
+export const MIN_APPROVAL_LEVELS = 2;
+export const MAX_APPROVAL_LEVELS = 6;
+export const STANDARD_LEVELS = 3;
+
+export const hasSetLevels = run => run?.approvalLevels !== undefined && run?.approvalLevels !== null && run?.approvalLevels !== '';
+const validLevels = count => Number.isInteger(count) && count >= MIN_APPROVAL_LEVELS && count <= MAX_APPROVAL_LEVELS;
+export function levelsOf(run) {
+  const count = Number(run?.approvalLevels);
+  return validLevels(count) ? count : STANDARD_LEVELS;
+}
+
+/** The levels a payout calendar asks for, or undefined when it does not say. */
+export function levelsForCalendar(calendars = [], calendarCode = '') {
+  const row = calendars.find(item => item.calendarCode === calendarCode);
+  const count = Number(row?.approvalLevels);
+  return validLevels(count) ? count : undefined;
+}
+
+/** The level waiting for a sign-off right now (0 when the transaction is not in review). */
+export function pendingLevel(run) {
+  const total = levelsOf(run);
+  if (run?.status === 'For Approval') return total;
+  if (run?.status === 'For Review') return Math.min(Math.max(Number(run.approvalLevel) || 2, 2), total - 1);
+  return 0;
+}
+
+export const levelLabel = (level, total, run) => (level === total ? 'Approval' : (!hasSetLevels(run) ? 'Second review' : `Level ${level} review`));
+
+const personOf = actor => String(actor || '').replace(/\s*\(.*\)\s*$/, '').trim();
+const SIGNED = ['Submitted', 'Reviewed', 'Approved', 'Signed'];
+
+/** Everyone who has signed this round: since the last rejection or re-opening. */
+function signedThisRound(run) {
+  const list = run.approvals || [];
+  const decisions = list.map(item => item.decision);
+  const start = Math.max(decisions.lastIndexOf('Rejected'), decisions.lastIndexOf('Re-opened'));
+  return list.slice(start + 1).filter(item => SIGNED.includes(item.decision));
+}
+
+/**
+ * One sign-off at the level now waiting. A level the hierarchy gives several approvers is complete only
+ * when its rule is met (any one, all in any order, or all in order); a level with no flow is complete at once.
+ */
+function signOff(run, { level, total, decision, actor, role, remarks }) {
+  const stage = stageOf(run, level);
+  const entry = { level: levelLabel(level, total, run), decision, step: level, of: total, actor, role: ROLE_LABEL[role] || '', at: stamp(), remarks };
+  const signatures = [...signaturesAt(run, level), entry];
+  const complete = !stage || levelComplete(stage, signatures);
+  if (!complete) entry.decision = 'Signed';
+  return { entry, signatures, complete, needed: neededSignatures(stage), waiting: stage ? waitingLabels(stage, signatures) : [] };
+}
+
+/** Who is asked to sign when a run reaches a level (for the notification). */
+function requested(run, level, total) {
+  const stage = stageOf(run, level);
+  return { kind: 'requested', level, total, final: level === total, labels: stage ? waitingLabels(stage, []) : [] };
+}
+
+/**
+ * Each level needs a different person: whoever submitted the transaction, or signed an earlier level,
+ * cannot sign another. Only transactions filed against a calendar level are held to this.
+ */
+export function levelBlock(run, actor) {
+  if (!hasSetLevels(run)) return '';
+  const me = personOf(actor);
+  if (!me) return '';
+  const earlier = signedThisRound(run).find(item => personOf(item.actor) === me);
+  if (!earlier) return '';
+  return `${me} already took part in this round (${earlier.level}). Each level has to be signed by a different person.`;
+}
+
 /**
  * The actions a run offers right now.
  *
@@ -94,10 +177,30 @@ export function actionsFor(run, runs = [], actor = {}) {
   if (run.status === 'Open') actions.push(awaitingBackdate
     ? { key: 'postDraft', label: 'Save as Draft', hint: 'Waiting for P&A to approve the backdating', disabled: true }
     : { key: 'postDraft', label: 'Save as Draft', hint: 'Lock the figures so reports can be generated' });
-  if (run.status === 'Draft') actions.push({ key: 'submitReview', label: 'Submit for Review', hint: 'Send to the next level of review' });
-  if (run.status === 'For Review') actions.push({ key: 'submitApproval', label: 'Submit for Approval', hint: 'Send to the approver' });
-  if (run.status === 'For Approval') actions.push({ key: 'approve', label: 'Approve', hint: 'Approve this payroll' });
-  if (['For Review', 'For Approval'].includes(run.status)) actions.push({ key: 'reject', label: 'Reject', hint: 'Return the transaction to Open with remarks', tone: 'danger' });
+  const total = levelsOf(run);
+  const level = pendingLevel(run);
+  const counted = hasSetLevels(run);
+  if (run.status === 'Draft') actions.push(total === 2
+    ? { key: 'submitReview', label: 'Submit for Approval', hint: 'Send to the approver — this transaction has two levels: prepare, then approve' }
+    : { key: 'submitReview', label: 'Submit for Review', hint: counted ? `You are level 1 of ${total}. Send to level 2` : 'Send to the next level of review' });
+  // Who may sign the level now waiting, from the hierarchy copied onto the run when it was filed.
+  const stage = stageOf(run, level);
+  const signed = stage ? signaturesAt(run, level) : [];
+  const needed = neededSignatures(stage);
+  const several = Boolean(stage) && needed > 1;
+  const turn = stage ? (!actor.role ? { ok: true } : canSignAt(run, level, actor.role)) : { ok: true };
+  const progress = several ? `${signed.length} of ${needed} signed. Waiting for ${joinLabels(waitingLabels(stage, signed))}.` : '';
+  const gate = action => (turn.ok ? action : { ...action, disabled: true, hint: turn.reason });
+  if (run.status === 'For Review') actions.push(gate(several
+    ? { key: 'submitApproval', label: `Sign off Level ${level}`, hint: `Level ${level} of ${total}. ${progress}` }
+    : level + 1 === total
+      ? { key: 'submitApproval', label: 'Submit for Approval', hint: counted ? `Sign off level ${level} of ${total} and send it to the approver` : 'Send to the approver' }
+      : { key: 'submitApproval', label: `Pass to Level ${level + 1}`, hint: `Sign off level ${level} of ${total} and send it to level ${level + 1}` }));
+  if (run.status === 'For Approval') actions.push(gate({ key: 'approve', label: 'Approve', hint: several ? `Final approval — level ${total} of ${total}. ${progress}` : counted ? `Final approval — level ${total} of ${total}` : 'Approve this payroll' }));
+  if (['For Review', 'For Approval'].includes(run.status)) {
+    const rejectTurn = stage && actor.role ? canRejectAt(run, level, actor.role) : { ok: true };
+    actions.push({ key: 'reject', label: 'Reject', hint: rejectTurn.ok ? 'Return the transaction to Open with remarks' : rejectTurn.reason, tone: 'danger', ...(rejectTurn.ok ? {} : { disabled: true }) });
+  }
   if (run.status === 'Approved') actions.push({ key: 'generateBankFile', label: 'Generate Bank File', hint: 'Produce the crediting instructions before posting' });
   if (run.status === 'Approved') {
     const earlier = earlierUnposted(run, runs);
@@ -377,7 +480,7 @@ export function releaseLock(run, sessionId) {
  * Apply one action to a run. Returns `{ run, message, error }` — an action the
  * status does not allow is refused with a reason rather than silently ignored.
  */
-export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', runs = [], context, isPaAdmin = false } = {}) {
+export function applyAction(run, action, { actor = 'P&A Admin', role, remarks = '', runs = [], context, isPaAdmin = false } = {}) {
   const capability = capabilitiesOf(run);
   const refuse = error => ({ run, error });
   const forwardActions = ['postDraft', 'submitReview', 'submitApproval', 'approve', 'post'];
@@ -415,29 +518,69 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
       if (!run.result) return refuse('Recalculate the transaction before posting it as draft.');
       return { run: withAudit({ ...run, status: 'Draft' }, { action: 'Posted as draft', actor, detail: remarks }), message: `${run.transactionNumber} is now Draft — the figures are locked and reports can be generated.` };
     }
-    case 'submitReview':
+    case 'submitReview': {
       if (run.status !== 'Draft') return refuse('Post the transaction as draft before sending it for review.');
+      const blocked = levelBlock(run, actor);
+      if (blocked) return refuse(blocked);
+      const total = levelsOf(run);
+      const toApproval = total === 2;
       return {
-        run: withAudit({ ...run, status: 'For Review', approvals: [...(run.approvals || []), { level: 'Review', actor, at: stamp(), decision: 'Submitted', remarks }] }, { action: 'Submitted for review', actor, detail: remarks }),
-        message: `${run.transactionNumber} sent for review.`,
+        run: withAudit({ ...run, status: toApproval ? 'For Approval' : 'For Review', approvalLevel: 2, approvals: [...(run.approvals || []), { level: hasSetLevels(run) ? 'Prepared' : 'Review', decision: 'Submitted', step: 1, of: total, actor, role: ROLE_LABEL[role] || '', at: stamp(), remarks }] }, { action: toApproval ? 'Submitted for approval' : (hasSetLevels(run) ? `Submitted for review — level 2 of ${total}` : 'Submitted for review'), actor, detail: remarks }),
+        message: toApproval ? `${run.transactionNumber} sent for approval.` : `${run.transactionNumber} sent for review${hasSetLevels(run) ? ` — level 2 of ${total}` : ''}.`,
+        notice: requested(run, 2, total),
       };
-    case 'submitApproval':
+    }
+    case 'submitApproval': {
       if (run.status !== 'For Review') return refuse('The transaction must be under review before it can go for approval.');
+      const blocked = levelBlock(run, actor);
+      if (blocked) return refuse(blocked);
+      const total = levelsOf(run);
+      const level = pendingLevel(run);
+      if (role) { const turn = canSignAt(run, level, role); if (!turn.ok) return refuse(turn.reason); }
+      const signed = signOff(run, { level, total, decision: 'Reviewed', actor, role, remarks });
+      const approvals = [...(run.approvals || []), signed.entry];
+      if (!signed.complete) {
+        return {
+          run: withAudit({ ...run, approvals }, { action: `Level ${level} signed by ${actor} — ${signed.signatures.length} of ${signed.needed}`, actor, detail: remarks }),
+          message: `${run.transactionNumber} level ${level}: ${signed.signatures.length} of ${signed.needed} signed. Waiting for ${joinLabels(signed.waiting)}.`,
+          notice: { kind: 'waiting', level, total, labels: signed.waiting },
+        };
+      }
+      const next = level + 1;
+      const final = next === total;
       return {
-        run: withAudit({ ...run, status: 'For Approval', approvals: [...(run.approvals || []), { level: 'Second review', actor, at: stamp(), decision: 'Reviewed', remarks }] }, { action: 'Submitted for approval', actor, detail: remarks }),
-        message: `${run.transactionNumber} sent for approval.`,
+        run: withAudit({ ...run, status: final ? 'For Approval' : 'For Review', approvalLevel: next, approvals }, { action: final ? 'Submitted for approval' : `Level ${level} signed off — passed to level ${next}`, actor, detail: remarks }),
+        message: final ? `${run.transactionNumber} sent for approval.` : `${run.transactionNumber} passed to level ${next} of ${total}.`,
+        notice: requested(run, next, total),
       };
-    case 'approve':
+    }
+    case 'approve': {
       if (run.status !== 'For Approval') return refuse('Only a transaction awaiting approval can be approved.');
+      const blocked = levelBlock(run, actor);
+      if (blocked) return refuse(blocked);
+      const total = levelsOf(run);
+      if (role) { const turn = canSignAt(run, total, role); if (!turn.ok) return refuse(turn.reason); }
+      const signed = signOff(run, { level: total, total, decision: 'Approved', actor, role, remarks });
+      const approvals = [...(run.approvals || []), signed.entry];
+      if (!signed.complete) {
+        return {
+          run: withAudit({ ...run, approvals }, { action: `Final approval signed by ${actor} — ${signed.signatures.length} of ${signed.needed}`, actor, detail: remarks }),
+          message: `${run.transactionNumber} final approval: ${signed.signatures.length} of ${signed.needed} signed. Waiting for ${joinLabels(signed.waiting)}.`,
+          notice: { kind: 'waiting', level: total, total, labels: signed.waiting },
+        };
+      }
       return {
-        run: withAudit({ ...run, status: 'Approved', approvals: [...(run.approvals || []), { level: 'Approval', actor, at: stamp(), decision: 'Approved', remarks }] }, { action: 'Approved', actor, detail: remarks }),
+        run: withAudit({ ...run, status: 'Approved', approvals }, { action: 'Approved', actor, detail: remarks }),
         message: `${run.transactionNumber} approved.`,
       };
+    }
     case 'reject':
       if (!['For Review', 'For Approval'].includes(run.status)) return refuse('Only a transaction under review or approval can be rejected.');
+      if (role) { const turn = canRejectAt(run, pendingLevel(run), role); if (!turn.ok) return refuse(turn.reason); }
       return {
-        run: withAudit({ ...run, status: 'Open', approvals: [...(run.approvals || []), { level: run.status, actor, at: stamp(), decision: 'Rejected', remarks }] }, { action: 'Rejected', actor, detail: remarks }),
+        run: withAudit({ ...run, status: 'Open', approvalLevel: undefined, approvals: [...(run.approvals || []), { level: hasSetLevels(run) ? levelLabel(pendingLevel(run), levelsOf(run), run) : run.status, step: pendingLevel(run), of: levelsOf(run), actor, role: ROLE_LABEL[role] || '', at: stamp(), decision: 'Rejected', remarks }] }, { action: hasSetLevels(run) ? `Rejected at ${levelLabel(pendingLevel(run), levelsOf(run), run).toLowerCase()}` : 'Rejected', actor, detail: remarks }),
         message: `${run.transactionNumber} returned to Open.`,
+        notice: { kind: 'returned', level: pendingLevel(run), total: levelsOf(run), labels: [], by: actor },
       };
     case 'generateBankFile': {
       if (run.status !== 'Approved') return refuse('The bank file is generated only after payroll approval.');
@@ -475,7 +618,8 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
           .sort((a, b) => String(b.payoutDate).localeCompare(String(a.payoutDate)));
         if (regular[0]?.id !== run.id) return refuse('Only the most recent regular transaction can be re-opened.');
       }
-      return { run: withAudit({ ...run, status: 'Open' }, { action: 'Re-opened', actor, detail: remarks }), message: `${run.transactionNumber} re-opened for editing.` };
+      const reopened = hasSetLevels(run) && (run.approvals || []).length ? { approvals: [...run.approvals, { level: 'Re-opened', decision: 'Re-opened', actor, at: stamp(), remarks }] } : {};
+      return { run: withAudit({ ...run, status: 'Open', approvalLevel: undefined, ...reopened }, { action: 'Re-opened', actor, detail: remarks }), message: `${run.transactionNumber} re-opened for editing.` };
     }
     case 'cancel':
       if (['Posted', 'Locked'].includes(run.status)) return refuse(`A ${run.status.toLowerCase()} transaction cannot be cancelled.`);
@@ -504,17 +648,18 @@ export function applyAction(run, action, { actor = 'P&A Admin', remarks = '', ru
  * not exist when it ran.
  */
 /**
- * A formula version dated after the payout date is not yet in force: the run
- * computes with the latest version already effective on its payout date.
+ * The version of each formula that is in force for this run. Each formula says which date picks its
+ * version — the payout date, the payroll period start or end, or the timekeeping cut-off — so a rate
+ * can follow the period it was earned in rather than the day it was paid. A version dated after that
+ * date is not yet in force, and one whose Effective To has passed no longer applies to the run.
+ * Without a run, `asOf` is used for every formula (the payout date, as before).
  */
-export function computationsInForce(library = [], asOf, versions = []) {
-  if (!asOf) return library;
+export function computationsInForce(library = [], asOf, versions = [], run = null) {
+  if (!asOf && !run) return library;
   return library.map(item => {
-    if (!item.effectiveDate || item.effectiveDate <= asOf) return item;
-    const earlier = versions
-      .filter(version => String(version.code).toUpperCase() === String(item.code).toUpperCase() && version.effectiveDate && version.effectiveDate <= asOf)
-      .sort((left, right) => right.effectiveDate.localeCompare(left.effectiveDate) || Number(right.version) - Number(left.version))[0];
-    return earlier ? { ...item, expression: earlier.expression, parameters: earlier.parameters || item.parameters, version: earlier.version, effectiveDate: earlier.effectiveDate, scheduledVersion: item.version } : item;
+    const picked = pickVersion(item, versions, run, asOf);
+    if (picked.state === 'current') return picked.usedDate ? { ...picked.item, appliedBasis: picked.basis, appliedOn: picked.usedDate } : picked.item;
+    return { ...picked.item, appliedBasis: picked.basis, appliedOn: picked.usedDate };
   });
 }
 
@@ -528,6 +673,7 @@ export function libraryForRun(run, current = []) {
   const frozen = entries.map(entry => ({
     ...entry,
     id: entry.code,
+    frozen: true,
     status: 'Active',
     isBuiltIn: entry.owner !== 'Company-defined',
     scope: entry.owner === 'Client-specific' || entry.owner === 'Company-defined' ? 'Client-specific' : 'Atlas standard',
@@ -545,18 +691,43 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
   // of truth for the balance, not a field someone types.
   const storedRuns = readPayrollRuns(companyId, storage);
   const paid = loanPaymentsCollected(storedRuns, run);
-  const library = computationsInForce(libraryForRun(run, computations || seedComputations()), run?.payoutDate, readStandardVersions(storage || globalThis.localStorage));
+  const paidDeductions = deductionPaymentsCollected(storedRuns, run);
+  const library = computationsInForce(libraryForRun(run, computations || seedComputations()), run?.payoutDate, readStandardVersions(storage || globalThis.localStorage), run);
+  // What the Employee Masterfile holds for an employee replaces the HR record for the sections it has entries in.
+  const store = readEmployeePayrollStore(storage || globalThis.localStorage);
+  const baseEmployees = run?.config?.ytd?.includePosted === false ? employeeRoster : withPostedYtd(employeeRoster, storedRuns, run);
+  const fromMasterfile = Object.keys(store).length
+    ? overlayMasterfile({ employees: baseEmployees, salaryInformation: data.salaryInformation || [], loanSchedules: data.loanInquiries || [], bonuses: registers.bonuses || [], store, run })
+    : null;
+  const heldSalary = fromMasterfile ? fromMasterfile.salaryInformation : data.salaryInformation || [];
+  // Earning Configuration gives every employee it covers its default amount, unless the employee already holds that earning.
+  const configuredEarnings = serviceConfig?.earnings || [];
+  const employeesNow = fromMasterfile ? fromMasterfile.employees : baseEmployees;
+  const salaryRows = configuredEarnings.length
+    ? heldSalary.map(info => {
+      const employee = employeesNow.find(item => item.employeeId === info.employeeId || item.code === info.employeeCode);
+      const extra = employee ? inheritedEarningRows({ configs: configuredEarnings, employee, existing: info.earnings || [], run }) : [];
+      return extra.length ? { ...info, earnings: [...(info.earnings || []), ...extra] } : info;
+    })
+    : heldSalary;
+  const loanRows = fromMasterfile ? fromMasterfile.loanSchedules : data.loanInquiries || [];
   return {
     // What earlier payrolls this month already collected, for the maximum-first schedule.
     statutoryCollected: statutoryCollectedFor(storedRuns, run),
     // Year-to-date is the employee record plus what posted payrolls in the window collected.
-    employees: run?.config?.ytd?.includePosted === false ? employeeRoster : withPostedYtd(employeeRoster, storedRuns, run),
+    employees: fromMasterfile ? fromMasterfile.employees : baseEmployees,
     earlierUnposted: earlierUnposted(run, storedRuns).map(item => item.transactionNumber),
-    salaryInformation: data.salaryInformation || [],
+    salaryInformation: !paidDeductions.size ? salaryRows : salaryRows.map(info => (!(info.companyDeductions || []).length ? info : {
+      ...info,
+      companyDeductions: info.companyDeductions.map(row => {
+        const collected = paidDeductions.get(`${info.employeeId}|${deductionCodeOf(row.deductionName)}`) || 0;
+        return collected ? { ...row, totalBalance: round2(Math.max(0, Number(row.totalBalance || 0) - collected)) } : row;
+      }),
+    })),
     timeLogs: data.timeLogs || [],
     // Shift assignments from Timekeeping: they set each employee's hours per day.
     shiftAssignments: (data.shiftAssignments || []).map(item => ({ employeeId: item.employeeId, startDate: item.startDate, endDate: item.endDate, workHours: item.workHours, name: item.shiftName })),
-    loanSchedules: !paid.size ? data.loanInquiries || [] : (data.loanInquiries || []).map(row => {
+    loanSchedules: !paid.size ? loanRows : loanRows.map(row => {
       const collected = paid.get(row.transactionNumber || row.id) || 0;
       return collected ? { ...row, balance: round2(Math.max(0, Number(row.balance || 0) - collected)), collectedThroughPayroll: collected } : row;
     }),
@@ -566,10 +737,11 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     registers: {
       earnings: registers.earnings || [],
       deductions: registers.deductions || [],
-      bonuses: registers.bonuses || [],
+      bonuses: fromMasterfile ? fromMasterfile.bonuses : registers.bonuses || [],
       payCodes: registers.payCodes || [],
     },
-    statutory: effectiveStatutorySet(asOf),
+    // Statutory table slide 6 and 8: the version is the one effective for the payroll period (its cut-off), not the payout date.
+    statutory: effectiveStatutorySet(run?.periodEnd || asOf),
     policies,
     staggeredRequests,
     hierarchy,
@@ -584,7 +756,8 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     serviceConfig,
     references,
     variableAllowances,
-    bonusCeiling: 90000,
+    // The non-taxable ceiling the company set up (Bonus Ceiling), kept on the transaction when it was created.
+    bonusCeiling: Number(run?.config?.bonusCeiling) || 90000,
   };
 }
 
@@ -607,6 +780,20 @@ export function deferralHistory(runs = [], current) {
     })));
   return history;
 }
+
+/** What posted payrolls have already collected on each employee's company deductions, so a balance moves and a settled deduction stops. */
+function deductionPaymentsCollected(runs = [], current) {
+  const totals = new Map();
+  runs.filter(run => ['Posted', 'Locked'].includes(run.status) && run.result && run.id !== current?.id)
+    .filter(run => !current?.payoutDate || String(run.payoutDate) <= String(current.payoutDate))
+    .forEach(run => run.result.lines.forEach(line => (line.deductions || []).filter(item => item.source === 'Employee salary record').forEach(item => {
+      const key = `${line.employeeId}|${item.code}`;
+      totals.set(key, round2((totals.get(key) || 0) + Number(item.deducted || 0)));
+    })));
+  return totals;
+}
+
+const deductionCodeOf = name => `DED-${String(name || '').slice(0, 6).toUpperCase().replace(/\s/g, '')}`;
 
 function loanPaymentsCollected(runs = [], current) {
   const totals = new Map();
@@ -1128,10 +1315,12 @@ export const governmentReportCatalog = Object.freeze([
       { key: 'employeeCode', label: 'Employee No.' }, { key: 'name', label: 'Employee Name' },
       { key: 'targetValue', label: 'Target Taxable Pay', money: true }, { key: 'grossedValue', label: 'Grossed-up Amount', money: true },
       { key: 'upliftValue', label: 'Uplift', money: true }, { key: 'employerTaxValue', label: 'Tax Absorbed by Employer', money: true },
+      { key: 'employeeTaxValue', label: 'Tax Borne by Employee', money: true }, { key: 'methodValue', label: 'Method' }, { key: 'targetKind', label: 'What Is Guaranteed' },
     ],
     build: result => computed(result).filter(line => line.grossUp).map(line => ({
       key: line.employeeId, employeeCode: line.employeeCode, name: line.name, targetValue: round2(line.grossUp.grossedUp - line.grossUp.uplift),
       grossedValue: line.grossUp.grossedUp, upliftValue: line.grossUp.uplift, employerTaxValue: line.grossUp.employerTax,
+      employeeTaxValue: line.grossUp.employeeTax ?? 0, methodValue: line.grossUp.method || 'Periodic Compensation', targetKind: line.grossUp.targetEarning ? line.grossUp.targetEarning : 'Total net pay',
     })),
   },
   {
@@ -1365,6 +1554,7 @@ export function batchProblems(draft) {
     if (!row.periodStart || !row.periodEnd) problems.push(`${name}: the payroll period start and end are required.`);
     else if (row.periodEnd < row.periodStart) problems.push(`${name}: the payroll period end cannot fall before its start.`);
     if (!row.timekeepingStart || !row.timekeepingEnd) problems.push(`${name}: a timekeeping cut-off is required.`);
+    else if (row.timekeepingEnd < row.timekeepingStart) problems.push(`${name}: the timekeeping cut-off end cannot fall before its start.`);
     if (!row.payoutDate) problems.push(`${name}: a payout date is required.`);
     if (row.lockDate && row.payoutDate && row.lockDate < row.payoutDate) problems.push(`${name}: the lock date cannot fall before its payout date.`);
   });

@@ -31,10 +31,13 @@ import {
   PlusCircle,
   Scales,
   UploadSimple,
+  Trash,
+  ClockCounterClockwise,
   X,
 } from '@phosphor-icons/react';
 import { STATUTORY_STORAGE_KEY, versionUsage } from './statutoryService';
-import { agencyDefinitions, agencyGroups, seedStatutoryData as seedData } from './statutorySchedules';
+import { agencyDefinitions, agencyGroups, effectiveVersionIn, seedStatutoryData as seedData } from './statutorySchedules';
+import { formatUsDate } from './textFormat.js';
 import { useRole } from './RoleContext';
 import { visibleTiles } from './moduleAccess';
 import { PayrollDashboard } from './PayrollDashboard.jsx';
@@ -52,14 +55,34 @@ export { agencyDefinitions, agencyGroups };
 
 const php = value => `₱ ${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fieldType = (agency, key) => (agencyDefinitions[agency]?.fields || []).find(([fieldKey]) => fieldKey === key)?.[2] || 'number';
+const isPercentage = row => row.unit === 'Percentage (%)';
+const UNIT_OPTIONS = ['Percentage (%)', 'Amount (Php)'];
+const todayIso = () => new Date().toISOString().slice(0, 10);
+/** The day a version was last updated, as ISO, from the new field or from the older display text. */
+const updatedIso = item => {
+  if (item.updatedOn) return item.updatedOn;
+  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(item.updatedAt || ''));
+  return match ? `${match[3]}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}` : '';
+};
+const sameRows = (a = [], b = []) => JSON.stringify(a.map(({ id, ...row }) => row)) === JSON.stringify(b.map(({ id, ...row }) => row));
+/** Codes count up for the year of the Effectivity Date; a deleted table keeps its code, so its number is never reused. */
+const nextCode = (def, versions, effectiveDate) => {
+  const year = String(effectiveDate || todayIso()).slice(0, 4);
+  const prefix = `${def.prefix}-${year}-`;
+  const highest = Math.max(0, ...versions.filter(item => String(item.code || '').startsWith(prefix)).map(item => Number(String(item.code).slice(prefix.length)) || 0));
+  return `${prefix}${String(highest + 1).padStart(3, '0')}`;
+};
+const historyEntry = (action, detail) => ({ at: new Date().toISOString(), by: 'P&A Admin', action, detail });
 const fieldValue = (agency, row, key) => {
+  if (key === 'monthlyPremium') return isPercentage(row) ? `${(Number(row.eeRate || 0) + Number(row.erRate || 0)).toFixed(2)}% of compensation` : `${php(Number(row.minimumEmployeeShare || 0) + Number(row.minimumEmployerShare || 0))} – ${php(Number(row.maximumEmployeeShare || 0) + Number(row.maximumEmployerShare || 0))}`;
+  if (key === 'totalContribution') return isPercentage(row) ? `${(Number(row.eeRate || 0) + Number(row.erRate || 0)).toFixed(2)}%` : `${php(Number(row.minimumEmployeeShare || 0) + Number(row.minimumEmployerShare || 0))} – ${php(Number(row.maximumEmployeeShare || 0) + Number(row.maximumEmployerShare || 0))}`;
   if (key === 'employeeShare') return row.unit === 'Percentage (%)' ? `${Number(row.eeRate || 0).toFixed(2)}%` : `${php(row.minimumEmployeeShare)} – ${php(row.maximumEmployeeShare)}`;
   if (key === 'employerShare') return row.unit === 'Percentage (%)' ? `${Number(row.erRate || 0).toFixed(2)}%` : `${php(row.minimumEmployerShare)} – ${php(row.maximumEmployerShare)}`;
-  if (key === 'unit') return row.unit || 'Amount (₱)';
+  if (key === 'unit') return isPercentage(row) ? 'Percentage (%)' : 'Amount (Php)';
   // A column prints as money only when its agency declares it numeric. Listing
   // the text keys by hand meant every new text column (ATC code, nature of the
   // income payment) rendered as PHP NaN, so the declared type decides instead.
-  if (['text', 'select'].includes(fieldType(agency, key))) return row[key] || '—';
+  if (['text', 'select', 'locked'].includes(fieldType(agency, key))) return row[key] || '—';
   if (/Rate/i.test(key)) return `${Number(row[key] || 0).toFixed(2)}%`;
   return php(row[key]);
 };
@@ -68,6 +91,8 @@ function readData() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (!saved) return seedData();
+    // v4 tables wrote the unit as Amount (₱); it reads Amount (Php) now.
+    Object.values(saved).forEach(versions => Array.isArray(versions) && versions.forEach(version => (version.rows || []).forEach(row => { if (row.unit === 'Amount (₱)') row.unit = 'Amount (Php)'; })));
     // A stored payload written before Tax Tables existed has no rows for the new
     // registers; seed only the agencies it is missing so saved edits survive.
     const seeded = seedData();
@@ -99,6 +124,11 @@ function exportTable(def, version, format) {
     popup.document.close();
   }
   return true;
+}
+
+function downloadTemplate(def, version) {
+  const headers = def.fields.map(([, label]) => label);
+  download(`${(version?.code || def.prefix)}-template.csv`, `${headers.map(label => `"${label}"`).join(',')}\n${headers.map(() => '""').join(',')}`, 'text/csv');
 }
 
 function HubCard({ icon: Icon, label, detail, enabled, onClick }) {
@@ -176,10 +206,10 @@ function ExportMenu({ onExport }) {
 
 function EntryModal({ agency, row, onClose, onSave, readOnly = false }) {
   const def = agencyDefinitions[agency];
-  const [draft, setDraft] = useState({ unit: 'Percentage (%)', ...row });
+  const [draft, setDraft] = useState({ unit: 'Percentage (%)', ...(def.taxType ? { taxType: def.taxType } : {}), ...row });
   const submit = event => {
     event.preventDefault();
-    const numeric = Object.fromEntries(def.fields.filter(([, , type]) => !['text', 'select'].includes(type)).map(([key]) => [key, Number(draft[key] || 0)]));
+    const numeric = Object.fromEntries(def.fields.filter(([, , type]) => !['text', 'select', 'locked'].includes(type)).map(([key]) => [key, Number(draft[key] || 0)]));
     let prepared = { ...draft, ...numeric };
     if (agency === 'sss') prepared = { ...prepared, totalMsc: prepared.mscRegular + prepared.mscMpf, totalRegular: prepared.regularEe + prepared.regularEr + prepared.ecEr, totalMpf: prepared.mpfEe + prepared.mpfEr, totalEe: prepared.regularEe + prepared.mpfEe, totalEr: prepared.regularEr + prepared.ecEr + prepared.mpfEr, overallTotal: prepared.regularEe + prepared.regularEr + prepared.ecEr + prepared.mpfEe + prepared.mpfEr };
     onSave(prepared);
@@ -190,14 +220,15 @@ function EntryModal({ agency, row, onClose, onSave, readOnly = false }) {
       <form onSubmit={submit}>
         <div className="statutory-entry-grid">
           {def.fields.map(([key, label, type, options]) => {
-            if (['philhealth', 'pagibig'].includes(agency) && draft.unit === 'Percentage (%)' && /Share/.test(key)) return null;
-            if (['philhealth', 'pagibig'].includes(agency) && draft.unit === 'Amount (₱)' && /Rate/.test(key)) return null;
+            if (['philhealth', 'pagibig'].includes(agency) && isPercentage(draft) && /Share/.test(key)) return null;
+            if (['philhealth', 'pagibig'].includes(agency) && !isPercentage(draft) && /Rate/.test(key)) return null;
             const computed = agency === 'sss' && ['totalMsc', 'totalRegular', 'totalMpf', 'totalEe', 'totalEr', 'overallTotal'].includes(key);
             return <label key={key}>{label}{!readOnly && !computed && <span className="required">*</span>}
-              {readOnly ? <strong>{key === 'unit' ? draft[key] : fieldValue(agency, draft, key)}</strong> : type === 'select' ? <select required value={draft[key] || ''} onChange={event => setDraft({ ...draft, [key]: event.target.value })}><option value="">Please select</option>{(options || ['Percentage (%)', 'Amount (₱)']).map(option => <option key={option}>{option}</option>)}</select> : <input required={!computed} type={type === 'text' ? 'text' : 'number'} step={type === 'text' ? undefined : '0.01'} min={type === 'text' ? undefined : '0'} value={draft[key] ?? ''} disabled={computed} onChange={event => setDraft({ ...draft, [key]: event.target.value })} />}
+              {readOnly ? <strong>{key === 'unit' ? fieldValue(agency, draft, key) : fieldValue(agency, draft, key)}</strong> : type === 'locked' ? <input value={def.taxType || ''} disabled /> : type === 'select' ? <select required value={draft[key] || ''} onChange={event => setDraft({ ...draft, [key]: event.target.value })}><option value="">Please select</option>{(options || UNIT_OPTIONS).map(option => <option key={option}>{option}</option>)}</select> : <input required={!computed} type={type === 'text' ? 'text' : 'number'} step={type === 'text' ? undefined : '0.01'} min={type === 'text' ? undefined : '0'} value={draft[key] ?? ''} disabled={computed} onChange={event => setDraft({ ...draft, [key]: event.target.value })} />}
             </label>;
           })}
         </div>
+        {def.note && <p className="statutory-entry-note">{def.note}</p>}
         <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</button>{!readOnly && <button className="button primary">{row?.id ? 'Save changes' : 'Add entry'}</button>}</div>
       </form>
     </section>
@@ -214,22 +245,48 @@ function AgencySidebar({ agency, setAgency, mode, onBack, group }) {
   </aside>;
 }
 
+function VersionView({ version, def, onClose }) {
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal statutory-entry-modal" role="dialog" aria-modal="true" aria-label="View details"><header><h2>View Details</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header>
+    <div className="statutory-entry-grid">{[['Code', version.code], ['Table', version.name || def.name], ['Effective Date', formatUsDate(version.effectiveDate)], ['Status', version.status], ['Last Updated By', version.updatedBy || version.createdBy], ['Last Updated Date', version.updatedAt || version.createdAt], ['Rows', String(version.rows?.length || 0)]].map(([label, value]) => <label key={label}>{label}<strong>{value}</strong></label>)}</div>
+    <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Close</button></div></section></div>;
+}
+
+function AuditTrail({ versions, def, onClose }) {
+  const entries = versions.flatMap(version => (version.history || []).map(entry => ({ ...entry, code: version.code }))).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="modal employee-history-modal" role="dialog" aria-modal="true" aria-label={`${def.short} audit trail`}><header><h2>{def.short} — audit trail</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header>
+    <div className="modal-body">{entries.length ? <table className="employee-table"><thead><tr><th>When</th><th>By</th><th>Action</th><th>Table</th><th>Detail</th></tr></thead><tbody>{entries.map((entry, index) => <tr key={index}><td>{new Date(entry.at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td><td>{entry.by}</td><td>{entry.action}</td><td>{entry.code}</td><td>{entry.detail}</td></tr>)}</tbody></table> : <div className="empty-state compact"><h3>Nothing recorded yet</h3><p>Created, updated, status changes and deletions of these tables are listed here.</p></div>}</div></section></div>;
+}
+
 export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack, notify }) {
   const [data, setData] = useState(readData);
   const [agency, setAgency] = useState(agencyGroups[group].agencies[0]);
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState('');
   const [entryEditing, setEntryEditing] = useState(undefined);
+  const [filters, setFilters] = useState({ status: '', effective: '', updated: '' });
+  const [columnFilter, setColumnFilter] = useState({ key: '', value: '' });
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [versionViewing, setVersionViewing] = useState(null);
+  const [versionDeleting, setVersionDeleting] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [entryConfirming, setEntryConfirming] = useState(null);
   const importRef = useRef(null);
   const def = agencyDefinitions[agency];
   const groupTitle = agencyGroups[group].title;
   const isTaxGroup = group === 'tax';
-  const versions = data[agency] || [];
-  const activeVersion = [...versions].sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate)).find(item => item.status === 'Active') || versions[0];
+  const allVersions = data[agency] || [];
+  // A deleted table stays in the store (its code is never reused) but is not listed.
+  const versions = allVersions.filter(item => item.status !== 'Deleted');
+  // Payroll > Statutory tables shows only the table in force today by its effectivity date, never a future-dated one.
+  const activeVersion = effectiveVersionIn({ [agency]: versions }, agency, todayIso()) || versions[0];
   const selected = mode === 'payroll' ? activeVersion : versions.find(item => item.id === selectedId);
   const [draft, setDraft] = useState(null);
   const { isPaAdmin } = useRole();
+  const shownVersions = versions
+    .filter(item => `${item.code} ${item.name || ''} ${item.effectiveDate} ${formatUsDate(item.effectiveDate)}`.toLowerCase().includes(query.toLowerCase()))
+    .filter(item => !filters.status || item.status === filters.status)
+    .filter(item => !filters.effective || item.effectiveDate === filters.effective)
+    .filter(item => !filters.updated || updatedIso(item) === filters.updated);
   // Tax and statutory tables are P&A-owned; the client side is view/export
   // only. This must be isPaAdmin, not isAdmin — isAdmin also covers the Client
   // Admin, whom the lock note below tells to switch roles to publish a version.
@@ -237,37 +294,44 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
   const usage = useMemo(() => (selected ? versionUsage(agency, selected, data) : { used: false, transactions: [] }), [agency, selected, data]);
   const locked = usage.used;
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(data)), [data]);
-  useEffect(() => { setSelectedId(null); setDraft(null); setQuery(''); }, [agency, mode]);
+  useEffect(() => { setSelectedId(null); setDraft(null); setQuery(''); setFilters({ status: '', effective: '', updated: '' }); setColumnFilter({ key: '', value: '' }); }, [agency, mode]);
   useEffect(() => {
     if (mode === 'settings' && selectedId && !selected) return;
     setDraft(selected ? { ...selected, rows: selected.rows.map(row => ({ ...row })) } : null);
   }, [selectedId, agency, mode, selected]);
   const tableVersion = mode === 'payroll' ? activeVersion : draft;
-  const visibleRows = useMemo(() => (tableVersion?.rows || []).filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [tableVersion, query]);
+  const visibleRows = useMemo(() => (tableVersion?.rows || [])
+    .filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase()))
+    .filter(row => !columnFilter.key || !columnFilter.value.trim() || String(fieldValue(agency, row, columnFilter.key)).toLowerCase().includes(columnFilter.value.trim().toLowerCase())), [tableVersion, query, columnFilter, agency]);
 
   const addVersion = () => {
-    const number = versions.length + 1;
-    const item = { id: `${agency}-${Date.now()}`, code: `${def.prefix}-${new Date().getFullYear()}-${String(number).padStart(3, '0')}`, name: `${def.name} ${new Date().getFullYear()}`, effectiveDate: new Date().toISOString().slice(0, 10), status: 'Draft', createdBy: 'P&A Admin', createdAt: new Date().toLocaleString(), updatedBy: 'P&A Admin', updatedAt: new Date().toLocaleString(), rows: [] };
+    const item = { id: `${agency}-${Date.now()}`, agency, code: '', name: `${def.name} ${new Date().getFullYear()}`, effectiveDate: new Date().toISOString().slice(0, 10), status: 'Draft', createdBy: 'P&A Admin', createdAt: new Date().toLocaleString(), updatedBy: 'P&A Admin', updatedAt: new Date().toLocaleString(), rows: [] };
     setDraft(item); setSelectedId(item.id);
   };
   const saveVersion = () => {
     if (!draft.effectiveDate || !draft.status) { notify({ type: 'error', message: 'Effective date and status are required.' }); return; }
+    const sameDate = allVersions.find(item => item.id !== draft.id && item.status !== 'Deleted' && item.effectiveDate === draft.effectiveDate && sameRows(item.rows, draft.rows));
+    if (sameDate) { notify({ type: 'error', message: `${sameDate.code} already has this Effectivity Date and exactly the same details. Change the details or the Effectivity Date.` }); return; }
     if (locked) { notify({ type: 'error', message: `${draft.code} has been used by ${usage.transactions.join(', ')}. Create a new version instead of changing a version payroll has already consumed.` }); return; }
+    const existing = allVersions.find(item => item.id === draft.id);
+    const code = draft.code || nextCode(def, allVersions, draft.effectiveDate);
+    const entry = historyEntry(existing ? (existing.status !== draft.status ? `Status changed to ${draft.status}` : 'Updated') : 'Created', `${code} effective ${formatUsDate(draft.effectiveDate)}, ${draft.rows.length} rows`);
+    // More than one table can be Active; the one in force is chosen by the Effectivity Date against the payroll period.
     setData(previous => ({ ...previous, [agency]: [
-      ...previous[agency].filter(item => item.id !== draft.id).map(item => draft.status === 'Active' && item.status === 'Active' ? { ...item, status: 'Inactive' } : item),
-      { ...draft, updatedBy: 'P&A Admin', updatedAt: new Date().toLocaleString() },
+      ...previous[agency].filter(item => item.id !== draft.id),
+      { ...draft, agency, code, updatedBy: 'P&A Admin', updatedAt: new Date().toLocaleString(), updatedOn: todayIso(), history: [entry, ...(draft.history || [])] },
     ].sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate)) }));
     setSelectedId(null); setDraft(null);
-    notify({ type: 'success', message: `${draft.code} saved successfully.` });
+    notify({ type: 'success', message: `${code} saved successfully.` });
   };
 
   /** §7.1: roll a used table forward by publishing a new version, never by editing it. */
   const copyToNewVersion = () => {
-    const next = versions.length + 1;
     const item = {
       ...draft,
       id: `${agency}-${Date.now()}`,
-      code: `${def.prefix}-${new Date().getFullYear()}-${String(next).padStart(3, '0')}`,
+      agency,
+      code: '',
       name: `${def.name} ${new Date().getFullYear()}`,
       status: 'Draft',
       effectiveDate: new Date().toISOString().slice(0, 10),
@@ -280,6 +344,13 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
     setSelectedId(item.id);
     notify({ type: 'success', message: `${item.code} created as a draft copy of ${draft.code}. The used version stays intact.` });
   };
+  const deleteVersion = item => {
+    const used = versionUsage(agency, item, data);
+    if (used.used) { notify({ type: 'error', message: `${item.code} has been used by ${used.transactions.join(', ')} and can no longer be deleted unless that transaction is deleted.` }); setVersionDeleting(null); return; }
+    setData(previous => ({ ...previous, [agency]: previous[agency].map(row => row.id === item.id ? { ...row, status: 'Deleted', updatedBy: 'P&A Admin', updatedAt: new Date().toLocaleString(), updatedOn: todayIso(), history: [historyEntry('Deleted', `${item.code} deleted`), ...(row.history || [])] } : row) }));
+    setVersionDeleting(null);
+    notify({ type: 'success', message: `${item.code} deleted. Its code is not used again.` });
+  };
   const saveEntry = entry => {
     const minimum = Number(entry.minimum ?? 0);
     const maximum = Number(entry.maximum ?? 0);
@@ -287,15 +358,24 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
     if (graduated && maximum > 0 && minimum > maximum) {
       notify({ type: 'error', message: 'Minimum compensation cannot exceed the maximum for the same bracket.' }); return;
     }
-    if (['expandedTax', 'finalTax'].includes(agency) && !String(entry.atcCode || '').trim()) {
-      notify({ type: 'error', message: 'An ATC code is required so the rate can be reported against the right income payment.' }); return;
+    if (['expandedTax', 'finalTax'].includes(agency)) {
+      const code = String(entry.atcCode || '').trim().toUpperCase();
+      if (!code) { notify({ type: 'error', message: 'An ATC Code is required so the rate can be reported against the right income payment.' }); return; }
+      const wanted = entry.atcClass === 'Corporation' ? 'WC' : 'WI';
+      if (!code.startsWith(wanted)) { notify({ type: 'error', message: `A ${entry.atcClass || 'Individual'} ATC Code starts with ${wanted}, for example ${wanted}100.` }); return; }
+      if (draft.rows.some(row => row.id !== entry.id && String(row.atcCode || '').toUpperCase() === code && row.atcClass === entry.atcClass && row.incomePayment === entry.incomePayment)) {
+        notify({ type: 'error', message: 'This Nature of Income Payment already has this ATC Code for the same classification.' }); return;
+      }
+      entry = { ...entry, atcCode: code };
     }
+    if (!entry.id && !entry.confirmed) { setEntryConfirming(entry); return; }
     if (graduated) {
       const overlap = draft.rows.some(row => row.id !== entry.id && Number(row.maximum || 0) > 0
         && minimum <= Number(row.maximum) && maximum >= Number(row.minimum || 0));
       if (overlap) { notify({ type: 'error', message: 'This bracket overlaps an existing compensation range in the same version.' }); return; }
     }
     if (agency === 'deMinimis' && Number(entry.ceiling || 0) < 0) { notify({ type: 'error', message: 'A De Minimis ceiling cannot be negative.' }); return; }
+    const { confirmed: _confirmed, ...clean } = entry; entry = clean;
     const id = entry.id || Math.max(0, ...draft.rows.map(row => Number(row.id) || 0)) + 1;
     setDraft(previous => ({ ...previous, rows: entry.id ? previous.rows.map(row => row.id === entry.id ? { ...entry, id } : row) : [...previous.rows, { ...entry, id }] }));
     setEntryEditing(undefined);
@@ -335,12 +415,14 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
   const renderTable = version => <>
     <div className="statutory-toolbar">
       <div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search..." /><MagnifyingGlass /></div>
+      <select value={columnFilter.key} onChange={event => setColumnFilter({ key: event.target.value, value: '' })} aria-label="Filter by column"><option value="">Filter by column</option>{def.columns.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+      {columnFilter.key && <input value={columnFilter.value} onChange={event => setColumnFilter({ ...columnFilter, value: event.target.value })} placeholder="Contains" aria-label="Filter value" />}
       <div className="toolbar-spacer" />
-      {canEdit && !locked && <><button className="button primary" onClick={() => setEntryEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={() => importRef.current?.click()}><UploadSimple /> Import</button><input className="sr-only" ref={importRef} type="file" accept=".csv,text/csv" onChange={importRows} /></>}
-      <ExportMenu onExport={format => { exportTable(def, version, format); notify({ type: 'success', message: `${def.short} export prepared.` }); }} />
+      {canEdit && !locked && <><button className="button primary" onClick={() => setEntryEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={() => downloadTemplate(def, version)}><DownloadSimple /> Download Template</button><button className="button secondary" onClick={() => importRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={importRef} type="file" accept=".csv,text/csv" onChange={importRows} /></>}
+      <ExportMenu onExport={format => { exportTable(def, { ...version, rows: visibleRows }, format); notify({ type: 'success', message: `${def.short} export prepared from what is shown.` }); }} />
     </div>
-    <div className="table-card statutory-table-card"><table className="statutory-table"><thead><tr>{def.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>
-      {visibleRows.length ? visibleRows.map(row => <tr key={row.id}>{def.columns.map(([key]) => <td key={key}>{fieldValue(agency, row, key)}</td>)}<td><div className="row-actions always"><button onClick={() => setViewing(row)} aria-label="View"><Eye /></button>{canEdit && !locked && <button onClick={() => setEntryEditing(row)} aria-label="Edit"><PencilSimple /></button>}</div></td></tr>) : <tr><td colSpan={def.columns.length + 1}><div className="empty-state compact"><h3>No entries found</h3><p>Add an entry or import the approved table.</p></div></td></tr>}
+    <div className="table-card statutory-table-card"><table className="statutory-table"><thead><tr>{def.columns.map(([, label]) => <th key={label}>{label}</th>)}{mode === 'settings' && <th>Action</th>}</tr></thead><tbody>
+      {visibleRows.length ? visibleRows.map(row => <tr key={row.id}>{def.columns.map(([key]) => <td key={key}>{fieldValue(agency, row, key)}</td>)}{mode === 'settings' && <td><div className="row-actions always"><button onClick={() => setViewing(row)} aria-label="View"><Eye /></button>{canEdit && !locked && <button onClick={() => setEntryEditing(row)} aria-label="Edit"><PencilSimple /></button>}</div></td>}</tr>) : <tr><td colSpan={def.columns.length + (mode === 'settings' ? 1 : 0)}><div className="empty-state compact"><h3>No entries found</h3><p>Add an entry or import the approved table.</p></div></td></tr>}
     </tbody></table></div>
     <div className="pagination"><span>Displaying <strong>{visibleRows.length}</strong> of {version.rows.length} items</span><div><button disabled>«</button><strong>1</strong><span>of 1</span><button disabled>»</button></div></div>
   </>;
@@ -350,13 +432,18 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
     <main className="statutory-main">
       {!tableVersion && mode === 'settings' ? <>
         <div className="page-heading"><div><p className="breadcrumb">Settings / {groupTitle}</p><h1>{def.name}</h1><p className="page-description">Maintain current and historical {isTaxGroup ? 'tax' : 'statutory'} table versions for ABC Company Ltd.</p></div></div>
-        <div className="statutory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search code or effective date..." /><MagnifyingGlass /></div><div className="toolbar-spacer" />{isPaAdmin && <button className="button primary" onClick={addVersion}><Plus /> Add</button>}<ExportMenu onExport={format => exportTable(def, versions[0], format)} /></div>
-        <div className="table-card statutory-version-card"><table><thead><tr><th>Code</th><th>{isTaxGroup ? 'Tax Table Name' : 'Table Name'}</th><th>Effective Date</th><th>Status</th><th>Created By</th><th>Timestamp Created</th><th>Usage</th><th>Action</th></tr></thead><tbody>{versions.filter(item => `${item.code} ${item.name || ''} ${item.effectiveDate}`.toLowerCase().includes(query.toLowerCase())).map(item => { const itemUsage = versionUsage(agency, item, data); return <tr key={item.id}><td><button className="table-link" onClick={() => setSelectedId(item.id)}>{item.code}</button>{item.supersedes && <small>supersedes {item.supersedes}</small>}</td><td>{item.name || def.name}</td><td>{item.effectiveDate}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td>{item.createdBy || item.updatedBy}</td><td>{item.createdAt || item.updatedAt}</td><td>{itemUsage.used ? <span className="status-pill locked"><LockKey weight="fill" /> Used by payroll</span> : <span className="status-pill draft">Not yet used</span>}</td><td><div className="row-actions always"><button onClick={() => setSelectedId(item.id)} aria-label={itemUsage.used ? 'View version' : 'Edit version'}>{itemUsage.used ? <Eye /> : <PencilSimple />}</button></div></td></tr>; })}</tbody></table></div>
+        <div className="statutory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search code, name or effective date..." /><MagnifyingGlass /></div>
+          <select value={filters.status} onChange={event => setFilters({ ...filters, status: event.target.value })} aria-label="Filter by status"><option value="">Status</option><option>Active</option><option>Inactive</option><option>Draft</option></select>
+          <label className="statutory-filter-date">Effective Date<DateInput value={filters.effective} onChange={value => setFilters({ ...filters, effective: value })} /></label>
+          <label className="statutory-filter-date">Last Updated<DateInput value={filters.updated} onChange={value => setFilters({ ...filters, updated: value })} /></label>
+          {(filters.status || filters.effective || filters.updated || query) && <button className="button secondary" onClick={() => { setFilters({ status: '', effective: '', updated: '' }); setQuery(''); }}>Clear</button>}
+          <div className="toolbar-spacer" />{isPaAdmin && <button className="button primary" onClick={addVersion}><Plus /> Add</button>}<button className="button secondary" onClick={() => setAuditOpen(true)}><ClockCounterClockwise /> Audit trail</button><ExportMenu onExport={format => exportTable(def, shownVersions[0] || versions[0], format)} /></div>
+        <div className="table-card statutory-version-card"><table><thead><tr><th>Code</th><th>Effective Date</th><th>Last Updated By</th><th>Last Updated Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{shownVersions.length ? shownVersions.map(item => { const itemUsage = versionUsage(agency, item, data); return <tr key={item.id}><td><button className="table-link" onClick={() => setVersionViewing(item)}>{item.code}</button>{item.supersedes && <small>supersedes {item.supersedes}</small>}</td><td>{formatUsDate(item.effectiveDate)}</td><td>{item.updatedBy || item.createdBy}</td><td>{item.updatedAt || item.createdAt}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setVersionViewing(item)} aria-label="View"><Eye /></button><button onClick={() => setSelectedId(item.id)} aria-label={itemUsage.used ? 'Open table' : 'Edit'} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Edit'}>{itemUsage.used ? <LockKey weight="fill" /> : <PencilSimple />}</button>{isPaAdmin && <button onClick={() => setVersionDeleting(item)} aria-label="Delete" disabled={itemUsage.used} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Delete'}><Trash /></button>}</div></td></tr>; }) : <tr><td colSpan="6"><div className="empty-state compact"><h3>No tables found</h3><p>Change the search or the filters.</p></div></td></tr>}</tbody></table></div>
       </> : tableVersion ? <>
         {mode === 'settings' && <button className="inline-back" onClick={() => { setSelectedId(null); setDraft(null); }}><ArrowLeft /> {def.short} versions</button>}
         <div className="page-heading"><div><p className="breadcrumb">{mode === 'settings' ? 'Settings' : 'Payroll'} / {groupTitle} / {def.short}</p><h1>{def.name}</h1><p className="page-description">{mode === 'settings' ? `Add or revise ${isTaxGroup ? 'tax brackets and rates' : 'contribution brackets'} before activating this version.` : 'View the active table used by the current payroll computation.'}</p></div>{mode === 'payroll' && <span className="controlled-badge"><CheckCircle weight="fill" /> Active approved version</span>}</div>
         <section className="statutory-version-meta">
-          {mode === 'settings' ? <><label>Code<input value={draft.code} disabled /></label><label>Table Name<input value={draft.name || def.name} onChange={event => setDraft({ ...draft, name: event.target.value })} disabled={!canEdit || locked} /></label><label>Effective Date<DateInput value={draft.effectiveDate} onChange={value => setDraft({ ...draft, effectiveDate: value })} disabled={!canEdit || locked} /></label><label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })} disabled={!canEdit || locked}><option>Draft</option><option>Active</option><option>Inactive</option></select></label></> : <><span><small>Effective</small><strong>{activeVersion.effectiveDate}</strong></span><span><small>Version</small><strong>{activeVersion.code}</strong></span><span><small>Status</small><strong>Active</strong></span></>}
+          {mode === 'settings' ? <><label>Code<input value={draft.code || 'Generated when saved'} disabled /></label><label>Table Name<input value={draft.name || def.name} onChange={event => setDraft({ ...draft, name: event.target.value })} disabled={!canEdit || locked} /></label><label>Effective Date<DateInput value={draft.effectiveDate} onChange={value => setDraft({ ...draft, effectiveDate: value })} disabled={!canEdit || locked} /></label><label>Status<select value={draft.status} onChange={event => setDraft({ ...draft, status: event.target.value })} disabled={!canEdit || locked}><option>Draft</option><option>Active</option><option>Inactive</option></select></label></> : <><span><small>Effective</small><strong>{formatUsDate(activeVersion.effectiveDate)}</strong></span><span><small>Version</small><strong>{activeVersion.code}</strong></span><span><small>Status</small><strong>Active</strong></span></>}
         </section>
         <section className="statutory-table-section"><div className="workspace-copy"><h2>{def.name}</h2><p>{mode === 'settings' ? (isTaxGroup ? 'Tax brackets, rates and fixed amounts.' : 'Contribution brackets and employee/employer shares.') : 'Approved brackets are read-only in Payroll.'}</p></div>{renderTable(tableVersion)}</section>
         {mode === 'settings' && (locked
@@ -366,7 +453,11 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
             : <div className="statutory-save-row"><button className="button secondary" onClick={() => { setSelectedId(null); setDraft(null); }}>Cancel</button><button className="button primary" onClick={saveVersion}>Save table</button></div>)}
       </> : null}
     </main>
+    {versionViewing && <VersionView version={versionViewing} def={def} onClose={() => setVersionViewing(null)} />}
+    {versionDeleting && <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete table"><header><h2>Delete table</h2><button className="icon-button" onClick={() => setVersionDeleting(null)} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{versionDeleting.code}”?</h3><p>Deleting an entire entry will prevent other users from using this reference in any transaction. Proceed with deletion? This is a soft delete. The audit trail keeps it, and its code is not used again.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={() => setVersionDeleting(null)}>Cancel</button><button className="button danger" onClick={() => deleteVersion(versionDeleting)}>Delete</button></div></div></section></div>}
+    {auditOpen && <AuditTrail versions={allVersions} def={def} onClose={() => setAuditOpen(false)} />}
     {entryEditing !== undefined && <EntryModal agency={agency} row={entryEditing} onClose={() => setEntryEditing(undefined)} onSave={saveEntry} />}
     {viewing && <EntryModal agency={agency} row={viewing} onClose={() => setViewing(null)} onSave={() => {}} readOnly />}
+    {entryConfirming && <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Add entry"><header><h2>Add entry</h2><button className="icon-button" onClick={() => setEntryConfirming(null)} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div><h3>Are you sure you want to add this entry?</h3></div></div><div className="modal-actions"><button className="button secondary" onClick={() => setEntryConfirming(null)}>Cancel</button><button className="button primary" onClick={() => { const e = { ...entryConfirming, confirmed: true }; setEntryConfirming(null); saveEntry(e); }}>Yes, add</button></div></div></section></div>}
   </div>;
 }

@@ -30,7 +30,9 @@ import { categoryPrefixes } from './computationCatalog';
 import { readReferences } from './computationGovernance';
 import { readActiveCompanyId } from './companyRepository';
 import { CURRENCY_COLUMNS, CURRENCY_FIELDS, SEED_CURRENCIES, migrateCurrencyRows } from './currencyReference.js';
-import { rejectUpload } from './uploadErrorLog.js';
+import { downloadFile } from './fileDownload.js';
+import { readFirstSheet } from './excelRead.js';
+import { ImportDialog } from './ImportDialog';
 
 const groups = [
   { id: 'generic', label: 'Generic', description: 'Shared reference values maintained by P&A Administration.' },
@@ -104,9 +106,9 @@ const seedTables = [
   { id: 'loan-types', group: 'specific', scope: 'specific', name: 'Loan Type', description: 'Government and company loan references available to employee payroll records.', columns: [['code', 'Loan Code'], ['name', 'Loan Name'], ['agency', 'Agency'], ['status', 'Status']], rows: tableRows([{ code: 'SSS-SAL', name: 'SSS Salary Loan', agency: 'SSS', status: 'Active' }, { code: 'SSS-CAL', name: 'SSS Calamity Loan', agency: 'SSS', status: 'Active' }, { code: 'HDMF-MPL', name: 'HDMF Multi-Purpose Loan', agency: 'HDMF', status: 'Active' }, { code: 'COM-SAL', name: 'Company Salary Loan', agency: 'Company', status: 'Active' }]) },
   { id: 'overtime-types', group: 'specific', scope: 'specific', name: 'Overtime and Premium Type', description: 'Rate factors for overtime, rest day, holiday, and night differential calculations.', columns: [['code', 'Premium Code'], ['name', 'Premium Name'], ['rate', 'Rate Factor'], ['status', 'Status']], rows: tableRows([{ code: 'OT-REG', name: 'Regular Day Overtime', rate: '1.25', status: 'Active' }, { code: 'OT-RD', name: 'Rest Day Overtime', rate: '1.69', status: 'Active' }, { code: 'OT-RH', name: 'Regular Holiday Overtime', rate: '2.60', status: 'Active' }, { code: 'ND', name: 'Night Differential', rate: '0.10', status: 'Active' }]) },
   { id: 'holiday-groups', group: 'specific', scope: 'specific', name: 'Holiday Group', description: 'Holiday calendars assignable by company, location, and employee group.', columns: [['code', 'Holiday Group Code'], ['name', 'Holiday Group Name'], ['location', 'Location'], ['status', 'Status']], rows: tableRows([{ code: 'PH-NAT', name: 'Philippines National Holidays', location: 'Philippines', status: 'Active' }, { code: 'MKT-LOC', name: 'Makati Local Holidays', location: 'Makati', status: 'Active' }]) },
-  { id: 'de-minimis-ceilings', group: 'specific', scope: 'specific', name: 'De Minimis Ceiling', description: 'Annual and periodic non-taxable ceilings used by earning classification and tax annualization.', columns: [['code', 'Benefit Code'], ['name', 'Benefit Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'DM-RICE', name: 'Rice Subsidy', ceiling: '24000', status: 'Active' }, { code: 'DM-UNIFORM', name: 'Uniform and Clothing Allowance', ceiling: '7000', status: 'Active' }, { code: 'DM-MED', name: 'Medical Cash Allowance to Dependents', ceiling: '3000', status: 'Active' }]) },
-  { id: 'bonus-ceilings', group: 'specific', scope: 'specific', name: 'Bonus Ceiling', description: 'Non-taxable 13th month pay and other benefit ceilings used per transaction and year to date.', columns: [['code', 'Bonus Ceiling Code'], ['name', 'Ceiling Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'BON-NT', name: '13th Month Pay and Other Benefits', ceiling: '90000', status: 'Active' }]) },
-  { id: 'bonus-ceiling-order', group: 'specific', scope: 'specific', name: 'Bonus Ceiling Order', description: 'The order bonuses use up the non-taxable ceiling in a payroll run — the first in line stays non-taxable longest.', columns: [['code', 'Order Code'], ['name', 'Bonus Type'], ['priority', 'Order'], ['status', 'Status']], rows: tableRows([['13th Month Pay', 1], ['14th Month Pay', 2], ['Mid-year Bonus', 3], ['Performance Bonus', 4], ['Retention Bonus', 5], ['Signing Bonus', 6]].map(([name, priority]) => ({ code: `BCO-${String(priority).padStart(3, '0')}`, name, priority: String(priority), status: 'Active' }))) },
+  { id: 'de-minimis-ceilings', group: 'specific', scope: 'specific', name: 'De Minimis Ceiling', description: 'Annual and periodic non-taxable ceilings used by earning classification and tax annualization.', fields: { ceiling: { type: 'number', min: 0, max: 999999999, placeholder: '30000', hint: 'A whole number of pesos a year.' } }, columns: [['code', 'Benefit Code'], ['name', 'Benefit Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'DM-RICE', name: 'Rice Subsidy', ceiling: '30000', status: 'Active' }, { code: 'DM-UNIFORM', name: 'Uniform and Clothing Allowance', ceiling: '8000', status: 'Active' }, { code: 'DM-MED', name: 'Medical Cash Allowance to Dependents', ceiling: '4000', status: 'Active' }]) },
+  { id: 'bonus-ceilings', group: 'specific', scope: 'specific', name: 'Bonus Ceiling', description: 'Non-taxable 13th month pay and other benefit ceilings used per transaction and year to date.', fields: { ceiling: { type: 'number', min: 0, max: 999999999, placeholder: '90000', hint: 'A whole number of pesos a year. 0 makes every bonus taxable.' } }, columns: [['code', 'Bonus Ceiling Code'], ['name', 'Ceiling Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'BON-NT', name: '13th Month Pay and Other Benefits', ceiling: '90000', status: 'Active' }]) },
+  { id: 'bonus-ceiling-order', group: 'specific', scope: 'specific', name: 'Bonus Ceiling Order', description: 'The order bonuses use up the non-taxable ceiling in a payroll run — the first in line stays non-taxable longest.', fields: { priority: { type: 'number', min: 1, max: 99, placeholder: '1', hint: '1 uses the ceiling first.' } }, columns: [['code', 'Order Code'], ['name', 'Bonus Type'], ['priority', 'Order'], ['status', 'Status']], rows: tableRows([['13th Month Pay', 1], ['14th Month Pay', 2], ['Mid-year Bonus', 3], ['Performance Bonus', 4], ['Retention Bonus', 5], ['Signing Bonus', 6]].map(([name, priority]) => ({ code: `BCO-${String(priority).padStart(3, '0')}`, name, priority: String(priority), status: 'Active' }))) },
   { id: 'deduction-hierarchy', group: 'specific', scope: 'specific', name: 'Deduction Hierarchy', description: 'Priority order for statutory, loan, and company deductions when net pay is constrained.', columns: [['code', 'Priority Code'], ['name', 'Deduction Group'], ['priority', 'Priority'], ['status', 'Status']], rows: tableRows([{ code: 'DH-001', name: 'Statutory Deductions', priority: '1', status: 'Active' }, { code: 'DH-002', name: 'Government Loans', priority: '2', status: 'Active' }, { code: 'DH-003', name: 'Company Deductions', priority: '3', status: 'Active' }]) },
   { id: 'computation-category', group: 'generic', scope: 'generic', name: 'Computation Category', description: 'Controlled categories for Computational Basis formulas. The prefix drives the computation code Atlas generates (Earnings → ERN-001).', columns: [['code', 'Code Prefix'], ['name', 'Computation Category'], ['status', 'Status']], rows: tableRows(categoryPrefixes.map(([name, code]) => ({ code, name }))) },
   { id: 'document-types', group: 'others', scope: 'specific', name: 'Document Type', description: 'Document labels available to employee records.', mode: 'list', columns: [['name', 'Document Type']], rows: listRows(['Birth Certificate', 'Employment Contract', 'Government ID', 'Medical Certificate']) },
@@ -196,7 +198,7 @@ function zipStore(entries) {
   return concatBytes([localBytes, centralBytes, end]);
 }
 function xmlEscape(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;'); }
-function makeXlsx(name, headers, values) {
+export function makeXlsx(name, headers, values) {
   const rows = [headers, ...values];
   const columnName = index => { let result = ''; let value = index + 1; while (value) { const remainder = (value - 1) % 26; result = String.fromCharCode(65 + remainder) + result; value = Math.floor((value - 1) / 26); } return result; };
   const sheetRows = rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, colIndex) => `<c r="${columnName(colIndex)}${rowIndex + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`).join('')}</row>`).join('');
@@ -285,6 +287,20 @@ function EntryModal({ table, record, isAdmin, onClose, onSave }) {
   </>;
 }
 
+/** The transaction number of a standing payroll transaction that pays in this currency, or ''. */
+function currencyInUse(code) {
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith('atlas-payroll-runs-v1')) continue;
+      const runs = JSON.parse(localStorage.getItem(key) || '[]');
+      const found = (Array.isArray(runs) ? runs : []).find(run => run.status !== 'Cancelled' && (run.currencies || []).some(item => item.code === code && code !== 'PHP'));
+      if (found) return found.transactionNumber;
+    }
+  } catch { /* an unreadable store holds no transaction */ }
+  return '';
+}
+
 function DeleteModal({ table, record, onClose, onDelete }) {
   const label = record[table.columns[0][0]] || record.name || record.code;
   return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><p>Delete “{label}” from {table.name}? This cannot be undone.</p><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
@@ -312,7 +328,7 @@ function ReferenceDetail({ table, updateTable, notify }) {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [exportOpen, setExportOpen] = useState(false);
-  const uploadRef = useRef(null);
+  const [importOpen, setImportOpen] = useState(false);
   const canAdd = isAdmin || table.scope === 'specific' || table.scope === 'hybrid';
   const canEdit = record => isAdmin || table.scope === 'specific' || (table.scope === 'hybrid' && record?.source === 'specific');
   const filteredRows = useMemo(() => table.rows.filter(row => Object.entries(row).filter(([key]) => key !== 'source').map(([, value]) => value).join(' ').toLowerCase().includes(query.toLowerCase())), [table.rows, query]);
@@ -368,26 +384,62 @@ function ReferenceDetail({ table, updateTable, notify }) {
     notify({ type: 'success', message: `${table.name} ${format.toUpperCase()} export prepared with ${filteredRows.length} data row${filteredRows.length === 1 ? '' : 's'}.` });
   };
 
-  const importRows = event => {
-    const file = event.target.files?.[0]; if (!file) return;
-    if (!canAdd) { notify({ type: 'error', message: 'Client Admins cannot upload shared generic values.' }); event.target.value = ''; return; }
-    const reader = new FileReader(); reader.onload = () => {
-      const parsed = parseCSV(String(reader.result));
-      const headers = parsed.shift()?.map(value => value.trim().toLowerCase()) || [];
-      const lookup = Object.fromEntries(table.columns.flatMap(([key, label]) => [[key.toLowerCase(), key], [label.toLowerCase(), key]]));
-      const source = table.scope === 'hybrid' && !isAdmin ? 'specific' : table.scope === 'hybrid' ? 'generic' : undefined;
-      const imported = parsed.map((values, index) => { const row = { id: `${table.id}-import-${Date.now()}-${index}` }; headers.forEach((header, i) => { if (lookup[header]) row[lookup[header]] = values[i] ?? ''; }); if (table.scope === 'hybrid') row.source = source; return normaliseEntry(table, row); });
-      const errors = imported.map((row, index) => ({ row: index + 2, reason: validate(row) })).filter(item => item.reason);
-      if (errors.length) rejectUpload(file.name, errors, notify);
-      else { updateTable({ ...table, rows: [...table.rows, ...imported] }); notify({ type: 'success', message: `${imported.length} ${table.name} entries imported.` }); }
-    }; reader.readAsText(file); event.target.value = '';
+  /**
+   * The Import step of the Upload dialog, handled the way Atlas handles it: an Excel workbook is
+   * read, every row is checked, and nothing is saved unless every row passes. A rejected file is
+   * returned as an Excel workbook with an Errors column on each row, which downloads automatically.
+   */
+  const importFile = async file => {
+    if (!canAdd) { const message = 'Client Admins cannot upload shared generic values.'; notify({ type: 'error', message }); return { ok: false, message }; }
+    let grid;
+    try { grid = await readFirstSheet(file); } catch (problem) {
+      const message = problem.message === 'LEGACY_XLS'
+        ? 'This is an older .xls file, which cannot be read here. Save it as .xlsx and upload it again.'
+        : 'The file could not be read. Check that it is a valid Excel workbook.';
+      notify({ type: 'error', message }); return { ok: false, message };
+    }
+    const lookup = Object.fromEntries(table.columns.flatMap(([key, label]) => [[key.toLowerCase(), key], [label.toLowerCase(), key]]));
+    const cellText = value => String(value ?? '').trim();
+    // The header is the first row, within the first ten, that names one of this table's columns
+    // (an Atlas template starts its headers lower down than an exported file does).
+    const headerAt = grid.findIndex((row, index) => index < 10 && row.some(cell => lookup[cellText(cell).toLowerCase()]));
+    if (headerAt < 0) { const message = `No column headers were found. Use these columns: ${table.columns.map(([, label]) => label).join(', ')}.`; notify({ type: 'error', message }); return { ok: false, message }; }
+    const headers = grid[headerAt].map(cell => cellText(cell).toLowerCase());
+    const dataRows = grid.slice(headerAt + 1).map((cells, offset) => ({ cells, sheetRow: headerAt + offset + 2 })).filter(item => item.cells.some(cell => cellText(cell)));
+    if (!dataRows.length) { const message = 'The file has no rows to import.'; notify({ type: 'error', message }); return { ok: false, message }; }
+    const source = table.scope === 'hybrid' && !isAdmin ? 'specific' : table.scope === 'hybrid' ? 'generic' : undefined;
+    const imported = dataRows.map(({ cells }, index) => {
+      const row = { id: `${table.id}-import-${Date.now()}-${index}` };
+      headers.forEach((header, i) => { if (lookup[header]) row[lookup[header]] = cellText(cells[i]); });
+      if (table.scope === 'hybrid') row.source = source;
+      return normaliseEntry(table, row);
+    });
+    const problems = imported.map(validate);
+    const failed = problems.filter(Boolean).length;
+    if (failed) {
+      const labels = table.columns.map(([, label]) => label);
+      const keys = table.columns.map(([key]) => key);
+      const annotated = dataRows.map(({ cells }, index) => [...keys.map(key => { const at = headers.findIndex(header => lookup[header] === key); return at < 0 ? '' : cellText(cells[at]); }), problems[index] || '']);
+      const stem = String(file.name).replace(/\.[^.]+$/, '');
+      downloadFile(`${stem}-errors.xlsx`, makeXlsx(table.name, [...labels, 'Errors'], annotated), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const message = `Failed to import ${failed} of ${imported.length} ${imported.length === 1 ? 'record' : 'records'}, so nothing was imported. Check the downloaded file for details.`;
+      notify({ type: 'error', message });
+      return { ok: false, message };
+    }
+    updateTable({ ...table, rows: [...table.rows, ...imported] });
+    const message = `${imported.length} ${table.name} ${imported.length === 1 ? 'entry' : 'entries'} imported.`;
+    notify({ type: 'success', message });
+    return { ok: true, message };
   };
 
   return <div className="reference-page reference-detail-page"><div className="page-heading"><div><p className="breadcrumb">{groups.find(group => group.id === table.group)?.label} / {table.name}</p><h1>{table.name}</h1><p className="page-description">{table.description}</p></div></div><div className="reference-scope-note"><span><strong>{scopeLabel(table)}</strong>{table.scope === 'generic' ? (isAdmin ? ' Maintained by P&A Administration and shared across companies.' : ' View-only access for Client Admin.') : table.scope === 'hybrid' ? ' P&A Admin maintains shared defaults; Client Admin manages company-specific additions.' : ' P&A Admin and Client Admin can manage this company’s values.'}</span></div><nav className="reference-detail-tabs"><button className={tab === 'data' ? 'active' : ''} onClick={() => setTab('data')}>Data</button><button className={tab === 'usage' ? 'active' : ''} onClick={() => setTab('usage')}>Usage</button><button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Audit Log</button></nav>
-    {tab === 'data' && <><div className="reference-detail-toolbar"><SearchBox value={query} onChange={value => { setQuery(value); setPage(1); }} /><span className="toolbar-spacer" />{canAdd && <button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button>}<button className="button secondary" onClick={() => uploadRef.current?.click()} disabled={!canAdd}><UploadSimple /> Upload</button><ExportMenu table={table} onExport={buildExport} disabled={false} /><input ref={uploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={importRows} /></div><section className="reference-editor-card"><div className="reference-data-table"><table><thead><tr>{table.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.id}>{table.columns.map(([key]) => <td key={key}>{row[key] || '—'}</td>)}<td><div className="row-actions always">{canEdit(row) && <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button></>}</div></td></tr>)}</tbody></table>{!filteredRows.length && <div className="empty-state compact"><h3>No entries found</h3><p>Try another search or export the column headers for a clean template.</p></div>}<div className="reference-pagination"><span>Displaying <strong>{first}-{last}</strong> of <strong>{filteredRows.length}</strong> items</span><label>Rows <select aria-label="Rows per page" value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>{PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}</select></label><div className="pagination-controls"><button aria-label="First page" disabled={safePage === 1} onClick={() => setPage(1)}>«</button><button aria-label="Previous page" disabled={safePage === 1} onClick={() => setPage(value => Math.max(1, value - 1))}>‹</button><label>Page <input aria-label="Page number" type="number" min="1" max={pageCount} value={safePage} onChange={event => setPage(Math.min(pageCount, Math.max(1, Number(event.target.value) || 1)))} /> of {pageCount}</label><button aria-label="Next page" disabled={safePage === pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))}>›</button><button aria-label="Last page" disabled={safePage === pageCount} onClick={() => setPage(pageCount)}>»</button></div></div></div></section></>}
+    {tab === 'data' && <><div className="reference-detail-toolbar"><SearchBox value={query} onChange={value => { setQuery(value); setPage(1); }} /><span className="toolbar-spacer" />{canAdd && <button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button>}<button className="button secondary" onClick={() => setImportOpen(true)} disabled={!canAdd}><UploadSimple /> Upload</button><ExportMenu table={table} onExport={buildExport} disabled={false} />{importOpen && <ImportDialog historyKey={table.id} onImport={importFile} onClose={() => setImportOpen(false)} />}</div><section className="reference-editor-card"><div className="reference-data-table"><table><thead><tr>{table.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.id}>{table.columns.map(([key]) => <td key={key}>{row[key] || '—'}</td>)}<td><div className="row-actions always">{canEdit(row) && <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button></>}</div></td></tr>)}</tbody></table>{!filteredRows.length && <div className="empty-state compact"><h3>No entries found</h3><p>Try another search or export the column headers for a clean template.</p></div>}<div className="reference-pagination"><span>Displaying <strong>{first}-{last}</strong> of <strong>{filteredRows.length}</strong> items</span><label>Rows <select aria-label="Rows per page" value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>{PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}</select></label><div className="pagination-controls"><button aria-label="First page" disabled={safePage === 1} onClick={() => setPage(1)}>«</button><button aria-label="Previous page" disabled={safePage === 1} onClick={() => setPage(value => Math.max(1, value - 1))}>‹</button><label>Page <input aria-label="Page number" type="number" min="1" max={pageCount} value={safePage} onChange={event => setPage(Math.min(pageCount, Math.max(1, Number(event.target.value) || 1)))} /> of {pageCount}</label><button aria-label="Next page" disabled={safePage === pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))}>›</button><button aria-label="Last page" disabled={safePage === pageCount} onClick={() => setPage(pageCount)}>»</button></div></div></div></section></>}
     {tab === 'usage' && <section className="reference-info-card"><h2>Used by Atlas</h2><p>This reference table is available to Employee Masterfile forms, company configuration, payroll allocation, statutory processing, and reporting filters. Updates apply to new selections while historical records retain their saved value.</p><div className="reference-usage-grid"><span>Employee Masterfile<strong>Synced</strong></span><span>Company Configuration<strong>Synced</strong></span><span>Payroll and Reports<strong>Synced</strong></span></div></section>}
     {tab === 'history' && <section className="reference-info-card"><h2>Audit Log</h2><div className="reference-audit-row"><span>10 Aug 2026 · John Doe</span><strong>Reference table reviewed</strong></div><div className="reference-audit-row"><span>09 Aug 2026 · System migration</span><strong>{table.rows.length} values loaded</strong></div></section>}
-    {editing !== undefined && <EntryModal table={table} record={editing || null} isAdmin={isAdmin} onClose={() => setEditing(undefined)} onSave={save} />}{deleting && <DeleteModal table={table} record={deleting} onClose={() => setDeleting(null)} onDelete={() => { updateTable({ ...table, rows: table.rows.filter(item => item.id !== deleting.id) }); setDeleting(null); notify({ type: 'success', message: `${table.name} entry deleted.` }); }} />}
+    {editing !== undefined && <EntryModal table={table} record={editing || null} isAdmin={isAdmin} onClose={() => setEditing(undefined)} onSave={save} />}{deleting && <DeleteModal table={table} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
+      const holder = table.id === 'currency' ? currencyInUse(deleting.code) : null;
+      if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} is used by ${holder}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
+      updateTable({ ...table, rows: table.rows.filter(item => item.id !== deleting.id) }); setDeleting(null); notify({ type: 'success', message: `${table.name} entry deleted.` }); }} />}
   </div>;
 }
 

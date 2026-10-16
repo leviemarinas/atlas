@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { Buildings, ShieldStar, User, UserCheck } from '@phosphor-icons/react';
+import { Buildings, ShieldCheck, ShieldStar, User, UserCheck } from '@phosphor-icons/react';
 import { normalizeRole } from './moduleAccess';
 
 const STORAGE_KEY = 'atlas-active-role-v2';
@@ -31,7 +31,16 @@ export const ROLES = {
     label: 'P&A Admin',
     short: 'P&A Admin',
     icon: ShieldStar,
-    hint: 'Maintains statutory tables, approval overrides, and multi-client CGI system configurations.',
+    hint: 'Maintains statutory tables, approval overrides, and multi-client CGI system configurations. Makes formula changes; a P&A SuperAdmin approves them.',
+  },
+  // Atlas keeps two P&A roles: "P&A Admin" and "P&A SuperAdmin" (the SSO super administrator).
+  // The SuperAdmin approves what a P&A Admin makes (maker-checker), so the two are never the same person.
+  pa_superadmin: {
+    id: 'pa_superadmin',
+    label: 'P&A SuperAdmin',
+    short: 'P&A SuperAdmin',
+    icon: ShieldCheck,
+    hint: 'Approves the formula changes a P&A Admin submits, and holds every other P&A permission.',
   },
 };
 
@@ -42,11 +51,17 @@ export const ROLES = {
  */
 export const SIGNED_IN_NAME = 'John Doe';
 
+/** A second named person for the SuperAdmin, so "the maker cannot approve their own change" is demonstrable. */
+export const SUPERADMIN_NAME = 'Maria Santos';
+export const PA_ADMIN_NAME = 'Paolo Reyes';
+export const personaName = role => (role === 'pa_superadmin' ? SUPERADMIN_NAME : role === 'pa_admin' ? PA_ADMIN_NAME : SIGNED_IN_NAME);
+
 const RoleContext = createContext({
   role: 'client_admin',
   actor: `${SIGNED_IN_NAME} (Client Admin)`,
   isAdmin: false,
   isPaAdmin: false,
+  isPaSuperAdmin: false,
   isClientAdmin: false,
   isApprover: false,
   isEmployee: false,
@@ -70,7 +85,8 @@ export function RoleProvider({ children }) {
   }, [role]);
 
   const value = useMemo(() => {
-    const isPaAdmin = role === 'pa_admin' || role === 'admin';
+    const isPaSuperAdmin = role === 'pa_superadmin';
+    const isPaAdmin = role === 'pa_admin' || role === 'admin' || isPaSuperAdmin;
     const isClientAdmin = role === 'client_admin' || role === 'client';
     const isApprover = role === 'approver';
     const isEmployee = role === 'employee';
@@ -79,10 +95,11 @@ export function RoleProvider({ children }) {
       role,
       // Change history records a named person, not just a role, so "who
       // changed this rate" has an answer a reviewer can follow up.
-      actor: `${SIGNED_IN_NAME} (${ROLES[role]?.label || (isPaAdmin ? 'P&A Admin' : 'Client Admin')})`,
+      actor: `${personaName(role)} (${ROLES[role]?.label || (isPaAdmin ? 'P&A Admin' : 'Client Admin')})`,
       setRole,
       isAdmin,
       isPaAdmin,
+      isPaSuperAdmin,
       isClientAdmin,
       isApprover,
       isEmployee,

@@ -124,13 +124,6 @@ const KIND_LABELS = Object.fromEntries(BINDING_KINDS.map(item => [item.kind, ite
  * the field unusable rather than more flexible.
  */
 export const BINDABLE_MODULES = Object.freeze({
-  basicPay: {
-    label: 'Basic Pay & Pay Rates',
-    categories: ['Basic Pay'],
-    noun: 'pay rate',
-    /** The amount the bound formula produces, in the words of this module. */
-    produces: 'the rate this configuration publishes',
-  },
   earnings: {
     label: 'Earnings',
     categories: ['Earnings', 'Basic Pay', 'Incentives', 'Benefits'],

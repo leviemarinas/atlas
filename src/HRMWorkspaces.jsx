@@ -1291,7 +1291,7 @@ export function ReportsWorkspace({ data, requests, access, teamEmployeeIds, onBa
       /** Statutory rows hold one column per agency, so each becomes its own line. */
       const statutoryShares = [
         ['SSS Contribution', 'sssEmployee'],
-        ['SSS MPF (WISP)', 'sssMpfEmployee'],
+        ['SSS MPF', 'sssMpfEmployee'],
         ['PhilHealth Contribution', 'phicEmployee'],
         ['Pag-IBIG (HDMF)', 'hdmfEmployee'],
       ];
