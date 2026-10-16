@@ -122,6 +122,9 @@ test('a De Minimis benefit is non-taxable only up to its own ceiling', () => {
   assert.ok(rules.find(rule => rule.name === 'Rice Subsidy').ceiling === 24000);
   assert.ok(rules.find(rule => rule.name === 'Uniform and Clothing Allowance').ceiling === 7000);
 
+  const from2026 = deMinimisRules(at('deMinimis', '2026-03-01'));
+  assert.deepEqual(['Rice Subsidy', 'Uniform and Clothing Allowance', 'Medical Cash Allowance to Dependents', 'Laundry Allowance', 'Employee Achievement Award', 'Christmas and Anniversary Gifts', 'Actual Medical Assistance', 'CBA and Productivity Incentive Schemes'].map(name => from2026.find(rule => rule.name === name).ceiling), [30000, 8000, 4000, 4800, 12000, 6000, 12000, 12000], 'Annex A ceilings from 2026');
+
   const fresh = splitDeMinimis(version, 'Rice Subsidy', 2000, 0);
   assert.equal(fresh.nonTaxable, 2000);
   assert.equal(fresh.taxable, 0);

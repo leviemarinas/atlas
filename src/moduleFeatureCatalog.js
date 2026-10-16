@@ -23,10 +23,10 @@ export const moduleFeatureCatalog = [
   {
     id: 'basic-pay',
     area: 'Payroll configuration',
-    name: 'Basic pay & pay rates',
-    description: 'Configure effective-dated pay types, factor days, working hours, minimum wage and ECOLA eligibility.',
-    location: 'Services Information / Basic Pay & Pay Rates',
-    target: 'view:service:basicPay',
+    name: 'Basic pay',
+    description: 'Set the effective-dated basic pay of each employee, pay type, factor days, working hours, minimum wage and ECOLA in the Employee Masterfile.',
+    location: 'Employee Masterfile / Payroll & Allocation / Basic Pay',
+    target: 'screen:employee',
     features: [
       { name: 'Regional minimum wage setup', refs: ['HTP020'] },
       { name: 'Effective-dated pay rates and multiple rate types', refs: ['HTP047'] },

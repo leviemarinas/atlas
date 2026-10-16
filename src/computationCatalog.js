@@ -81,7 +81,7 @@ const fieldCatalog = [
   ['hdmf_ceiling', 'HDMF compensation ceiling', 10000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Required — block payroll'],
   ['bonus_tax_ceiling', '13th month and bonus tax ceiling', 90000, 'Reference Source', 'Currency', '₱', 'Effective on payout date', 'Use default'],
   ['bonus_paid_ytd', '13th month and bonuses paid YTD', 50000, 'Payroll Transaction', 'Currency', '₱', 'Year to date', 'Treat as zero'],
-  ['de_minimis_ceiling', 'De Minimis annual ceiling', 24000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Use default'],
+  ['de_minimis_ceiling', 'De Minimis annual ceiling', 30000, 'Statutory Reference', 'Currency', '₱', 'Effective on payout date', 'Use default'],
   ['de_minimis_paid_ytd', 'De Minimis paid YTD', 12000, 'Payroll Transaction', 'Currency', '₱', 'Year to date', 'Treat as zero'],
   ['minimum_take_home_rate', 'Minimum take-home percentage', 0.2, 'Policy Engine', 'Rate', 'decimal rate', 'Static — configured', 'Use default'],
   ['take_home_base', 'Protected take-home basis', 34500, 'Another Computation', 'Currency', '₱', 'Computed in this run', 'Treat as zero'],

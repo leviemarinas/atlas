@@ -11,7 +11,7 @@ import { appendAuditEvent, readActiveCompanyId } from './companyRepository';
 import { readPayrollRuns } from './payrollRuns.js';
 import { readCalendars } from './CanonicalWorkspaces';
 import { effectiveStatutorySet } from './statutoryService';
-import { addPayrollNote, calculatePay, dashboardKpis, payrollTasks, readPayrollNotes, reopenPayrollNote, resolvePayrollNote, writePayrollNotes } from './payrollDashboard.js';
+import { addPayrollNote, calculatePay, calculatorProblems, dashboardKpis, payrollTasks, readPayrollNotes, reopenPayrollNote, resolvePayrollNote, writePayrollNotes } from './payrollDashboard.js';
 import { GhostButton, Modal } from './HRMKit.jsx';
 import { plural } from './textFormat';
 
@@ -21,6 +21,7 @@ function PayrollCalculator({ onClose }) {
   const [input, setInput] = useState({ monthlyBasic: 30000, frequency: 'Semi-monthly', taxableAllowances: 0, nonTaxableAllowances: 2000, otherDeductions: 0, minimumWage: false });
   const today = new Date().toISOString().slice(0, 10);
   const result = useMemo(() => calculatePay(input, effectiveStatutorySet(today)), [input, today]);
+  const problems = calculatorProblems(input);
   const set = (key, value) => setInput(previous => ({ ...previous, [key]: value }));
   const number = key => <input type="number" min="0" step="0.01" value={input[key]} onChange={event => set(key, event.target.value === '' ? '' : Number(event.target.value))} />;
   const rows = [
@@ -39,6 +40,7 @@ function PayrollCalculator({ onClose }) {
         <label className="payroll-field"><span>Other deductions (this period)</span>{number('otherDeductions')}</label>
         <label className="payroll-field"><span>Minimum wage earner</span><select value={input.minimumWage ? 'Yes' : 'No'} onChange={event => set('minimumWage', event.target.value === 'Yes')}><option>No</option><option>Yes</option></select></label>
       </div>
+      {problems.map(message => <p key={message} className="approver-problem" role="alert">{message}</p>)}
       <table className="hrm-table payroll-calculator-result"><tbody>
         {rows.map(([label, value, strong]) => <tr key={label} className={strong ? 'strong' : ''}><td>{label}</td><td className="align-right">{value < 0 ? `(${peso(-value)})` : peso(value)}</td></tr>)}
       </tbody></table>

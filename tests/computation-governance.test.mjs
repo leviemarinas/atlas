@@ -295,7 +295,7 @@ test('a change is recorded with its before and after value', () => {
   const before = { expression: '{{hourly_rate}} * {{ot_hours}} * 1.25', status: 'Inactive', effectiveDate: '2026-01-01', name: 'Overtime Pay', category: 'Earnings', description: '' };
   const after = { ...before, expression: '{{hourly_rate}} * {{ot_hours}} * {{ot_rate}}', status: 'Active', effectiveDate: '2026-07-01' };
   const changes = diffComputation(before, after);
-  assert.deepEqual(changes.map(change => change.field).sort(), ['Effective date', 'Expression', 'Status']);
+  assert.deepEqual(changes.map(change => change.field).sort(), ['Effective from', 'Expression', 'Status']);
   const expression = changes.find(change => change.field === 'Expression');
   assert.equal(expression.from, '{{hourly_rate}} * {{ot_hours}} * 1.25');
   assert.equal(expression.to, '{{hourly_rate}} * {{ot_hours}} * {{ot_rate}}');

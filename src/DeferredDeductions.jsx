@@ -68,6 +68,8 @@ export function recoveryPlan(item, recovery, startDate) {
     const perPayroll = Math.max(1, Number(recovery.fixedAmount || 0));
     let remaining = outstanding;
     while (remaining > 0.005 && amounts.length < 60) { const amount = Math.min(perPayroll, remaining); amounts.push(amount); remaining -= amount; }
+    // The schedule never lists more than 60 instalments, so whatever is left joins the last one rather than being dropped.
+    if (remaining > 0.005 && amounts.length) amounts[amounts.length - 1] = Math.round((amounts[amounts.length - 1] + remaining) * 100) / 100;
   } else {
     const count = Math.max(1, Math.round(Number(recovery.installments || 1)));
     const even = Math.floor((outstanding / count) * 100) / 100;

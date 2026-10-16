@@ -79,8 +79,10 @@ import { PAYROLL_REFERENCE_CODES, synchronizePayrollReference } from './payrollI
 import { referenceRows } from './ReferenceTables';
 import { useRole } from './RoleContext';
 import { plural } from './textFormat';
-import { rejectUpload } from './uploadErrorLog.js';
+import { ImportDialog } from './ImportDialog';
+import { readTable, messagesByRow, downloadErrorWorkbook, downloadTemplate } from './importFlow.js';
 import { compareVersions, runTestCases, versionState, whereUsed, whereUsedCsv } from './computationInsights.js';
+import { BASIS_HINT, DATE_BASES, basisOf, checkVersionDates, dayAfter, versionTimeline } from './formulaVersioning.js';
 
 /**
  * The library's data and evaluator live in `computationCatalog.js` so the
@@ -280,9 +282,16 @@ function ParameterDefinitions({ expression, parameters = {}, onChange }) {
  * authors formulas, so it is opened from Settings › Standard Computation
  * Library — for Atlas standards and client-specific formulas alike.
  */
-export function FormulaEditor({ record, library = [], categories = categoryPrefixes, guard = null, actor = 'P&A Admin', companies = [], onClose, onSave, onTestHistory }) {
+export function FormulaEditor({ record, library = [], categories = categoryPrefixes, guard = null, actor = 'P&A Admin', companies = [], versions = [], onClose, onSave, onTestHistory, saveLabel = 'Validate and save' }) {
   const isCreating = record.isNew === true;
-  const [draft, setDraft] = useState({ scope: 'Atlas standard', ownerCompanyId: '', parameters: {}, ...record });
+  // A new version of an existing formula starts after the version it replaces — today, or the day after that
+  // version starts when it is dated later — and is open-ended until the maker gives it an end date.
+  const [draft, setDraft] = useState(() => {
+    const base = { scope: 'Atlas standard', ownerCompanyId: '', parameters: {}, ...record };
+    if (record.isNew === true) return base;
+    const today = new Date().toISOString().slice(0, 10);
+    return { ...base, effectiveDate: [today, dayAfter(record.effectiveDate)].filter(Boolean).sort().pop(), effectiveTo: '' };
+  });
   const [tab, setTab] = useState('formula');
   const [fieldCode, setFieldCode] = useState(fields[0][0]);
   // A formula may build on an already published one: only an active one, never
@@ -301,6 +310,9 @@ export function FormulaEditor({ record, library = [], categories = categoryPrefi
   const [changeSource, setChangeSource] = useState('Screen');
   const [approvalRef, setApprovalRef] = useState('');
   const [caseName, setCaseName] = useState('');
+  const todayIso = new Date().toISOString().slice(0, 10);
+  // Effective from / to: the new version may not overlap an existing one, and the maker is told what the dates will do.
+  const dateCheck = checkVersionDates({ from: draft.effectiveDate, to: draft.effectiveTo, previous: isCreating ? null : record, timeline: isCreating ? [] : versionTimeline(record, versions, todayIso), today: todayIso });
   const testCases = draft.testCases || [];
   const caseResults = runTestCases(draft.expression, testCases, (expression, inputs) => evaluateExpression(expression, inputs, { library }));
   const addTestCase = () => {
@@ -363,6 +375,7 @@ export function FormulaEditor({ record, library = [], categories = categoryPrefi
   const submit = event => {
     event.preventDefault();
     if (guard && !guard.canEdit) { setError(guard.editReason); return; }
+    if (dateCheck.errors.length) { setError(dateCheck.errors[0]); setTab('change'); return; }
     if (guard?.versionNotice && !changeNote.trim()) { setError('Give the reason for this new version under Change details — a posted payroll used this formula, so the change has to be explained.'); setTab('change'); return; }
     if (guard?.versionNotice && !approvalRef.trim()) { setError('Give the approval reference for this change under Change details — a posted payroll used this formula.'); setTab('change'); return; }
     const failing = caseResults.filter(item => !item.passed);
@@ -508,13 +521,18 @@ export function FormulaEditor({ record, library = [], categories = categoryPrefi
         {tab === 'parameters' && <ParameterDefinitions expression={draft.expression} parameters={draft.parameters} onChange={parameters => setDraft(previous => ({ ...previous, parameters }))} />}
         {tab === 'change' && <div className="change-workspace">
           <h3>Change details</h3><p>Saving creates a new controlled version and records the change — with its before and after values — in history.</p>
-          <label>Effective date<input type="date" value={draft.effectiveDate} onChange={event => setDraft({ ...draft, effectiveDate: event.target.value })} required /></label>
+          <div className="basis-form-grid">
+            <label><span className="label-caption">Effective from <span className="required">*</span></span><input type="date" value={draft.effectiveDate} onChange={event => setDraft({ ...draft, effectiveDate: event.target.value })} required /><small className="field-hint">The first day this version applies. It has to start after the version it replaces.</small></label>
+            <label><span className="label-caption">Effective to <span className="optional-tag">Optional</span></span><input type="date" value={draft.effectiveTo || ''} min={draft.effectiveDate || undefined} onChange={event => setDraft({ ...draft, effectiveTo: event.target.value })} /><small className="field-hint">Leave blank for no end date. A later version ends this one the day before it starts.</small></label>
+          </div>
+          <label>Version chosen by<select value={basisOf(draft)} onChange={event => setDraft({ ...draft, dateBasis: event.target.value })}>{DATE_BASES.map(basis => <option key={basis}>{basis}</option>)}</select><small className="field-hint">{BASIS_HINT[basisOf(draft)]} Payroll compares this date with Effective from and Effective to to pick the version.</small></label>
+          {dateCheck.errors.map(message => <p key={message} className="field-hint date-check error" role="alert">{message}</p>)}
+          {dateCheck.warnings.map(message => <p key={message} className="field-hint date-check scheduled-hint">{message}</p>)}
           <label>Change note<textarea value={changeNote} onChange={event => setChangeNote(event.target.value)} required /></label>
           <div className="basis-form-grid">
             <label>Change source<select value={changeSource} onChange={event => setChangeSource(event.target.value)}><option>Screen</option><option>Upload</option><option>API</option></select><small className="field-hint">Recorded with the version so the history shows how the change arrived.</small></label>
             <label><span className="label-caption">Approval reference {guard?.versionNotice ? <span className="required">*</span> : <span className="optional-tag">Optional</span>}</span><input value={approvalRef} onChange={event => setApprovalRef(event.target.value)} placeholder="e.g. CR-2026-014 or the approval email subject" /></label>
           </div>
-          {draft.effectiveDate > new Date().toISOString().slice(0, 10) && <p className="field-hint scheduled-hint">Effective {draft.effectiveDate} — this version is scheduled. Payroll paid out before that date keeps using the version in force now.</p>}
           {Boolean(pendingChanges.length) && <div className="change-diff">
             <h4>What this save changes</h4>
             <table className="change-diff-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>
@@ -526,7 +544,7 @@ export function FormulaEditor({ record, library = [], categories = categoryPrefi
         </div>}
         {error && <div className="basis-error">{error}</div>}
       </div>
-      <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{isCreating ? 'Validate and add' : 'Validate and save'}</button></div>
+      <div className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{isCreating ? 'Validate and add' : saveLabel}</button></div>
     </form>
   </Modal>;
 }
@@ -601,7 +619,10 @@ function ComputationDrawer({ record, library = [], versions = [], usage = null, 
           <div><strong>Scope</strong><ScopeChip record={record} /></div>
           <div><strong>Owned and maintained by</strong><span>P&amp;A</span></div>
           <div><strong>Status in this company</strong><span className={`status-pill ${record.status.toLowerCase()}`}>{record.status}</span></div>
-          <div><strong>Effective date</strong><span>{record.effectiveDate}</span></div>
+          <div><strong>Effective from</strong><span>{record.effectiveDate}</span></div>
+          <div><strong>Effective to</strong><span>{record.effectiveTo || 'No end date'}</span></div>
+          <div><strong>Version chosen by</strong><span>{basisOf(record)}</span></div>
+          <div><strong>Last approved</strong><span>{record.approval?.by ? `${String(record.approval.by).replace(/\s*\(.*\)\s*$/, '')} · ${String(record.approval.at || '').slice(0, 10)}` : 'Atlas baseline'}</span></div>
           <div><strong>Updated by</strong><span>{record.updatedBy}</span></div>
         </div></section>
         <section><h3>Description</h3><p className="drawer-paragraph">{record.description || 'No description was recorded. A description is optional but recommended for explaining inclusions and exclusions.'}</p></section>
@@ -795,7 +816,6 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
   const [assignmentEditing, setAssignmentEditing] = useState(undefined);
   const [referenceEditing, setReferenceEditing] = useState(null);
   const [referenceHistory, setReferenceHistory] = useState(null);
-  const referenceUploadRef = useRef(null);
   const [uploadTarget, setUploadTarget] = useState(null);
   const pageSize = 10;
 
@@ -931,50 +951,56 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
 
   const downloadReferenceTemplate = target => {
     const rows = (target?.entries || []).slice(0, 3);
-    const csv = [
-      ['Key', 'Value', 'Note'].join(','),
-      ...(rows.length ? rows : [{ key: 'Example key', value: '0.00', note: 'Optional note' }]).map(item => [item.key, item.value, item.note].map(csvCell).join(',')),
-      '',
-      csvCell('# Key and Value are required on every row. Note is optional.'),
-      csvCell('# Uploading publishes a new version. The previous version is kept in full and stays available to the payrolls that used it.'),
-    ].join('\n');
-    downloadFile(`atlas-${(target?.code || 'reference').toLowerCase()}-template.csv`, csv, 'text/csv');
+    downloadTemplate(
+      `atlas-${(target?.code || 'reference').toLowerCase()}-template.xlsx`,
+      'Reference',
+      ['Key', 'Value', 'Note'],
+      (rows.length ? rows : [{ key: 'Example key', value: '0.00', note: 'Optional note' }]).map(item => [item.key, item.value, item.note].map(cell => String(cell ?? ''))),
+      ['Key and Value are required on every row. Note is optional.', 'Uploading publishes a new version. The previous version is kept in full and stays available to the payrolls that used it.'],
+    );
     notify({ type: 'success', message: `${target?.name || 'Reference'} template downloaded.` });
   };
 
-  const uploadReferenceVersion = event => {
-    const file = event.target.files?.[0];
-    if (!file || !uploadTarget) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
-      if (lines.length < 2) { rejectUpload(file.name, ['The reference file needs a header and at least one row.'], notify); return; }
-      const entries = lines.slice(1).map((line, index) => {
-        const [key = '', value = '', note = ''] = parseCsvLine(line);
-        return { id: index + 1, key, value, note };
-      });
+  /**
+   * The Import step of the Upload dialog: an Excel workbook is read and checked as a whole, and a new
+   * version is published only if every row passes. A rejected file comes back with an Errors column.
+   */
+  const uploadReferenceVersion = async file => {
+    if (!uploadTarget) return { ok: false, message: 'Choose a reference source first.' };
+    const sheet = await readTable(file, ['key'], { columnsHint: 'Use the template: Key, Value, Note.' });
+    if (sheet.error) { notify({ type: 'error', message: sheet.error }); return { ok: false, message: sheet.error }; }
+    const reject = (messages, headline) => {
+      downloadErrorWorkbook(file.name, 'Reference', sheet.headers, sheet.rows, messagesByRow(messages, sheet.rows.length));
+      const message = headline || `${messages.length} ${plural(messages.length, 'problem')} found, so nothing was imported. Check the downloaded file for details.`;
+      notify({ type: 'error', message: `${file.name}: ${message}` });
+      return { ok: false, message };
+    };
+    {
+      const columnOf = name => sheet.headers.findIndex(header => header.toLowerCase() === name);
+      const [keyAt, valueAt, noteAt] = ['key', 'value', 'note'].map(columnOf);
+      const entries = sheet.rows.map((row, index) => ({ id: index + 1, key: keyAt < 0 ? '' : row[keyAt], value: valueAt < 0 ? '' : row[valueAt], note: noteAt < 0 ? '' : row[noteAt] }));
       const rowErrors = entries.flatMap((item, index) => [
         !item.key && { row: index + 2, field: 'Key', reason: 'Key is required.' },
         !item.value && { row: index + 2, field: 'Value', value: item.key, reason: 'Value is required.' },
       ].filter(Boolean));
-      if (rowErrors.length) { rejectUpload(file.name, rowErrors, notify); return; }
+      if (rowErrors.length) return reject(rowErrors);
       // A client may publish new values, not new rows: the upload has to name
       // exactly the rows the source already has.
       if (!isPaAdmin) {
         const expectedKeys = new Set((uploadTarget.entries || []).map(item => String(item.key)));
         const receivedKeys = new Set(entries.map(item => String(item.key)));
         const sameRows = expectedKeys.size === receivedKeys.size && [...expectedKeys].every(key => receivedKeys.has(key));
-        if (!sameRows) { notify({ type: 'error', message: `${uploadTarget.name} can only receive new values for the rows it already has. Adding, removing or renaming a row changes what the formulas can look up, so P&A does that.` }); return; }
+        if (!sameRows) { const message = `${uploadTarget.name} can only receive new values for the rows it already has. Adding, removing or renaming a row changes what the formulas can look up, so P&A does that.`; return reject([message], message); }
       }
       const version = (Number.parseFloat(uploadTarget.version) + 0.1).toFixed(1);
       const saved = withReferenceVersion(uploadTarget, { entries, effectiveDate: governanceStamps.today(), version, note: `Uploaded from ${file.name}`, actor });
       setReferences(previous => previous.map(item => item.id === uploadTarget.id ? saved : item));
       addHistory({ item: uploadTarget.name, code: uploadTarget.code, type: 'Reference source', action: `Version uploaded from ${file.name}`, version, changes: [{ field: 'Version', from: uploadTarget.version, to: version }, { field: 'Rows', from: (uploadTarget.entries || []).length, to: entries.length }] });
       setUploadTarget(null);
-      notify({ type: 'success', message: `${uploadTarget.name} version ${version} uploaded with ${entries.length} ${plural(entries.length, 'row')}. Version ${uploadTarget.version} is preserved.` });
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+      const message = `${uploadTarget.name} version ${version} uploaded with ${entries.length} ${plural(entries.length, 'row')}. Version ${uploadTarget.version} is preserved.`;
+      notify({ type: 'success', message });
+      return { ok: true, message };
+    }
   };
 
   const toggleReference = reference => {
@@ -1076,14 +1102,14 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
 
     {tab === 'references' && <>
       <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Formula reference sources</h2><p>Maintain formula reference sources. Every published version is kept, so payroll resolves the values that were effective on its payout date. Statutory contribution versions are linked here but managed in Settings.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-reference-tables.csv', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} onPdf={() => printReport('Atlas Reference Tables', references.map(item => ({ ...item, enabled: item.enabled ? 'Enabled' : 'Disabled' })), [...referenceColumns, ['enabled', 'Company Status']])} /></div>
-      <input ref={referenceUploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={uploadReferenceVersion} />
+      {uploadTarget && <ImportDialog historyKey={`computational-basis-reference:${uploadTarget.id}`} onImport={uploadReferenceVersion} onClose={() => setUploadTarget(null)} />}
       <div className="reference-grid">{references.map(item => {
         const published = referenceVersionHistory(item);
         return <article className="reference-card" key={item.id}>
           <header><span className="reference-icon"><Table weight="duotone" /></span><button className={`switch ${item.enabled ? 'on' : ''}`} onClick={() => toggleReference(item)} disabled={!isPaAdmin} title={isPaAdmin ? undefined : 'Enabling or disabling a formula reference source is done by P&A.'} aria-label={`${item.enabled ? 'Disable' : 'Enable'} ${item.name}`}><span /></button></header>
           <div><small>{item.code} · {item.category}</small><h3>{item.name}</h3><p>{item.entries.length} configured {plural(item.entries.length, 'row')}</p></div>
           <dl><div><dt>Version</dt><dd>{item.version}</dd></div><div><dt>Effective</dt><dd>{item.effectiveDate}</dd></div><div><dt>Published versions</dt><dd>{published.length}</dd></div><div><dt>Company</dt><dd className={item.enabled ? 'enabled-copy' : 'disabled-copy'}>{item.enabled ? 'Enabled' : 'Disabled'}</dd></div></dl>
-          <footer>{item.category === 'Linked Statutory' ? <><button onClick={onOpenStatutory}><Table /> Manage in Settings</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button></> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> {isPaAdmin ? 'Manage' : 'Update values'}</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button><button onClick={() => downloadReferenceTemplate(item)}><FileCsv /> Template</button><button onClick={() => { setUploadTarget(item); window.setTimeout(() => referenceUploadRef.current?.click(), 0); }}><UploadSimple /> Upload version</button></>}</footer>
+          <footer>{item.category === 'Linked Statutory' ? <><button onClick={onOpenStatutory}><Table /> Manage in Settings</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button></> : <><button onClick={() => setReferenceEditing(item)}><PencilSimple /> {isPaAdmin ? 'Manage' : 'Update values'}</button><button onClick={() => setReferenceHistory(item)}><ClockCounterClockwise /> Versions</button><button onClick={() => downloadReferenceTemplate(item)}><FileCsv /> Template</button><button onClick={() => setUploadTarget(item)}><UploadSimple /> Upload version</button></>}</footer>
         </article>;
       })}</div>
     </>}

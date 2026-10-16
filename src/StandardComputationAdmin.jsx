@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Buildings,
@@ -37,10 +37,13 @@ import {
   writeStandardLibrary,
 } from './computationGovernance';
 import { categoryPrefixes } from './computationCatalog';
-import { readCompanies } from './companyRepository';
+import { appendAuditEvent, readCompanies } from './companyRepository';
 import { plural } from './textFormat';
 import { useRole } from './RoleContext';
 import { assignmentConflicts, lockTestCases } from './computationInsights.js';
+import { basisOf, periodLabel, versionTimeline } from './formulaVersioning.js';
+import { REQUEST_KINDS, canMake, publishesDirectly, changeNote, checkDecision, decideRequest, isOpen, lifecycleStatus, openRequestFor, openRequests, personOf, readRequests, submitRequest, withdrawRequest, writeRequests } from './computationApprovals.js';
+import './approvals.css';
 
 function AdminModal({ title, onClose, children, className = 'standard-computation-modal' }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className={`modal ${className}`} role="dialog" aria-modal="true" aria-label={title}><header><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header>{children}</section></div>;
@@ -132,12 +135,14 @@ function ApplicabilityModal({ record, companies, library = [], usage, actor, onC
 
 /** Published versions of one formula, with the test evidence each one carries. */
 function VersionModal({ record, versions, onClose }) {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const periods = Object.fromEntries(versionTimeline(record, versions, todayIso).map(item => [String(item.version), item]));
   return <AdminModal title={`Version history · ${record.code}`} onClose={onClose} className="applicability-modal">
     <div className="modal-body">
       {versions.length ? <div className="version-history">{versions.map(version => <article key={version.version} className={version.version === record.version ? 'current' : ''}>
-        <header><strong>Version {version.version}</strong><span>Effective {version.effectiveDate}</span>{version.version === record.version && <span className="version-current-chip">Current</span>}</header>
+        <header><strong>Version {version.version}</strong><span>Effective {periods[String(version.version)]?.from || version.effectiveDate} {periods[String(version.version)]?.openEnded === false ? `to ${periods[String(version.version)].to}` : '· no end date'}</span>{periods[String(version.version)] && periods[String(version.version)].state !== 'In force' && <span className={`status-pill ${periods[String(version.version)].state.toLowerCase()}`}>{periods[String(version.version)].state}</span>}{version.version === record.version && <span className="version-current-chip">Current</span>}</header>
         <code className="version-expression">{version.expression}</code>
-        <small>{version.note || 'No change note recorded.'} · {version.publishedBy} · {new Date(version.publishedAt).toLocaleString()} · Source: {version.source || 'Screen'}{version.approvalRef ? ` · Approval ${version.approvalRef}` : ''}{version.effectiveDate > new Date().toISOString().slice(0, 10) ? ' · Scheduled' : ''}</small>
+        <small>{version.note || 'No change note recorded.'} · {version.publishedBy} · {new Date(version.publishedAt).toLocaleString()} · Source: {version.source || 'Screen'}{version.approvalRef ? ` · Approval ${version.approvalRef}` : ''}{version.approvedBy ? ` · Approved by ${personOf(version.approvedBy)}${version.approvedAt ? ` on ${String(version.approvedAt).slice(0, 10)}` : ''}` : ''} · Chosen by {version.dateBasis || 'Payout date'}</small>
         {Boolean(version.changes?.length) && <ul className="version-change-list">{version.changes.map(change => <li key={change.field}><b>{change.field}</b> <code className="diff-before">{String(change.from) || '—'}</code> → <code className="diff-after">{String(change.to) || '—'}</code></li>)}</ul>}
         {version.test
           ? <p className="version-test"><Check weight="bold" /> Test {version.test.result.toLowerCase()} · expected {version.test.expected === null ? 'not stated' : Number(version.test.expected).toLocaleString()} · actual {Number(version.test.actual).toLocaleString()} · {version.test.testedBy}</p>
@@ -160,8 +165,58 @@ function VersionModal({ record, versions, onClose }) {
  * holds its own copy. Editing and deleting stay open only while no posted
  * payroll transaction, in any company, has applied the code.
  */
+function RejectModal({ request, onClose, onReject }) {
+  const [reason, setReason] = useState('');
+  return <AdminModal title={`Reject ${request.code}`} onClose={onClose}>
+    <p>Say why this change is rejected so {personOf(request.madeBy)} can correct it. The reason is kept with the change.</p>
+    <label className="approval-reason">Reason<textarea value={reason} onChange={event => setReason(event.target.value)} rows={3} autoFocus /></label>
+    <div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" disabled={!reason.trim()} onClick={() => onReject(reason)}>Reject change</button></div>
+  </AdminModal>;
+}
+
+/** The changes waiting for a decision, and the last few decisions, for the P&A roles. */
+function ApprovalQueue({ requests, role, actor, onApprove, onReject, onWithdraw }) {
+  const open = openRequests(requests);
+  const decided = requests.filter(request => !isOpen(request)).slice(0, 5);
+  if (!open.length && !decided.length) return null;
+  return <section className="approval-queue" aria-label="Formula approvals">
+    <header><h2>Approvals</h2><span className="approval-count">{open.length ? `${open.length} waiting` : 'Nothing waiting'}</span></header>
+    {open.length > 0 && <table className="config-table"><thead><tr><th>Formula</th><th>Change</th><th>What changed</th><th>Made by</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
+      {open.map(request => {
+        const allowed = checkDecision(request, { role, actor });
+        const mine = personOf(request.madeBy) === personOf(actor);
+        return <tr key={request.id}>
+          <td><strong>{request.code}</strong><small>{request.name}</small></td>
+          <td>{REQUEST_KINDS[request.kind]}{request.kind === 'version' ? <small>v{request.fromVersion} → v{request.toVersion}</small> : <small>Inactive → Active</small>}</td>
+          <td>{(request.changes || []).slice(0, 3).map(change => <small key={change.field}>{change.field}: {String(change.from ?? '—')} → {String(change.to ?? '—')}</small>)}{request.note && <small>“{request.note}”</small>}</td>
+          <td>{personOf(request.madeBy)}<small>{request.madeBy.match(/\((.*)\)/)?.[1]}</small></td>
+          <td>{request.madeAt}</td>
+          <td><div className="approval-actions">
+            {role === 'pa_superadmin' && <>
+              <button className="button primary small" onClick={() => onApprove(request)} disabled={!allowed.ok} title={allowed.ok ? 'Approve and publish' : allowed.reason}><Check /> Approve</button>
+              <button className="button secondary small" onClick={() => onReject(request)} disabled={!allowed.ok} title={allowed.ok ? 'Reject with a reason' : allowed.reason}><X /> Reject</button>
+            </>}
+            {mine && <button className="button secondary small" onClick={() => onWithdraw(request)}>Withdraw</button>}
+            {role !== 'pa_superadmin' && !mine && <small>Waiting for a P&amp;A SuperAdmin</small>}
+          </div></td>
+        </tr>;
+      })}
+    </tbody></table>}
+    {decided.length > 0 && <details className="approval-history"><summary>Recent decisions ({decided.length})</summary>
+      <table className="config-table"><thead><tr><th>Formula</th><th>Change</th><th>Decision</th><th>By</th><th>Reason</th></tr></thead><tbody>
+        {decided.map(request => <tr key={request.id}><td><strong>{request.code}</strong></td><td>{REQUEST_KINDS[request.kind]}{request.kind === 'version' ? ` v${request.toVersion}` : ''}</td><td><span className={`status-pill ${request.status.toLowerCase()}`}>{request.status}</span></td><td>{personOf(request.decidedBy)}<small>{request.decidedAt}</small></td><td>{request.decisionReason || '—'}</td></tr>)}
+      </tbody></table>
+    </details>}
+  </section>;
+}
+
 export function StandardComputationAdmin({ onBack, notify }) {
-  const { isPaAdmin, actor } = useRole();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const { isPaAdmin, isPaSuperAdmin, role, actor } = useRole();
+  // Maker-checker: a P&A Admin makes a formula change and a P&A SuperAdmin approves it.
+  // A SuperAdmin is above an Admin: can make every change too, and it is published as soon as it is made.
+  const maker = canMake(role);
+  const direct = publishesDirectly(role);
   const companies = useMemo(() => readCompanies(), []);
   const [computations, setComputations] = useState(() => {
     // Every company's own formulas and onboarding baseline are brought into the
@@ -183,8 +238,13 @@ export function StandardComputationAdmin({ onBack, notify }) {
   const [viewingVersions, setViewingVersions] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
   const [applicabilityVersion, setApplicabilityVersion] = useState(0);
+  const [requests, setRequests] = useState(readRequests);
+  const requestsRef = useRef(requests);
+  const [rejecting, setRejecting] = useState(null);
+  const commitRequests = list => { requestsRef.current = list; setRequests(list); };
 
   useEffect(() => { writeStandardLibrary(computations); }, [computations]);
+  useEffect(() => { writeRequests(requests); }, [requests]);
 
   const categories = useMemo(() => computationCategoryCatalogue(), []);
   const usage = useMemo(() => standardUsageIndex(companies), [companies]);
@@ -203,9 +263,9 @@ export function StandardComputationAdmin({ onBack, notify }) {
     const matchesText = `${item.code} ${item.name} ${item.description || ''}`.toLowerCase().includes(query.toLowerCase());
     return matchesText
       && (category === 'All categories' || item.category === category)
-      && (status === 'All statuses' || item.status === status)
+      && (status === 'All statuses' || lifecycleStatus(item, requests) === status)
       && (scopeFilter === 'All scopes' || computationScope(item) === scopeFilter);
-  }), [computations, query, category, status, scopeFilter]);
+  }), [computations, query, category, status, scopeFilter, requests]);
 
   const allFilteredSelected = Boolean(visible.length) && visible.every(item => selected.has(item.code));
   const toggleSelected = code => setSelected(previous => {
@@ -223,11 +283,27 @@ export function StandardComputationAdmin({ onBack, notify }) {
   const defaultCategory = categories.find(([name]) => name === 'Earnings')?.[0] || categories[0]?.[0] || 'Earnings';
   const addFormula = () => setEditing(newStandardComputation({ category: defaultCategory, library: computations, catalogue: categories.length ? categories : categoryPrefixes, actor }));
 
+  // Every change a P&A Admin makes waits here until a P&A SuperAdmin decides it. A SuperAdmin's own change is
+  // approved by them in the same step, so it is published at once and the audit trail still shows both steps.
+  const submitChange = (change, summary) => {
+    const outcome = submitRequest(requestsRef.current, change, { role, actor });
+    if (!outcome.ok) return outcome;
+    commitRequests(outcome.list);
+    appendAuditEvent({ companyId: 'central', actor, action: 'FormulaChangeSubmitted', entityType: 'Computation', entityId: change.record.code, summary: direct ? summary.replace(' submitted for approval', ' made').replace(' submitted for activation', ' activation made') : summary, changes: change.changes, reason: change.note });
+    if (!direct) return outcome;
+    const decided = decideRequest(requestsRef.current, outcome.request.id, 'approve', { role, actor, own: true });
+    if (!decided.ok) return decided;
+    commitRequests(decided.list);
+    applyApproved(decided.request);
+    appendAuditEvent({ companyId: 'central', actor, action: 'FormulaChangeApproved', entityType: 'Computation', entityId: change.record.code, summary: `${change.record.code} ${REQUEST_KINDS[change.kind].toLowerCase()} approved — made and approved by ${actor}`, changes: change.changes, reason: change.note });
+    return { ...decided, published: true };
+  };
+
   const save = draft => {
-    if (!isPaAdmin) return;
+    if (!maker) return;
     if (draft.isNew) {
       if (computations.some(item => item.code === draft.code)) { notify({ type: 'error', message: `${draft.code} already exists in the library. Change the category so a free code is generated.` }); return; }
-      const saved = { ...draft, id: Date.now(), status: 'Inactive', version: '1.0', isBuiltIn: true, testCases: lockTestCases(draft.testCases, '1.0'), updatedBy: actor, updatedAt: governanceStamps.displayDate() };
+      const saved = { ...draft, id: Date.now(), status: 'Inactive', version: '1.0', isBuiltIn: true, testCases: lockTestCases(draft.testCases, '1.0'), updatedBy: actor, updatedAt: governanceStamps.displayDate(), approval: { state: 'Draft', madeBy: actor } };
       delete saved.changeNote;
       delete saved.changeSource;
       delete saved.approvalRef;
@@ -239,9 +315,9 @@ export function StandardComputationAdmin({ onBack, notify }) {
         // created — nobody else may ever be given it.
         setApplicability(saved.code, saved.ownerCompanyId, { applied: true, status: 'Active' }, actor);
         setApplicabilityVersion(value => value + 1);
-        notify({ type: 'success', message: `${saved.code} added for ${companyLabel(ownerOf(saved))} as an Inactive version 1.0 and assigned to that client only. Activate it when it is ready to compute.` });
+        notify({ type: 'success', message: `${saved.code} added for ${companyLabel(ownerOf(saved))} as a Draft (version 1.0) and assigned to that client only. ${direct ? 'Activate it when it is ready.' : 'Submit it for activation when it is ready; a P&A SuperAdmin has to approve it.'}` });
       } else {
-        notify({ type: 'success', message: `${saved.code} added as an Inactive version 1.0. Assign it to the companies that use it, then activate it.` });
+        notify({ type: 'success', message: `${saved.code} added as a Draft (version 1.0). ${direct ? 'Assign it to the companies that use it, then activate it.' : 'Assign it to the companies that use it, then submit it for activation; a P&A SuperAdmin has to approve it.'}` });
       }
       setEditing(null);
       return;
@@ -252,16 +328,56 @@ export function StandardComputationAdmin({ onBack, notify }) {
     const version = (Number(draft.version) + 0.1).toFixed(1);
     const changes = diffComputation(previous, draft);
     const saved = { ...previous, ...draft, version, testCases: lockTestCases(draft.testCases, version), updatedBy: actor, updatedAt: governanceStamps.displayDate() };
+    const { changeNote: note, changeSource: source, approvalRef } = draft;
     delete saved.changeNote;
     delete saved.changeSource;
     delete saved.approvalRef;
-    setComputations(list => list.map(item => item.code === saved.code ? saved : item));
-    appendVersion('standard', saved, { test: saved.lastTest, changes, note: draft.changeNote, actor, source: draft.changeSource, approvalRef: draft.approvalRef });
-    const scheduled = saved.effectiveDate > new Date().toISOString().slice(0, 10);
-    notify({ type: 'success', message: scheduled
-      ? `${saved.code} version ${version} is scheduled for ${saved.effectiveDate}. Payroll paid out before then keeps version ${previous.version}.`
-      : `${saved.code} published as version ${version}. Version ${previous.version} stays available to the payrolls that used it.` });
+    // Maker-checker: the new version waits for a P&A SuperAdmin. The version already in force keeps being used until then.
+    const outcome = submitChange({ kind: 'version', record: saved, previous, changes, note, source, approvalRef }, `${saved.code} version ${version} submitted for approval`);
+    if (!outcome.ok) { notify({ type: 'error', message: outcome.reason }); return; }
+    notify({ type: 'success', message: outcome.published
+      ? `${saved.code} version ${version} is published. You are a P&A SuperAdmin, so your own change needs no further approval.`
+      : `${saved.code} version ${version} was submitted for approval. Payroll keeps using version ${previous.version} until a P&A SuperAdmin approves it.` });
     setEditing(null);
+  };
+
+  /** What an approval does to the library, using the same steps publishing used before maker-checker. */
+  const applyApproved = request => {
+    const approval = { state: 'Approved', by: request.decidedBy, at: request.decidedAt, ref: request.id };
+    if (request.kind === 'version') {
+      // A formula that began as part of the Atlas baseline has no stored version yet. Keep the one being replaced
+      // before the new one is published, so payroll dated before the new version starts can still use it.
+      const replaced = computations.find(item => item.code === request.code);
+      const kept = versions[String(request.code).toUpperCase()] || [];
+      if (replaced && !kept.some(item => String(item.version) === String(replaced.version))) {
+        appendVersion('standard', replaced, { test: replaced.lastTest, note: `Version ${replaced.version} kept when version ${request.toVersion} replaced it.`, actor: replaced.updatedBy || 'Atlas baseline', source: 'Screen' });
+      }
+      const saved = { ...request.payload, approval };
+      setComputations(list => list.map(item => (item.code === saved.code ? saved : item)));
+      appendVersion('standard', saved, { test: saved.lastTest, changes: request.changes, note: request.note, actor: request.madeBy, source: request.source, approvalRef: request.approvalRef || request.id, approvedBy: request.decidedBy, approvedAt: request.decidedAt });
+    } else {
+      setComputations(list => list.map(item => (item.code === request.code ? { ...item, status: 'Active', approval, updatedBy: request.madeBy, updatedAt: governanceStamps.displayDate() } : item)));
+    }
+  };
+
+  const decide = (request, decision, reason = '') => {
+    const outcome = decideRequest(requestsRef.current, request.id, decision, { role, actor, reason });
+    if (!outcome.ok) { notify({ type: 'error', message: outcome.reason }); return false; }
+    commitRequests(outcome.list);
+    if (decision === 'approve') applyApproved(outcome.request);
+    const kind = REQUEST_KINDS[request.kind].toLowerCase();
+    appendAuditEvent({ companyId: 'central', actor, action: decision === 'approve' ? 'FormulaChangeApproved' : 'FormulaChangeRejected', entityType: 'Computation', entityId: request.code, summary: `${request.code} ${kind} ${decision === 'approve' ? 'approved' : 'rejected'} — made by ${request.madeBy}`, changes: request.changes, reason });
+    notify({ type: 'success', message: decision === 'approve'
+      ? `${request.code} ${kind} approved${request.kind === 'version' ? ` — version ${request.toVersion} is now published` : ' — the formula is Active'}.`
+      : `${request.code} ${kind} rejected. ${personOf(request.madeBy)} can correct it and submit again.` });
+    return true;
+  };
+
+  const withdraw = request => {
+    const outcome = withdrawRequest(requestsRef.current, request.id, { actor });
+    if (!outcome.ok) { notify({ type: 'error', message: outcome.reason }); return; }
+    commitRequests(outcome.list);
+    notify({ type: 'success', message: `${request.code} change withdrawn.` });
   };
 
   const remove = record => {
@@ -275,6 +391,12 @@ export function StandardComputationAdmin({ onBack, notify }) {
   const setStatusFor = (record, nextStatus) => {
     const guard = guardFor(record);
     if (nextStatus === 'Inactive' && !guard.canDeactivate) return { ok: false, reason: guard.deactivateReason };
+    if (nextStatus === 'Active') {
+      // Switching a formula on is a change a P&A SuperAdmin has to approve; a SuperAdmin's own is approved as it is made.
+      if (!maker) return { ok: false, reason: 'Only P&A can switch a formula on.' };
+      const outcome = submitChange({ kind: 'activate', record, previous: record, changes: [{ field: 'Status', from: record.status, to: 'Active' }], note: '', source: 'Screen' }, `${record.code} submitted for activation`);
+      return outcome.ok ? { ok: true, pending: !outcome.published } : { ok: false, reason: outcome.reason };
+    }
     setComputations(previous => previous.map(item => item.code === record.code ? { ...item, status: nextStatus, updatedBy: actor, updatedAt: governanceStamps.displayDate() } : item));
     return { ok: true };
   };
@@ -288,14 +410,14 @@ export function StandardComputationAdmin({ onBack, notify }) {
     notify({
       type: applied.length ? 'success' : 'error',
       message: applied.length
-        ? `${applied.length} ${plural(applied.length, 'formula')} set to ${nextStatus}.${blocked.length ? ` ${blocked.length} left unchanged — linked to a payroll transaction: ${blocked.join(', ')}.` : ''}`
+        ? `${applied.length} ${plural(applied.length, 'formula')} ${nextStatus === 'Active' ? (direct ? 'switched on' : 'submitted for activation') : 'set to Inactive'}.${blocked.length ? ` ${blocked.length} left unchanged — could not be changed: ${blocked.join(', ')}.` : ''}`
         : `Nothing changed. ${blocked.length ? `${blocked.join(', ')} ${blocked.length === 1 ? 'is' : 'are'} linked to a payroll transaction.` : `Every selected formula is already ${nextStatus}.`}`,
     });
   };
 
   const exportCsv = () => {
-    const header = 'Code,Name,Scope,Client,Category,Expression,Version,Status,Effective Date,Companies Assigned,Payroll Transactions';
-    const rows = visible.map(item => [item.code, item.name, computationScope(item), companyLabel(ownerOf(item)), item.category, item.expression, item.version, item.status, item.effectiveDate, appliedCount(item.code), usageOf(item.code, usage).transactions.length]
+    const header = 'Code,Name,Scope,Formula Owner,Client,Category,Expression,Version,Status,Effective From,Effective To,Version Chosen By,Last Approved By,Last Approved Date,Companies Assigned,Payroll Transactions';
+    const rows = visible.map(item => [item.code, item.name, computationScope(item), 'P&A', companyLabel(ownerOf(item)), item.category, item.expression, item.version, lifecycleStatus(item, requests), item.effectiveDate, item.effectiveTo || '', basisOf(item), item.approval?.by ? personOf(item.approval.by) : '', String(item.approval?.at || '').slice(0, 10), appliedCount(item.code), usageOf(item.code, usage).transactions.length]
       .map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(','));
     const url = URL.createObjectURL(new Blob([[header, ...rows].join('\n')], { type: 'text/csv' }));
     const link = document.createElement('a');
@@ -309,59 +431,68 @@ export function StandardComputationAdmin({ onBack, notify }) {
   return <div className="page-content standard-computation-admin">
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Settings</button>
     <div className="page-heading basis-heading"><div><p className="breadcrumb">Settings / Standard Computation Library</p><h1>Standard Computation Library</h1><p className="page-description">The one place every formula is defined — Atlas standards and client-specific formulas alike. P&amp;A authors each formula, sets the values a client may change and their range, and assigns it to the companies that use it. A company never holds its own copy.</p></div><span className="controlled-badge"><Function weight="duotone" /> Central formula library</span></div>
-    <div className="library-admin-notice">{isPaAdmin ? <Function weight="duotone" /> : <Lock weight="duotone" />}<span>{isPaAdmin
-      ? <><strong>Single source of truth for every formula</strong><small>Once a posted payroll — in any company — has used a formula, saving a change publishes a new version and those payrolls keep the version they ran on. It can then be deactivated but no longer deleted. A new formula or a logic change requested by a client after onboarding is handled as an enhancement.</small></>
+    <div className="library-admin-notice">{isPaAdmin ? <Function weight="duotone" /> : <Lock weight="duotone" />}<span>{isPaSuperAdmin
+      ? <><strong>P&amp;A SuperAdmin — you can do everything a P&amp;A Admin can, and you approve their changes</strong><small>What you add, edit or switch on is published at once and recorded as approved by you. What a P&amp;A Admin submits waits in Approvals until you decide it; payroll keeps using the approved version in the meantime.</small></>
+      : isPaAdmin
+      ? <><strong>Single source of truth for every formula</strong><small>Once a posted payroll — in any company — has used a formula, saving a change publishes a new version and those payrolls keep the version they ran on. It can then be deactivated but no longer deleted. A new formula or a logic change requested by a client after onboarding is handled as an enhancement. Every new version, and switching a formula on, is submitted for a P&amp;A SuperAdmin's approval.</small></>
       : <><strong>Read-only in the client view</strong><small>Formulas are authored and assigned by P&amp;A. A client sees the formulas assigned to its company in Computational Basis, and changes only the approved values on its own pay items.</small></>}</span></div>
     <div className="config-toolbar basis-toolbar">
       <div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search code, formula, or description..." /><MagnifyingGlass /></div>
       <select className="compact-select" value={category} onChange={event => setCategory(event.target.value)}><option>All categories</option>{[...new Set(computations.map(item => item.category))].map(value => <option key={value}>{value}</option>)}</select>
-      <select className="compact-select" value={status} onChange={event => setStatus(event.target.value)}><option>All statuses</option><option>Active</option><option>Inactive</option></select>
+      <select className="compact-select" value={status} onChange={event => setStatus(event.target.value)}><option>All statuses</option><option>Draft</option><option>For Approval</option><option>Active</option><option>Inactive</option><option>Rejected</option></select>
       <select className="compact-select" value={scopeFilter} onChange={event => setScopeFilter(event.target.value)}><option>All scopes</option>{FORMULA_SCOPES.map(scope => <option key={scope}>{scope}</option>)}</select>
       <div className="toolbar-spacer" />
       <button className="button secondary" onClick={exportCsv}>Export CSV</button>
-      {isPaAdmin && <button className="button primary" onClick={addFormula}><Plus /> Add formula</button>}
+      {maker && <button className="button primary" onClick={addFormula}><Plus /> Add formula</button>}
     </div>
-    {Boolean(selected.size) && isPaAdmin && <div className="bulk-action-bar">
+    <ApprovalQueue requests={requests} role={role} actor={actor} onApprove={request => decide(request, 'approve')} onReject={setRejecting} onWithdraw={withdraw} />
+    {Boolean(selected.size) && maker && <div className="bulk-action-bar">
       <span><strong>{selected.size}</strong> selected</span>
-      <button className="button secondary small" onClick={() => bulkStatus('Active')}><Check /> Activate</button>
+      <button className="button secondary small" onClick={() => bulkStatus('Active')}><Check /> {direct ? 'Activate' : 'Submit for activation'}</button>
       <button className="button secondary small" onClick={() => bulkStatus('Inactive')}><Prohibit /> Deactivate</button>
       <button className="button secondary small" onClick={() => setSelected(new Set())}><X /> Clear selection</button>
     </div>}
     <div className="table-card config-table-card basis-table-card"><table className="config-table basis-table"><thead><tr>
       <th className="select-column"><input type="checkbox" checked={allFilteredSelected} onChange={toggleAllFiltered} aria-label={`Select all ${visible.length} filtered formulas`} /></th>
-      <th>Code</th><th>Scope</th><th>Formula name</th><th>Category</th><th>Formula</th><th>Version</th><th>Status</th><th>Assigned to</th><th>Payroll usage</th><th>Action</th>
+      <th>Code</th><th>Scope</th><th>Formula name</th><th>Category</th><th>Formula</th><th title="Version, Effective from and Effective to">Version / dates</th><th>Status</th><th>Last approved</th><th>Assigned to</th><th>Payroll usage</th><th>Action</th>
     </tr></thead><tbody>
       {visible.map(item => {
         const guard = guardFor(item);
         const used = guard.usage;
         const clientSpecific = computationScope(item) === 'Client-specific';
+        const lifecycle = lifecycleStatus(item, requests);
+        const waiting = openRequestFor(item.code, requests);
+        const note = changeNote(item, requests);
+        const period = versionTimeline(item, versions[String(item.code).toUpperCase()] || [], todayIso).pop();
+        const dates = periodLabel(period);
         return <tr key={item.code} className={selected.has(item.code) ? 'row-selected' : ''}>
           <td className="select-column"><input type="checkbox" checked={selected.has(item.code)} onChange={() => toggleSelected(item.code)} aria-label={`Select ${item.code}`} /></td>
           <td><strong>{item.code}</strong></td>
-          <td><ScopeChip record={item} /></td>
+          <td><ScopeChip record={item} /><small className="block-caption">Owner: P&amp;A</small></td>
           <td><div className="table-title-cell"><strong>{item.name}</strong><small>{item.description || 'No description recorded.'}</small></div></td>
           <td>{item.category}</td>
           <td><code className="table-formula">{item.expression}</code></td>
-          <td>{item.version}</td>
-          <td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td>
+          <td><div className="effective-cell"><strong>v{item.version}</strong><span>{dates.from}</span><small>{period.openEnded ? 'No end date' : `to ${dates.to}`}</small>{period.state !== 'In force' && <span className={`status-pill ${period.state.toLowerCase()}`}>{period.state}</span>}</div></td>
+          <td><span className={`status-pill ${lifecycle.toLowerCase().replace(/\s+/g, '-')}`}>{lifecycle}</span>{note && <small className="approval-note">{note}</small>}</td>
+          <td>{item.approval?.by ? <div className="effective-cell"><span>{personOf(item.approval.by)}</span><small>{String(item.approval.at || '').slice(0, 10)}</small></div> : <div className="effective-cell"><span>—</span><small>{item.approval?.state === 'Draft' ? 'Not approved yet' : 'Atlas baseline'}</small></div>}</td>
           <td><button className="link-button" onClick={() => setScoping(item)}><Buildings weight="duotone" /> {clientSpecific ? `${companyLabel(ownerOf(item)) || 'Its client'} only` : `${appliedCount(item.code)} of ${companies.length}`}</button></td>
           <td>{used.transactions.length
             ? <span className="usage-chip" title={used.transactions.map(row => `${row.companyName} · ${row.transactionNumber} · ${row.status}`).join('\n')}>{used.transactions.length} {plural(used.transactions.length, 'transaction')}{used.posted.length ? ` · ${used.posted.length} posted` : ''}</span>
             : <span className="usage-chip none">Not used yet</span>}</td>
           <td><div className="row-actions always">
             <button onClick={() => setViewingVersions(item)} aria-label={`Version history for ${item.name}`}><ClockCounterClockwise /></button>
-            {isPaAdmin ? <>
+            {maker ? <>
               <button
-                onClick={() => { const outcome = setStatusFor(item, item.status === 'Active' ? 'Inactive' : 'Active'); if (!outcome.ok) notify({ type: 'error', message: outcome.reason }); }}
-                disabled={item.status === 'Active' && !guard.canDeactivate}
-                title={item.status === 'Active' ? (guard.canDeactivate ? `Deactivate ${item.code}` : guard.deactivateReason) : `Activate ${item.code}`}
+                onClick={() => { const outcome = setStatusFor(item, item.status === 'Active' ? 'Inactive' : 'Active'); if (!outcome.ok) notify({ type: 'error', message: outcome.reason }); else if (outcome.pending) notify({ type: 'success', message: `${item.code} submitted for activation. A P&A SuperAdmin has to approve it.` }); else if (item.status !== 'Active') notify({ type: 'success', message: `${item.code} is now Active.` }); }}
+                disabled={(item.status === 'Active' && !guard.canDeactivate) || Boolean(waiting)}
+                title={waiting ? `${item.code} has a change waiting for approval` : item.status === 'Active' ? (guard.canDeactivate ? `Deactivate ${item.code}` : guard.deactivateReason) : `Submit ${item.code} for activation`}
                 aria-label={`${item.status === 'Active' ? 'Deactivate' : 'Activate'} ${item.name}`}
               >{item.status === 'Active' ? <Prohibit /> : <Check />}</button>
-              {guard.canEdit
+              {guard.canEdit && !waiting
                 ? <button onClick={() => setEditing(item)} aria-label={`Edit ${item.name}`}><PencilSimple /></button>
-                : <span className="row-lock" title={guard.editReason}><Lock weight="duotone" /></span>}
+                : <span className="row-lock" title={waiting ? `${item.code} has a change waiting for approval` : guard.editReason}><Lock weight="duotone" /></span>}
               <button onClick={() => setDeleting(item)} disabled={!guard.canDelete} title={guard.canDelete ? `Delete ${item.code}` : guard.deleteReason} aria-label={`Delete ${item.name}`}><Trash /></button>
-            </> : <span className="row-lock" title="Switch to the P&A Admin experience to maintain formulas"><Lock weight="duotone" /></span>}
+            </> : <span className="row-lock" title="Formulas are maintained by P&A. Switch to the P&A Admin or P&A SuperAdmin experience."><Lock weight="duotone" /></span>}
           </div></td>
         </tr>;
       })}
@@ -374,10 +505,13 @@ export function StandardComputationAdmin({ onBack, notify }) {
       guard={editing.isNew ? null : guardFor(editing)}
       actor={actor}
       companies={companies}
+      versions={versions[String(editing.code).toUpperCase()] || []}
       onClose={() => setEditing(null)}
       onSave={save}
+      saveLabel={direct ? 'Validate and publish' : 'Validate and submit for approval'}
     />}
     {deleting && <DeleteModal record={deleting} onClose={() => setDeleting(null)} onDelete={() => remove(deleting)} />}
+    {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} onReject={reason => { if (decide(rejecting, 'reject', reason)) setRejecting(null); }} />}
     {scoping && <ApplicabilityModal record={scoping} companies={companies} library={computations} usage={usageOf(scoping.code, usage)} actor={actor} notify={notify} onChange={() => setApplicabilityVersion(value => value + 1)} onClose={() => setScoping(null)} />}
     {viewingVersions && <VersionModal record={viewingVersions} versions={versions[String(viewingVersions.code).toUpperCase()] || []} onClose={() => setViewingVersions(null)} />}
   </div>;

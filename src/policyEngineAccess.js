@@ -27,7 +27,7 @@ export const CLIENT_EDITABLE_ENGINE_PARAMETERS = Object.freeze({
     'companyDays', 'additionalBenefits', 'earlyRetirementAge', 'minimumGuarantee', 'maximumCap',
   ]),
   finalPay: Object.freeze(['assignment', 'employeeGroup', 'notifyAdmin']),
-  grossUp: Object.freeze(['assignment', 'employeeGroup', 'employerSharePercent', 'frequency', 'grossUpFrequency']),
+  grossUp: Object.freeze(['assignment', 'employeeGroup', 'employerSharePercent', 'frequency', 'employeeSharePercent', 'grossUpFrequency', 'deductionTreatment', 'targetEarning']),
 });
 
 export function isClientEditableEngineParameter(section, key) {

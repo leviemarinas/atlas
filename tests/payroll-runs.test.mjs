@@ -317,7 +317,7 @@ test('an open run already counts as using the version, and cancelling releases i
 test('a run dated in another year does not lock this year version', () => {
   const data = readStatutoryData();
   const thisYear = effectiveVersion('sss', '2025-11-30', data);
-  savePayrollRun(COMPANY, { ...compute(makeRun()), payoutDate: '2024-11-30', status: 'Posted' });
+  savePayrollRun(COMPANY, { ...compute(makeRun()), payoutDate: '2024-11-30', periodStart: '2024-11-16', periodEnd: '2024-11-30', status: 'Posted' });
   assert.equal(versionUsage('sss', thisYear, data).used, false);
   assert.equal(versionUsage('sss', effectiveVersion('sss', '2024-11-30', data), data).used, true);
 });
@@ -335,9 +335,18 @@ test('the context is assembled from the modules that own each dependency', () =>
   assert.ok(context.computations.length > 0, 'the Computational Basis library is available');
 });
 
-test('the context resolves the statutory version by the run payout date', () => {
-  const older = buildPayrollContext({ companyId: COMPANY, run: makeRun({ payoutDate: '2023-06-30' }), hrmData });
-  const newer = buildPayrollContext({ companyId: COMPANY, run: makeRun({ payoutDate: '2025-11-30' }), hrmData });
+test('the context resolves the statutory version by the run payroll period (its cut-off)', () => {
+  const older = buildPayrollContext({ companyId: COMPANY, run: makeRun({ payoutDate: '2023-06-30', periodStart: '2023-06-16', periodEnd: '2023-06-30' }), hrmData });
+  const newer = buildPayrollContext({ companyId: COMPANY, run: makeRun({ payoutDate: '2025-11-30', periodStart: '2025-11-16', periodEnd: '2025-11-30' }), hrmData });
   assert.notEqual(older.statutory.philhealth.id, newer.statutory.philhealth.id);
   assert.equal(older.statutory.philhealth.code, 'PHIC-2023-001');
+});
+
+test('a payout after the year end does not move a run to the next year table', () => {
+  // Statutory Tables deck, slides 6 and 8: the cut-off against the effective date decides, not the day it is paid.
+  const run = makeRun({ payoutDate: '2026-01-05', periodStart: '2025-12-16', periodEnd: '2025-12-31' });
+  const context = buildPayrollContext({ companyId: COMPANY, run, hrmData });
+  assert.equal(context.statutory.philhealth.code, 'PHIC-2025-001');
+  const next = buildPayrollContext({ companyId: COMPANY, run: makeRun({ payoutDate: '2026-01-15', periodStart: '2026-01-01', periodEnd: '2026-01-15' }), hrmData });
+  assert.equal(next.statutory.philhealth.code, 'PHIC-2026-001', 'a cut-off on or after the effective date uses the new table');
 });

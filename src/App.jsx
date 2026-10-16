@@ -69,7 +69,7 @@ import { ScenarioStudio } from './ScenarioStudio';
 import { readPayrollRuns } from './payrollRuns';
 import { canEditPolicy, createPolicyVersion, normalizePolicy, policyUsage, readManagedPolicies } from './policyManagement';
 
-const violet = '#54248f';
+const violet = '#4f2d7f';
 
 const coreModules = [
   { label: 'Company Configuration', icon: Buildings, enabled: true },

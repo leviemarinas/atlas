@@ -1,3 +1,7 @@
+import { entryProblems } from './configValidation.js';
+import { PAYROLL_SECTIONS, ROSTER_SECTIONS, basicPayPeriodProblems, basicPayUsage, masterfileRowsFromHrm, recordUsage, periodsForFrequency, masterfileRowsFromRoster, readEmployeePayrollStore, writeEmployeePayrollStore } from './employeePayrollBridge.js';
+import { employeeRoster, YTD_AS_OF } from './employeeRoster.js';
+import { readHrmData } from './hrmData.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
@@ -10,6 +14,7 @@ import {
   DotsThreeVertical,
   DownloadSimple,
   FileCsv,
+  FileXls,
   Gear,
   House,
   IdentificationCard,
@@ -49,14 +54,19 @@ import { seedVersion } from './statutorySchedules.js';
 import { readRegisterRows } from './OperationalWorkspaces';
 import { BrandRail, Topbar } from './AppChrome';
 import { rejectUpload } from './uploadErrorLog.js';
+import { ImportDialog } from './ImportDialog';
+import { readTable, toCsvText, messagesByRow, downloadErrorWorkbook, downloadTemplate as downloadExcelTemplate } from './importFlow.js';
 
 const today = '2026-01-01';
 const PERIODS = ['Every Payroll', 'First Half', 'Second Half'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // Entry fields left optional, as agreed; everything else is starred.
-const OPTIONAL_FIELDS = new Set(['end', 'endDate', 'periodEnd', 'holdDate', 'remarks', 'description', 'reference', 'accumulatedManual', 'accumulatedComputed', 'accumulated']);
+const OPTIONAL_FIELDS = new Set(['interest', 'interestRate', 'end', 'endDate', 'periodEnd', 'holdDate', 'remarks', 'description', 'reference', 'accumulatedManual', 'accumulatedComputed', 'accumulated']);
 const SECTION_OPTIONAL = { loans: ['payItem', 'loanSource'], basicPay: ['ecola'] };
-const isRequired = (section, [key, , type]) => type !== 'computed' && !OPTIONAL_FIELDS.has(key) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
+// Slide 5: Period Start and Period End are both required for Basic Pay.
+const SECTION_REQUIRED = { basicPay: ['periodEnd'] };
+const isRequired = (section, [key, , type]) => type !== 'computed' && (!OPTIONAL_FIELDS.has(key) || (SECTION_REQUIRED[section.key] || []).includes(key)) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
 
 /** Active records of a company configuration register, for the entry forms that pick from it. */
 function configured(moduleKey) {
@@ -70,10 +80,17 @@ const configuredNames = (moduleKey, fallback = []) => {
 const sectionDefinitions = [
   {
     key: 'basicPay', title: 'Basic Pay', upload: true,
-    columns: [['effectiveDate', 'Effective Date'], ['payType', 'Pay Type'], ['amount', 'Basic Pay Amount'], ['monthlyRate', 'Monthly Rate'], ['dailyRate', 'Daily Rate'], ['ecola', 'ECOLA']],
-    // In the order P&A listed; the five rates are always computed from the Basic Pay Amount.
+    // The saved list shows every field the slide names; rates are computed from the Basic Pay Amount and never typed.
+    columns: [['dateCreated', 'Date Created'], ['effectiveDate', 'Effectivity Date'], ['payType', 'Pay Type'], ['amount', 'Basic Pay Amount'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type'], ['workHours', 'Work Hours per Day'],
+      ['annualRate', 'Annual Rate'], ['monthlyRate', 'Monthly Rate'], ['hourlyRate', 'Hourly Rate'], ['dailyRate', 'Daily Rate'], ['minuteRate', 'Per Minute Rate'], ['mwe', 'MWE'], ['location', 'Location'],
+      ['startMonth', 'Start Month'], ['startYear', 'Start Year'], ['periodStart', 'Period Start'], ['periodEnd', 'Period End']],
+    // In the order of the Basic Pay slide.
     fields: [
-      ['dateCreated', 'Date Created', 'date'], ['payType', 'Pay Type', 'select', ['Monthly', 'Daily', 'Hourly']], ['amount', 'Basic Pay Amount', 'number'], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'computed'], ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Per Minute Rate', 'computed'], ['mwe', 'Minimum Wage Earner', 'boolean'], ['location', 'Minimum Wage Region / Location', 'select', () => referenceValues('work-locations'), draft => draft.mwe === 'Yes'], ['ecola', 'ECOLA Amount', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS],
+      ['dateCreated', 'Date Created', 'date'], ['effectiveDate', 'Effectivity Date', 'date'], ['payType', 'Pay Type', 'select', ['Hourly', 'Daily', 'Monthly']], ['amount', 'Basic Pay Amount', 'number'],
+      ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'computed'],
+      ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Per Minute Rate', 'computed'],
+      ['mwe', 'MWE', 'boolean'], ['location', 'Location', 'select', () => mweLocations(), draft => draft.mwe === 'Yes'], ['ecola', 'ECOLA Amount', 'number'],
+      ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'number'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS],
     ],
     rows: [
       { dateCreated: '01/01/2026', effectiveDate: '01/01/2026', payType: 'Monthly', amount: '50000', workDays: '261', workDaysType: 'Per Year', workHours: '8', mwe: 'No', ecola: '0', location: 'NCR', annualRate: '600000', monthlyRate: '50000', dailyRate: '2298.85' },
@@ -84,7 +101,7 @@ const sectionDefinitions = [
     key: 'earnings', title: 'Earnings', upload: true,
     columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
-    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'select', () => configuredNames('earnings', referenceValues('earning-types'))], ['code', 'Earning Code', 'computed'], ['amount', 'Earning Amount', 'number'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'select', () => configuredNames('earnings', referenceValues('earning-types'))], ['code', 'Earning Code', 'computed'], ['amount', 'Earning Amount', 'number'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [
       { dateCreated: '01/01/2026', code: 'EXA-001', name: 'Salary', amount: '50000', frequency: 'Semi-monthly', taxability: 'Taxable', classification: 'Taxable' },
       { dateCreated: '01/01/2026', code: 'EXA-002', name: 'Lecture Fee', amount: '7500', frequency: 'One-time', taxability: 'Non-taxable', classification: 'Non-Taxable' },
@@ -108,13 +125,13 @@ const sectionDefinitions = [
   {
     key: 'deductions', title: 'Company Deductions', upload: false,
     columns: [['name', 'Deduction Name'], ['amount', 'Amount of Deduction'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['count', 'Number of Deductions'], ['total', 'Total Deduction'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['deductionStatus', 'Status']],
-    fields: [['name', 'Deduction Name', 'select', () => configuredNames('deductions', referenceValues('deduction-types'))], ['code', 'Deduction Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amount of Deduction', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS], ['count', 'Number of Deductions', 'number'], ['total', 'Total Deduction Amount', 'number'], ['accumulated', 'Accumulated Amount', 'computed'], ['balance', 'Total Balance', 'computed'], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    fields: [['name', 'Deduction Name', 'select', () => configuredNames('deductions', referenceValues('deduction-types'))], ['code', 'Deduction Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amount of Deduction', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['count', 'Number of Deductions', 'number'], ['total', 'Total Deduction Amount', 'number'], ['accumulated', 'Accumulated Amount', 'computed'], ['balance', 'Total Balance', 'computed'], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [{ name: 'Cooperative Dues', amount: '500', startDate: '01/01/2026', endDate: '12/31/2026', count: '24', total: '12000', accumulated: '3000', balance: '9000' }],
   },
   {
     key: 'loans', title: 'Loans', upload: true,
     columns: [['code', 'Loan Code'], ['payItem', 'Pay Item'], ['frequency', 'Payment Frequency'], ['amount', 'Amortization Amount'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['loanStatus', 'Loan Status']],
-    fields: [['loanSource', 'Loan Source', 'select', ['Company Loan', 'Government Loan']], ['payItem', 'Loan Reference', 'select', draft => (draft.loanSource === 'Government Loan' ? configuredNames('governmentLoans', ['SSS Salary Loan', 'HDMF Multi-Purpose Loan']) : configuredNames('loans', referenceValues('loan-types')))], ['code', 'Loan Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amortization Amount', 'number'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['description', 'Description'], ['dateGranted', 'Date Granted', 'date'], ['reference', 'Reference Number'], ['principal', 'Principal', 'number'], ['interest', 'Interest Amount', 'computed'], ['totalLoan', 'Total Loan', 'computed'], ['accumulatedManual', 'Accumulated Payment (Manual)', 'number'], ['accumulatedComputed', 'Accumulated Payment (Computed)', 'number'], ['balance', 'Balance', 'computed'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    fields: [['loanSource', 'Loan Source', 'select', ['Company Loan', 'Government Loan']], ['payItem', 'Loan Reference', 'select', draft => (draft.loanSource === 'Government Loan' ? configuredNames('governmentLoans', ['SSS Salary Loan', 'HDMF Multi-Purpose Loan']) : configuredNames('loans', referenceValues('loan-types')))], ['code', 'Loan Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amortization Amount', 'number'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['description', 'Description'], ['dateGranted', 'Date Granted', 'date'], ['reference', 'Reference Number'], ['principal', 'Principal', 'number'], ['interestRate', 'Interest Rate (% per annum)', 'number'], ['interest', 'Interest Amount', 'computed'], ['totalLoan', 'Total Loan', 'computed'], ['accumulatedManual', 'Accumulated Payment (Manual)', 'number'], ['accumulatedComputed', 'Accumulated Payment (Computed)', 'computed'], ['balance', 'Balance', 'computed'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [{ payItem: 'SSS Salary Loan', frequency: 'Monthly', amount: '2500', startDate: '01/01/2026', endDate: '12/31/2026', principal: '30000', interest: '1500', accumulatedComputed: '17500', accumulatedManual: '0' }, { payItem: 'Company Salary Loan', frequency: 'Monthly', amount: '1000', startDate: '01/01/2026', endDate: '06/30/2026', principal: '9500', interest: '500', accumulatedComputed: '9400', accumulatedManual: '0' }],
   },
   {
@@ -173,11 +190,14 @@ const sectionDefinitions = [
   },
 ];
 
-const employees = [
-  { id: '0000112345', employeeCode: '0000112345', firstName: 'John', middleName: 'Michael', lastName: 'Doe', name: 'John Michael Doe', role: 'Payroll Specialist', status: 'Full-time', origin: 'Philippines', hireDate: '2024-05-30', location: 'PBS | Makati', initials: 'JD' },
-  { id: '0000112451', employeeCode: '0000112451', firstName: 'Jane', middleName: 'Collins', lastName: 'Doe', name: 'Jane Collins Doe', role: 'Payroll Analyst', status: 'Full-time', origin: 'Philippines', hireDate: '2025-01-12', location: 'PBS | Makati', initials: 'JC' },
-  { id: '0000112608', employeeCode: '0000112608', firstName: 'Jandee', middleName: 'Robins', lastName: 'Fisher', name: 'Jandee Robins Fisher', role: 'Team Lead', status: 'Full-time', origin: 'Philippines', hireDate: '2023-03-14', location: 'PBS | Manila', initials: 'JF' },
-];
+/** The Masterfile lists the same people payroll pays: one roster (employeeRoster.js), keyed by employee code. */
+const employees = employeeRoster.map(person => {
+  const parts = String(person.name || '').trim().split(/\s+/);
+  return {
+    id: person.code, employeeCode: person.code, firstName: parts[0] || '', middleName: parts.slice(1, -1).join(' '), lastName: parts.length > 1 ? parts[parts.length - 1] : '', name: person.name,
+    role: person.position, status: 'Full-time', origin: 'Philippines', hireDate: person.dateHired, location: person.site, initials: person.initials,
+  };
+});
 
 function formatCell(key, value) {
   if (['scheduledDeduction', 'nonTaxableAmount', 'taxableAmount', 'remainingCeiling'].includes(key)) return value === '' || value === undefined || value === null ? '—' : `₱ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -210,7 +230,7 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required={required}><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
   if (type === 'boolean') return <div className="radio-group">{['Yes', 'No'].map(item => <label key={item}><input type="radio" name={key} checked={(value || 'No') === item} onChange={() => onChange(item)} /> {item}</label>)}</div>;
   if (type === 'textarea') return <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="Enter remarks" />;
-  return <input type={type} min={type === 'number' ? '0' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
+  return <input type={type} min={type === 'number' ? '0' : undefined} step={type === 'number' ? 'any' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
 }
 
 /** Employee payroll records mix MM/DD/YYYY seed values with ISO date inputs. */
@@ -244,7 +264,16 @@ function normalizePayrollRecord(section, input) {
     return { ...draft, annualRate: annualRate.toFixed(2), monthlyRate: monthlyRate.toFixed(2), dailyRate: dailyRate.toFixed(2), hourlyRate: hourlyRate.toFixed(2), minuteRate: (hourlyRate / 60).toFixed(4) };
   }
   if (section.key === 'loans') {
-    const totalLoan = Number(draft.principal || 0) + Number(draft.interest || 0);
+    // A loan taken from a company loan configuration carries that loan's interest: principal × annual rate × term ÷ 12.
+    const loanConfig = configured('loans').find(item => item.name === draft.payItem);
+    // Slide 22: the rate is typed or taken from the loan setup. The setup's term is used when there is one, else the months between Start and End Date.
+    const typedRate = draft.interestRate !== undefined && String(draft.interestRate).trim() !== '' ? Number(draft.interestRate) : null;
+    const monthsBetween = (() => { const from = toIsoDate(draft.startDate); const to = toIsoDate(draft.endDate); if (!from || !to) return 0; const [fy, fm] = from.split('-').map(Number); const [ty, tm] = to.split('-').map(Number); return Math.max(0, (ty - fy) * 12 + (tm - fm) + 1); })();
+    const rate = typedRate ?? (loanConfig ? Number(loanConfig.interest || 0) : null);
+    const interest = rate !== null ? Math.round(Number(draft.principal || 0) * rate / 100 * (loanConfig ? Number(loanConfig.terms || 0) : monthsBetween) / 12 * 100) / 100 : Number(draft.interest || 0);
+    if (loanConfig && (draft.amount === undefined || String(draft.amount).trim() === '') && loanConfig.amortization) draft = { ...draft, amount: String(loanConfig.amortization) };
+    draft = { ...draft, interest: String(interest) };
+    const totalLoan = Number(draft.principal || 0) + interest;
     const accumulated = Number(draft.accumulatedManual || 0) + Number(draft.accumulatedComputed || 0);
     const balance = Math.max(0, totalLoan - accumulated);
     // Master requirements §5.6: a scheduled amortization may never collect more
@@ -349,14 +378,44 @@ function applicableMweRate(location, effectiveDate) {
     .filter(row => row.status === 'Active' && [row.region, row.municipality].includes(location) && toDay(row.effectiveDate) <= when)
     .sort((a, b) => toDay(b.effectiveDate) - toDay(a.effectiveDate))[0] || null;
 }
+/** The payroll runs that computed a line for this employee (any company), for the "used in payroll" lock. */
+function readRunsOfEmployee(employeeCode) {
+  const rostered = employeeRoster.find(item => item.code === employeeCode);
+  if (!rostered) return [];
+  const runs = [];
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || !key.startsWith('atlas-payroll-runs-v1')) continue;
+      const saved = JSON.parse(localStorage.getItem(key));
+      (Array.isArray(saved) ? saved : []).forEach(run => {
+        const line = (run.result?.lines || []).find(item => item.employeeId === rostered.employeeId && item.status === 'Computed');
+        if (line) runs.push({ transactionNumber: run.transactionNumber, status: run.status, payoutDate: run.payoutDate, periodEnd: run.periodEnd, items: { earnings: (line.earnings || []).map(item => item.name), bonuses: (line.bonuses || []).map(item => item.name), deductions: (line.deductions || []).map(item => item.name), loans: (line.loans || []).map(item => item.name) } });
+      });
+    }
+  } catch { /* an unreadable store means nothing is known to be used */ }
+  return runs;
+}
+/** Slide 5 and 8: Location is a dropdown from the MWE setup, the places with an Active rate in the MWE Rate Tables. */
+function mweLocations() {
+  return [...new Set(readRegisterRows('mweRates').filter(row => row.status === 'Active').map(row => row.municipality).filter(Boolean))];
+}
 const peso = value => `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
-function EntryModal({ section, record, onClose, onSave, preview }) {
-  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: today, ...(section.key === 'basicPay' && !record?.id ? { workDays: '261', workDaysType: 'Per Year', workHours: '8' } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+/** Slide 22: only loans that apply to the employee can be picked, by Employee Group or by assignment. */
+function applicableLoanNames(employee) {
+  const entry = employee ? employeeDirectory.find(item => item.code === employee.id || item.name === employee.name) || { code: employee.id, name: employee.name } : null;
+  const covering = configured('loans').filter(item => !entry || coversEmployee(item.applicability, entry));
+  return covering.length || !configured('loans').length ? (covering.length ? covering.map(item => item.name) : referenceValues('loan-types')) : [];
+}
+
+function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null }) {
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: today, ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
   const [reason, setReason] = useState('');
   // Pay-affecting sections keep an employee-level audit: an edit needs a reason.
   const audited = AUDITED_SECTIONS.includes(section.key);
-  const reasonRequired = audited && Boolean(record?.id) && !record?.inherited;
+  // Slide 5: for Basic Pay the reason is optional text that goes to the audit log.
+  const reasonRequired = audited && Boolean(record?.id) && !record?.inherited && !['basicPay', 'bonuses', 'loans'].includes(section.key);
   // De Minimis: warn while the amount is typed, not only after saving (§10.2).
   const previewed = preview?.(draft);
   const ceilingWarning = draft.classification === 'De Minimis' && previewed?.thresholdNote
@@ -374,12 +433,12 @@ function EntryModal({ section, record, onClose, onSave, preview }) {
   })();
   // Computed values (rates, totals, balances, codes) follow the entry as it is filled in.
   const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, [key]: value }));
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Reason for change {reasonRequired && <span className="required">*</span>}<textarea value={reason} required={reasonRequired} placeholder={reasonRequired ? 'Why is this being changed? It is kept in the employee change history.' : 'Optional'} onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => section.key === 'basicPay' && ['periodStart', 'periodEnd'].includes(field[0]) ? [field[0], field[1], field[2], periodsForFrequency(setup.paymentMode), field[4]] : section.key === 'loans' && field[0] === 'payItem' ? [field[0], field[1], field[2], draft => (draft.loanSource === 'Government Loan' ? field[3](draft) : applicableLoanNames(employee)), field[4]] : field).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Reason for change {reasonRequired && <span className="required">*</span>}<textarea value={reason} required={reasonRequired} placeholder={reasonRequired ? 'Why is this being changed? It is kept in the employee change history.' : 'Optional'} onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
 }
 
-function ConfirmDelete({ name, onClose, onDelete, needsReason = false }) {
+function ConfirmDelete({ name, onClose, onDelete, needsReason = false, askReason = needsReason }) {
   const [reason, setReason] = useState('');
-  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div>{needsReason && <label className="employee-change-reason">Reason for deleting <span className="required">*</span><textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="Kept in the employee change history." /></label>}<div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" disabled={needsReason && !reason.trim()} onClick={() => onDelete(reason.trim())}>Delete</button></div></div></section></div>;
+  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div>{askReason && <label className="employee-change-reason">Reason for deleting {needsReason && <span className="required">*</span>}<textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="Kept in the employee change history." /></label>}<div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" disabled={needsReason && !reason.trim()} onClick={() => onDelete(reason.trim())}>Delete</button></div></div></section></div>;
 }
 
 /**
@@ -417,6 +476,13 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
   const [pageSize, setPageSize] = useState(5);
   const uploadRef = useRef(null);
   const allRows = section.key === 'earnings' ? [...rows, ...inheritedEarnings(rows, employee)] : rows;
+  // Slide 7: a Basic Pay entry already used in a payroll cannot be changed or deleted; a change is a new version.
+  const usedBy = useMemo(() => {
+    if (!employee) return new Map();
+    if (section.key === 'basicPay') return basicPayUsage(rows, readRunsOfEmployee(employee.id));
+    return ['earnings', 'bonuses', 'deductions', 'loans'].includes(section.key) ? recordUsage(section.key, rows, readRunsOfEmployee(employee.id)) : new Map();
+  }, [section.key, rows, employee]);
+  const setup = useMemo(() => { const rostered = employee ? employeeRoster.find(item => item.code === employee.id) : null; return { workDays: rostered?.payroll?.factorDays, workHours: rostered?.payroll?.workHoursPerDay, paymentMode: rostered?.payroll?.paymentMode }; }, [employee]);
   const cellText = (row, key) => String(formatCell(key, row[key]) ?? '');
   const matchedRows = allRows
     .filter(row => !query.trim() || section.columns.some(([key]) => cellText(row, key).toLowerCase().includes(query.trim().toLowerCase())))
@@ -433,6 +499,8 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
   };
   const save = (draft, reason = '') => {
     let completionNote = '';
+    const entryIssues = entryProblems(section.key, draft, section.fields, section.fields.filter(field => isRequired(section, field)).map(field => field[0]));
+    if (entryIssues.length) { notify({ type: 'error', message: entryIssues[0] }); return; }
     if (section.key === 'bankInformation' && rows.some(row => row.id !== draft.id && row.accountNumber && row.accountNumber === draft.accountNumber)) {
       notify({ type: 'error', message: 'This bank account number is already registered for the employee.' }); return;
     }
@@ -443,6 +511,23 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       if (rows.some(row => row.id !== draft.id && String(row.reference || '').toLowerCase() === draft.reference.toLowerCase())) {
         notify({ type: 'error', message: `Reference Number ${draft.reference} is already used by another loan of this employee.` }); return;
       }
+    }
+    if (section.key === 'basicPay') {
+      // Slide 7: conflicting or overlapping effective-dated records are prevented.
+      const sameDate = rows.find(row => row.id !== draft.id && toIsoDate(row.effectiveDate) && toIsoDate(row.effectiveDate) === toIsoDate(draft.effectiveDate));
+      if (sameDate) { notify({ type: 'error', message: 'A Basic Pay entry with this Effectivity Date already exists. Enter a new Effectivity Date to create a new version.' }); return; }
+      const periodIssues = basicPayPeriodProblems(draft, setup.paymentMode);
+      if (periodIssues.length) { notify({ type: 'error', message: periodIssues[0] }); return; }
+    }
+    if (draft.id && usedBy.has(draft.id)) { notify({ type: 'error', message: `This ${section.title} entry was used by ${usedBy.get(draft.id).join(', ')} and cannot be changed. Add a new entry with a new Effectivity Date.` }); return; }
+    if (section.key === 'bonuses' && Number(draft.transactionThreshold) > 0 && Number(draft.annualThreshold) > 0 && Number(draft.transactionThreshold) > Number(draft.annualThreshold)) {
+      notify({ type: 'error', message: 'The Per Transaction Non-Taxable Threshold cannot be more than the Annual Non-Taxable Threshold.' }); return;
+    }
+    if (section.key === 'loans') {
+      const before = rows.find(row => row.id === draft.id);
+      const config = configured('loans').find(item => item.name === draft.payItem);
+      if (Number(draft.accumulatedManual) > 0 && Number(draft.accumulatedManual) !== Number(before?.accumulatedManual || 0) && !reason.trim()) { notify({ type: 'error', message: 'An Accumulated Payment (Manual) is for opening balances only and needs a reason.' }); return; }
+      if (config?.amortization && Number(draft.amount) !== Number(config.amortization) && Number(draft.amount) !== Number(before?.amount) && !reason.trim()) { notify({ type: 'error', message: 'A change to the Amortization Amount for this employee needs a reason.' }); return; }
     }
     const { inherited, ...entry } = draft;
     const own = inherited ? { ...entry, id: undefined, source: 'From Earning Configuration (edited)' } : entry;
@@ -481,6 +566,22 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
         return normalizePayrollRecord(section, row);
       });
       const added = parsed.filter(row => Object.keys(row).length > 1);
+      if (['basicPay', 'earnings', 'bonuses', 'deductions', 'loans'].includes(section.key)) {
+        const required = section.fields.filter(field => isRequired(section, field)).map(field => field[0]);
+        const seenDates = new Set(rows.map(row => toIsoDate(row.effectiveDate)).filter(Boolean));
+        added.forEach((row, index) => {
+          const line = index + 2;
+          required.forEach(key => { if (!String(row[key] ?? '').trim()) errors.push({ row: line, field: section.fields.find(field => field[0] === key)?.[1] || key, value: '', reason: 'Required.' }); });
+          entryProblems(section.key, row, section.fields, []).forEach(problem => errors.push({ row: line, field: problem.split(' must')[0], reason: problem }));
+          section.fields.filter(field => field[2] === 'select' && row[field[0]]).forEach(field => { const options = typeof field[3] === 'function' ? field[3](row) : field[3]; if (Array.isArray(options) && !options.includes(row[field[0]])) errors.push({ row: line, field: field[1], value: row[field[0]], reason: `Use one of: ${options.join(', ')}.` }); });
+          if (section.key === 'basicPay') {
+            basicPayPeriodProblems(row, setup.paymentMode).forEach(problem => errors.push({ row: line, field: 'Start / Period', reason: problem }));
+            const iso = toIsoDate(row.effectiveDate);
+            if (iso && seenDates.has(iso)) errors.push({ row: line, field: 'Effectivity Date', value: row.effectiveDate, reason: 'An entry with this Effectivity Date already exists.' });
+            if (iso) seenDates.add(iso);
+          }
+        });
+      }
       if (!added.length && !errors.length) errors.push({ reason: `No matching ${section.title} rows were found.` });
       if (section.key === 'costAllocation' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) errors.push({ field: 'Percentage', reason: 'Imported cost allocation would exceed 100%.' });
       if (section.key === 'allotment' && [...added, ...rows].reduce((total, row) => total + Number(row.percentage || 0), 0) > 100) errors.push({ field: 'Percentage', reason: 'Imported net-pay allotments would exceed 100%.' });
@@ -499,12 +600,12 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
         {filterKey && <input value={filterValue} onChange={event => { setFilterValue(event.target.value); setPage(1); }} placeholder="Contains" aria-label="Filter value" />}
         {(query || filterKey || sort.key) && <button className="button secondary" onClick={() => { setQuery(''); setFilterKey(''); setFilterValue(''); setSort({ key: '', dir: 'asc' }); setPage(1); }}>Clear</button>}
       </div>
-      <div className="employee-table-wrap"><table className="employee-table"><thead><tr>{section.columns.map(([key, label]) => <th key={label} aria-sort={sort.key === key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}><button className="th-sort" onClick={() => sortBy(key)} aria-label={`Sort by ${label}`}>{label}{sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>)}<th>Action</th></tr></thead><tbody>{shownRows.length ? shownRows.map(row => <tr key={row.id}>{section.columns.map(([key]) => <td key={key}>{formatCell(key, row[key])}</td>)}<td><div className="row-actions always"><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button>{!row.inherited && <button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button>}</div></td></tr>) : <tr><td colSpan={section.columns.length + 1}><div className="empty-state compact"><h3>{allRows.length ? 'No entries match' : 'No entries yet'}</h3><p>{allRows.length ? 'Change the search or the filter.' : 'Add or upload this employee’s payroll data.'}</p></div></td></tr>}</tbody></table></div>
+      <div className="employee-table-wrap"><table className="employee-table"><thead><tr>{section.columns.map(([key, label]) => <th key={label} aria-sort={sort.key === key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}><button className="th-sort" onClick={() => sortBy(key)} aria-label={`Sort by ${label}`}>{label}{sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>)}<th>Action</th></tr></thead><tbody>{shownRows.length ? shownRows.map(row => <tr key={row.id}>{section.columns.map(([key]) => <td key={key}>{formatCell(key, row[key])}</td>)}<td><div className="row-actions always">{usedBy.has(row.id) ? <><span className="status-pill locked" title={`Used by ${usedBy.get(row.id).join(', ')}. Add a new entry with a new Effectivity Date to change it.`}>Used in payroll</span><button disabled aria-label="Edit" title="Used in payroll"><PencilSimple /></button><button disabled aria-label="Delete" title="Used in payroll"><Trash /></button></> : <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button>{!row.inherited && <button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button>}</>}</div></td></tr>) : <tr><td colSpan={section.columns.length + 1}><div className="empty-state compact"><h3>{allRows.length ? 'No entries match' : 'No entries yet'}</h3><p>{allRows.length ? 'Change the search or the filter.' : 'Add or upload this employee’s payroll data.'}</p></div></td></tr>}</tbody></table></div>
       <div className="employee-pagination"><span>Display <select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }} aria-label="Items per page">{[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · <strong>{matchedRows.length}</strong> item{matchedRows.length === 1 ? '' : 's'}</span><span className="employee-pager"><button onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1} aria-label="Previous page">‹</button>{currentPage} of {pageCount}<button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount} aria-label="Next page">›</button></span></div>
     </div>}
-    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} preview={section.key === 'earnings' ? previewRow : undefined} />}
+    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} setup={setup} employee={employee} preview={section.key === 'earnings' ? previewRow : undefined} />}
     {historyOpen && <ChangeHistory section={section} entries={readEmployeeChanges(employee.id, section.key)} onClose={() => setHistoryOpen(false)} />}
-    {deleting && <ConfirmDelete needsReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
+    {deleting && <ConfirmDelete needsReason={audited && !['basicPay', 'bonuses', 'loans'].includes(section.key)} askReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
   </section>;
 }
 
@@ -518,7 +619,7 @@ function CustomExport({ sections, onClose, onExport }) {
   return <div className="modal-backdrop"><section className="modal custom-export-modal" role="dialog" aria-modal="true" aria-label="Custom Export"><header><h2>Custom Export</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><p className="form-intro">Choose which sections to export.</p><div className="export-checklist">{sections.map(section => <label key={section.key}><input type="checkbox" checked={selected.includes(section.key)} onChange={() => setSelected(prev => prev.includes(section.key) ? prev.filter(key => key !== section.key) : [...prev, section.key])} /> {section.title}</label>)}</div><label className="export-format">Export File Format<select value={format} onChange={e => setFormat(e.target.value)}><option value="csv">Excel / CSV</option><option value="word">Word</option><option value="pdf">PDF / Print</option></select></label><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button primary" disabled={!selected.length} onClick={() => onExport(selected, format)}>Export</button></div></div></section></div>;
 }
 
-function exportEmployeeData(data, selectedKeys, format) {
+function exportEmployeeData(data, selectedKeys, format, employeeName = 'Employee') {
   const selected = sectionDefinitions.filter(section => selectedKeys.includes(section.key));
   const csv = selected.map(section => {
     const headers = section.columns.map(([, label]) => `"${label}"`).join(',');
@@ -527,9 +628,9 @@ function exportEmployeeData(data, selectedKeys, format) {
   }).join('\n\n');
   if (format === 'pdf') {
     const popup = window.open('', '_blank', 'noopener,noreferrer'); if (!popup) return false;
-    popup.document.write(`<html><head><title>Employee Payroll and Allocation</title><style>body{font-family:Arial;padding:24px;white-space:pre-wrap}h1{color:#54248f}</style></head><body><h1>John Doe — Payroll and Allocation</h1>${csv}<script>window.onload=()=>window.print()<\/script></body></html>`); popup.document.close(); return true;
+    popup.document.write(`<html><head><title>Employee Payroll and Allocation</title><style>body{font-family:Arial;padding:24px;white-space:pre-wrap}h1{color:#54248f}</style></head><body><h1>${employeeName} — Payroll and Allocation</h1>${csv}<script>window.onload=()=>window.print()<\/script></body></html>`); popup.document.close(); return true;
   }
-  if (format === 'word') download('john-doe-payroll.doc', `<html><body><pre>${csv}</pre></body></html>`, 'application/msword'); else download('john-doe-payroll.csv', csv);
+  if (format === 'word') download(`${employeeName.toLowerCase().replace(/\s+/g, '-')}-payroll.doc`, `<html><body><pre>${csv}</pre></body></html>`, 'application/msword'); else download(`${employeeName.toLowerCase().replace(/\s+/g, '-')}-payroll.csv`, csv);
   return true;
 }
 
@@ -587,6 +688,7 @@ function saveBulkJob(job) {
 
 function BulkActions({ employees, setEmployees, notify }) {
   const [step, setStep] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
   const [operation, setOperation] = useState('Update existing employees');
   const [selectedFields, setSelectedFields] = useState(['firstName', 'lastName', 'employmentStatus', 'department']);
   const [job, setJob] = useState(null);
@@ -596,14 +698,16 @@ function BulkActions({ employees, setEmployees, notify }) {
   const downloadTemplate = () => {
     const headers = ['employeeCode', ...selectedFields];
     const sample = ['0000112345', ...selectedFields.map(key => key === 'employmentStatus' ? 'Full-time' : '')];
-    download('employee-bulk-update-template.csv', `${headers.join(',')}\n${sample.join(',')}\n`);
+    downloadExcelTemplate('employee-bulk-update-template.xlsx', 'Employees', headers, [sample]);
     notify({ type: 'success', message: 'Bulk update template downloaded. Employee Code is immutable and must remain in the file.' });
   };
-  const stageFile = event => {
-    const file = event.target.files?.[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const raw = String(reader.result || ''); const rows = parseBulkCsv(raw); const headers = (rows.shift() || []).map(value => value.trim());
+  /** The Import step of the Upload dialog: the workbook is read and validated as a whole; nothing is written until it is committed. */
+  const stageFile = async file => {
+    const sheet = await readTable(file, ['employeecode'], { columnsHint: 'Use the downloaded template: the first column is employeeCode.', dateFormat: 'iso' });
+    if (sheet.error) { notify({ type: 'error', message: sheet.error }); return { ok: false, message: sheet.error }; }
+    let outcome = { ok: true, message: 'File validated. Review the preview before committing.' };
+    {
+      const raw = toCsvText(sheet.headers, sheet.rows); const rows = sheet.rows.map(values => [...values]); const headers = sheet.headers.map(value => value.trim());
       const selectedHeaders = ['employeeCode', ...selectedFields]; const errors = []; const warnings = [];
       const unknown = headers.filter(header => !selectedHeaders.includes(header));
       const missing = selectedHeaders.filter(header => !headers.includes(header));
@@ -627,11 +731,14 @@ function BulkActions({ employees, setEmployees, notify }) {
         entries.push({ employeeCode, values: Object.fromEntries(selectedFields.map(fieldKey => [fieldKey, record[fieldKey] || ''])), snapshotVersion: Number(current.version || 1) });
       });
       const next = { jobId: `bulk-${Date.now()}`, companyId: bulkCompanyId, operation, fileName: file.name, fileHash: contentHash(raw), attemptNo: 1, selectedFields, uploadedAt: new Date().toISOString(), validatedAt: new Date().toISOString(), totalRows: rows.length, validRows: entries.filter(entry => !errors.some(error => error.employeeCode === entry.employeeCode && error.row > 1)).length, invalidRows: errors.filter(error => error.row > 1).length, status: errors.length ? 'Validation Failed' : 'Ready to Commit', errors, warnings, rows: entries, committedRows: 0 };
-      updateJob(next); setStep(2); event.target.value = '';
-      if (errors.length) rejectUpload(file.name, errors, () => {});
+      updateJob(next); setStep(2);
+      if (errors.length) {
+        downloadErrorWorkbook(file.name, 'Employees', sheet.headers, sheet.rows, messagesByRow(errors.map(error => ({ row: error.row, reason: `${error.field ? `${error.field}: ` : ''}${error.reason}` })), sheet.rows.length));
+        outcome = { ok: false, message: `${errors.length} validation ${errors.length === 1 ? 'issue' : 'issues'} found, so no employee data was changed. Check the downloaded file for details.` };
+      }
       notify({ type: errors.length ? 'error' : 'success', message: errors.length ? `${errors.length} validation issue${errors.length === 1 ? '' : 's'} found. No employee data was changed; the error log has been downloaded.` : 'File validated. Review the preview before committing.' });
-    };
-    reader.readAsText(file);
+    }
+    return outcome;
   };
   const commit = () => {
     if (!job || job.status !== 'Ready to Commit') return notify({ type: 'error', message: 'Resolve validation issues before committing.' });
@@ -642,26 +749,32 @@ function BulkActions({ employees, setEmployees, notify }) {
   };
   const downloadErrors = () => { if (!job?.errors?.length) return; const csv = ['row,employeeCode,field,code,reason,rejectedValue', ...job.errors.map(error => [error.row, error.employeeCode, error.field, error.code, error.reason, error.rejectedValue].map(value => `"${String(value || '').replaceAll('"', '""')}"`).join(','))].join('\n'); download(`${job.jobId}-errors.csv`, csv); };
   const reset = () => { setJob(null); setStep(0); };
-  return <div className="employee-bulk"><div className="bulk-hero"><div><p className="eyebrow">Employee Masterfile / governed write channel</p><h1>Bulk Actions</h1><p>Stage, validate, preview and commit employee updates without writing directly from an uploaded file.</p></div><span className="controlled-badge"><ShieldCheck /> Company-scoped · {bulkCompanyId}</span></div><div className="bulk-stepper">{['Select fields', 'Upload', 'Validate & preview', 'Commit & history'].map((label, index) => <div key={label} className={`${step === index ? 'active' : ''} ${step > index ? 'complete' : ''}`}><span>{step > index ? <Check /> : index + 1}</span>{label}</div>)}</div>{step === 0 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>1. Choose a controlled operation</h2><p>Employee Code is immutable. Select only whitelisted fields that the actor is allowed to update.</p></div></div><label className="bulk-operation">Operation<select value={operation} onChange={event => setOperation(event.target.value)}><option>Update existing employees</option><option>Correct employee data</option></select></label><div className="bulk-field-list"><div className="bulk-field locked"><input type="checkbox" checked readOnly /><div><strong>employeeCode</strong><small>Employee Code · immutable identifier</small></div><span>Required</span></div>{bulkFieldRegistry.map(field => <label className="bulk-field" key={field.key}><input type="checkbox" checked={selectedFields.includes(field.key)} onChange={() => toggleField(field.key)} /><div><strong>{field.key}</strong><small>{field.label} · {field.type === 'reference' ? 'reference code required' : field.type}</small></div>{field.required && <span>Required</span>}</label>)}</div><div className="bulk-actions"><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Download template</button><button className="button primary" disabled={!selectedFields.length} onClick={() => setStep(1)}>Continue <ArrowRight /></button></div></section>}{step === 1 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>2. Upload a staged attempt</h2><p>Upload the generated template. The file is hashed, scoped to this company, and validated before any canonical write.</p></div></div><div className="bulk-upload-box"><FileCsv /><strong>Upload CSV</strong><span>Headers must match the selected field keys. Reference values use codes, not display labels.</span><label className="button primary">Choose CSV<input className="sr-only" type="file" accept=".csv,text/csv" onChange={stageFile} /></label><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Download template</button></div><div className="bulk-actions"><button className="button secondary" onClick={() => setStep(0)}>Back</button></div></section>}{step === 2 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>3. Validate and preview</h2><p>Review the exact row-level result. Invalid files never write to the masterfile.</p></div><span className={`status-pill ${job?.status === 'Ready to Commit' ? 'active' : 'inactive'}`}>{job?.status}</span></div>{job && <><div className="bulk-summary"><span><strong>{job.totalRows}</strong><small>Total rows</small></span><span><strong>{job.validRows}</strong><small>Valid rows</small></span><span><strong>{job.invalidRows}</strong><small>Invalid rows</small></span><span><strong>{job.warnings?.length || 0}</strong><small>Warnings</small></span><span><strong>{job.fileHash}</strong><small>Content hash</small></span></div>{job.errors?.length ? <div className="bulk-errors"><div><Warning /><strong>Resolve validation errors before commit.</strong><button className="button secondary" onClick={downloadErrors}>Download errors</button></div><ul>{job.errors.slice(0, 12).map((error, index) => <li key={`${error.code}-${index}`}>Row {error.row || '—'} · {error.employeeCode || '—'} · <strong>{error.code}</strong> · {error.reason}</li>)}</ul></div> : <div className="bulk-success"><CheckCircle /><span><strong>All rows are valid.</strong> Blank optional cells retain the existing value.</span></div>}<div className="table-card bulk-preview"><table><thead><tr><th>Row</th><th>Employee</th>{selectedFields.map(field => <th key={field}>{field}</th>)}</tr></thead><tbody>{job.rows.map((entry, index) => <tr key={entry.employeeCode}><td>{index + 2}</td><td><code>{entry.employeeCode}</code></td>{selectedFields.map(field => <td key={field}>{entry.values[field] || 'Retain existing'}</td>)}</tr>)}</tbody></table></div></>}{job?.status === 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload</button><button className="button primary" onClick={commit}>Commit {job.validRows} rows</button></div>}{job?.status !== 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload corrected file</button></div>}</section>}{step === 3 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>4. Commit result and history</h2><p>The canonical Employee Masterfile was updated once. A second commit of the same job is not available.</p></div><span className="status-pill active">Completed</span></div>{job && <div className="bulk-success"><CheckCircle /><span><strong>{job.committedRows} rows committed.</strong> Audit event recorded with job ID {job.jobId}.</span></div>}<div className="bulk-actions"><button className="button primary" onClick={reset}><Plus /> Start another bulk action</button></div></section>}{history.length > 0 && <section className="bulk-card bulk-history"><div className="bulk-card-heading"><div><h2>Bulk job history</h2><p>Attempts, hashes, validation results and commits are retained per company.</p></div></div><div className="table-card bulk-preview"><table><thead><tr><th>Job</th><th>File</th><th>Operation</th><th>Rows</th><th>Status</th><th>Attempt</th><th>Updated</th></tr></thead><tbody>{history.map(item => <tr key={item.jobId}><td><code>{item.jobId}</code><small>{item.fileHash}</small></td><td>{item.fileName}</td><td>{item.operation}</td><td>{item.committedRows || item.validRows || 0}/{item.totalRows}</td><td><span className={`status-pill ${item.status.toLowerCase().replaceAll(' ', '-')}`}>{item.status}</span></td><td>{item.attemptNo}</td><td>{String(item.committedAt || item.validatedAt || item.uploadedAt || '').replace('T', ' ').slice(0, 16)}</td></tr>)}</tbody></table></div></section>}</div>;
+  return <div className="employee-bulk"><div className="bulk-hero"><div><p className="eyebrow">Employee Masterfile / governed write channel</p><h1>Bulk Actions</h1><p>Stage, validate, preview and commit employee updates without writing directly from an uploaded file.</p></div><span className="controlled-badge"><ShieldCheck /> Company-scoped · {bulkCompanyId}</span></div><div className="bulk-stepper">{['Select fields', 'Upload', 'Validate & preview', 'Commit & history'].map((label, index) => <div key={label} className={`${step === index ? 'active' : ''} ${step > index ? 'complete' : ''}`}><span>{step > index ? <Check /> : index + 1}</span>{label}</div>)}</div>{step === 0 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>1. Choose a controlled operation</h2><p>Employee Code is immutable. Select only whitelisted fields that the actor is allowed to update.</p></div></div><label className="bulk-operation">Operation<select value={operation} onChange={event => setOperation(event.target.value)}><option>Update existing employees</option><option>Correct employee data</option></select></label><div className="bulk-field-list"><div className="bulk-field locked"><input type="checkbox" checked readOnly /><div><strong>employeeCode</strong><small>Employee Code · immutable identifier</small></div><span>Required</span></div>{bulkFieldRegistry.map(field => <label className="bulk-field" key={field.key}><input type="checkbox" checked={selectedFields.includes(field.key)} onChange={() => toggleField(field.key)} /><div><strong>{field.key}</strong><small>{field.label} · {field.type === 'reference' ? 'reference code required' : field.type}</small></div>{field.required && <span>Required</span>}</label>)}</div><div className="bulk-actions"><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Download template</button><button className="button primary" disabled={!selectedFields.length} onClick={() => setStep(1)}>Continue <ArrowRight /></button></div></section>}{step === 1 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>2. Upload a staged attempt</h2><p>Upload the generated template. The file is hashed, scoped to this company, and validated before any canonical write.</p></div></div><div className="bulk-upload-box"><FileXls /><strong>Upload file</strong><span>Headers must match the selected field keys. Reference values use codes, not display labels.</span><button className="button primary" onClick={() => setImportOpen(true)}>Choose file</button><button className="button secondary" onClick={downloadTemplate}><FileXls /> Download template</button>{importOpen && <ImportDialog historyKey="employee-bulk-actions" onImport={stageFile} onClose={() => setImportOpen(false)} />}</div><div className="bulk-actions"><button className="button secondary" onClick={() => setStep(0)}>Back</button></div></section>}{step === 2 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>3. Validate and preview</h2><p>Review the exact row-level result. Invalid files never write to the masterfile.</p></div><span className={`status-pill ${job?.status === 'Ready to Commit' ? 'active' : 'inactive'}`}>{job?.status}</span></div>{job && <><div className="bulk-summary"><span><strong>{job.totalRows}</strong><small>Total rows</small></span><span><strong>{job.validRows}</strong><small>Valid rows</small></span><span><strong>{job.invalidRows}</strong><small>Invalid rows</small></span><span><strong>{job.warnings?.length || 0}</strong><small>Warnings</small></span><span><strong>{job.fileHash}</strong><small>Content hash</small></span></div>{job.errors?.length ? <div className="bulk-errors"><div><Warning /><strong>Resolve validation errors before commit.</strong><button className="button secondary" onClick={downloadErrors}>Download errors</button></div><ul>{job.errors.slice(0, 12).map((error, index) => <li key={`${error.code}-${index}`}>Row {error.row || '—'} · {error.employeeCode || '—'} · <strong>{error.code}</strong> · {error.reason}</li>)}</ul></div> : <div className="bulk-success"><CheckCircle /><span><strong>All rows are valid.</strong> Blank optional cells retain the existing value.</span></div>}<div className="table-card bulk-preview"><table><thead><tr><th>Row</th><th>Employee</th>{selectedFields.map(field => <th key={field}>{field}</th>)}</tr></thead><tbody>{job.rows.map((entry, index) => <tr key={entry.employeeCode}><td>{index + 2}</td><td><code>{entry.employeeCode}</code></td>{selectedFields.map(field => <td key={field}>{entry.values[field] || 'Retain existing'}</td>)}</tr>)}</tbody></table></div></>}{job?.status === 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload</button><button className="button primary" onClick={commit}>Commit {job.validRows} rows</button></div>}{job?.status !== 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload corrected file</button></div>}</section>}{step === 3 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>4. Commit result and history</h2><p>The canonical Employee Masterfile was updated once. A second commit of the same job is not available.</p></div><span className="status-pill active">Completed</span></div>{job && <div className="bulk-success"><CheckCircle /><span><strong>{job.committedRows} rows committed.</strong> Audit event recorded with job ID {job.jobId}.</span></div>}<div className="bulk-actions"><button className="button primary" onClick={reset}><Plus /> Start another bulk action</button></div></section>}{history.length > 0 && <section className="bulk-card bulk-history"><div className="bulk-card-heading"><div><h2>Bulk job history</h2><p>Attempts, hashes, validation results and commits are retained per company.</p></div></div><div className="table-card bulk-preview"><table><thead><tr><th>Job</th><th>File</th><th>Operation</th><th>Rows</th><th>Status</th><th>Attempt</th><th>Updated</th></tr></thead><tbody>{history.map(item => <tr key={item.jobId}><td><code>{item.jobId}</code><small>{item.fileHash}</small></td><td>{item.fileName}</td><td>{item.operation}</td><td>{item.committedRows || item.validRows || 0}/{item.totalRows}</td><td><span className={`status-pill ${item.status.toLowerCase().replaceAll(' ', '-')}`}>{item.status}</span></td><td>{item.attemptNo}</td><td>{String(item.committedAt || item.validatedAt || item.uploadedAt || '').replace('T', ' ').slice(0, 16)}</td></tr>)}</tbody></table></div></section>}</div>;
 }
 
 export function EmployeeMasterfile({ onBack, onNavigate, notify, company, companies, onSelectCompany }) {
-  const storageKey = 'atlas-employee-payroll-data-v3';
-  const [data, setData] = useState(() => {
-    let base = null;
-    try { base = JSON.parse(localStorage.getItem(storageKey)); } catch { base = null; }
-    if (!base) base = Object.fromEntries(sectionDefinitions.map(section => [section.key, section.rows.map((row, index) => normalizePayrollRecord(section, { ...row, id: index + 1 }))]));
-    // Derived ceiling/balance columns are recomputed on load so stored rows and
-    // seeded rows always reflect the current statutory tables and YTD position.
-    const latestYtd = [...(base.ytd || [])].sort((a, b) => String(b.year).localeCompare(String(a.year)))[0] || {};
-    const context = { ytdNonTaxableBonus: Number(latestYtd.nonTaxableBonus || 0) };
-    return Object.fromEntries(sectionDefinitions.map(section => {
-      const rows = (base[section.key] || []).map(row => normalizePayrollRecord(section, row));
-      return [section.key, recalculateSection(section, rows, context)];
-    }));
-  });
+  // Each employee's payroll entries are kept under the employee's code; the payroll transaction reads them from there.
+  const [store, setStore] = useState(() => readEmployeePayrollStore());
+  const [hrm] = useState(() => { try { return readHrmData(); } catch { return null; } });
+  /** What an employee shows before anything is stored: the HR record for the payroll sections, the demo rows for the rest. */
+  const defaultRows = (person, section) => {
+    if (PAYROLL_SECTIONS.includes(section.key)) {
+      const rostered = employeeRoster.find(item => item.code === person.id);
+      if (ROSTER_SECTIONS.includes(section.key)) return rostered ? masterfileRowsFromRoster(rostered, YTD_AS_OF)[section.key] : [];
+      const salary = rostered && (hrm?.salaryInformation || []).find(row => row.employeeId === rostered.employeeId);
+      return salary ? masterfileRowsFromHrm(salary, (hrm?.loanInquiries || []).filter(row => row.employeeId === rostered.employeeId), rostered.payroll)[section.key] : [];
+    }
+    return section.rows.map((row, index) => ({ ...row, id: index + 1 }));
+  };
+  const rawRows = (person, section) => { const stored = store[person.id]?.[section.key]; return (Array.isArray(stored) ? stored : defaultRows(person, section)).map(row => normalizePayrollRecord(section, row)); };
+  const ytdContextOf = person => {
+    const ytdSection = sectionDefinitions.find(item => item.key === 'ytd');
+    const latestYtd = [...rawRows(person, ytdSection)].sort((a, b) => String(b.year).localeCompare(String(a.year)))[0] || {};
+    return { ytdNonTaxableBonus: Number(latestYtd.nonTaxableBonus || 0), ytdDeMinimis: Number(latestYtd.deMinimis || 0), ytdYear: latestYtd.year };
+  };
+  const rowsFor = (person, section) => recalculateSection(section, rawRows(person, section), ytdContextOf(person));
   const [employeeList, setEmployeeList] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('atlas-employee-directory-v2')) || employees; } catch { return employees; }
+    try { return JSON.parse(localStorage.getItem('atlas-employee-directory-v3')) || employees; } catch { return employees; }
   });
   const [module, setModule] = useState('employees');
   const [detailOpen, setDetailOpen] = useState(false);
@@ -670,17 +783,14 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const [employeePicker, setEmployeePicker] = useState(false);
   const [exportMenu, setExportMenu] = useState(false);
   const [customExport, setCustomExport] = useState(false);
-  useEffect(() => localStorage.setItem(storageKey, JSON.stringify(data)), [data]);
-  useEffect(() => localStorage.setItem('atlas-employee-directory-v2', JSON.stringify(employeeList)), [employeeList]);
+  useEffect(() => writeEmployeePayrollStore(store), [store]);
+  useEffect(() => localStorage.setItem('atlas-employee-directory-v3', JSON.stringify(employeeList)), [employeeList]);
   const employee = useMemo(() => employeeList.find(item => item.id === employeeId) || employeeList[0] || employees[0], [employeeId, employeeList]);
-  const updateRows = (key, rows) => setData(previous => ({ ...previous, [key]: rows }));
+  const updateRows = (key, rows) => setStore(previous => ({ ...previous, [employee.id]: { ...(previous[employee.id] || {}), [key]: rows } }));
   // YTD utilisation the ceiling rules consume (§10.1). The latest recorded
   // year is what the current payroll year draws its remaining threshold from.
-  const payrollContext = useMemo(() => {
-    const latestYtd = [...(data.ytd || [])].sort((a, b) => String(b.year).localeCompare(String(a.year)))[0] || {};
-    return { ytdNonTaxableBonus: Number(latestYtd.nonTaxableBonus || 0), ytdDeMinimis: Number(latestYtd.deMinimis || 0), ytdYear: latestYtd.year };
-  }, [data.ytd]);
-  const runExport = (keys, format) => { if (exportEmployeeData(data, keys, format)) notify({ type: 'success', message: 'Employee payroll export prepared.' }); setCustomExport(false); setExportMenu(false); };
+  const payrollContext = ytdContextOf(employee);
+  const runExport = (keys, format) => { if (exportEmployeeData(Object.fromEntries(sectionDefinitions.map(section => [section.key, rowsFor(employee, section)])), keys, format, employee.name)) notify({ type: 'success', message: 'Employee payroll export prepared.' }); setCustomExport(false); setExportMenu(false); };
   const selectEmployee = item => { setEmployeeId(item.id); setActiveTab('Personal Details'); setDetailOpen(true); };
   const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts'];
 
@@ -702,10 +812,13 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Contacts' && <Contacts employee={employee} notify={notify} />}
         {activeTab === 'Payroll & Allocation' && <>
           <div className="employee-export-row"><div className="menu-anchor"><button className="button secondary" onClick={() => setExportMenu(!exportMenu)}><DownloadSimple /> Export <CaretDown /></button>{exportMenu && <div className="export-menu employee-export-menu"><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'csv')}>Export All — Excel / CSV</button><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'pdf')}>Export All — PDF / Print</button><button onClick={() => { setCustomExport(true); setExportMenu(false); }}>Custom export…</button></div>}</div></div>
-          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={data[section.key] || []} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
+          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}
     </div></main>
     {customExport && <CustomExport sections={sectionDefinitions} onClose={() => setCustomExport(false)} onExport={runExport} />}
   </div>;
 }
+
+/** Exposed so the test-case generator reads the same section forms and rules the screen uses. */
+export { sectionDefinitions, normalizePayrollRecord, recalculateSection, isRequired };

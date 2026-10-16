@@ -15,7 +15,7 @@ test('a computation step identifies its source screen, governed code, library, a
   assert.equal(trace.kind, 'Configuration + computation');
   assert.equal(trace.policyApplied, false);
   assert.ok(trace.references.some(item => pathText(item.path) === 'HRM › Benefits › Salary Information › Employee › Basic Pay'));
-  assert.ok(trace.references.some(item => pathText(item.path) === 'Core › Company Configuration › Services Information › Basic Pay & Pay Rates'));
+  assert.ok(trace.references.some(item => pathText(item.path) === 'Core › Employee Masterfile › Payroll & Allocation › Basic Pay'));
   assert.ok(trace.references.some(item => pathText(item.path).endsWith('Computational Basis › Computations › ERN-001')));
   assert.ok(trace.references.some(item => pathText(item.path).endsWith('Standard Computation Library › ERN-001')));
   assert.ok(trace.references.some(item => pathText(item.path).endsWith('Client computation assignments › ERN-001')));

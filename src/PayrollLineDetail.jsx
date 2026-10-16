@@ -180,6 +180,7 @@ export function ComputationTrail({ steps = [] }) {
             <span className="payroll-trail-source">
               {step.evaluated ? 'Evaluated from the Computational Basis library' : 'Resolved by lookup'} · Source: {step.source}
               {step.version && ` · ${step.code} version ${step.version}${step.effectiveDate ? ` effective ${formatUsDate(step.effectiveDate)}` : ''}${step.formulaOwner ? ` · ${step.formulaOwner}` : ''}`}
+              {step.version && step.versionChosenOn && ` · Version chosen by ${step.versionChosenBy.toLowerCase()} ${formatUsDate(step.versionChosenOn)}`}
               {step.fallbackReason && ` · Library expression not used: ${step.fallbackReason}`}
               {step.referenceVersion && ` · Reference table ${step.referenceVersion.code} effective ${formatUsDate(step.referenceVersion.effectiveDate)}`}
               {step.rounding && ` · Rounding: ${step.rounding}`}
@@ -495,7 +496,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
           ]}
           rows={[
             { key: 'sss', agency: 'SSS — regular fund', employee: line.statutory.sssRegularEmployee, employer: line.statutory.sssEmployer - line.statutory.sssMpfEmployer - line.statutory.ec },
-            { key: 'wisp', agency: 'SSS — Mandatory Provident Fund (WISP)', employee: line.statutory.sssMpfEmployee, employer: line.statutory.sssMpfEmployer },
+            { key: 'wisp', agency: 'SSS — Mandatory Provident Fund (MPF)', employee: line.statutory.sssMpfEmployee, employer: line.statutory.sssMpfEmployer },
             { key: 'ec', agency: 'Employees’ Compensation', employee: 0, employer: line.statutory.ec },
             { key: 'phic', agency: 'PhilHealth', employee: line.statutory.philhealthEmployee, employer: line.statutory.philhealthEmployer },
             { key: 'hdmf', agency: 'Pag-IBIG', employee: line.statutory.hdmfEmployee, employer: line.statutory.hdmfEmployer },

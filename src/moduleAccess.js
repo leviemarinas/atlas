@@ -22,9 +22,11 @@
  */
 
 /** Canonical actor ids, in privilege order. */
-export const ACTORS = ['employee', 'approver', 'client_admin', 'pa_admin'];
+export const ACTORS = ['employee', 'approver', 'client_admin', 'pa_admin', 'pa_superadmin'];
 
-const ADMINS = ['client_admin', 'pa_admin'];
+/** Both P&A roles; the SuperAdmin holds everything a P&A Admin does. */
+export const PA_ROLES = ['pa_admin', 'pa_superadmin'];
+const ADMINS = ['client_admin', ...PA_ROLES];
 const EVERY_ACTOR = ['employee', 'approver', ...ADMINS];
 
 /**
@@ -62,7 +64,7 @@ export function canAccessModule(role, moduleKey) {
 export const PA_ADMIN_ONLY_TILES = ['Billing'];
 
 export function canAccessTile(role, label) {
-  if (PA_ADMIN_ONLY_TILES.includes(label)) return normalizeRole(role) === 'pa_admin';
+  if (PA_ADMIN_ONLY_TILES.includes(label)) return PA_ROLES.includes(normalizeRole(role));
   return true;
 }
 

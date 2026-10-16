@@ -524,7 +524,9 @@ export function writeHistory(companyId, history) {
 const TRACKED_FIELDS = [
   ['expression', 'Expression'],
   ['status', 'Status'],
-  ['effectiveDate', 'Effective date'],
+  ['effectiveDate', 'Effective from'],
+  ['effectiveTo', 'Effective to'],
+  ['dateBasis', 'Version chosen by'],
   ['name', 'Computation name'],
   ['category', 'Category'],
   ['description', 'Description'],
@@ -532,7 +534,11 @@ const TRACKED_FIELDS = [
 ];
 
 // Parameters are an object, so they are compared and shown as one readable line.
-const trackedValue = (key, record) => (key === 'parameters' ? describeParameters(record?.parameters || {}) : record?.[key] ?? '');
+const trackedValue = (key, record) => {
+  if (key === 'parameters') return describeParameters(record?.parameters || {});
+  if (key === 'dateBasis') return record?.dateBasis || 'Payout date';
+  return record?.[key] ?? '';
+};
 
 export function diffComputation(previous, next) {
   if (!previous) return [];
@@ -570,7 +576,7 @@ export function readVersions(companyId, isBuiltIn = false) {
   return Array.isArray(saved) ? saved : [];
 }
 
-export function appendVersion(companyId, record, { test = null, changes = [], note = '', actor = 'Client Admin', source = 'Screen', approvalRef = '' } = {}) {
+export function appendVersion(companyId, record, { test = null, changes = [], note = '', actor = 'Client Admin', source = 'Screen', approvalRef = '', approvedBy = '', approvedAt = '' } = {}) {
   const isBuiltIn = record.isBuiltIn !== false;
   const key = versionsKey(companyId, isBuiltIn);
   const existing = readVersions(companyId, isBuiltIn);
@@ -583,6 +589,10 @@ export function appendVersion(companyId, record, { test = null, changes = [], no
     description: record.description || '',
     status: record.status,
     effectiveDate: record.effectiveDate,
+    effectiveTo: record.effectiveTo || '',
+    dateBasis: record.dateBasis || 'Payout date',
+    approvedBy,
+    approvedAt,
     isBuiltIn,
     scope: computationScope(record),
     ownerCompanyId: record.ownerCompanyId || '',
@@ -922,6 +932,8 @@ export function newStandardComputation({ category = 'Earnings', library = [], ca
     parameters: {},
     version: '0.0',
     effectiveDate: today(),
+    effectiveTo: '',
+    dateBasis: 'Payout date',
     updatedBy: actor,
     updatedAt: 'Not saved',
     lastTest: null,

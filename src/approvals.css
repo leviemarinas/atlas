@@ -1,0 +1,45 @@
+/* Maker-checker for the formula library: the approvals queue and the extra statuses */
+#root .status-pill.draft { background: #f1eff2; color: #756e79; }
+#root .status-pill.for-approval { background: #fff4e5; color: #96590d; }
+#root .status-pill.rejected { background: #fde8ea; color: #b4232f; }
+#root .status-pill.approved { background: #e5f6ed; color: #147d4f; }
+#root .status-pill.withdrawn { background: #f1eff2; color: #756e79; }
+#root .approval-note { display: block; margin-top: 4px; color: #96590d; font-size: 10.4px; }
+
+#root .approval-queue { margin: 0 0 14px; padding: 14px 16px; border: 1px solid #f0d9a8; border-radius: 10px; background: #fffdf7; }
+#root .approval-queue > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+#root .approval-queue h2 { margin: 0; font-size: 14px; color: #212529; }
+#root .approval-count { padding: 3px 9px; border-radius: 999px; background: #fff4e5; color: #96590d; font-size: 10.6px; font-weight: 600; }
+#root .approval-queue td small, #root .approval-history td small { display: block; margin-top: 3px; color: #8a828f; }
+#root .approval-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+#root .approval-history { margin-top: 10px; }
+#root .approval-history summary { cursor: pointer; color: #4f2d7f; font-size: 11.7px; font-weight: 600; }
+#root .approval-reason { display: grid; gap: 6px; margin: 10px 0 14px; font-size: 11.7px; color: #514a6b; }
+#root .approval-reason textarea { width: 100%; }
+
+#root .effective-cell { display: grid; gap: 2px; justify-items: start; white-space: nowrap; }
+#root .effective-cell small { color: #8a828f; }
+#root .status-pill.scheduled { background: #e8f1fb; color: #1d5fa8; }
+#root .status-pill.ended, #root .status-pill.superseded { background: #f1eff2; color: #756e79; }
+#root .date-check { margin: 6px 0; }
+#root .date-check.error { color: #b4232f; }
+#root .basis-table .table-formula { display: block; max-width: 165px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Gross Up */
+#root .gross-up-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 16px; }
+#root .gross-up-presets small { flex-basis: 100%; color: #6b647a; font-size: 11.7px; }
+#root .gross-up-ownership { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 16px; }
+#root .gross-up-ownership > div { padding: 10px 12px; border: 1px solid #e3deea; border-radius: 10px; background: #faf8fd; }
+#root .gross-up-ownership strong { display: block; font-size: 11.7px; color: #4f2d7f; }
+#root .gross-up-ownership small { display: block; margin-top: 4px; color: #6b647a; font-size: 10.6px; line-height: 1.45; }
+#root .gross-up-proof { margin: 12px 0; padding: 12px 14px; border: 1px solid #bfe3d0; border-radius: 10px; background: #f4fbf7; }
+#root .gross-up-proof.fails { border-color: #f1c4c8; background: #fdf5f6; }
+#root .gross-up-proof h3 { display: flex; justify-content: space-between; margin: 0 0 8px; font-size: 13px; }
+#root .gross-up-proof h3 span { font-size: 11.7px; color: #147d4f; }
+#root .gross-up-proof.fails h3 span { color: #b4232f; }
+#root .gross-up-proof table { width: 100%; border-collapse: collapse; }
+#root .gross-up-proof td { padding: 4px 0; font-size: 11.7px; }
+#root .gross-up-proof td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+#root .gross-up-proof tr.total td { border-top: 1px solid #bfe3d0; font-weight: 600; }
+#root .gross-up-proof p { margin: 8px 0 0; font-size: 11.2px; color: #514a6b; }
+@media (max-width: 760px) { #root .gross-up-ownership { grid-template-columns: 1fr; } }

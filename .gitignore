@@ -8,3 +8,6 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# GT Walsheim Pro copied from Atlas core for local look-matching; licensed font, do not commit
+public/fonts/

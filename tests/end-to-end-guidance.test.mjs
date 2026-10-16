@@ -47,7 +47,7 @@ test('formula, statutory, and take-home journeys produce real payroll evidence',
   assert.equal(formula.metrics.payrollStatus, 'Posted');
   assert.ok(formula.metrics.computationTrail.some(step => step.code === 'ERN-002' && step.evaluated));
   assert.ok(formula.metrics.auditTrail.length >= 18);
-  assert.ok(formula.metrics.auditTrail.some(node => node.id === 'basic-config' && node.path.join(' › ').endsWith('Basic Pay & Pay Rates')));
+  assert.ok(formula.metrics.auditTrail.some(node => node.id === 'basic-config' && node.path.join(' › ').endsWith('Employee Masterfile › Payroll & Allocation › Basic Pay')));
   assert.ok(formula.metrics.computationTrail.every(step => step.references.length >= 3));
 
   const statutory = runJourney('statutory-trace');
