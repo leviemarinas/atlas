@@ -378,6 +378,56 @@ export const employeeRoster = Object.freeze(rosterDefinitions.map(employee => Ob
   ytd: ytdFor(employee.payroll, { months: employee.ytdMonths ?? YTD_MONTHS_ELAPSED }),
 })));
 
+/** Where the Employee Masterfile keeps its list of employees. */
+export const MASTERFILE_STORAGE_KEY = 'atlas-employee-directory-v3';
+
+/** The Masterfile's saved list, or null until the Masterfile has saved one. */
+export function readMasterfileList(storage = globalThis.localStorage) {
+  try {
+    const saved = JSON.parse(storage?.getItem(MASTERFILE_STORAGE_KEY));
+    return Array.isArray(saved) ? saved : null;
+  } catch { return null; }
+}
+
+/**
+ * An employee added in the Masterfile, on the company's default pay setup:
+ * semi-monthly, 261 factor days, 8 hours, every statutory deduction on, and no
+ * basic pay until one is entered in Payroll & Allocation › Basic Pay.
+ */
+function newHire(person) {
+  const code = String(person.id);
+  const name = person.name || code;
+  const payroll = {
+    paymentMode: 'Semi-monthly', ...rates({ monthlyBasic: 0 }), monthlyBasic: 0,
+    mwe: 'No', ecolaPerDay: 0, mweRegion: '', mweSector: '', grossUp: 'No', currency: 'PHP',
+    taxType: 'Compensation', taxExemptionCode: 'S',
+    ...statutorySwitches(), ...classifications(),
+    hdmfEmployeeContribution: 200, hdmfEmployerContribution: 200,
+  };
+  return {
+    employeeId: code, employeeCode: code, code, name, initials: person.initials || '',
+    position: person.role || '', department: person.department || 'Not set', group: person.employeeGroup || 'Not set',
+    site: '', costCenter: '', jobLevel: '', employmentType: person.status || '', employmentStatus: 'Active', employeeTagging: 'Employee',
+    dateHired: person.hireDate || '', dateHold: '', endDateHold: '', holdReason: '', dateSeparated: '', separationDate: '',
+    monthlyBasic: 0, payroll, government: {}, banks: [], previousEmployer: null, earningAmounts: {},
+    ytd: ytdFor(payroll, { months: 0 }), addedInMasterfile: true,
+  };
+}
+
+/**
+ * The employees as the Masterfile lists them now: the seeded roster until the
+ * Masterfile saves a list, then that list — rostered people keep their full
+ * record, people added there come in on the default pay setup.
+ */
+export function currentRoster(masterfile = readMasterfileList()) {
+  if (!masterfile) return employeeRoster;
+  return masterfile.filter(person => person?.id).map(person => {
+    const rostered = employeeRoster.find(employee => employee.code === person.id);
+    if (!rostered) return newHire(person);
+    return person.name && person.name !== rostered.name ? { ...rostered, name: person.name } : rostered;
+  });
+}
+
 /** Employee groups a policy or a bonus run may be scoped to. */
 export const employeeGroups = Object.freeze(['All Employees', 'Rank and File', 'Managers', 'Project-based Employees', 'Retirement Eligible']);
 

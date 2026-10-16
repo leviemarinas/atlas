@@ -48,7 +48,7 @@ import { appendAuditEvent } from './companyRepository';
 import { chargeCodeNames, chargeCodeTypes } from './chargeCodeService';
 import { referenceRows, referenceValues } from './ReferenceTables';
 import { CONFIG_PAYMENT_MODES, frequencyOptions, migrateSchedule, readServiceConfiguration } from './serviceModules';
-import { coversEmployee, employeeDirectory } from './applicabilityScope';
+import { MASTERFILE_STORAGE_KEY, coversEmployee, employeeDirectory, refreshEmployeeDirectory } from './applicabilityScope';
 import { deMinimisSplit } from './statutoryService';
 import { seedVersion } from './statutorySchedules.js';
 import { readRegisterRows } from './OperationalWorkspaces';
@@ -774,7 +774,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   };
   const rowsFor = (person, section) => recalculateSection(section, rawRows(person, section), ytdContextOf(person));
   const [employeeList, setEmployeeList] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('atlas-employee-directory-v3')) || employees; } catch { return employees; }
+    try { return JSON.parse(localStorage.getItem(MASTERFILE_STORAGE_KEY)) || employees; } catch { return employees; }
   });
   const [module, setModule] = useState('employees');
   const [detailOpen, setDetailOpen] = useState(false);
@@ -784,7 +784,8 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const [exportMenu, setExportMenu] = useState(false);
   const [customExport, setCustomExport] = useState(false);
   useEffect(() => writeEmployeePayrollStore(store), [store]);
-  useEffect(() => localStorage.setItem('atlas-employee-directory-v3', JSON.stringify(employeeList)), [employeeList]);
+  // Saving also refreshes the employee list the configuration and policy screens pick from.
+  useEffect(() => { localStorage.setItem(MASTERFILE_STORAGE_KEY, JSON.stringify(employeeList)); refreshEmployeeDirectory(employeeList); }, [employeeList]);
   const employee = useMemo(() => employeeList.find(item => item.id === employeeId) || employeeList[0] || employees[0], [employeeId, employeeList]);
   const updateRows = (key, rows) => setStore(previous => ({ ...previous, [employee.id]: { ...(previous[employee.id] || {}), [key]: rows } }));
   // YTD utilisation the ceiling rules consume (§10.1). The latest recorded

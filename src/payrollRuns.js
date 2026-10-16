@@ -21,7 +21,7 @@
  */
 
 import { readHrmData } from './hrmData.js';
-import { employeeRoster, YTD_AS_OF } from './employeeRoster.js';
+import { currentRoster, readMasterfileList, YTD_AS_OF } from './employeeRoster.js';
 import { seedComputations } from './computationCatalog.js';
 import { pickVersion } from './formulaVersioning.js';
 import { ROLE_LABEL, canRejectAt, canSignAt, joinLabels, levelComplete, neededSignatures, signaturesAt, stageOf, waitingLabels } from './payrollApprovalFlow.js';
@@ -695,7 +695,9 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
   const library = computationsInForce(libraryForRun(run, computations || seedComputations()), run?.payoutDate, readStandardVersions(storage || globalThis.localStorage), run);
   // What the Employee Masterfile holds for an employee replaces the HR record for the sections it has entries in.
   const store = readEmployeePayrollStore(storage || globalThis.localStorage);
-  const baseEmployees = run?.config?.ytd?.includePosted === false ? employeeRoster : withPostedYtd(employeeRoster, storedRuns, run);
+  // Everyone the Employee Masterfile lists, including people added there since the roster was seeded.
+  const roster = currentRoster(readMasterfileList(storage || globalThis.localStorage));
+  const baseEmployees = run?.config?.ytd?.includePosted === false ? roster : withPostedYtd(roster, storedRuns, run);
   const fromMasterfile = Object.keys(store).length
     ? overlayMasterfile({ employees: baseEmployees, salaryInformation: data.salaryInformation || [], loanSchedules: data.loanInquiries || [], bonuses: registers.bonuses || [], store, run })
     : null;
