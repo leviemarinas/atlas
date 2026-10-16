@@ -105,6 +105,20 @@ export function stepPlanFor(scenario) {
   });
 }
 
+/**
+ * The Masterfile-to-payroll walkthroughs from the test-case workbooks. Every
+ * Masterfile section has its own "Add entry", so the section is named by its
+ * `data-section` key; the module switch to Payroll goes through the rail
+ * because only the first step navigates.
+ */
+const connectedFlowPlan = (section, fields) => planWith('Core', ['Employee Masterfile', '0000112345', 'Payroll & Allocation'], {
+  1: { kind: 'form', targets: [`css:[data-section="${section}"] .employee-section-actions button`], fields, narration: 'Opening Add entry in the employee’s own Masterfile section and typing the test data.' },
+  2: { kind: 'commit', targets: ['Add'], narration: 'Reaching the Add button that saves the entry.' },
+  3: { kind: 'open', targets: ['css:.brand-rail button[aria-label="Payroll"]'], after: ['Payroll Processing'], narration: 'Switching to Payroll and opening Payroll Processing.' },
+  4: { kind: 'form', targets: ['Create Transaction'], fields: { 'Payroll calendar': 'November 2025 · Second Half', Remarks: 'Scenario Studio test-case walkthrough' }, after: ['Next', 'Next', 'Next'], narration: 'Opening Add Payroll on the November 2025 · Second Half calendar and stepping through to Review.' },
+  5: { kind: 'commit', targets: ['Create transaction'], narration: 'Reaching “Create transaction”, which computes the payroll.' },
+});
+
 export const SCENARIO_LIVE_PLANS = Object.freeze({
   'emp-payslip': plan('HRM', 'Employee Self-inquiry', 'Payslips & Payroll History'),
   'emp-payslip-history': plan('HRM', 'Employee Self-inquiry', 'Payslips & Payroll History'),
@@ -229,6 +243,13 @@ export const SCENARIO_LIVE_PLANS = Object.freeze({
   'pa-payroll-reopen': plan('Payroll', 'Payroll Processing'),
   'pa-negative-net': plan('Payroll', 'Payroll Processing'),
   'pa-import': plan('Payroll', 'Payroll Processing', 'Create Transaction'),
+
+  'tc-basic-pay': connectedFlowPlan('basicPay', { 'Effectivity Date': '2025-01-01', 'Pay Type': 'Monthly', 'Basic Pay Amount': '62000' }),
+  'tc-earning': connectedFlowPlan('earnings', { 'Earning Name': 'Housing Allowance', 'Earning Amount': '2000', Frequency: 'Monthly', Taxability: 'Taxable', 'Effectivity Date': '2025-01-01' }),
+  'tc-deduction': connectedFlowPlan('deductions', { 'Deduction Name': 'Cooperative Dues', 'Amount of Deduction': '500', 'Number of Deductions': '10', 'Accumulated Amount': '0' }),
+  'tc-company-loan': connectedFlowPlan('loans', { 'Loan Source': 'Company Loan', 'Loan Reference': 'Test Loan', 'Amortization Amount': '2500', Principal: '30000', 'Accumulated Payment (Manual)': '17500' }),
+  'tc-bonus': connectedFlowPlan('bonuses', { 'Bonus Name': 'Performance Bonus', 'Bonus Type': 'Performance Bonus', 'Total Amount': '20000' }),
+  'tc-payroll-transaction': connectedFlowPlan('basicPay', { 'Effectivity Date': '2025-01-01', 'Pay Type': 'Monthly', 'Basic Pay Amount': '80000' }),
 });
 
 export function livePlanFor(scenarioId) {

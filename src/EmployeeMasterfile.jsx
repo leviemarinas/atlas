@@ -591,7 +591,7 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
     };
     reader.readAsText(file); e.target.value = '';
   };
-  return <section className="employee-data-section">
+  return <section className="employee-data-section" data-section={section.key}>
     <button className="employee-section-heading" onClick={() => setOpen(!open)}><span>{section.title}</span>{open ? <CaretUp /> : <CaretDown />}</button>
     {open && <div className="employee-section-body"><div className="employee-section-actions"><button className="button secondary" onClick={() => setEditing({})}><Plus /> Add entry</button>{section.upload && <button className="button secondary" onClick={() => onOpenBulk?.(section.key)}><UploadSimple /> Bulk Actions</button>}{audited && <button className="button secondary" onClick={() => setHistoryOpen(true)}>Change history</button>}</div>
       <div className="employee-table-tools">

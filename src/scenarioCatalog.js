@@ -22,6 +22,30 @@ function scenario(id, role, category, title, want, value, steps, tags = []) {
   };
 }
 
+/**
+ * Walkthroughs that follow the "Connected Flow" sheet of a test-case workbook
+ * (Atlas-Phase2/Test Cases): one case is entered in the Employee Masterfile for
+ * Ethan Collins, then run through the second-half November 2025 payroll. The
+ * title, test data and expected figures are the workbook's own, so a client can
+ * be shown the story and the test case side by side.
+ */
+export const CONNECTED_FLOW_EMPLOYEE = 'Ethan Collins (0000112345)';
+const NOVEMBER_PAYROLL = 'Regular, Semi-monthly, Second Half of November 2025: period 11/16/2025 to 11/30/2025, payout 11/30/2025';
+
+function connectedFlow({ id, workbook, testCase, title, section, entry, data, expected, tags = [] }) {
+  return scenario(id, 'client_admin', 'Masterfile to payroll', `${workbook}: ${title}`,
+    `add ${entry} for ${CONNECTED_FLOW_EMPLOYEE} in the Employee Masterfile and run it through a payroll`,
+    `the payroll line shows the figures expected by ${workbook} ${testCase}`, [
+      step('Core', `Open Ethan Collins' ${section}`, `Go to Employee Masterfile › ${CONNECTED_FLOW_EMPLOYEE} › Payroll & Allocation › ${section}.`),
+      step(section, `Add the ${entry} entry`, `Select Add entry. Test data: ${data}.`),
+      step(section, 'Save the entry', 'Select Add. The entry is listed in the section.', 'Entry saved'),
+      step('Payroll', 'Open Payroll Processing', 'Go to Payroll › Payroll Processing.'),
+      step('Add Payroll', 'Create the November 2025 payroll', `Select Create Transaction and choose the November 2025 · Second Half calendar: ${NOVEMBER_PAYROLL}. Ethan Collins is in the employee list.`),
+      step('Add Payroll · Review', 'Create transaction', 'Atlas computes every employee in the run.', 'Payroll computed'),
+      step('Payroll transaction', "Read Ethan Collins' line", "Open Ethan Collins' line and compare it with the expected result.", expected),
+    ], ['test case', 'connected flow', workbook.toLowerCase(), testCase, ...tags]);
+}
+
 export const SCENARIOS = [
   scenario('emp-payslip', 'employee', 'Payroll inquiry', 'View my latest payslip', 'open my posted payslip and its earnings, deductions, and net pay', 'I can verify that I was paid correctly', [
     step('HRM', 'Open Employee Self-Inquiry', 'Select Payslips & Payroll History.'),
@@ -289,6 +313,48 @@ export const SCENARIOS = [
     step('Review access change', 'Save', 'Atlas validates the assignment.'),
     step('Audit Log', 'View event', 'The change, actor, and time are recorded.', 'Access updated'),
   ], ['access', 'approval routing', 'audit']),
+  connectedFlow({
+    id: 'tc-basic-pay', workbook: 'Basic Pay Setup', testCase: 'TC-001', title: 'A monthly basic pay entered in the Masterfile',
+    section: 'Basic Pay', entry: 'basic pay',
+    data: 'Pay Type Monthly, Basic Pay Amount 62,000.00, Effectivity Date 01/01/2025. Work Days (261) and Work Hours per Day (8) are calculated, not typed',
+    expected: 'Basic pay 31,000.00 · Gross 34,407.01 · Taxable income 30,407.01 · Withholding tax 3,685.57 · Net pay 23,608.22',
+    tags: ['basic pay', 'salary'],
+  }),
+  connectedFlow({
+    id: 'tc-earning', workbook: 'Earning Setup', testCase: 'TC-002', title: 'A taxable monthly earning',
+    section: 'Earnings', entry: 'earning',
+    data: 'Housing Allowance, Earning Amount 2,000.00, Frequency Monthly, Taxable, Effectivity Date 01/01/2025',
+    expected: 'Housing Allowance 1,000.00 on the line · Gross 32,057.01 · Taxable income 30,307.01 · Withholding tax 3,665.57 · Net pay 21,278.22',
+    tags: ['earning', 'allowance'],
+  }),
+  connectedFlow({
+    id: 'tc-deduction', workbook: 'Deduction Setup', testCase: 'TC-001', title: '10 deductions of 500.00, none paid',
+    section: 'Company Deductions', entry: 'company deduction',
+    data: 'Cooperative Dues, Amount of Deduction 500.00, Number of Deductions 10, Accumulated Amount 0.00',
+    expected: 'Cooperative Dues collected 500.00 (balance after 4,500.00) · Net pay 23,908.22',
+    tags: ['deduction'],
+  }),
+  connectedFlow({
+    id: 'tc-company-loan', workbook: 'Company Loans', testCase: 'TC-001', title: 'A company loan with 14,000.00 left',
+    section: 'Loans', entry: 'company loan',
+    data: 'Loan Source Company Loan, Test Loan, Principal 30,000.00 plus interest 1,500.00, Amortization Amount 2,500.00, Accumulated Payment 17,500.00',
+    expected: 'Test Loan collected 2,500.00 (balance after 11,500.00) · Net pay 22,108.22',
+    tags: ['loan'],
+  }),
+  connectedFlow({
+    id: 'tc-bonus', workbook: 'Bonus Setup', testCase: 'TC-001', title: 'A performance bonus of 20,000.00',
+    section: '13th Month Pay and Bonuses', entry: 'bonus',
+    data: 'Performance Bonus, Total Amount 20,000.00. 13th month and bonus are on, with a 90,000.00 ceiling',
+    expected: 'Performance Bonus 20,000.00 (non-taxable 20,000.00, taxable 0.00) · Taxable income 30,407.01 · Net pay 43,608.22',
+    tags: ['bonus', '13th month'],
+  }),
+  connectedFlow({
+    id: 'tc-payroll-transaction', workbook: 'Payroll Transaction', testCase: 'TC-001', title: 'A different amount than the HR record',
+    section: 'Basic Pay', entry: 'basic pay',
+    data: 'Pay Type Monthly, Basic Pay Amount 80,000.00, Effectivity Date 01/01/2025. The payroll uses this amount, not the one on the HR record',
+    expected: 'Basic pay 40,000.00 · Gross 43,423.56 · Taxable income 39,198.56 · Withholding tax 5,737.14 · Net pay 29,313.71',
+    tags: ['payroll', 'transaction', 'basic pay'],
+  }),
 
   scenario('pa-statutory', 'pa_admin', 'Statutory governance', 'Publish a statutory table version', 'create an effective-dated SSS, PhilHealth, Pag-IBIG, or de minimis version', 'payroll resolves the legally applicable schedule by payout date', [
     step('Payroll', 'Open Statutory Table', 'Select an agency.'),
