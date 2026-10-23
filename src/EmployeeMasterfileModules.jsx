@@ -11,6 +11,7 @@ import {
   UserCircle,
   X,
 } from '@phosphor-icons/react';
+import { AccountFilterModal, EMPTY_ACCOUNT_FILTER, accountFilterIsActive, matchesAccountFilter, BulkActionsMenu, BulkHistoryModal, EMPTY_FILTER, EmployeeBulkWizard, ExportMenu, FilterButton, FilterModal, exportAccounts, exportEmployees, filterIsActive, matchesFilter } from './EmployeeBulkModals.jsx';
 
 const moneyKeys = ['amount', 'creditAmount', 'approvedAmount', 'remainingBalance', 'salaryAmount'];
 const display = (key, value) => moneyKeys.includes(key) ? `₱ ${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : value || '—';
@@ -75,20 +76,25 @@ const directoryDefinition = {
   ],
 };
 
-export function EmployeeDirectory({ employees, setEmployees, onSelect, notify, onBulk }) {
+export function EmployeeDirectory({ employees, setEmployees, onSelect, notify }) {
+  const [bulk, setBulk] = useState(null);
+  const [filter, setFilter] = useState(EMPTY_FILTER); const [filterOpen, setFilterOpen] = useState(false);
   const [query, setQuery] = useState(''); const [editing, setEditing] = useState(undefined); const [deleting, setDeleting] = useState(null);
-  const filtered = useMemo(() => employees.filter(item => `${item.id} ${item.name} ${item.role} ${item.origin || ''} ${item.status || ''}`.toLowerCase().includes(query.toLowerCase())), [employees, query]);
+  const filtered = useMemo(() => employees.filter(item => `${item.id} ${item.name} ${item.role} ${item.origin || ''} ${item.status || ''}`.toLowerCase().includes(query.toLowerCase()) && matchesFilter(item, filter)), [employees, query, filter]);
   const save = draft => {
     const normalized = { ...draft, id: draft.id || draft.employeeCode, name: `${draft.firstName} ${draft.middleName || ''} ${draft.lastName}`.replace(/\s+/g, ' ').trim(), initials: `${draft.firstName?.[0] || ''}${draft.lastName?.[0] || ''}`.toUpperCase(), location: draft.location || 'PBS | Makati' };
     if (employees.some(item => item.id === normalized.id)) setEmployees(employees.map(item => item.id === normalized.id ? normalized : item)); else setEmployees([normalized, ...employees]);
     setEditing(undefined); notify({ type: 'success', message: `Employee ${draft.id ? 'updated' : 'added'} successfully.` });
   };
-  const exportCsv = () => { const csv = ['Employee Code,First Name,Middle Name,Last Name,Origin,Employment Status', ...filtered.map(item => [item.id, item.firstName, item.middleName, item.lastName, item.origin, item.status].map(value => `"${value || ''}"`).join(','))].join('\n'); download('employee-masterfile.csv', csv); notify({ type: 'success', message: 'Employee Masterfile export downloaded.' }); };
+  const runExport = format => { exportEmployees(employees, format); notify({ type: 'success', message: `Employee Masterfile ${format === 'docx' ? 'Word' : format.toUpperCase()} export downloaded.` }); };
   return <section className="employee-directory">
     <div className="page-heading"><div><p className="breadcrumb">Core / Employee Masterfile</p><h1>Employee Information</h1><p className="page-description">Maintain personal, employment, benefit, time-off, payroll, and contact records in one employee profile.</p></div></div>
-    <div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search employee code or name..." /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={onBulk}><UploadSimple /> Bulk Actions</button><button className="button secondary" onClick={exportCsv}><DownloadSimple /> Export</button></div>
+    <div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search..." /></div><FilterButton active={filterIsActive(filter)} onClick={() => setFilterOpen(true)} /><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><BulkActionsMenu onPick={setBulk} /><ExportMenu onPick={runExport} /></div>
     <div className="table-card employee-directory-card"><table><thead><tr><th>Profile</th><th>Employee Code</th><th>First Name</th><th>Last Name</th><th>Origin</th><th>Employment Status</th><th>Action</th></tr></thead><tbody>{filtered.map(item => <tr key={item.id}><td><span className="directory-avatar">{item.initials}</span></td><td><button className="table-link" onClick={() => onSelect(item)}>{item.id}</button></td><td>{item.firstName || item.name.split(' ')[0]}</td><td>{item.lastName || item.name.split(' ').slice(-1)[0]}</td><td>{item.origin || 'Philippines'}</td><td>{item.status || 'Full-time'}</td><td><div className="row-actions always"><button onClick={() => setEditing({ ...item, employeeCode: item.id, firstName: item.firstName || item.name.split(' ')[0], lastName: item.lastName || item.name.split(' ').slice(-1)[0] })}><PencilSimple /></button><button onClick={() => setDeleting(item)}><Trash /></button></div></td></tr>)}</tbody></table></div>
     <div className="pagination"><span>Displaying <strong>{filtered.length}</strong> of {employees.length} employees</span><div><button disabled>«</button><strong>1</strong><span>of 1</span><button disabled>»</button></div></div>
+    {(bulk === 'import' || bulk === 'update') && <EmployeeBulkWizard mode={bulk} employees={employees} setEmployees={setEmployees} notify={notify} onClose={() => setBulk(null)} />}
+    {filterOpen && <FilterModal applied={filter} onApply={next => { setFilter(next); setFilterOpen(false); }} onClose={() => setFilterOpen(false)} />}
+    {bulk === 'history' && <BulkHistoryModal onClose={() => setBulk(null)} />}
     {editing !== undefined && <RecordModal definition={directoryDefinition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}
     {deleting && <DeleteModal label={deleting.name} onClose={() => setDeleting(null)} onDelete={() => { setEmployees(employees.filter(item => item.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: 'Employee deleted.' }); }} />}
   </section>;
@@ -210,7 +216,111 @@ const accountDefinition = { title: 'Account Settings Information', singular: 'Ac
 const seedAccounts = Array.from({ length: 10 }, (_, index) => ({ id: index + 1, username: ['EACarter', 'LBJohnson', 'SCBennett', 'ODSmith', 'NEBrown', 'AFDavis', 'JGWilson', 'MHAnderson', 'LIMoore', 'EJMillar'][index], password: '************', locked: index % 3 === 0 ? 'Yes' : 'No', status: index % 4 === 1 ? 'Disabled' : 'Enabled', ssoStatus: index % 5 === 4 ? 'Disabled' : 'Enabled', ssoUsername: `sso-${index + 1}` }));
 export function AccountSettings({ notify }) {
   const [rows, setRows] = usePersistentState('atlas-account-settings-v2', seedAccounts); const [query, setQuery] = useState(''); const [editing, setEditing] = useState(undefined); const [deleting, setDeleting] = useState(null);
-  const filtered = rows.filter(row => `${row.username} ${row.status} ${row.ssoStatus}`.toLowerCase().includes(query.toLowerCase()));
+  const [filter, setFilter] = useState(EMPTY_ACCOUNT_FILTER); const [filterOpen, setFilterOpen] = useState(false);
+  const filtered = rows.filter(row => `${row.username} ${row.status} ${row.ssoStatus}`.toLowerCase().includes(query.toLowerCase()) && matchesAccountFilter(row, filter));
   const save = draft => { if (draft.id) setRows(rows.map(row => row.id === draft.id ? draft : row)); else setRows([{ ...draft, id: Date.now() }, ...rows]); setEditing(undefined); notify({ type: 'success', message: `Account ${draft.id ? 'updated' : 'added'} successfully.` }); };
-  return <section className="employee-directory account-settings-page"><div className="page-heading"><div><p className="breadcrumb">Core / Employee Masterfile / Account Settings</p><h1>Account Settings Information</h1><p className="page-description">Manage access, lock status and single sign-on credentials for employee accounts.</p></div></div><div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search username or access status..." /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button></div><div className="table-card employee-directory-card"><table><thead><tr>{accountDefinition.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{accountDefinition.columns.map(([key]) => <td key={key}>{key === 'status' || key === 'ssoStatus' ? <span className={`status-pill ${String(row[key]).toLowerCase()}`}>{row[key]}</span> : row[key]}</td>)}<td><div className="row-actions always"><button onClick={() => setEditing(row)}><PencilSimple /></button><button onClick={() => setDeleting(row)}><Trash /></button></div></td></tr>)}</tbody></table></div><div className="pagination"><span>Displaying <strong>{filtered.length}</strong> accounts</span><div><button disabled>«</button><strong>1</strong><span>of 1</span><button disabled>»</button></div></div>{editing !== undefined && <RecordModal definition={accountDefinition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}{deleting && <DeleteModal label={deleting.username} onClose={() => setDeleting(null)} onDelete={() => { setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: 'Account deleted.' }); }} />}</section>;
+  return <section className="employee-directory account-settings-page"><div className="page-heading"><div><p className="breadcrumb">Core / Employee Masterfile / Account Settings</p><h1>Account Settings Information</h1><p className="page-description">Manage access, lock status and single sign-on credentials for employee accounts.</p></div></div><div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search..." /></div><FilterButton active={accountFilterIsActive(filter)} onClick={() => setFilterOpen(true)} /><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><ExportMenu onPick={format => { exportAccounts(rows, format); notify({ type: 'success', message: `Account Settings ${format === 'docx' ? 'Word' : format.toUpperCase()} export downloaded.` }); }} /></div><div className="table-card employee-directory-card"><table><thead><tr>{accountDefinition.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{accountDefinition.columns.map(([key]) => <td key={key}>{key === 'status' || key === 'ssoStatus' ? <span className={`status-pill ${String(row[key]).toLowerCase()}`}>{row[key]}</span> : row[key]}</td>)}<td><div className="row-actions always"><button onClick={() => setEditing(row)}><PencilSimple /></button><button onClick={() => setDeleting(row)}><Trash /></button></div></td></tr>)}</tbody></table></div><div className="pagination"><span>Displaying <strong>{filtered.length}</strong> accounts</span><div><button disabled>«</button><strong>1</strong><span>of 1</span><button disabled>»</button></div></div>{filterOpen && <AccountFilterModal applied={filter} onApply={next => { setFilter(next); setFilterOpen(false); }} onClose={() => setFilterOpen(false)} />}{editing !== undefined && <RecordModal definition={accountDefinition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}{deleting && <DeleteModal label={deleting.username} onClose={() => setDeleting(null)} onDelete={() => { setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: 'Account deleted.' }); }} />}</section>;
+}
+
+/* Leaves, Documents and Custom Fields tabs, and Masterfile Configuration, as in Atlas Core. */
+
+const leaveDefinitions = [
+  { key: 'overview', title: 'Leaves Overview', singular: 'Leave Information', columns: [['leaveType', 'Leave Type'], ['opening', 'Opening Balance'], ['credit', 'Credit'], ['approved', 'Approved Leave'], ['forApproval', 'Leave for Approval'], ['converted', 'Leave Converted'], ['forfeited', 'Forfeited Leave'], ['balance', 'Leave Balance as of Today']], fields: [['leaveType', 'Leave Type', 'select', ['Vacation Leave', 'Sick Leave', 'Emergency Leave', 'Maternity Leave', 'Paternity Leave', 'Solo Parent Leave', 'Bereavement Leave']], ['opening', 'Opening Balance', 'number'], ['credit', 'Credit', 'number'], ['approved', 'Approved Leave', 'number'], ['forApproval', 'Leave for Approval', 'number'], ['converted', 'Leave Converted', 'number'], ['forfeited', 'Forfeited Leave', 'number'], ['balance', 'Leave Balance as of Today', 'number']] },
+  { key: 'history', title: 'Leaves History', singular: 'Leave Applicable Year', columns: [['year', 'Applicable Year'], ['approved', 'Approved Leave'], ['converted', 'Leave Converted'], ['forfeited', 'Forfeited Leave']], fields: [['year', 'Applicable Year', 'select', ['2024', '2025', '2026']], ['approved', 'Approved Leave for the Applicable Year', 'number'], ['converted', 'Leave Converted for the Applicable Year', 'number'], ['forfeited', 'Forfeited Leave for the Applicable Year', 'number']] },
+];
+const seedLeaves = {
+  overview: [
+    { id: 1, leaveType: 'Vacation Leave', opening: '5', credit: '15', approved: '8', forApproval: '1', converted: '0', forfeited: '0', balance: '11' },
+    { id: 2, leaveType: 'Sick Leave', opening: '3', credit: '15', approved: '4', forApproval: '0', converted: '5', forfeited: '0', balance: '9' },
+  ],
+  history: [{ id: 1, year: '2025', approved: '18', converted: '5', forfeited: '2' }],
+};
+export function Leaves({ employee, notify }) { const [rows, setRows] = usePersistentState(`atlas-leaves-${employee.id}-v1`, seedLeaves); return <div className="profile-module record-data-stack">{leaveDefinitions.map(definition => <RecordSection key={definition.key} definition={definition} rows={rows[definition.key]} setRows={next => setRows(previous => ({ ...previous, [definition.key]: next }))} notify={notify} />)}</div>; }
+
+const MAX_DOCUMENT_MB = 5;
+const fileSizeLabel = bytes => bytes >= 1048576 ? `${(bytes / 1048576).toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+const seedDocuments = [
+  { id: 1, title: 'Certificate of Employment', fileName: 'COE_2025.pdf', fileType: 'PDF', fileSize: '182 KB', uploadedBy: 'Client Admin', dateUploaded: '2025-11-03', dateCreated: '2025-11-03' },
+  { id: 2, title: 'Signed Employment Contract', fileName: 'Contract_JDoe.docx', fileType: 'DOCX', fileSize: '96 KB', uploadedBy: 'Client Admin', dateUploaded: '2024-02-01', dateCreated: '2024-02-01' },
+];
+export function Documents({ employee, notify }) {
+  const [rows, setRows] = usePersistentState(`atlas-employee-documents-${employee.id}-v1`, seedDocuments);
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState(undefined);
+  const [deleting, setDeleting] = useState(null);
+  const filtered = rows.filter(row => `${row.title} ${row.fileName} ${row.fileType}`.toLowerCase().includes(query.toLowerCase()));
+  const save = event => {
+    event.preventDefault();
+    const draft = editing;
+    if (!draft.title?.trim()) return notify({ type: 'error', message: 'Document Title is required.' });
+    if (!draft.fileName) return notify({ type: 'error', message: 'Upload a file for this document.' });
+    const today = new Date().toISOString().slice(0, 10);
+    if (draft.id) setRows(rows.map(row => row.id === draft.id ? { ...draft, title: draft.title.trim() } : row));
+    else setRows([{ ...draft, title: draft.title.trim(), id: Date.now(), uploadedBy: 'Client Admin', dateUploaded: today, dateCreated: today }, ...rows]);
+    setEditing(undefined);
+    notify({ type: 'success', message: `Document ${draft.id ? 'updated' : 'uploaded'} successfully.` });
+  };
+  const pickFile = file => {
+    if (!file) return;
+    if (file.size > MAX_DOCUMENT_MB * 1048576) return notify({ type: 'error', message: `The file is larger than ${MAX_DOCUMENT_MB} MB.` });
+    setEditing(previous => ({ ...previous, fileName: file.name, fileType: (file.name.split('.').pop() || '').toUpperCase(), fileSize: fileSizeLabel(file.size), dateUploaded: new Date().toISOString().slice(0, 10) }));
+  };
+  return <div className="profile-module record-data-stack">
+    <section className="employee-data-section compact-record-section">
+      <div className="employee-section-heading"><span>Documents</span></div>
+      <div className="employee-section-body">
+        <div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search document title or file name..." /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing({ title: '' })}><UploadSimple /> Upload Document</button></div>
+        <div className="employee-table-wrap"><table className="employee-table"><thead><tr><th>Document Title</th><th>File Name</th><th>File Type</th><th>File Size</th><th>Uploaded By</th><th>Date Uploaded</th><th>Date Created</th><th>Action</th></tr></thead><tbody>{filtered.length ? filtered.map(row => <tr key={row.id}><td>{row.title}</td><td>{row.fileName}</td><td>{row.fileType}</td><td>{row.fileSize}</td><td>{row.uploadedBy}</td><td>{row.dateUploaded}</td><td>{row.dateCreated}</td><td><div className="row-actions always"><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => download(row.fileName, `${row.title}\n(placeholder copy of ${row.fileName})`, 'text/plain')} aria-label="Download"><DownloadSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button></div></td></tr>) : <tr><td colSpan={8}><div className="empty-state compact"><h3>No documents yet</h3><p>Upload the employee documents here.</p></div></td></tr>}</tbody></table></div>
+      </div>
+    </section>
+    {editing !== undefined && <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setEditing(undefined); }}>
+      <section className="modal employee-entry-modal profile-entry-modal" role="dialog" aria-modal="true" aria-label={`${editing.id ? 'Edit' : 'Upload'} Document`}>
+        <header><h2>{editing.id ? 'Edit' : 'Upload'} Document</h2><button className="icon-button" onClick={() => setEditing(undefined)} aria-label="Close"><X /></button></header>
+        <form onSubmit={save}><div className="employee-form-grid">
+          <label>Document Title <span className="required">*</span><input value={editing.title || ''} onChange={event => setEditing({ ...editing, title: event.target.value })} placeholder="Input Document Title" /></label>
+          <label>Upload File <span className="required">*</span><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={event => pickFile(event.target.files?.[0])} /><small>{editing.fileName ? `Current file: ${editing.fileName} (${editing.fileSize})` : `PDF, Word or image. Maximum file size ${MAX_DOCUMENT_MB} MB.`}</small></label>
+        </div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={() => setEditing(undefined)}>Cancel</button><button className="button primary">Save</button></footer></form>
+      </section>
+    </div>}
+    {deleting && <DeleteModal label={deleting.title} onClose={() => setDeleting(null)} onDelete={() => { setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: 'Document deleted.' }); }} />}
+  </div>;
+}
+
+/** Field names come from Reference Table ▸ Specific ▸ Custom Fields. */
+export function CustomFields({ employee, notify, fieldNames = [] }) {
+  const definition = { key: 'customFields', title: 'Custom Fields', singular: 'Custom Field', columns: [['fieldName', 'Field Name'], ['fieldValue', 'Field Value'], ['dateCreated', 'Date Created']], fields: [['fieldName', 'Field Name', 'select', fieldNames], ['fieldValue', 'Field Value']] };
+  const [rows, setRows] = usePersistentState(`atlas-custom-fields-${employee.id}-v1`, [{ id: 1, fieldName: fieldNames[0] || 'T-Shirt Size', fieldValue: 'L', dateCreated: '2026-01-15' }]);
+  const setDated = next => {
+    const today = new Date().toISOString().slice(0, 10);
+    const names = next.map(row => row.fieldName);
+    if (names.some((name, index) => names.indexOf(name) !== index)) return notify({ type: 'error', message: 'Each custom field can be set once per employee. Edit the existing value instead.' });
+    setRows(next.map(row => row.dateCreated ? row : { ...row, dateCreated: today }));
+  };
+  return <div className="profile-module record-data-stack"><RecordSection definition={definition} rows={rows} setRows={setDated} notify={notify} /></div>;
+}
+
+export function MasterfileConfiguration({ notify, definitions }) {
+  const [rows, setRows] = usePersistentState('atlas-masterfile-configuration-v1', definitions.map((row, index) => ({ id: index + 1, ...row })));
+  const [draft, setDraft] = useState(rows);
+  const [tab, setTab] = useState('personal');
+  const [query, setQuery] = useState('');
+  useEffect(() => setDraft(rows), [rows]);
+  const sections = [...new Set(draft.filter(row => row.tab === tab).map(row => row.section))];
+  const matches = row => `${row.section} ${row.field}`.toLowerCase().includes(query.toLowerCase());
+  const change = (id, patch) => setDraft(previous => previous.map(row => row.id === id ? { ...row, ...patch } : row));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(rows);
+  const save = () => { setRows(draft); notify({ type: 'success', message: 'Employee Masterfile Configuration saved.' }); };
+  return <section className="employee-directory masterfile-configuration-page">
+    <div className="page-heading"><div><p className="breadcrumb">Core / Employee Masterfile / Masterfile Configuration</p><h1>Employee Masterfile Configuration</h1><p className="page-description">Choose which employee fields are required and which the employee may edit in self-service.</p></div></div>
+    <nav className="employee-tabs">{[['personal', 'Personal Details'], ['record', 'Employee Record'], ['contacts', 'Contacts']].map(([key, label]) => <button key={key} className={key === tab ? 'active' : ''} onClick={() => setTab(key)}>{label}</button>)}</nav>
+    <div className="employee-directory-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search section or form name..." /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button secondary" disabled={!dirty} onClick={() => setDraft(rows)}>Cancel</button><button className="button primary" disabled={!dirty} onClick={save}>Save</button></div>
+    <div className="record-data-stack">{sections.map(section => {
+      const fields = draft.filter(row => row.tab === tab && row.section === section && matches(row));
+      if (!fields.length) return null;
+      return <section key={section} className="employee-data-section compact-record-section">
+        <div className="employee-section-heading"><span>{section}</span></div>
+        <div className="employee-section-body"><div className="employee-table-wrap"><table className="employee-table"><thead><tr><th>Form Name</th><th style={{ width: 200 }}>Requirement</th><th style={{ width: 220 }}>Editable by Employee?</th></tr></thead><tbody>{fields.map(row => <tr key={row.id}><td>{row.field}</td><td><select value={row.required ? 'Required' : 'Optional'} onChange={event => change(row.id, { required: event.target.value === 'Required' })}><option>Optional</option><option>Required</option></select></td><td><input type="checkbox" checked={row.editable} onChange={event => change(row.id, { editable: event.target.checked })} aria-label={`${row.field} editable by employee`} /></td></tr>)}</tbody></table></div></div>
+      </section>;
+    })}</div>
+  </section>;
 }

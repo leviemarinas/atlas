@@ -10,6 +10,7 @@
  * Pure: no storage and no screen, so the Masterfile, the payroll context and the tests apply one rule.
  */
 
+import { readPayrollRounding, roundTo } from './payrollRounding.js';
 import { coversEmployee } from './applicabilityScope.js';
 
 export const PAYROLL_SECTIONS = Object.freeze(['basicPay', 'earnings', 'bonuses', 'deductions', 'loans', 'statutory', 'hdmf', 'ytd', 'previousEmployer']);
@@ -211,7 +212,8 @@ export function ratesOfBasicPay(row = {}) {
   if (type === 'Daily') { daily = amount; annual = daily * workDays; hourly = daily / workHours; }
   else if (type === 'Hourly') { hourly = amount; daily = hourly * workHours; annual = daily * workDays; }
   else { annual = amount * 12; daily = annual / workDays; hourly = daily / workHours; }
-  return { annualRate: round2(annual), monthlyRate: round2(annual / 12), dailyRate: round2(daily), hourlyRate: round2(hourly), perMinuteRate: Math.round(hourly / 60 * 10000) / 10000, workDays, workHours, payType: type };
+  const places = readPayrollRounding().basicPay;
+  return { annualRate: roundTo(annual, places), monthlyRate: roundTo(annual / 12, places), dailyRate: roundTo(daily, places), hourlyRate: roundTo(hourly, places), perMinuteRate: roundTo(hourly / 60, places), workDays, workHours, payType: type };
 }
 
 const balanceOfDeduction = row => {

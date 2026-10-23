@@ -105,6 +105,11 @@ export function ShiftScheduleScreen({ data, user, access, employees, teamEmploye
           name: employee?.name || '',
           department: employee?.department || '',
           dayRange: `${assignment.shiftDaysPerWeek} days/week · Rest: ${assignment.restDays}`,
+          // Atlas Core lists the shift's start and end times, dates and work location separately.
+          startTime: assignment.startTime || String(assignment.shiftHours || '').split(/\s*[-–]\s*/)[0] || '—',
+          endTime: assignment.endTime || String(assignment.shiftHours || '').split(/\s*[-–]\s*/)[1] || '—',
+          workLocation: assignment.workLocation || employee?.workLocation || employee?.officeLocation || 'Office',
+          departmentDivision: [employee?.department, employee?.division].filter(Boolean).join(' / ') || '—',
           effectivity: `${formatDate(assignment.startDate)} — ${assignment.endDate ? formatDate(assignment.endDate) : 'Open-ended'}`,
           status: shiftAssignmentStatus(assignment),
         };
@@ -130,14 +135,15 @@ export function ShiftScheduleScreen({ data, user, access, employees, teamEmploye
 
   const columns = [
     { key: 'employeeCode', label: 'Employee Code' },
-    { key: 'name', label: 'Employee Name' },
-    { key: 'department', label: 'Department' },
-    { key: 'shiftScheduleCode', label: 'Shift Code' },
-    { key: 'shiftType', label: 'Type of Shift' },
-    { key: 'shiftHours', label: 'Time Range' },
-    { key: 'dayRange', label: 'Day Range' },
-    { key: 'timezone', label: 'Timezone' },
-    { key: 'effectivity', label: 'Effectivity' },
+    { key: 'name', label: 'Employee Full Name' },
+    { key: 'departmentDivision', label: 'Department/Division' },
+    { key: 'shiftType', label: 'Shift Type' },
+    { key: 'startTime', label: 'Start Time' },
+    { key: 'endTime', label: 'End Time' },
+    { key: 'timezone', label: 'Time Zone' },
+    { key: 'startDate', label: 'Start Date', type: 'date' },
+    { key: 'endDate', label: 'End Date', type: 'date' },
+    { key: 'workLocation', label: 'Work Location' },
     { key: 'status', label: 'Status' },
   ];
 
@@ -151,7 +157,7 @@ export function ShiftScheduleScreen({ data, user, access, employees, teamEmploye
 
   return <div className="hrm-workspace tk-screen">
     <PageHeading
-      title="Shift Schedule Tracking and Monitoring"
+      title="Shift Schedule Management"
       eyebrow={`${rows.length} ${rows.length === 1 ? 'schedule' : 'schedules'} in view · ${counts.Active} active, ${counts.Upcoming} upcoming, ${counts.Expired} expired`}
     />
 

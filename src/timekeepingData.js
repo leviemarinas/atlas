@@ -716,3 +716,83 @@ export function costAllocationRows(reports = [], employees = []) {
     };
   });
 }
+
+/* ---------------------------------------- Atlas Core (QA) column helpers */
+
+/** A date as Date, from ISO (2026-08-16) or US (08/16/2026) text. */
+function parseAnyDate(value) {
+  const text = String(value || '');
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(text);
+  if (us) return new Date(Number(us[3]), Number(us[1]) - 1, Number(us[2]));
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  return iso ? new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])) : null;
+}
+
+/** Regular Day, Rest Day (Saturday/Sunday) or Holiday, as Atlas Core labels a day. */
+export function dayTypeOf(value, isHoliday = false) {
+  if (isHoliday) return 'Holiday';
+  const date = parseAnyDate(value);
+  if (!date) return '—';
+  return date.getDay() === 0 || date.getDay() === 6 ? 'Rest Day' : 'Regular Day';
+}
+
+/**
+ * Application timeliness: filed within a day of the reported date is On Time,
+ * later is Late Filing. Approval timeliness: a decision is On Time; a request
+ * still pending after three days is Delayed.
+ */
+export function timeReportTimeliness(row, today = new Date()) {
+  const reported = parseAnyDate(row.timeReportDate || row.date);
+  const created = parseAnyDate(row.dateCreated);
+  const days = (later, earlier) => later && earlier ? Math.round((later - earlier) / 86400000) : 0;
+  const applicationTimeliness = days(created, reported) > 1 ? 'Late Filing' : 'On Time';
+  const approvalTimeliness = row.status === 'Pending' ? (days(today, created) > 3 ? 'Delayed' : 'Pending') : 'On Time';
+  return { applicationTimeliness, approvalTimeliness };
+}
+
+const minutesLabel = minutes => minutes ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : '—';
+
+/** The extra columns Atlas Core's time-log summaries show for one log. */
+export function logSummaryFields(log, shift) {
+  return {
+    shiftSchedule: shift ? `${shift.name}${shift.window ? ` (${shift.window})` : ''}` : '—',
+    coreHours: shift?.coreHours || '—',
+    dayType: dayTypeOf(log.date, /holiday/i.test(log.status || '')),
+    tardiness: minutesLabel(log.tardinessMinutes),
+    undertime: minutesLabel(log.undertimeMinutes),
+    absence: log.status === 'Absent' ? '1 day' : '—',
+    leave: log.status === 'On Leave' ? `${log.leaveType || 'Leave'} (${log.leaveHours || 8}h)` : '—',
+    officialBusiness: /official business/i.test(log.reason || '') ? 'Yes' : '—',
+  };
+}
+
+/** One row per employee for Time & Attendance Summary, as Atlas Core totals it. */
+export function attendanceRosterRows(logs = [], employees = []) {
+  const byEmployee = new Map();
+  logs.forEach(log => {
+    const list = byEmployee.get(log.employeeId) || [];
+    list.push(log);
+    byEmployee.set(log.employeeId, list);
+  });
+  return [...byEmployee.entries()].map(([employeeId, list]) => {
+    const employee = employees.find(item => item.employeeId === employeeId) || {};
+    const exemptOt = /manager|director|head/i.test(employee.position || '');
+    return {
+      key: employeeId,
+      employeeId,
+      employeeCode: employee.employeeCode || employeeId,
+      name: employee.name || employeeId,
+      department: employee.department || '—',
+      totalWorkedHours: hoursToClock(sum(list, row => row.workedHours)),
+      totalAbsences: list.filter(row => row.status === 'Absent').length,
+      totalLeaveDays: list.filter(row => row.status === 'On Leave').length,
+      totalTardiness: minutesLabel(sum(list, row => row.tardinessMinutes)),
+      totalUndertime: minutesLabel(sum(list, row => row.undertimeMinutes)),
+      totalOvertimeHours: hoursToClock(sum(list.filter(row => row.overtimeStatus === 'Approved'), row => row.overtimeHours)),
+      otClassification: employee.otClassification || (exemptOt ? 'Exempt' : 'Non-exempt'),
+      undertimeClassification: employee.undertimeClassification || 'Non-exempt',
+      absenceClassification: employee.absenceClassification || 'Non-exempt',
+      tardinessClassification: employee.tardinessClassification || 'Non-exempt',
+    };
+  });
+}

@@ -130,7 +130,7 @@ export function takeHomeFieldProblems(policy = {}) {
 
 /** [field, minimum, maximum, whole number?, minimum is exclusive?] for the Employee Masterfile payroll entries. */
 export const ENTRY_LIMITS = Object.freeze({
-  basicPay: [['amount', 0, null, false, true], ['workDays', 1, 366, true], ['workHours', 0, 24, false, true], ['ecola', 0, null], ['startYear', 1000, 9999, true]],
+  basicPay: [['amount', 0, null, false, true], ['workDays', 1, 366, true], ['workHours', 0, 24, false, true], ['startYear', 1000, 9999, true]],
   earnings: [['amount', 0, null]],
   bonuses: [['amount', 0, null], ['transactionThreshold', 0, null], ['annualThreshold', 0, null], ['hierarchyPriority', 1, null, true]],
   deductions: [['amount', 0, null, false, true], ['count', 0, null, true], ['total', 0, null]],

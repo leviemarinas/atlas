@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { Buildings, ShieldCheck, ShieldStar, User, UserCheck } from '@phosphor-icons/react';
+import { Buildings, ShieldCheck, ShieldStar, User, UserCheck, UserGear } from '@phosphor-icons/react';
 import { normalizeRole } from './moduleAccess';
 
 const STORAGE_KEY = 'atlas-active-role-v2';
@@ -25,6 +25,14 @@ export const ROLES = {
     short: 'Client Admin',
     icon: Buildings,
     hint: 'Administers company-wide masterfiles, employee records, benefits, templates, and company reports.',
+  },
+  // Same access as a P&A Admin, but only in the client companies a P&A Admin has assigned to them.
+  pa_user: {
+    id: 'pa_user',
+    label: 'P&A User',
+    short: 'P&A User',
+    icon: UserGear,
+    hint: 'Same access as a P&A Admin, limited to the client companies a P&A Admin has assigned (ABC Company Ltd and Northstar Retail).',
   },
   pa_admin: {
     id: 'pa_admin',
@@ -54,7 +62,8 @@ export const SIGNED_IN_NAME = 'John Doe';
 /** A second named person for the SuperAdmin, so "the maker cannot approve their own change" is demonstrable. */
 export const SUPERADMIN_NAME = 'Maria Santos';
 export const PA_ADMIN_NAME = 'Paolo Reyes';
-export const personaName = role => (role === 'pa_superadmin' ? SUPERADMIN_NAME : role === 'pa_admin' ? PA_ADMIN_NAME : SIGNED_IN_NAME);
+export const PA_USER_NAME = 'Carla Mendoza';
+export const personaName = role => (role === 'pa_superadmin' ? SUPERADMIN_NAME : role === 'pa_admin' ? PA_ADMIN_NAME : role === 'pa_user' ? PA_USER_NAME : SIGNED_IN_NAME);
 
 const RoleContext = createContext({
   role: 'client_admin',
@@ -62,6 +71,7 @@ const RoleContext = createContext({
   isAdmin: false,
   isPaAdmin: false,
   isPaSuperAdmin: false,
+  isPaUser: false,
   isClientAdmin: false,
   isApprover: false,
   isEmployee: false,
@@ -86,7 +96,9 @@ export function RoleProvider({ children }) {
 
   const value = useMemo(() => {
     const isPaSuperAdmin = role === 'pa_superadmin';
-    const isPaAdmin = role === 'pa_admin' || role === 'admin' || isPaSuperAdmin;
+    const isPaUser = role === 'pa_user';
+    // A P&A User has the same access as a P&A Admin; only their companies differ.
+    const isPaAdmin = role === 'pa_admin' || role === 'admin' || isPaUser || isPaSuperAdmin;
     const isClientAdmin = role === 'client_admin' || role === 'client';
     const isApprover = role === 'approver';
     const isEmployee = role === 'employee';
@@ -100,6 +112,7 @@ export function RoleProvider({ children }) {
       isAdmin,
       isPaAdmin,
       isPaSuperAdmin,
+      isPaUser,
       isClientAdmin,
       isApprover,
       isEmployee,

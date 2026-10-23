@@ -42,6 +42,7 @@ import { coversEmployee, describeScope } from './applicabilityScope.js';
 import { masterfileContributions, overtimeMultipliersFor } from './employeePayrollBridge.js';
 import { approvedRate, incomesFor, normalizeGrossUpPolicy, settleGross, solveGross } from './grossUpCore.js';
 import { requestAppliesToTransaction, staggeredDue } from './staggeredPayments.js';
+import { DEFAULT_ROUNDING, placesForStep, roundTo } from './payrollRounding.js';
 import { correctionItems } from './payrollCorrections.js';
 import { currencyTotalsFor, foreignEarningItems, foreignPayFor, payoutsByCurrency, runCurrenciesOf } from './payrollCurrencies.js';
 import {
@@ -319,10 +320,12 @@ function priceByBinding(item, resolveBound) {
  * for instance) the caller supplies the amount and the step still names the
  * code and its inputs.
  */
-function makeStepper(library) {
+function makeStepper(library, rounding = DEFAULT_ROUNDING) {
   const steps = [];
   const record = ({ code, label, category, inputs = {}, amount, detail, source, evaluate = true }) => {
     const formula = computationByCode(code, library);
+    // The company's decimal places for this kind of pay item (Services Information › Rounding Off).
+    const digits = placesForStep({ code, category: category || formula?.category }, rounding);
     // A value the step does not supply falls back to the default the formula
     // publishes for it — the night differential rate, a commission rate — so a
     // rate that moved out of an expression and into a parameter still computes.
@@ -334,7 +337,7 @@ function makeStepper(library) {
       try {
         // `library` lets a published formula that builds on another one resolve
         // its references the same way the expression builder previewed it.
-        value = round2(evaluateExpression(formula.expression, values, { library }));
+        value = roundTo(evaluateExpression(formula.expression, values, { library }), digits);
         evaluated = true;
       } catch (cause) {
         // A formula whose mapped fields this step does not supply falls back to
@@ -361,7 +364,7 @@ function makeStepper(library) {
       formulaOwner: formula ? (formula.scope === 'Client-specific' ? 'Client-specific' : formula.isBuiltIn === false ? 'Company-defined' : 'Atlas standard') : '',
       description: formula?.description || '',
       inputs: values,
-      amount: round2(value ?? 0),
+      amount: roundTo(value ?? 0, digits),
       evaluated,
       fallbackReason: error,
       detail: detail || '',
@@ -466,7 +469,8 @@ export function attendanceFor(timeLogs = [], employeeId, transaction) {
  * entries encoded or uploaded onto the line. A monthly earning is divided by
  * the number of payroll periods in a month; a one-time earning is paid whole.
  */
-export function earningItemsFor({ salary, registerEarnings = [], manual = [], transaction, employee, resolveBound = null }) {
+export function earningItemsFor({ salary, registerEarnings = [], manual = [], transaction, employee, resolveBound = null, rounding = DEFAULT_ROUNDING }) {
+  const roundEarning = value => roundTo(value, rounding.earnings);
   const periodsPerMonth = PERIODS_PER_YEAR[transaction.paymentMode] / 12;
   // A recurring earning is spread across the periods of the month it accrues
   // in. A quarterly or annual one falls due in the last period of its cycle
@@ -479,7 +483,7 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
     if (frequency === 'Annually' || frequency === 'Annual') return lastPeriodOfMonth && month === 12 ? number(amount) : 0;
     if (frequency === 'Quarterly') return lastPeriodOfMonth && month % 3 === 0 ? number(amount) : 0;
     if (frequency === 'Semi-monthly') return number(amount);
-    return round2(number(amount) / periodsPerMonth);
+    return roundEarning(number(amount) / periodsPerMonth);
   };
 
   const recurring = (salary?.earnings || [])
@@ -507,7 +511,7 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
       classification: row.name === 'De Minimis Benefit' ? 'De Minimis' : 'Taxable Allowance',
       frequency: row.frequency,
       amount: row.basis === 'Percentage'
-        ? round2(number(employee.payroll?.monthlyRate) * number(row.amount) / 100 / periodsPerMonth)
+        ? roundEarning(number(employee.payroll?.monthlyRate) * number(row.amount) / 100 / periodsPerMonth)
         : perPeriod(row.amount, row.frequency),
       monthlyAmount: number(row.amount),
       source: 'Earning Management',
@@ -517,8 +521,8 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
   // bound formula never overwrites it — only the recurring and assigned items
   // the configuration itself produced are priced by their binding.
   return [
-    ...recurring.map(row => priceByBinding(row, resolveBound)),
-    ...assigned.map(row => priceByBinding(row, resolveBound)),
+    ...recurring.map(row => priceByBinding(row, resolveBound)).map(row => ({ ...row, amount: roundEarning(row.amount) })),
+    ...assigned.map(row => priceByBinding(row, resolveBound)).map(row => ({ ...row, amount: roundEarning(row.amount) })),
     ...manual.map(row => ({ ...row, source: row.source || 'Encoded on the transaction' })),
   ].filter(row => row.amount !== 0 || row.boundProblem);
 }
@@ -530,7 +534,7 @@ export function earningItemsFor({ salary, registerEarnings = [], manual = [], tr
  * cleared or passed its end date stops collecting, so a settled item cannot
  * reappear on a later payroll.
  */
-export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [], staggeredRequests = [], resolveBound = null }) {
+export function collectionItemsFor({ salary, loanSchedules = [], registerDeductions = [], manual = [], transaction, employee, hierarchy = [], staggeredRequests = [], resolveBound = null, rounding = DEFAULT_ROUNDING }) {
   const entryOf = (name, group) => hierarchy.find(row => row.name === name)
     || hierarchy.find(row => row.group === group && row.kind && name.toLowerCase().includes(row.kind.toLowerCase()));
   const rankOf = (name, group) => {
@@ -552,7 +556,7 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
       name: row.deductionName,
       group: 'Deduction',
       kind: 'Company',
-      due: round2(Math.min(number(row.amountOfDeduction), number(row.totalBalance))),
+      due: roundTo(Math.min(number(row.amountOfDeduction), number(row.totalBalance)), rounding.deductions),
       outstanding: number(row.totalBalance),
       rank: rankOf(row.deductionName, 'Deduction'),
       ...handlingOf(row.deductionName, 'Deduction'),
@@ -568,7 +572,7 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
       name: row.name,
       group: 'Deduction',
       kind: 'Company',
-      due: round2(Math.min(number(row.amount), number(row.balance) || number(row.amount))),
+      due: roundTo(Math.min(number(row.amount), number(row.balance) || number(row.amount)), rounding.deductions),
       outstanding: number(row.balance) || number(row.amount),
       rank: rankOf(row.name, 'Deduction'),
       ...handlingOf(row.name, 'Deduction'),
@@ -582,7 +586,7 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
       const request = staggeredRequests.find(item => item.employeeId === employee.employeeId
         && String(item.requestDetails?.eligibleDeduction || '').startsWith(row.transactionNumber || row.id)
         && requestAppliesToTransaction(item, transaction));
-      const originalDue = round2(Math.min(number(row.deductionAmount), number(row.balance)));
+      const originalDue = roundTo(Math.min(number(row.deductionAmount), number(row.balance)), rounding.loans);
       return {
         code: row.transactionNumber || row.id,
         name: row.loanName,
@@ -605,7 +609,7 @@ export function collectionItemsFor({ salary, loanSchedules = [], registerDeducti
   const priced = item => {
     const bound = priceByBinding(item, resolveBound);
     if (!bound.boundCode || bound.boundProblem) return bound;
-    return { ...bound, due: round2(Math.min(bound.due, number(item.outstanding) || bound.due)) };
+    return { ...bound, due: roundTo(Math.min(bound.due, number(item.outstanding) || bound.due), item.group === 'Loan' ? rounding.loans : rounding.deductions) };
   };
 
   return [...loans.map(priced), ...companyDeductions.map(priced), ...assigned.map(priced), ...manual]
@@ -784,7 +788,8 @@ export function applyTakeHomePolicy({
  */
 export function computeEmployeeLine({ employee, transaction, context }) {
   const library = context.computations || seedComputations();
-  const { steps, record } = makeStepper(library);
+  const rounding = context.rounding || DEFAULT_ROUNDING;
+  const { steps, record } = makeStepper(library, rounding);
   const config = transaction.config || {};
   const override = (transaction.overrides || {})[employee.employeeId] || {};
   const pay = employee.payroll || {};
@@ -857,7 +862,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     const days = Number.isFinite(Number(override.daysInPeriod))
       ? Number(override.daysInPeriod)
       : attendance.daysCovered ? attendance.daysWorked + attendance.paidLeaveDays : number(config.daysInPeriod);
-    basicPay = round2(dailyRate * days);
+    basicPay = roundTo(dailyRate * days, rounding.basicPay);
     record({
       code: 'MWE-001', label: pay.mwe === 'Yes' ? 'MWE Pay with ECOLA' : 'Daily-paid basic pay', category: 'Basic Pay',
       inputs: { daily_rate: dailyRate, days_worked: days, ecola_amount: pay.mwe === 'Yes' ? number(pay.ecolaPerDay) : 0 },
@@ -867,22 +872,22 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     // ECOLA: the company decides in Payroll Controls whether it is part of
     // Basic Pay or paid as its own (non-taxable) earning line.
     if (pay.mwe === 'Yes' && number(pay.ecolaPerDay)) {
-      const ecola = round2(number(pay.ecolaPerDay) * days);
+      const ecola = roundTo(number(pay.ecolaPerDay) * days, rounding.basicPay);
       if (config.ecolaTreatment === 'Separate earning') { if (ecola > 0) ecolaEarnings.push({ code: 'ECOLA', name: 'ECOLA', classification: 'Non-taxable', amount: ecola, source: 'Timekeeping', detail: `${days} days × ₱${number(pay.ecolaPerDay)}` }); }
-      else basicPay = round2(basicPay + ecola);
+      else basicPay = roundTo(basicPay + ecola, rounding.basicPay);
     }
   } else if (pay.payType === 'Hourly') {
     const hours = Number.isFinite(Number(override.hoursInPeriod))
       ? Number(override.hoursInPeriod)
       : attendance.hoursWorked || number(config.hoursInPeriod);
-    basicPay = round2(hourlyRate * hours);
+    basicPay = roundTo(hourlyRate * hours, rounding.basicPay);
     record({ code: 'PRT-001', category: 'Basic Pay', inputs: { part_time_hours: hours, hourly_rate: hourlyRate }, detail: `${hours} rendered hours × hourly rate`, source: 'Timekeeping punch record' });
   } else {
     const full = record({ code: 'ERN-001', category: 'Basic Pay', inputs: { monthly_basic: monthlyRate }, detail: `Monthly rate ÷ ${PERIODS_PER_YEAR[transaction.paymentMode] / 12} periods per month` });
     basicPay = transaction.paymentMode === 'Monthly' ? monthlyRate : full;
     if (prorated && config.computeBasicPayAdjustment !== false) {
       const factor = payableDays / periodWorkingDays;
-      const adjusted = round2(basicPay * factor);
+      const adjusted = roundTo(basicPay * factor, rounding.basicPay);
       record({
         code: 'BAS-004', label: 'Basic pay proration', category: 'Basic Pay', amount: adjusted, evaluate: false,
         inputs: { basic_pay: basicPay, payable_days: payableDays, period_days: periodWorkingDays },
@@ -900,7 +905,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   if (change && !zeroBasic && config.computeBasicPayAdjustment !== false && ['Monthly', 'Daily'].includes(change.payType || pay.payType)) {
     const days = workingDaysBetween(change.effectiveDate, transaction.periodEnd);
     const daily = rates => ((change.payType || pay.payType) === 'Daily' ? number(rates.dailyRate) : number(rates.monthlyRate) * 12 / factorDays);
-    const amount = round2((daily(change.newRates) - daily(change.oldRates)) * days);
+    const amount = roundTo((daily(change.newRates) - daily(change.oldRates)) * days, rounding.basicPay);
     if (days > 0 && amount !== 0) {
       record({
         code: 'BAS-005', label: 'Basic Pay Adjustment', category: 'Basic Pay', amount, evaluate: false,
@@ -1012,7 +1017,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       return {
         code: reference?.code || row.code, name: reference?.name || row.code,
         classification: reference && reference.taxable === 'No' ? 'Non-taxable' : 'Taxable Allowance',
-        amount: round2(rate * hours), hours, rate, source: 'Variable allowance (hourly)',
+        amount: roundTo(rate * hours, rounding.earnings), hours, rate, source: 'Variable allowance (hourly)',
         detail: `${hours} ${hours === 1 ? 'hour' : 'hours'} × ₱${rate.toLocaleString()} per hour${row.hours === '' || row.hours === undefined || row.hours === null ? ' (hours from Timekeeping)' : ''}`,
       };
     })
@@ -1023,7 +1028,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     salary,
     registerEarnings: (context.registers?.earnings) || [],
     manual: [...(override.earnings || []), ...variableAllowanceItems, ...foreignEarningItems(foreignPay.lines), ...corrections.earnings],
-    transaction, employee, resolveBound,
+    transaction, employee, resolveBound, rounding,
   }), resolveScope, employee, outOfScope);
   configured.forEach(item => recordBinding(item, 'Earnings'));
   variableAllowanceItems.forEach(item => record({ code: 'ERN-004', label: item.name, category: 'Earnings', amount: item.amount, evaluate: false, inputs: { taxable_earnings: item.amount, days_worked: 0 }, detail: item.detail, source: 'Variable Allowance reference table' }));
@@ -1058,7 +1063,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     const factor = payableDays / periodWorkingDays;
     earnings.forEach((item, index) => {
       if (!isVariableAllowance(item) || !(item.amount > 0)) return;
-      const adjusted = round2(item.amount * factor);
+      const adjusted = roundTo(item.amount * factor, rounding.earnings);
       record({
         code: 'ERN-004', label: `${item.name} adjustment`, category: 'Earnings', amount: adjusted, evaluate: false,
         inputs: { taxable_earnings: item.amount, days_worked: payableDays },
@@ -1210,13 +1215,14 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       } else {
         amount = number(registerBonuses.find(row => row.name === type)?.amount);
       }
+      amount = roundTo(amount, rounding.bonuses);
       if (amount > 0) {
         const [kept] = adjustForRun([{ code: '', name: type, amount, source: 'Bonus' }], 'Bonus', 'amount');
         amount = kept ? kept.amount : 0;
       }
       if (amount <= 0) return;
-      const nonTaxable = round2(Math.min(amount, available));
-      const taxable = round2(amount - nonTaxable);
+      const nonTaxable = roundTo(Math.min(amount, available), rounding.bonuses);
+      const taxable = roundTo(amount - nonTaxable, rounding.bonuses);
       available = round2(available - nonTaxable);
       if (taxable > 0) {
         record({ code: 'BON-003', category: 'Bonus', amount: taxable, evaluate: false, inputs: { other_bonus: amount, bonus_tax_ceiling: nonTaxable }, detail: `${type} above the remaining ceiling is taxable`, source: 'Bonus ceiling reference table' });
@@ -1581,7 +1587,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     registerDeductions: (context.registers?.deductions) || [],
     manual: [...(override.deductions || []), ...corrections.deductions],
     transaction, employee, hierarchy: context.hierarchy || [], staggeredRequests: context.staggeredRequests || [],
-    resolveBound,
+    resolveBound, rounding,
   }), resolveScope, employee, outOfScope);
   collections.forEach(item => recordBinding(item, 'Deductions'));
   collections.filter(item => item.authorised === false).forEach(item => {

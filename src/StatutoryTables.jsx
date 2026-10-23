@@ -33,6 +33,7 @@ import {
   UploadSimple,
   Trash,
   ClockCounterClockwise,
+  Database,
   X,
 } from '@phosphor-icons/react';
 import { STATUTORY_STORAGE_KEY, versionUsage } from './statutoryService';
@@ -78,6 +79,9 @@ const fieldValue = (agency, row, key) => {
   if (key === 'totalContribution') return isPercentage(row) ? `${(Number(row.eeRate || 0) + Number(row.erRate || 0)).toFixed(2)}%` : `${php(Number(row.minimumEmployeeShare || 0) + Number(row.minimumEmployerShare || 0))} – ${php(Number(row.maximumEmployeeShare || 0) + Number(row.maximumEmployerShare || 0))}`;
   if (key === 'employeeShare') return row.unit === 'Percentage (%)' ? `${Number(row.eeRate || 0).toFixed(2)}%` : `${php(row.minimumEmployeeShare)} – ${php(row.maximumEmployeeShare)}`;
   if (key === 'employerShare') return row.unit === 'Percentage (%)' ? `${Number(row.erRate || 0).toFixed(2)}%` : `${php(row.minimumEmployerShare)} – ${php(row.maximumEmployerShare)}`;
+  // A bracket is either a rate or an amount range; the columns of the other kind stay empty.
+  if (['philhealth', 'pagibig'].includes(agency) && /Share$/.test(key) && isPercentage(row)) return '—';
+  if (['philhealth', 'pagibig'].includes(agency) && /^(ee|er)Rate$/.test(key) && !isPercentage(row)) return '—';
   if (key === 'unit') return isPercentage(row) ? 'Percentage (%)' : 'Amount (Php)';
   // A column prints as money only when its agency declares it numeric. Listing
   // the text keys by hand meant every new text column (ATC code, nature of the
@@ -142,21 +146,24 @@ function HubCard({ icon: Icon, label, detail, enabled, onClick }) {
 export function SettingsHub({ onOpen, onOpenTax, onOpenReference, onOpenComputationLibrary, onOpenWorkspace }) {
   const { role } = useRole();
   const cards = [
-    { icon: Buildings, label: 'Company Onboarding', detail: 'Set up, verify and import startup/YTD data', handler: () => onOpenWorkspace('onboarding') },
-    { icon: ArrowLeft, label: 'Company Offboarding', detail: 'Export data and manage company deactivation', handler: () => onOpenWorkspace('offboarding') },
-    { icon: Function, label: 'Standard Computation Library', detail: 'Controlled payroll formulas and test calculations', handler: onOpenComputationLibrary },
-    { icon: Scales, label: 'Statutory Table', detail: 'SSS, PhilHealth, Pag-IBIG and De Minimis versions', handler: onOpen },
+    // Atlas Core (QA) Settings tiles, in QA's order.
+    { icon: Buildings, label: 'Company Onboarding', detail: 'Companies, their services and modules, and assigned users', handler: () => onOpenWorkspace('companyManagement') },
+    { icon: ArrowLeft, label: 'Company Offboarding', detail: 'Termination date and offboarding documents per company', handler: () => onOpenWorkspace('companyOffboarding') },
+    { icon: Table, label: 'Reference Table', detail: 'Generic, client-specific and other reference values', handler: onOpenReference || onOpen },
+    { icon: Scales, label: 'Statutory Tables', detail: 'SSS, PhilHealth, Pag-IBIG and De Minimis versions', handler: onOpen },
     { icon: Table, label: 'Tax Tables', detail: 'BIR annual, compensation, expanded and final tax versions', handler: onOpenTax },
-    { icon: Money, label: 'MWE Rate Tables', detail: 'Regional minimum wage rates, sectors and wage orders', handler: () => onOpenWorkspace('mweRates') },
-    { icon: Table, label: 'Reference Table', detail: 'Canonical company and payroll reference data with versions and history', handler: onOpenReference || onOpen },
+    { icon: BookOpen, label: 'FAQs', detail: 'FAQ categories and questions the chatbot answers from', handler: () => onOpenWorkspace('faqManagement') },
+    { icon: Ticket, label: 'Ticketing Configuration', detail: 'Help topics, assigned e-mails and severity', handler: () => onOpenWorkspace('ticketingConfig') },
+    { icon: Timer, label: 'Overtime Configuration', detail: 'Standard overtime codes and rates', handler: () => onOpenWorkspace('overtimeConfig') },
+    { icon: Database, label: 'Company Databases', detail: 'Database per Atlas system for each company', handler: () => onOpenWorkspace('companyDatabases') },
+    { icon: Compass, label: 'Navigation Configuration', detail: 'Welcome guides shown the first time a feature opens', handler: () => onOpenWorkspace('navigationConfig') },
+    // Mockup additions beyond Atlas Core.
+    { icon: Function, label: 'Standard Computation Library', detail: 'Controlled payroll formulas and test calculations', handler: onOpenComputationLibrary },
+    { icon: Money, label: 'MWE Management', detail: 'Regional minimum wage rates, sectors and wage orders', handler: () => onOpenWorkspace('mweRates') },
     { icon: FileText, label: 'Paycode Management', detail: 'Payroll code library, classifications and GL mapping', handler: () => onOpenWorkspace('payCodes') },
     { icon: Table, label: 'Calendar Settings', detail: 'Payout, locking, statutory and billing deadlines', handler: () => onOpenWorkspace('calendar') },
-    { icon: Compass, label: 'Navigation Configuration', detail: 'Publish ordered guide and navigation content', handler: () => onOpenWorkspace('navigation') },
-    { icon: BookOpen, label: 'FAQ and Self-Learning', detail: 'Sanitized searchable FAQ content by module', handler: () => onOpenWorkspace('faq') },
-    { icon: Ticket, label: 'Ticketing / Helpdesk', detail: 'Topics, assignment destinations and SLA rules', handler: () => onOpenWorkspace('tickets') },
-    { icon: Timer, label: 'Overtime Rate Management', detail: 'Overtime codes, day-type rates, attendance conditions and approvals', handler: () => onOpenWorkspace('overtime') },
     { icon: CheckCircle, label: 'Access & Approvals', detail: 'Role-based access and multi-level approvals', handler: () => onOpenWorkspace('accessRights') },
-    { icon: Eye, label: 'Audit Log', detail: 'Chronological access and configuration events', handler: () => onOpenWorkspace('audit') },
+    { icon: Eye, label: 'Audit Log', detail: 'Chronological access and configuration events', handler: () => onOpenWorkspace('auditLog') },
   ];
   return <div className="platform-hub page-content">
     <section className="hero-card"><p className="eyebrow">System administration</p><h1>Settings</h1><p>Manage platform setup and controlled statutory configuration.</p></section>
@@ -438,7 +445,7 @@ export function StatutoryTables({ mode = 'settings', group = 'statutory', onBack
           <label className="statutory-filter-date">Last Updated<DateInput value={filters.updated} onChange={value => setFilters({ ...filters, updated: value })} /></label>
           {(filters.status || filters.effective || filters.updated || query) && <button className="button secondary" onClick={() => { setFilters({ status: '', effective: '', updated: '' }); setQuery(''); }}>Clear</button>}
           <div className="toolbar-spacer" />{isPaAdmin && <button className="button primary" onClick={addVersion}><Plus /> Add</button>}<button className="button secondary" onClick={() => setAuditOpen(true)}><ClockCounterClockwise /> Audit trail</button><ExportMenu onExport={format => exportTable(def, shownVersions[0] || versions[0], format)} /></div>
-        <div className="table-card statutory-version-card"><table><thead><tr><th>Code</th><th>Effective Date</th><th>Last Updated By</th><th>Last Updated Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{shownVersions.length ? shownVersions.map(item => { const itemUsage = versionUsage(agency, item, data); return <tr key={item.id}><td><button className="table-link" onClick={() => setVersionViewing(item)}>{item.code}</button>{item.supersedes && <small>supersedes {item.supersedes}</small>}</td><td>{formatUsDate(item.effectiveDate)}</td><td>{item.updatedBy || item.createdBy}</td><td>{item.updatedAt || item.createdAt}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setVersionViewing(item)} aria-label="View"><Eye /></button><button onClick={() => setSelectedId(item.id)} aria-label={itemUsage.used ? 'Open table' : 'Edit'} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Edit'}>{itemUsage.used ? <LockKey weight="fill" /> : <PencilSimple />}</button>{isPaAdmin && <button onClick={() => setVersionDeleting(item)} aria-label="Delete" disabled={itemUsage.used} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Delete'}><Trash /></button>}</div></td></tr>; }) : <tr><td colSpan="6"><div className="empty-state compact"><h3>No tables found</h3><p>Change the search or the filters.</p></div></td></tr>}</tbody></table></div>
+        <div className="table-card statutory-version-card"><table><thead><tr><th>Code</th>{isTaxGroup && <><th>Tax Table Name</th><th>Created By</th><th>Date Created</th></>}<th>Effective Date</th><th>Last Updated By</th><th>Last Updated Date</th><th>Status</th><th>Action</th></tr></thead><tbody>{shownVersions.length ? shownVersions.map(item => { const itemUsage = versionUsage(agency, item, data); return <tr key={item.id}><td><button className="table-link" onClick={() => setVersionViewing(item)}>{item.code}</button>{item.supersedes && <small>supersedes {item.supersedes}</small>}</td>{isTaxGroup && <><td>{item.name || def.name}</td><td>{item.createdBy || '—'}</td><td>{item.createdOn ? formatUsDate(item.createdOn) : (item.createdAt || '—')}</td></>}<td>{formatUsDate(item.effectiveDate)}</td><td>{item.updatedBy || item.createdBy}</td><td>{item.updatedAt || item.createdAt}</td><td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span></td><td><div className="row-actions always"><button onClick={() => setVersionViewing(item)} aria-label="View"><Eye /></button><button onClick={() => setSelectedId(item.id)} aria-label={itemUsage.used ? 'Open table' : 'Edit'} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Edit'}>{itemUsage.used ? <LockKey weight="fill" /> : <PencilSimple />}</button>{isPaAdmin && <button onClick={() => setVersionDeleting(item)} aria-label="Delete" disabled={itemUsage.used} title={itemUsage.used ? `Used by ${itemUsage.transactions.join(', ')}` : 'Delete'}><Trash /></button>}</div></td></tr>; }) : <tr><td colSpan="6"><div className="empty-state compact"><h3>No tables found</h3><p>Change the search or the filters.</p></div></td></tr>}</tbody></table></div>
       </> : tableVersion ? <>
         {mode === 'settings' && <button className="inline-back" onClick={() => { setSelectedId(null); setDraft(null); }}><ArrowLeft /> {def.short} versions</button>}
         <div className="page-heading"><div><p className="breadcrumb">{mode === 'settings' ? 'Settings' : 'Payroll'} / {groupTitle} / {def.short}</p><h1>{def.name}</h1><p className="page-description">{mode === 'settings' ? `Add or revise ${isTaxGroup ? 'tax brackets and rates' : 'contribution brackets'} before activating this version.` : 'View the active table used by the current payroll computation.'}</p></div>{mode === 'payroll' && <span className="controlled-badge"><CheckCircle weight="fill" /> Active approved version</span>}</div>

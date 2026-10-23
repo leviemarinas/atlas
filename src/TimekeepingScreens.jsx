@@ -33,7 +33,7 @@ import {
   useTableState,
 } from './HRMKit.jsx';
 import { downloadFile } from './fileDownload.js';
-import { createHrmId, findEmployee } from './hrmData.js';
+import { createHrmId, findEmployee, shiftById } from './hrmData.js';
 import { ShiftScheduleScreen } from './TimekeepingShiftSchedule.jsx';
 import { TimekeepingReportsScreen } from './TimekeepingReportsScreen.jsx';
 import {
@@ -50,6 +50,8 @@ import {
   TK_WORK_LOCATIONS,
   absenceRows,
   attendanceKpis,
+  attendanceRosterRows,
+  logSummaryFields,
   chargeCodeSummaryRows,
   costAllocationRows,
   hoursToClock,
@@ -163,8 +165,13 @@ function TimeInOutScreen({ data, setData, user, access, employees, teamEmployeeI
   </div>;
 }
 
+/** Columns Atlas Core adds to a time log, derived from the log and the employee's shift. */
+const LOG_SUMMARY_KEYS = new Set(['shiftSchedule', 'coreHours', 'dayType', 'tardiness', 'undertime', 'absence', 'leave', 'officialBusiness']);
+const shiftOfEmployee = (data, employeeId) => shiftById(data, findEmployee(data, employeeId)?.shiftId);
+
 function MyTimeLogsPanel({ data, setData, user, settings, onNotify }) {
   const table = useTableState(5);
+  const myShift = shiftOfEmployee(data, user.employeeId);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [tick, setTick] = useState(0);
@@ -307,6 +314,9 @@ function MyTimeLogsPanel({ data, setData, user, settings, onNotify }) {
     <DataTable
       columns={[
         { key: 'date', label: 'Date', type: 'date' },
+        { key: 'shiftSchedule', label: 'Shift Schedule' },
+        { key: 'coreHours', label: 'Core Hours' },
+        { key: 'dayType', label: 'Day Type' },
         { key: 'timeIn', label: 'Time In' },
         { key: 'timeOut', label: 'Time Out' },
         { key: 'duration', label: 'Duration' },
@@ -314,8 +324,14 @@ function MyTimeLogsPanel({ data, setData, user, settings, onNotify }) {
         { key: 'breakOut', label: 'Break Out' },
         { key: 'totalBreakDuration', label: 'Total Break Duration' },
         { key: 'overtimeHours', label: 'Overtime Hours' },
-        { key: 'tool', label: 'Tool Used' },
+        { key: 'tardiness', label: 'Tardiness' },
+        { key: 'undertime', label: 'Undertime' },
+        { key: 'absence', label: 'Absence' },
+        { key: 'leave', label: 'Leave' },
+        { key: 'officialBusiness', label: 'Official Business' },
+        { key: 'tool', label: 'Tools Used' },
         { key: 'workLocation', label: 'Work Location' },
+        ...(settings.geotagging ? [{ key: 'geotag', label: 'Geotag' }] : []),
       ]}
       rows={pageRows}
       total={filtered.length}
@@ -326,6 +342,7 @@ function MyTimeLogsPanel({ data, setData, user, settings, onNotify }) {
       onPageSizeChange={table.setPageSize}
       empty="No time logs for this filter."
       renderCell={(row, column) => {
+        if (LOG_SUMMARY_KEYS.has(column.key)) return logSummaryFields(row, myShift)[column.key];
         if (column.key === 'duration') return hoursToClock(row.workedHours);
         if (column.key === 'totalBreakDuration') return hoursToClock(row.breakHours);
         if (column.key === 'overtimeHours') return row.overtimeHours ? `${hoursToClock(row.overtimeHours)} (${row.overtimeStatus})` : '—';
@@ -565,8 +582,9 @@ function MissingLogsPanel({ data, setData, employees, onNotify }) {
 
 /* ------------------------------------------ 2. Time and Attendance Summary */
 
-function TimeAttendanceSummaryScreen({ data, user, access, employees, teamEmployeeIds, onNotify }) {
+function TimeAttendanceSummaryScreen({ data, setData, user, access, employees, teamEmployeeIds, onNotify }) {
   const table = useTableState();
+  const [tab, setTab] = useState('summary');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewPersonal, setViewPersonal] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
@@ -593,26 +611,43 @@ function TimeAttendanceSummaryScreen({ data, user, access, employees, teamEmploy
     onNotify(`Time and attendance summary exported to ${format}.`);
   }
 
+  // Atlas Core totals the roster per employee and shows each one's classifications.
   const rosterColumns = [
-    { key: 'date', label: 'Date', type: 'date' },
     { key: 'employeeCode', label: 'Employee Code' },
-    { key: 'name', label: 'Employee Full Name' },
-    { key: 'department', label: 'Department/Division' },
+    { key: 'name', label: 'Full Name' },
+    { key: 'department', label: 'Department' },
     { key: 'totalWorkedHours', label: 'Total Worked Hours' },
+    { key: 'totalAbsences', label: 'Total Absences' },
+    { key: 'totalLeaveDays', label: 'Total Leave Days' },
+    { key: 'totalTardiness', label: 'Total Tardiness' },
+    { key: 'totalUndertime', label: 'Total Undertime' },
     { key: 'totalOvertimeHours', label: 'Total Overtime Hours' },
-    { key: 'status', label: 'Status' },
+    { key: 'otClassification', label: 'OT Classification' },
+    { key: 'undertimeClassification', label: 'Undertime Classification' },
+    { key: 'absenceClassification', label: 'Absence Classification' },
+    { key: 'tardinessClassification', label: 'Tardiness Classification' },
   ];
   const personalColumns = [
     { key: 'date', label: 'Date', type: 'date' },
+    { key: 'shiftSchedule', label: 'Shift Schedule' },
+    { key: 'coreHours', label: 'Core Hours' },
+    { key: 'dayType', label: 'Day Type' },
+    { key: 'employeeCode', label: 'Employee ID' },
     { key: 'timeIn', label: 'Time In' },
     { key: 'timeOut', label: 'Time Out' },
     { key: 'workedHours', label: 'Worked Hours' },
-    { key: 'breakIn', label: 'Break In' },
-    { key: 'breakOut', label: 'Break Out' },
     { key: 'breakHours', label: 'Break Hours' },
-    { key: 'overtimeHours', label: 'Overtime Hours' },
-    { key: 'status', label: 'Status' },
+    { key: 'overtimeHours', label: 'Total OT Hours' },
+    { key: 'tardiness', label: 'Tardiness' },
+    { key: 'undertime', label: 'Undertime' },
+    { key: 'absence', label: 'Absence' },
+    { key: 'leave', label: 'Leave' },
+    { key: 'officialBusiness', label: 'Official Business' },
+    { key: 'tool', label: 'Tool Used' },
+    { key: 'workLocation', label: 'Work Location' },
+    { key: 'geotag', label: 'Geotag' },
   ];
+  const rosterRows = useMemo(() => attendanceRosterRows(scoped, employees).filter(row => matches(row, table, ['employeeCode', 'name', 'department'])), [scoped, employees, table.search, table.filters]);
 
   return <div className="hrm-workspace tk-screen">
     <PageHeading title="Time and Attendance Summary" />
@@ -629,30 +664,32 @@ function TimeAttendanceSummaryScreen({ data, user, access, employees, teamEmploy
       { label: selectedEmployee.name },
     ]} />}
 
-    <TkToolbar table={table} onFilter={() => setDrawerOpen(true)}>
+    {access.canViewCompanyData && <SegmentedTabs tabs={[{ key: 'summary', label: 'Summary' }, { key: 'import', label: 'Import' }]} value={tab} onChange={setTab} ariaLabel="Time and attendance" />}
+    {tab === 'summary' && <TkToolbar table={table} onFilter={() => setDrawerOpen(true)}>
       {isApprover && <PersonalToggle checked={viewPersonal} onChange={value => { setViewPersonal(value); setSelectedEmployeeId(''); }} />}
       <ExportMenu onExport={exportRows} disabled={rows.length === 0} />
-    </TkToolbar>
+    </TkToolbar>}
 
-    <DataTable
+    {tab === 'import' ? <AttendanceImportPanel data={data} setData={setData} employees={employees} onNotify={onNotify} /> : <DataTable
       columns={showRoster ? rosterColumns : personalColumns}
-      rows={pageRows}
-      total={rows.length}
-      rowKey={row => row.logId}
+      rows={showRoster ? paginate(rosterRows, table.page, table.pageSize) : pageRows}
+      total={showRoster ? rosterRows.length : rows.length}
+      rowKey={row => row.logId || row.key}
       page={table.page}
       pageSize={table.pageSize}
       onPageChange={table.setPage}
       onPageSizeChange={table.setPageSize}
       empty="No attendance rows for this filter."
       renderCell={(row, column) => {
-        if (column.key === 'employeeCode') return <button type="button" className="tk-code-link" onClick={() => setSelectedEmployeeId(row.employeeId)}>{row.employeeCode}</button>;
-        if (column.key === 'totalWorkedHours' || column.key === 'workedHours') return hoursToClock(row.workedHours);
-        if (column.key === 'totalOvertimeHours' || column.key === 'overtimeHours') return row.overtimeHours ? `${hoursToClock(row.overtimeHours)} (${row.overtimeStatus})` : '—';
+        if (column.key === 'employeeCode') return showRoster ? <button type="button" className="tk-code-link" onClick={() => setSelectedEmployeeId(row.employeeId)}>{row.employeeCode}</button> : row.employeeCode;
+        if (showRoster) return formatCell(row[column.key], column.type);
+        if (LOG_SUMMARY_KEYS.has(column.key)) return logSummaryFields(row, shiftOfEmployee(data, row.employeeId))[column.key];
+        if (column.key === 'workedHours') return hoursToClock(row.workedHours);
+        if (column.key === 'overtimeHours') return row.overtimeHours ? `${hoursToClock(row.overtimeHours)} (${row.overtimeStatus})` : '—';
         if (column.key === 'breakHours') return hoursToClock(row.breakHours);
-        if (column.key === 'status') return <StatusText status={row.status} />;
         return formatCell(row[column.key], column.type);
       }}
-    />
+    />}
 
     {drawerOpen && <FilterDrawer
       fields={[
@@ -898,6 +935,7 @@ function YearToDateMetricsScreen({ data, user, access, teamEmployeeIds, onNotify
 /* ------------------------------------------------------------ 5. Charge Codes */
 
 import { ChargeCodesWorkspace } from './TimekeepingChargeCodes.jsx';
+import { TransferRequestSummaryScreen } from './TKTransferSummary.jsx';
 
 function ChargeCodesScreen({ data, setData, user, access, onNotify }) {
   return <ChargeCodesWorkspace
@@ -1242,6 +1280,9 @@ function AbsenceScreen({ data, user, access, employees, teamEmployeeIds, onNotif
             { key: 'position', label: 'Job Title' },
             { key: 'department', label: 'Department' },
             { key: 'division', label: 'Division' },
+            { key: 'totalSickLeave', label: 'Total Sick Leave' },
+            { key: 'totalVacationLeave', label: 'Total Vacation Leave' },
+            { key: 'totalUnpaidLeave', label: 'Total Unpaid Leave' },
             { key: 'totalInHours', label: 'Total in Hours' },
           ]
         : [
@@ -1260,6 +1301,10 @@ function AbsenceScreen({ data, user, access, employees, teamEmployeeIds, onNotif
       empty="No absences recorded."
       renderCell={(row, column) => {
         if (column.key === 'employeeCode') return <button type="button" className="tk-code-link" onClick={() => setSelectedEmployeeId(row.employeeId)}>{row.employeeCode}</button>;
+        // Hours of each kind of absence, as Atlas Core splits the roster.
+        if (column.key === 'totalSickLeave') return /sick/i.test(row.leaveType || '') ? `${row.totalInHours}h` : '—';
+        if (column.key === 'totalVacationLeave') return /vacation/i.test(row.leaveType || '') ? `${row.totalInHours}h` : '—';
+        if (column.key === 'totalUnpaidLeave') return /unpaid/i.test(row.leaveType || '') ? `${row.totalInHours}h` : '—';
         return formatCell(row[column.key], column.type);
       }}
     />
@@ -1397,15 +1442,19 @@ function TardinessUndertimeScreen({ data, user, access, employees, teamEmployeeI
             { key: 'position', label: 'Job Title' },
             { key: 'department', label: 'Department' },
             { key: 'division', label: 'Division' },
+            { key: 'tardinessHours', label: 'Tardiness (Hrs)' },
+            { key: 'tardinessMinutes', label: 'Tardiness (Mins)' },
+            { key: 'undertimeHours', label: 'Undertime (Hrs)' },
+            { key: 'undertimeMinutes', label: 'Undertime (Mins)' },
           ]
         : [
             { key: 'date', label: 'Date', type: 'date' },
             { key: 'timeIn', label: 'Time In' },
             { key: 'timeOut', label: 'Time Out' },
-            { key: 'tardinessHours', label: 'Tardiness in Hours' },
-            { key: 'tardinessMinutes', label: 'Tardiness in Minutes' },
-            { key: 'undertimeHours', label: 'Undertime in Hours' },
-            { key: 'undertimeMinutes', label: 'Undertime in Minutes' },
+            { key: 'tardinessHours', label: 'Tardiness (Hrs)' },
+            { key: 'tardinessMinutes', label: 'Tardiness (Mins)' },
+            { key: 'undertimeHours', label: 'Undertime (Hrs)' },
+            { key: 'undertimeMinutes', label: 'Undertime (Mins)' },
             { key: 'remarks', label: 'Remarks' },
           ]}
       rows={pageRows}
@@ -1789,6 +1838,80 @@ function AnnouncementsScreen({ data, setData }) {
 /* -------------------------------------------------------------- dispatcher */
 
 /** Route key → screen. The portal's tile grid reads the same map. */
+/* ------------------------------- Time & Attendance Summary ▸ Import tab */
+
+const IMPORT_HEADERS = ['Employee Code', 'Date', 'Time In', 'Time Out', 'Break In', 'Break Out', 'Tool Used', 'Work Location'];
+const csvCells = line => { const cells = []; let cell = ''; let quoted = false; for (let index = 0; index < line.length; index += 1) { const char = line[index]; if (quoted) { if (char === '"' && line[index + 1] === '"') { cell += '"'; index += 1; } else if (char === '"') quoted = false; else cell += char; } else if (char === '"') quoted = true; else if (char === ',') { cells.push(cell.trim()); cell = ''; } else cell += char; } cells.push(cell.trim()); return cells; };
+const hoursBetweenTimes = (start, end) => { const toMinutes = value => { const match = /^(\d{1,2}):(\d{2})/.exec(String(value || '')); return match ? Number(match[1]) * 60 + Number(match[2]) : null; }; const a = toMinutes(start); const b = toMinutes(end); return a == null || b == null ? 0 : Math.max(0, ((b - a + 1440) % 1440) / 60); };
+
+/**
+ * Atlas Core's Import tab: download the attendance data (or only the template),
+ * import a file — inserting new days and, with Override, replacing existing
+ * ones — and roll an import back from its history.
+ */
+function AttendanceImportPanel({ data, setData, employees, onNotify }) {
+  const history = data.tkAttendanceImports || [];
+  const [override, setOverride] = useState(false);
+  const [downloadType, setDownloadType] = useState('Attendance Data');
+  const [employeeCode, setEmployeeCode] = useState('All Employees');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [rollingBack, setRollingBack] = useState(null);
+
+  const download = () => {
+    const header = toCsv(IMPORT_HEADERS, []);
+    if (downloadType === 'Template Only') { downloadFile('time-and-attendance-template.csv', header); return onNotify('Template downloaded.'); }
+    const logs = (data.timeLogs || []).filter(log => { const employee = findEmployee(data, log.employeeId); return (employeeCode === 'All Employees' || employee?.employeeCode === employeeCode) && (!from || log.date >= from) && (!to || log.date <= to); });
+    downloadFile('time-and-attendance.csv', toCsv(IMPORT_HEADERS, logs.map(log => [findEmployee(data, log.employeeId)?.employeeCode || log.employeeId, log.date, log.timeIn, log.timeOut, log.breakIn, log.breakOut, log.tool, log.workLocation])));
+    return onNotify(`${logs.length} attendance row(s) downloaded.`);
+  };
+  const importFile = async file => {
+    if (!file) return;
+    const lines = (await file.text()).split(/\r?\n/).filter(line => line.trim());
+    const [head, ...body] = lines;
+    if (!head || csvCells(head)[0].toLowerCase() !== 'employee code') return onNotify('Use the time and attendance template: the first column must be Employee Code.', 'bad');
+    const logs = [...(data.timeLogs || [])];
+    const before = []; const inserted = []; const problems = []; let updated = 0;
+    body.forEach((line, index) => {
+      const [code, date, timeIn, timeOut, breakIn, breakOut, tool, workLocation] = csvCells(line);
+      const employee = (data.employees || []).find(item => item.employeeCode === code);
+      if (!employee) return problems.push(`Row ${index + 2}: no employee ${code}.`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return problems.push(`Row ${index + 2}: Date must be YYYY-MM-DD.`);
+      const at = logs.findIndex(log => log.employeeId === employee.employeeId && log.date === date);
+      const record = { logId: `TKL-${employee.employeeId}-${date}`, employeeId: employee.employeeId, date, timeIn, timeOut, breakIn, breakOut, tool: tool || 'Biometrics', workLocation: workLocation || 'Office', workedHours: Math.max(0, hoursBetweenTimes(timeIn, timeOut) - hoursBetweenTimes(breakIn, breakOut)), breakHours: hoursBetweenTimes(breakIn, breakOut), overtimeHours: 0, tardinessMinutes: 0, undertimeMinutes: 0, status: timeIn ? 'Present' : 'Absent', importedFrom: file.name };
+      if (at >= 0) { if (!override) return problems.push(`Row ${index + 2}: ${code} already has a log on ${date} (tick Override to replace it).`); before.push(logs[at]); logs[at] = { ...logs[at], ...record }; updated += 1; }
+      else { logs.push(record); inserted.push(record.logId); }
+      return undefined;
+    });
+    const entry = { id: `imp-${Date.now()}`, importedOn: new Date().toISOString(), fileName: file.name, override, inserted: inserted.length, updated, insertedIds: inserted, before, status: problems.length ? (inserted.length + updated ? 'Completed with errors' : 'Failed') : 'Completed' };
+    setData(current => ({ ...current, timeLogs: logs, tkAttendanceImports: [entry, ...(current.tkAttendanceImports || [])] }));
+    onNotify(`${inserted.length} inserted, ${updated} updated.${problems.length ? ` ${problems.length} row(s) skipped — ${problems.slice(0, 2).join(' ')}` : ''}`, problems.length && !(inserted.length + updated) ? 'bad' : 'ok');
+    return undefined;
+  };
+  const rollback = entry => {
+    setData(current => {
+      const restored = (current.timeLogs || []).filter(log => !entry.insertedIds.includes(log.logId)).map(log => entry.before.find(old => old.logId === log.logId) || log);
+      return { ...current, timeLogs: restored, tkAttendanceImports: (current.tkAttendanceImports || []).map(item => item.id === entry.id ? { ...item, status: 'Rolled back' } : item) };
+    });
+    setRollingBack(null);
+    onNotify('Import rolled back.');
+  };
+
+  return <section className="tk-import">
+    <div className="hrm-form-grid">
+      <label className="hrm-form-field"><span className="hrm-form-label">Download Type</span><select value={downloadType} onChange={event => setDownloadType(event.target.value)}><option>Attendance Data</option><option>Template Only</option></select></label>
+      {downloadType === 'Attendance Data' && <>
+        <label className="hrm-form-field"><span className="hrm-form-label">Employee</span><select value={employeeCode} onChange={event => setEmployeeCode(event.target.value)}><option>All Employees</option>{employees.map(employee => <option key={employee.employeeId} value={employee.employeeCode}>{employee.employeeCode} · {employee.name}</option>)}</select></label>
+        <label className="hrm-form-field"><span className="hrm-form-label">From</span><input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
+        <label className="hrm-form-field"><span className="hrm-form-label">To</span><input type="date" value={to} onChange={event => setTo(event.target.value)} /></label>
+      </>}
+    </div>
+    <div className="hrm-toolbar"><div className="hrm-toolbar-left"><button type="button" className="hrm-btn outline" onClick={download}>{downloadType === 'Template Only' ? 'Download Template' : 'Download Attendance'}</button></div><div className="hrm-toolbar-right"><label className="hrm-agree"><input type="checkbox" checked={override} onChange={event => setOverride(event.target.checked)} /> <span>Override Existing Records</span></label><label className="hrm-btn primary">Import Time and Attendance<input type="file" accept=".csv" hidden onChange={event => { importFile(event.target.files?.[0]); event.target.value = ''; }} /></label></div></div>
+    <DataTable columns={[{ key: 'importedOn', label: 'Imported On' }, { key: 'override', label: 'Override' }, { key: 'inserted', label: 'Inserted' }, { key: 'updated', label: 'Updated' }, { key: 'status', label: 'Status' }]} rows={history} total={history.length} rowKey={row => row.id} page={1} pageSize={Math.max(10, history.length)} onPageChange={() => {}} onPageSizeChange={() => {}} empty="No imports yet." renderCell={(row, column) => column.key === 'importedOn' ? new Date(row.importedOn).toLocaleString('en-US') : column.key === 'override' ? (row.override ? 'Yes' : 'No') : String(row[column.key])} actions={row => row.status === 'Rolled back' || row.status === 'Failed' ? [] : [{ kind: 'cancel', label: 'Rollback', onSelect: () => setRollingBack(row) }]} />
+    {rollingBack && <Modal title="Rollback Import" onClose={() => setRollingBack(null)} footer={<><GhostButton onClick={() => setRollingBack(null)}>Cancel</GhostButton><button type="button" className="hrm-btn danger" onClick={() => rollback(rollingBack)}>Rollback</button></>}><p>Undo this import? {rollingBack.inserted} inserted day(s) are removed and {rollingBack.updated} updated day(s) go back to what they were.</p></Modal>}
+  </section>;
+}
+
 export const timekeepingScreens = Object.freeze({
   'time-in-out': TimeInOutScreen,
   'attendance-summary': TimeAttendanceSummaryScreen,
@@ -1803,6 +1926,7 @@ export const timekeepingScreens = Object.freeze({
   overtime: OvertimeScreen,
   'ot-earning': OtEarningConditionScreen,
   others: OthersScreen,
+  'transfer-summary': TransferRequestSummaryScreen,
   announcements: AnnouncementsScreen,
 });
 

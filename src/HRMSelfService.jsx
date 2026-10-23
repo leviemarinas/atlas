@@ -121,7 +121,16 @@ function deriveValue(key, values, context) {
   if (key === 'subordinateShift') return shiftById(data, subordinates.find(row => row.employeeId === values.subordinateId)?.shiftId)?.name || '';
   if (key === 'subordinateShiftWindow') return shiftWindow(data, shiftById(data, subordinates.find(row => row.employeeId === values.subordinateId)?.shiftId)?.name);
   if (key === 'overtimeHours') return hoursBetween(values.overtimeStartDate, values.overtimeStartTime, values.overtimeEndDate, values.overtimeEndTime);
-  if (key === 'leaveDays') return daysBetween(values.leaveStart, values.leaveEnd);
+  if (key === 'leaveDays') {
+    // A half day (first or second half) files half a credit for each date.
+    const days = daysBetween(values.leaveStart, values.leaveEnd);
+    return days && values.durationType && values.durationType !== 'Whole Day' ? days / 2 : days;
+  }
+  if (key === 'transactionNumber') return values.transactionNo || values.liquidationNumber || 'Generated when submitted';
+  if (key === 'recordsTotal') {
+    const total = (values.records || []).reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+    return total ? total.toFixed(2) : '0.00';
+  }
   if (key === 'approvedOvertimeHours') return approvedOvertime.find(row => row.date === values.overtimeDate)?.hours ?? '';
   if (key === 'currentShiftWindow') return shiftWindow(data, values.currentShift);
   if (key === 'requestedShiftWindow') return shiftWindow(data, values.requestedShift);
@@ -134,7 +143,7 @@ function deriveValue(key, values, context) {
     // What the employee still owes the company, or is owed by it: expenses
     // settle the advance and any cash handed back settles the remainder.
     const advance = Number(deriveValue('cashAdvanceAmount', values, context) || 0);
-    const spent = Number(values.totalExpenses || 0);
+    const spent = Number((values.records || []).length ? deriveValue('recordsTotal', values, context) : values.totalExpenses || 0);
     const returned = Number(values.cashReturned || 0);
     const balance = advance - spent - returned;
     return balance === 0 ? '0.00' : balance.toFixed(2);
@@ -145,6 +154,28 @@ function deriveValue(key, values, context) {
     return amount && months ? (amount / months).toFixed(2) : '';
   }
   return '';
+}
+
+/** Values a list column reads from the request itself rather than the filed details. */
+export function requestColumnValue(request, column) {
+  if (!column.fromRequest) return request.requestDetails?.[column.key];
+  if (column.key === 'filedBy') return request.filedBy?.displayName || request.requester?.displayName || '';
+  if (column.key === 'actionedBy') {
+    // Filing is not acting on it: only an approval, rejection or cancellation counts.
+    const last = (request.approvalHistory || []).filter(entry => !/^submit/i.test(entry.action || '') && (entry.status || entry.toStatus) !== 'Pending Approval').slice(-1)[0];
+    const actor = last?.actor;
+    return typeof actor === 'string' ? actor : actor?.displayName || '';
+  }
+  if (column.key === 'approverRemarks') return request.decisionRemarks || '';
+  return request[column.key] ?? '';
+}
+
+/** Next transaction number for an application type, e.g. CA-2026-0003. */
+function nextTransactionNumber(definition, requests) {
+  const key = definition.transactionKey || 'transactionNo';
+  const prefix = `${definition.transactionPrefix}-${new Date().getFullYear()}-`;
+  const highest = Math.max(0, ...requests.map(request => String(request.requestDetails?.[key] || '')).filter(value => value.startsWith(prefix)).map(value => Number(value.slice(prefix.length)) || 0));
+  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
 }
 
 function shiftWindow(data, shiftName) {
@@ -175,6 +206,18 @@ function validateForm(definition, values, context) {
   const errors = {};
   visibleFields(definition, values).forEach(field => {
     const value = values[field.key] ?? field.default;
+    if (field.type === 'records') {
+      const rows = values[field.key] || [];
+      if (field.required && !rows.length) errors[field.key] = `Add at least one line to ${field.label}.`;
+      const incomplete = rows.findIndex(row => field.recordFields.some(column => column.required && !String(row[column.key] ?? '').trim()));
+      if (incomplete >= 0) errors[field.key] = `Complete line ${incomplete + 1} of ${field.label}.`;
+      if (rows.some(row => row.amount !== undefined && row.amount !== '' && !(Number(row.amount) > 0))) errors[field.key] = 'Every amount must be more than zero.';
+      return;
+    }
+    if (field.type === 'checkbox') {
+      if (field.required && value !== true) errors[field.key] = 'Tick this box to continue.';
+      return;
+    }
     if (field.required && !String(value ?? '').trim()) errors[field.key] = `${field.label} is required.`;
     if (field.validate === 'approvedOvertimeDate' && value && !context.approvedOvertime.some(row => row.date === value)) {
       errors[field.key] = 'There is no approved overtime for this date. Please select another.';
@@ -254,6 +297,17 @@ function optionsFor(field, context) {
   return [];
 }
 
+/** Several lines under one application (expense or liquidation records), each with its own fields. */
+function RecordsField({ field, rows, error, onChange }) {
+  const blank = () => Object.fromEntries(field.recordFields.map(column => [column.key, column.default ?? '']));
+  const update = (index, key, value) => onChange(rows.map((row, position) => position === index ? { ...row, [key]: value } : row));
+  return <div className={`hrm-records ${error ? 'has-error' : ''}`}>
+    <div className="hrm-records-head"><span className="hrm-form-label">{field.label}{field.required && <em aria-hidden="true"> *</em>}</span><button type="button" className="hrm-btn tiny outline" onClick={() => onChange([...rows, { ...blank(), recordId: `rec-${Date.now()}-${rows.length}` }])}>+ {field.addLabel || 'Add Line'}</button></div>
+    {rows.length ? <div className="hrm-table-scroll"><table className="hrm-table hrm-records-table"><thead><tr>{field.recordFields.map(column => <th key={column.key}>{column.label}{column.required && ' *'}</th>)}<th aria-label="Remove" /></tr></thead><tbody>{rows.map((row, index) => <tr key={row.recordId || index}>{field.recordFields.map(column => <td key={column.key}>{column.type === 'select' ? <select value={row[column.key] ?? ''} onChange={event => update(index, column.key, event.target.value)} aria-label={`${column.label} line ${index + 1}`}><option value="">Select</option>{column.options.map(option => <option key={option}>{option}</option>)}</select> : <input type={column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text'} min={column.type === 'number' ? '0' : undefined} step={column.type === 'number' ? '0.01' : undefined} value={row[column.key] ?? ''} onChange={event => update(index, column.key, event.target.value)} aria-label={`${column.label} line ${index + 1}`} />}</td>)}<td><button type="button" className="hrm-btn tiny ghost" aria-label={`Delete line ${index + 1}`} onClick={() => onChange(rows.filter((_, position) => position !== index))}>Delete</button></td></tr>)}</tbody></table></div> : <p className="hrm-ss-placeholder">No lines yet.</p>}
+    {error && <small className="hrm-form-error">{error}</small>}
+  </div>;
+}
+
 function ApplicationForm({ definition, values, errors, onChange, context }) {
   const sections = fieldSections(definition, values);
   return <div className="hrm-form">
@@ -270,8 +324,12 @@ function ApplicationForm({ definition, values, errors, onChange, context }) {
             disabled: field.readOnly,
             placeholder: field.placeholder,
           };
-          return <div key={field.key} className={`hrm-form-cell span-${field.type === 'textarea' || field.type === 'upload' || field.type === 'radio' ? 2 : 1}`}>
-            {field.type === 'subordinate'
+          return <div key={field.key} className={`hrm-form-cell span-${['textarea', 'upload', 'radio', 'records', 'checkbox'].includes(field.type) ? 2 : 1}`}>
+            {field.type === 'records'
+              ? <RecordsField field={field} rows={values[field.key] || []} error={errors[field.key]} onChange={rows => onChange(field.key, rows)} />
+              : field.type === 'checkbox'
+              ? <label className={`hrm-agree ${errors[field.key] ? 'has-error' : ''}`}><input type="checkbox" checked={values[field.key] === true} onChange={event => onChange(field.key, event.target.checked)} /> <span>{field.label}</span>{errors[field.key] && <small className="hrm-form-error">{errors[field.key]}</small>}</label>
+              : field.type === 'subordinate'
               ? <Field label={field.label} required={field.required} error={errors[field.key]}>
                   <select value={values[field.key] ?? ''} onChange={event => onChange(field.key, event.target.value)}>
                     <option value="">Please select</option>
@@ -428,11 +486,12 @@ export function ApplicationWorkspace({
     return ownRequests.filter(request => {
       if (statusTab !== 'All' && shortStatus(request.status) !== statusTab) return false;
       const details = request.requestDetails || {};
-      if (term && !definition.columns.some(column => String(details[column.key] ?? '').toLowerCase().includes(term))) return false;
+      if (term && !definition.columns.some(column => String(requestColumnValue(request, column) ?? '').toLowerCase().includes(term))) return false;
       return Object.entries(table.filters).every(([key, value]) => {
         if (!value) return true;
         if (key === 'status') return shortStatus(request.status) === value;
-        return String(details[key] ?? '').toLowerCase().includes(String(value).toLowerCase());
+        const column = definition.columns.find(item => item.key === key) || { key };
+        return String(requestColumnValue(request, column) ?? details[key] ?? '').toLowerCase().includes(String(value).toLowerCase());
       });
     });
   }, [ownRequests, statusTab, table.search, table.filters, definition.columns]);
@@ -441,7 +500,7 @@ export function ApplicationWorkspace({
 
   const columns = definition.columns;
   const filterFields = [
-    ...columns.filter(column => column.key !== 'status').map(column => ({ key: column.key, label: column.label, type: column.type })),
+    ...columns.filter(column => column.key !== 'status' && !column.fromRequest).map(column => ({ key: column.key, label: column.label, type: column.type === 'currency' ? undefined : column.type })),
     { key: 'status', label: 'Status', options: APPLICATION_STATUS_TABS.filter(tab => tab !== 'All') },
     { key: 'filedBy', label: 'Filed By' },
     { key: 'actionedBy', label: 'Actioned By' },
@@ -504,6 +563,13 @@ export function ApplicationWorkspace({
       ? subordinates.find(row => row.employeeId === formState.values.subordinateId)
       : employee;
     details.employeeName = subject?.name || user.displayName;
+    if (definition.transactionPrefix) {
+      const key = definition.transactionKey || 'transactionNo';
+      const existing = formState.request?.requestDetails?.[key];
+      details[key] = existing || nextTransactionNumber(definition, requests.filter(request => request.requestType === definition.requestType));
+    }
+    if (definition.key === 'expense-reimbursement') details.reimbursementType = (details.records || [])[0]?.reimbursementType || '';
+    if (definition.key === 'resignation') details.submittedFile = details.submissionType === 'System-generated' ? 'System-generated letter' : ((details.attachments || [])[0]?.name || '');
     try {
       if (formState.mode === 'edit') {
         updateRequestDetails(formState.request.requestId, details, { actor });
@@ -556,7 +622,7 @@ export function ApplicationWorkspace({
   function exportRows(format) {
     const header = columns.map(column => column.label).join(',');
     const body = filtered.map(request => columns.map(column => {
-      const value = column.key === 'status' ? shortStatus(request.status) : request.requestDetails?.[column.key];
+      const value = column.key === 'status' ? shortStatus(request.status) : requestColumnValue(request, column);
       return `"${String(value ?? '').replace(/"/g, '""')}"`;
     }).join(',')).join('\n');
     downloadFile(`${definition.key}-applications.${format === 'PDF' ? 'txt' : 'csv'}`, `${header}\n${body}`);
@@ -566,15 +632,19 @@ export function ApplicationWorkspace({
   function detailGroups(request) {
     const details = request.requestDetails || {};
     const groups = [];
-    columns.filter(column => !['status', 'statusDate'].includes(column.key)).forEach(column => {
+    columns.filter(column => !['status', 'statusDate'].includes(column.key) && !column.fromRequest).forEach(column => {
       groups.push({ label: column.label, value: formatCell(details[column.key], column.type) });
     });
+    const recordsField = definition.fields.find(field => field.type === 'records');
+    if (recordsField && (details.records || []).length) {
+      groups.push({ label: recordsField.label, node: <table className="hrm-table hrm-records-table"><thead><tr>{recordsField.recordFields.map(column => <th key={column.key}>{column.label}</th>)}</tr></thead><tbody>{details.records.map((row, index) => <tr key={row.recordId || index}>{recordsField.recordFields.map(column => <td key={column.key}>{formatCell(row[column.key], column.type === 'number' ? 'currency' : column.type)}</td>)}</tr>)}</tbody></table> });
+    }
     if ((details.attachments || []).length) {
       groups.push({ label: 'Attachments', node: <ul className="hrm-file-list readonly">{details.attachments.map((file, index) => <li key={`${file.name}-${index}`}><span className="hrm-file-name">{file.name}</span><span className="hrm-file-size">{file.size}</span></li>)}</ul> });
     }
     groups.push({ pair: [
       { label: 'Filed By', value: request.filedBy?.displayName || request.requester?.displayName || '—' },
-      { label: 'Actioned By', value: request.approvalHistory?.[request.approvalHistory.length - 1]?.actor || '—' },
+      { label: 'Actioned By', value: requestColumnValue(request, { key: 'actionedBy', fromRequest: true }) || '—' },
     ] });
     groups.push({ label: 'Approver Remarks', value: request.decisionRemarks || '—' });
     groups.push({ pair: [
@@ -614,7 +684,7 @@ export function ApplicationWorkspace({
       empty={`No ${definition.title.toLowerCase()} records yet.`}
       renderCell={(request, column) => {
         if (column.key === 'status') return <StatusText status={request.status} />;
-        return formatCell(request.requestDetails?.[column.key], column.type);
+        return formatCell(requestColumnValue(request, column), column.type);
       }}
       actions={request => [
         { kind: 'view', label: 'View Details', onSelect: () => setViewing(request) },

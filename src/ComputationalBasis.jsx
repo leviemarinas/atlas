@@ -73,6 +73,7 @@ import {
   writeReferences,
 } from './computationGovernance';
 import { isEngineSupplied } from './computationBindings';
+import { ComputationMappingSettings } from './serviceModules';
 import { seedReferences } from './referenceSources';
 import { PolicyComputations, policyEngines } from './PolicyComputations';
 import { PAYROLL_REFERENCE_CODES, synchronizePayrollReference } from './payrollIntegration';
@@ -1025,6 +1026,7 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
       <button className={tab === 'assignments' ? 'active' : ''} onClick={() => setTab('assignments')}>Pipeline assignments <span>{assignments.length}</span></button>
       <button className={tab === 'policies' ? 'active' : ''} onClick={() => setTab('policies')}>Policy engines <span>{policyEngines.length}</span></button>
       <button className={tab === 'references' ? 'active' : ''} onClick={() => setTab('references')}>Reference sources <span>{references.length}</span></button>
+      {isPaAdmin && <button className={tab === 'mapping' ? 'active' : ''} onClick={() => setTab('mapping')}>Computation mapping</button>}
       <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Change history</button>
     </div>
 
@@ -1113,6 +1115,8 @@ export function ComputationalBasis({ companyId, onBack, onOpenStatutory, onOpenS
         </article>;
       })}</div>
     </>}
+
+    {tab === 'mapping' && isPaAdmin && <ComputationMappingSettings companyId={companyId} notify={notify} />}
 
     {tab === 'history' && <>
       <div className="config-toolbar basis-toolbar"><div className="workspace-copy"><h2>Change history</h2><p>Who changed what, when, and which version was affected — with the value before and after the change.</p></div><div className="toolbar-spacer" /><ReportMenu onCsv={() => exportCsv('atlas-computational-basis-history.csv', historyRows, historyColumns)} onPdf={() => printReport('Atlas Computational Basis Change History', historyRows, historyColumns)} /></div>

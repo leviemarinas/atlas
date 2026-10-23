@@ -1,3 +1,5 @@
+import { DateInput } from './DateInput.jsx';
+import { readPayrollRounding, roundTo } from './payrollRounding.js';
 import { entryProblems } from './configValidation.js';
 import { PAYROLL_SECTIONS, ROSTER_SECTIONS, basicPayPeriodProblems, basicPayUsage, masterfileRowsFromHrm, recordUsage, periodsForFrequency, masterfileRowsFromRoster, readEmployeePayrollStore, writeEmployeePayrollStore } from './employeePayrollBridge.js';
 import { employeeRoster, YTD_AS_OF } from './employeeRoster.js';
@@ -24,6 +26,7 @@ import {
   PuzzlePiece,
   SignOut,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkle,
   Trash,
   UploadSimple,
@@ -37,11 +40,16 @@ import {
   AccountSettings,
   Benefits,
   Contacts,
+  CustomFields,
+  Documents,
+  Leaves,
+  MasterfileConfiguration,
   EmployeeDirectory,
   EmployeeRecord,
   PersonalDetails,
   TimeOff,
 } from './EmployeeMasterfileModules';
+import { MASTERFILE_FIELD_DEFINITIONS } from './masterfileFieldDefinitions.js';
 import { RoleSwitch, useRole } from './RoleContext';
 import { AUDITED_SECTIONS, logEmployeeChange, readEmployeeChanges, recordChanges } from './employeeChangeLog.js';
 import { appendAuditEvent } from './companyRepository';
@@ -52,21 +60,26 @@ import { MASTERFILE_STORAGE_KEY, coversEmployee, employeeDirectory, refreshEmplo
 import { deMinimisSplit } from './statutoryService';
 import { seedVersion } from './statutorySchedules.js';
 import { readRegisterRows } from './OperationalWorkspaces';
+import { MWE_LOCALITY_ROWS, MWE_PLACE_FIELDS, mweChoices, mweLocalityChoices, mwePlaceName, mweRateOn, mweRegionHasClassification, withMwePlace } from './mweRates.js';
 import { BrandRail, Topbar } from './AppChrome';
 import { rejectUpload } from './uploadErrorLog.js';
 import { ImportDialog } from './ImportDialog';
 import { readTable, toCsvText, messagesByRow, downloadErrorWorkbook, downloadTemplate as downloadExcelTemplate } from './importFlow.js';
 
 const today = '2026-01-01';
+// Date Created is the actual date the entry is made (local calendar date), not the demo default above.
+const createdToday = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; };
 const PERIODS = ['Every Payroll', 'First Half', 'Second Half'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // Entry fields left optional, as agreed; everything else is starred.
 const OPTIONAL_FIELDS = new Set(['interest', 'interestRate', 'end', 'endDate', 'periodEnd', 'holdDate', 'remarks', 'description', 'reference', 'accumulatedManual', 'accumulatedComputed', 'accumulated']);
-const SECTION_OPTIONAL = { loans: ['payItem', 'loanSource'], basicPay: ['ecola'] };
+const SECTION_OPTIONAL = { loans: ['payItem', 'loanSource'], basicPay: [] };
 // Slide 5: Period Start and Period End are both required for Basic Pay.
-const SECTION_REQUIRED = { basicPay: ['periodEnd'] };
-const isRequired = (section, [key, , type]) => type !== 'computed' && (!OPTIONAL_FIELDS.has(key) || (SECTION_REQUIRED[section.key] || []).includes(key)) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
+const SECTION_REQUIRED = {};
+// Start Year is picked from the years around today rather than typed.
+const START_YEARS = Array.from({ length: 16 }, (_, index) => String(new Date().getFullYear() - 5 + index));
+const isRequired = (section, [key, , type]) => type !== 'computed' && key !== 'dateCreated' && (!OPTIONAL_FIELDS.has(key) || (SECTION_REQUIRED[section.key] || []).includes(key)) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
 
 /** Active records of a company configuration register, for the entry forms that pick from it. */
 function configured(moduleKey) {
@@ -77,24 +90,36 @@ const configuredNames = (moduleKey, fallback = []) => {
   return names.length ? names : fallback;
 };
 
+/** The MWE Management rows (Annex A) the Basic Pay place dropdowns and the minimum wage warning read. */
+const mweRateRows = () => readRegisterRows('mweRates');
+/** The MWE Locality reference table (Reference Tables › Generic) the Region, Locality, Locality Name and Classification dropdowns read. */
+const mweLocalityRows = () => { const rows = referenceRows('mwe-localities'); return rows.length ? rows : MWE_LOCALITY_ROWS; };
+const isMwe = draft => draft.mwe === 'Yes';
+
 const sectionDefinitions = [
   {
     key: 'basicPay', title: 'Basic Pay', upload: true,
     // The saved list shows every field the slide names; rates are computed from the Basic Pay Amount and never typed.
     columns: [['dateCreated', 'Date Created'], ['effectiveDate', 'Effectivity Date'], ['payType', 'Pay Type'], ['amount', 'Basic Pay Amount'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type'], ['workHours', 'Work Hours per Day'],
-      ['annualRate', 'Annual Rate'], ['monthlyRate', 'Monthly Rate'], ['hourlyRate', 'Hourly Rate'], ['dailyRate', 'Daily Rate'], ['minuteRate', 'Per Minute Rate'], ['mwe', 'MWE'], ['location', 'Location'],
+      ['annualRate', 'Annual Rate'], ['monthlyRate', 'Monthly Rate'], ['hourlyRate', 'Hourly Rate'], ['dailyRate', 'Daily Rate'], ['minuteRate', 'Per Minute Rate'], ['mwe', 'MWE'], ['mweRegion', 'Region'], ['mweLocality', 'Locality'], ['mweLocalityName', 'Locality Name'], ['mweClassification', 'Classification'], ['mweSector', 'Sector'],
       ['startMonth', 'Start Month'], ['startYear', 'Start Year'], ['periodStart', 'Period Start'], ['periodEnd', 'Period End']],
     // In the order of the Basic Pay slide.
     fields: [
       ['dateCreated', 'Date Created', 'date'], ['effectiveDate', 'Effectivity Date', 'date'], ['payType', 'Pay Type', 'select', ['Hourly', 'Daily', 'Monthly']], ['amount', 'Basic Pay Amount', 'number'],
       ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'computed'],
       ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Per Minute Rate', 'computed'],
-      ['mwe', 'MWE', 'boolean'], ['location', 'Location', 'select', () => mweLocations(), draft => draft.mwe === 'Yes'], ['ecola', 'ECOLA Amount', 'number'],
-      ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'number'], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS],
+      ['mwe', 'MWE', 'boolean'],
+      // Annex A (D2. MWE 2026 Updated Table): a Minimum Wage Earner is placed by Region, Locality, Locality Name and Classification, each list narrowed by the choices above it.
+      // Classification is asked only where the region's rates depend on it.
+      ['mweRegion', 'Region', 'select', draft => mweLocalityChoices(mweLocalityRows(), 'mweRegion', draft), isMwe], ['mweLocality', 'Locality', 'select', draft => mweLocalityChoices(mweLocalityRows(), 'mweLocality', draft), isMwe],
+      ['mweLocalityName', 'Locality Name', 'select', draft => mweLocalityChoices(mweLocalityRows(), 'mweLocalityName', draft), isMwe],
+      ['mweClassification', 'Classification', 'select', draft => mweLocalityChoices(mweLocalityRows(), 'mweClassification', draft), draft => isMwe(draft) && mweRegionHasClassification(mweLocalityRows(), draft.mweRegion)],
+      ['mweSector', 'Sector', 'select', draft => mweChoices(mweRateRows(), 'mweSector', draft), isMwe],
+      ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'select', START_YEARS], ['periodStart', 'Period Start', 'select', PERIODS], ['periodEnd', 'Period End', 'select', PERIODS],
     ],
     rows: [
-      { dateCreated: '01/01/2026', effectiveDate: '01/01/2026', payType: 'Monthly', amount: '50000', workDays: '261', workDaysType: 'Per Year', workHours: '8', mwe: 'No', ecola: '0', location: 'NCR', annualRate: '600000', monthlyRate: '50000', dailyRate: '2298.85' },
-      { dateCreated: '01/01/2025', effectiveDate: '01/01/2025', payType: 'Daily', amount: '645', workDays: '313', workDaysType: 'Per Year', workHours: '8', mwe: 'Yes', ecola: '30', location: 'NCR', annualRate: '201885', monthlyRate: '16823.75', dailyRate: '645' },
+      { dateCreated: '01/01/2026', effectiveDate: '01/01/2026', payType: 'Monthly', amount: '50000', workDays: '261', workDaysType: 'Per Year', workHours: '8', mwe: 'No', mweRegion: 'NCR', annualRate: '600000', monthlyRate: '50000', dailyRate: '2298.85' },
+      { dateCreated: '01/01/2025', effectiveDate: '01/01/2025', payType: 'Daily', amount: '645', workDays: '313', workDaysType: 'Per Year', workHours: '8', mwe: 'Yes', mweRegion: 'NCR', annualRate: '201885', monthlyRate: '16823.75', dailyRate: '645' },
     ],
   },
   {
@@ -201,7 +226,8 @@ const employees = employeeRoster.map(person => {
 
 function formatCell(key, value) {
   if (['scheduledDeduction', 'nonTaxableAmount', 'taxableAmount', 'remainingCeiling'].includes(key)) return value === '' || value === undefined || value === null ? '—' : `₱ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-  if (['amount', 'total', 'balance', 'principal', 'grossPay', 'taxableIncome', 'taxWithheld', 'netPay', 'employee', 'employer', 'basicPay', 'taxableBonus', 'nonTaxableBonus', 'deMinimis', 'allowableDeductions', 'annualRate', 'monthlyRate', 'dailyRate', 'hourlyRate', 'minuteRate', 'ecola'].includes(key)) return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  if (key === 'minuteRate') { const places = readPayrollRounding().basicPay; return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: places, maximumFractionDigits: places })}`; }
+  if (['amount', 'total', 'balance', 'principal', 'grossPay', 'taxableIncome', 'taxWithheld', 'netPay', 'employee', 'employer', 'basicPay', 'taxableBonus', 'nonTaxableBonus', 'deMinimis', 'allowableDeductions', 'annualRate', 'monthlyRate', 'dailyRate', 'hourlyRate', 'minuteRate'].includes(key)) return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   if (key === 'percentage') return `${value}%`;
   // Date inputs store ISO dates; show them like the rest of the table (MM/DD/YYYY).
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) { const [year, month, day] = value.split('-'); return `${month}/${day}/${year}`; }
@@ -215,7 +241,7 @@ function download(filename, content, type = 'text/csv') {
 
 
 function EmployeeSidebar({ onBack, module, setModule, closeDetail }) {
-  return <aside className="company-sidebar employee-sidebar"><button className="back-link" onClick={onBack}>← Back to Core</button><h2>Employee<br />Masterfile</h2><nav><button className={`side-link ${module === 'employees' ? 'selected' : ''}`} onClick={() => { setModule('employees'); closeDetail(); }}><UserCircle weight={module === 'employees' ? 'fill' : 'regular'} /> Employee Information</button><button className={`side-link ${module === 'accounts' ? 'selected' : ''}`} onClick={() => setModule('accounts')}><IdentificationCard weight={module === 'accounts' ? 'fill' : 'regular'} /> Account Settings Information</button></nav></aside>;
+  return <aside className="company-sidebar employee-sidebar"><button className="back-link" onClick={onBack}>← Back to Core</button><h2>Employee<br />Masterfile</h2><nav><button className={`side-link ${module === 'employees' ? 'selected' : ''}`} onClick={() => { setModule('employees'); closeDetail(); }}><UserCircle weight={module === 'employees' ? 'fill' : 'regular'} /> Employee Information</button><button className={`side-link ${module === 'accounts' ? 'selected' : ''}`} onClick={() => setModule('accounts')}><IdentificationCard weight={module === 'accounts' ? 'fill' : 'regular'} /> Account Settings Information</button><button className={`side-link ${module === 'configuration' ? 'selected' : ''}`} onClick={() => setModule('configuration')}><SlidersHorizontal weight={module === 'configuration' ? 'fill' : 'regular'} /> Masterfile Configuration</button></nav></aside>;
 }
 
 function InputField({ field, value, onChange, draft = {}, required = true }) {
@@ -229,6 +255,10 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required={required}><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
   if (type === 'boolean') return <div className="radio-group">{['Yes', 'No'].map(item => <label key={item}><input type="radio" name={key} checked={(value || 'No') === item} onChange={() => onChange(item)} /> {item}</label>)}</div>;
+  // Date Created is stamped with today's date when the entry is made and never edited.
+  if (key === 'dateCreated') return <DateInput value={toIsoDate(value)} disabled aria-label={`${label} (auto-populated)`} onChange={() => {}} />;
+  // Dates read and type as mm/dd/yyyy whatever the browser's locale; the record keeps the ISO date.
+  if (type === 'date') return <DateInput value={toIsoDate(value)} aria-label={label} onChange={onChange} />;
   if (type === 'textarea') return <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="Enter remarks" />;
   return <input type={type} min={type === 'number' ? '0' : undefined} step={type === 'number' ? 'any' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
 }
@@ -251,6 +281,7 @@ function normalizePayrollRecord(section, input) {
       : section.key === 'deductions' ? configured('deductions').find(item => item.name === draft.name)
         : section.key === 'loans' ? referenceRows('loan-types').find(row => row.name === draft.payItem) : null;
   if (source?.code) draft = { ...draft, code: source.code };
+  if (section.key === 'basicPay') draft = withMwePlace(draft, mweRateRows());
   if (section.key === 'basicPay' || section.key === 'allowances') {
     const amount = Number(draft.amount || 0);
     const workDays = Math.max(1, Number(draft.workDays || 261));
@@ -261,7 +292,8 @@ function normalizePayrollRecord(section, input) {
     else if (basis === 'Hourly') { hourlyRate = amount; dailyRate = hourlyRate * workHours; annualRate = dailyRate * workDays; monthlyRate = annualRate / 12; }
     else if (basis === 'Per Minute') { hourlyRate = amount * 60; dailyRate = hourlyRate * workHours; annualRate = dailyRate * workDays; monthlyRate = annualRate / 12; }
     else { monthlyRate = amount; annualRate = monthlyRate * 12; dailyRate = annualRate / workDays; hourlyRate = dailyRate / workHours; }
-    return { ...draft, annualRate: annualRate.toFixed(2), monthlyRate: monthlyRate.toFixed(2), dailyRate: dailyRate.toFixed(2), hourlyRate: hourlyRate.toFixed(2), minuteRate: (hourlyRate / 60).toFixed(4) };
+    const places = readPayrollRounding().basicPay;
+    return { ...draft, annualRate: roundTo(annualRate, places).toFixed(places), monthlyRate: roundTo(monthlyRate, places).toFixed(places), dailyRate: roundTo(dailyRate, places).toFixed(places), hourlyRate: roundTo(hourlyRate, places).toFixed(places), minuteRate: roundTo(hourlyRate / 60, places).toFixed(places) };
   }
   if (section.key === 'loans') {
     // A loan taken from a company loan configuration carries that loan's interest: principal × annual rate × term ÷ 12.
@@ -273,7 +305,8 @@ function normalizePayrollRecord(section, input) {
     const interest = rate !== null ? Math.round(Number(draft.principal || 0) * rate / 100 * (loanConfig ? Number(loanConfig.terms || 0) : monthsBetween) / 12 * 100) / 100 : Number(draft.interest || 0);
     if (loanConfig && (draft.amount === undefined || String(draft.amount).trim() === '') && loanConfig.amortization) draft = { ...draft, amount: String(loanConfig.amortization) };
     draft = { ...draft, interest: String(interest) };
-    const totalLoan = Number(draft.principal || 0) + interest;
+    const loanPlaces = readPayrollRounding().loans;
+    const totalLoan = roundTo(Number(draft.principal || 0) + interest, loanPlaces);
     const accumulated = Number(draft.accumulatedManual || 0) + Number(draft.accumulatedComputed || 0);
     const balance = Math.max(0, totalLoan - accumulated);
     // Master requirements §5.6: a scheduled amortization may never collect more
@@ -281,9 +314,9 @@ function normalizePayrollRecord(section, input) {
     const scheduled = draft.holdDate ? 0 : Math.min(Number(draft.amount || 0), balance);
     return {
       ...draft,
-      totalLoan: totalLoan.toFixed(2),
-      balance: balance.toFixed(2),
-      scheduledDeduction: scheduled.toFixed(2),
+      totalLoan: totalLoan.toFixed(loanPlaces),
+      balance: balance.toFixed(loanPlaces),
+      scheduledDeduction: scheduled.toFixed(loanPlaces),
       loanStatus: balance <= 0 ? 'Fully paid' : draft.holdDate ? 'On hold' : scheduled < Number(draft.amount || 0) ? 'Final instalment' : 'Active',
     };
   }
@@ -292,6 +325,7 @@ function normalizePayrollRecord(section, input) {
     // the end date passes, so total and balance are derived rather than typed.
     const amount = Number(draft.amount || 0);
     const count = Number(draft.count || 0);
+    const dedPlaces = readPayrollRounding().deductions;
     const total = count > 0 ? amount * count : Number(draft.total || 0);
     const accumulated = Number(draft.accumulated || 0);
     const balance = Math.max(0, total - accumulated);
@@ -300,9 +334,9 @@ function normalizePayrollRecord(section, input) {
     const scheduled = draft.holdDate || ended ? 0 : Math.min(amount, total > 0 ? balance : amount);
     return {
       ...draft,
-      total: total.toFixed(2),
-      balance: balance.toFixed(2),
-      scheduledDeduction: scheduled.toFixed(2),
+      total: total.toFixed(dedPlaces),
+      balance: balance.toFixed(dedPlaces),
+      scheduledDeduction: scheduled.toFixed(dedPlaces),
       deductionStatus: total > 0 && balance <= 0 ? 'Terminated — balance settled' : ended ? 'Terminated — end date reached' : draft.holdDate ? 'On hold' : 'Active',
     };
   }
@@ -318,6 +352,7 @@ function normalizePayrollRecord(section, input) {
  * one row at a time.
  */
 function recalculateSection(section, rows, context = {}) {
+  if (section.key === 'basicPay') return rows.map(row => withMwePlace(row, mweRateRows()));
   if (section.key === 'bonuses') {
     const ytdNonTaxable = Number(context.ytdNonTaxableBonus || 0);
     // §10.1: the ceiling is effective-dated configuration, read from the Bonus
@@ -364,20 +399,6 @@ function recalculateSection(section, rows, context = {}) {
   return rows;
 }
 
-// MWE: the minimum wage for a place and date comes from Settings > MWE Rate Tables.
-const toDay = value => {
-  const text = String(value || '');
-  const parts = text.split('/');
-  const time = Date.parse(parts.length === 3 ? `${parts[2]}-${parts[0]}-${parts[1]}` : text);
-  return Number.isNaN(time) ? 0 : time;
-};
-function applicableMweRate(location, effectiveDate) {
-  if (!location) return null;
-  const when = toDay(effectiveDate) || Date.now();
-  return readRegisterRows('mweRates')
-    .filter(row => row.status === 'Active' && [row.region, row.municipality].includes(location) && toDay(row.effectiveDate) <= when)
-    .sort((a, b) => toDay(b.effectiveDate) - toDay(a.effectiveDate))[0] || null;
-}
 /** The payroll runs that computed a line for this employee (any company), for the "used in payroll" lock. */
 function readRunsOfEmployee(employeeCode) {
   const rostered = employeeRoster.find(item => item.code === employeeCode);
@@ -396,9 +417,15 @@ function readRunsOfEmployee(employeeCode) {
   } catch { /* an unreadable store means nothing is known to be used */ }
   return runs;
 }
-/** Slide 5 and 8: Location is a dropdown from the MWE setup, the places with an Active rate in the MWE Rate Tables. */
-function mweLocations() {
-  return [...new Set(readRegisterRows('mweRates').filter(row => row.status === 'Active').map(row => row.municipality).filter(Boolean))];
+/** A Minimum Wage Earner is paid exactly the MWE daily rate: the daily rate worked out from the Basic Pay Amount may be neither above nor below it. */
+function mweRateMismatch(draft, rate) {
+  const daily = Number(draft.dailyRate || 0);
+  if (!rate || !(daily > 0)) return '';
+  const tolerance = 0.5 / 10 ** readPayrollRounding().basicPay;
+  const where = mwePlaceName(draft);
+  if (daily < rate.dailyRate - tolerance) return `The daily rate ${peso(daily)} is below the ${where} minimum wage of ${peso(rate.dailyRate)}`;
+  if (daily > rate.dailyRate + tolerance) return `The daily rate ${peso(daily)} is above the ${where} minimum wage of ${peso(rate.dailyRate)}`;
+  return '';
 }
 const peso = value => `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
@@ -410,35 +437,33 @@ function applicableLoanNames(employee) {
 }
 
 function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null }) {
-  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: today, ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
   const [reason, setReason] = useState('');
-  // Pay-affecting sections keep an employee-level audit: an edit needs a reason.
+  // Pay-affecting sections keep an employee-level audit, with optional remarks.
   const audited = AUDITED_SECTIONS.includes(section.key);
-  // Slide 5: for Basic Pay the reason is optional text that goes to the audit log.
-  const reasonRequired = audited && Boolean(record?.id) && !record?.inherited && !['basicPay', 'bonuses', 'loans'].includes(section.key);
   // De Minimis: warn while the amount is typed, not only after saving (§10.2).
   const previewed = preview?.(draft);
   const ceilingWarning = draft.classification === 'De Minimis' && previewed?.thresholdNote
     ? (Number(previewed.taxableAmount) > 0 ? `Over the De Minimis ceiling: ₱ ${Number(previewed.nonTaxableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} stays non-taxable and ₱ ${Number(previewed.taxableAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} is ${previewed.thresholdNote.replace(/^Excess /, '')}.` : `${previewed.thresholdNote} for ${draft.name || 'this benefit'} — the whole amount will be treated as taxable.`)
     : '';
-  // MWE: warn while the rate is typed when it falls below the minimum wage for the location and date.
+  // MWE: warn while the rate is typed when it falls below the minimum wage for the place and date.
   const mweWarning = (() => {
-    if (section.key !== 'basicPay' || draft.mwe !== 'Yes' || !draft.location) return '';
-    const rate = applicableMweRate(draft.location, draft.effectiveDate);
-    if (!rate) return `No active MWE rate is on file for ${draft.location} on this date.`;
-    const daily = Number(draft.dailyRate || 0);
-    return daily > 0 && daily < Number(rate.dailyRate || 0)
-      ? `The daily rate ${peso(daily)} is below the ${draft.location} minimum wage of ${peso(rate.dailyRate)} (${rate.wageOrder}, effective ${rate.effectiveDate}). Check the rate or the exemption before saving.`
-      : '';
+    if (section.key !== 'basicPay' || draft.mwe !== 'Yes' || !draft.mweLocalityName) return '';
+    const rate = mweRateOn(mweRateRows(), draft, draft.effectiveDate);
+    if (!rate) return `No active MWE rate is on file for ${mwePlaceName(draft)} on this date.`;
+    // A rate that is not the MWE rate is reported when the entry is saved, like the other save errors.
+    return '';
   })();
   // Computed values (rates, totals, balances, codes) follow the entry as it is filled in.
-  const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, [key]: value }));
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => section.key === 'basicPay' && ['periodStart', 'periodEnd'].includes(field[0]) ? [field[0], field[1], field[2], periodsForFrequency(setup.paymentMode), field[4]] : section.key === 'loans' && field[0] === 'payItem' ? [field[0], field[1], field[2], draft => (draft.loanSource === 'Government Loan' ? field[3](draft) : applicableLoanNames(employee)), field[4]] : field).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Reason for change {reasonRequired && <span className="required">*</span>}<textarea value={reason} required={reasonRequired} placeholder={reasonRequired ? 'Why is this being changed? It is kept in the employee change history.' : 'Optional'} onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
+  // Changing one MWE place field clears the narrower choices below it, which may no longer apply.
+  const narrower = key => (section.key === 'basicPay' && MWE_PLACE_FIELDS.includes(key) ? Object.fromEntries(MWE_PLACE_FIELDS.slice(MWE_PLACE_FIELDS.indexOf(key) + 1).map(field => [field, ''])) : null);
+  const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, ...narrower(key), [key]: value }));
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => section.key === 'basicPay' && ['periodStart', 'periodEnd'].includes(field[0]) ? [field[0], field[1], field[2], periodsForFrequency(setup.paymentMode), field[4]] : section.key === 'loans' && field[0] === 'payItem' ? [field[0], field[1], field[2], draft => (draft.loanSource === 'Government Loan' ? field[3](draft) : applicableLoanNames(employee)), field[4]] : field).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Remarks<textarea value={reason} placeholder="Optional — kept in the employee change history." onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
 }
 
-function ConfirmDelete({ name, onClose, onDelete, needsReason = false, askReason = needsReason }) {
+function ConfirmDelete({ name, onClose, onDelete, askReason = false }) {
   const [reason, setReason] = useState('');
-  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div>{askReason && <label className="employee-change-reason">Reason for deleting {needsReason && <span className="required">*</span>}<textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="Kept in the employee change history." /></label>}<div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" disabled={needsReason && !reason.trim()} onClick={() => onDelete(reason.trim())}>Delete</button></div></div></section></div>;
+  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash /></div><div><h3>Delete “{name}”?</h3><p>This employee payroll entry will be removed.</p></div></div>{askReason && <label className="employee-change-reason">Remarks<textarea value={reason} onChange={event => setReason(event.target.value)} placeholder="Optional — kept in the employee change history." /></label>}<div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={() => onDelete(reason.trim())}>Delete</button></div></div></section></div>;
 }
 
 /**
@@ -516,6 +541,10 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       // Slide 7: conflicting or overlapping effective-dated records are prevented.
       const sameDate = rows.find(row => row.id !== draft.id && toIsoDate(row.effectiveDate) && toIsoDate(row.effectiveDate) === toIsoDate(draft.effectiveDate));
       if (sameDate) { notify({ type: 'error', message: 'A Basic Pay entry with this Effectivity Date already exists. Enter a new Effectivity Date to create a new version.' }); return; }
+      if (draft.mwe === 'Yes' && draft.mweLocalityName) {
+        const mweIssue = mweRateMismatch(draft, mweRateOn(mweRateRows(), draft, draft.effectiveDate));
+        if (mweIssue) { notify({ type: 'error', message: `${mweIssue}. Enter the MWE rate for a Minimum Wage Earner.` }); return; }
+      }
       const periodIssues = basicPayPeriodProblems(draft, setup.paymentMode);
       if (periodIssues.length) { notify({ type: 'error', message: periodIssues[0] }); return; }
     }
@@ -526,8 +555,6 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
     if (section.key === 'loans') {
       const before = rows.find(row => row.id === draft.id);
       const config = configured('loans').find(item => item.name === draft.payItem);
-      if (Number(draft.accumulatedManual) > 0 && Number(draft.accumulatedManual) !== Number(before?.accumulatedManual || 0) && !reason.trim()) { notify({ type: 'error', message: 'An Accumulated Payment (Manual) is for opening balances only and needs a reason.' }); return; }
-      if (config?.amortization && Number(draft.amount) !== Number(config.amortization) && Number(draft.amount) !== Number(before?.amount) && !reason.trim()) { notify({ type: 'error', message: 'A change to the Amortization Amount for this employee needs a reason.' }); return; }
     }
     const { inherited, ...entry } = draft;
     const own = inherited ? { ...entry, id: undefined, source: 'From Earning Configuration (edited)' } : entry;
@@ -571,7 +598,8 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
         const seenDates = new Set(rows.map(row => toIsoDate(row.effectiveDate)).filter(Boolean));
         added.forEach((row, index) => {
           const line = index + 2;
-          required.forEach(key => { if (!String(row[key] ?? '').trim()) errors.push({ row: line, field: section.fields.find(field => field[0] === key)?.[1] || key, value: '', reason: 'Required.' }); });
+          // A field the form hides for this row (the MWE place when MWE is No) is not required of it either.
+          required.filter(key => { const shown = section.fields.find(field => field[0] === key)?.[4]; return typeof shown !== 'function' || shown(row); }).forEach(key => { if (!String(row[key] ?? '').trim()) errors.push({ row: line, field: section.fields.find(field => field[0] === key)?.[1] || key, value: '', reason: 'Required.' }); });
           entryProblems(section.key, row, section.fields, []).forEach(problem => errors.push({ row: line, field: problem.split(' must')[0], reason: problem }));
           section.fields.filter(field => field[2] === 'select' && row[field[0]]).forEach(field => { const options = typeof field[3] === 'function' ? field[3](row) : field[3]; if (Array.isArray(options) && !options.includes(row[field[0]])) errors.push({ row: line, field: field[1], value: row[field[0]], reason: `Use one of: ${options.join(', ')}.` }); });
           if (section.key === 'basicPay') {
@@ -593,7 +621,7 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
   };
   return <section className="employee-data-section" data-section={section.key}>
     <button className="employee-section-heading" onClick={() => setOpen(!open)}><span>{section.title}</span>{open ? <CaretUp /> : <CaretDown />}</button>
-    {open && <div className="employee-section-body"><div className="employee-section-actions"><button className="button secondary" onClick={() => setEditing({})}><Plus /> Add entry</button>{section.upload && <button className="button secondary" onClick={() => onOpenBulk?.(section.key)}><UploadSimple /> Bulk Actions</button>}{audited && <button className="button secondary" onClick={() => setHistoryOpen(true)}>Change history</button>}</div>
+    {open && <div className="employee-section-body"><div className="employee-section-actions"><button className="button secondary" onClick={() => setEditing({})}><Plus /> Add entry</button></div>
       <div className="employee-table-tools">
         <div className="employee-table-search"><MagnifyingGlass /><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder="Search" aria-label={`Search ${section.title}`} /></div>
         <select value={filterKey} onChange={event => { setFilterKey(event.target.value); setFilterValue(''); setPage(1); }} aria-label={`Filter ${section.title} by column`}><option value="">Filter by column</option>{section.columns.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
@@ -604,14 +632,13 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       <div className="employee-pagination"><span>Display <select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }} aria-label="Items per page">{[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · <strong>{matchedRows.length}</strong> item{matchedRows.length === 1 ? '' : 's'}</span><span className="employee-pager"><button onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1} aria-label="Previous page">‹</button>{currentPage} of {pageCount}<button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount} aria-label="Next page">›</button></span></div>
     </div>}
     {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} setup={setup} employee={employee} preview={section.key === 'earnings' ? previewRow : undefined} />}
-    {historyOpen && <ChangeHistory section={section} entries={readEmployeeChanges(employee.id, section.key)} onClose={() => setHistoryOpen(false)} />}
-    {deleting && <ConfirmDelete needsReason={audited && !['basicPay', 'bonuses', 'loans'].includes(section.key)} askReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
+    {deleting && <ConfirmDelete askReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
   </section>;
 }
 
 function ChangeHistory({ section, entries, onClose }) {
   const stamp = value => new Date(value).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-history-modal" role="dialog" aria-modal="true" aria-label={`${section.title} change history`}><header><h2>{section.title} — change history</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body">{entries.length ? <table className="employee-table"><thead><tr><th>When</th><th>By</th><th>Action</th><th>Item</th><th>Changes</th><th>Reason</th></tr></thead><tbody>{entries.map(entry => <tr key={entry.id}><td>{stamp(entry.at)}</td><td>{entry.by}</td><td>{entry.action}</td><td>{entry.item}</td><td>{entry.changes.length ? entry.changes.map(change => <div key={change.field}>{change.label}: {change.from || '—'} → {change.to || '—'}</div>) : '—'}</td><td>{entry.reason || '—'}</td></tr>)}</tbody></table> : <div className="empty-state compact"><h3>No changes recorded yet</h3><p>Adds, edits and deletes made here are listed with who made them and why.</p></div>}</div></section></div>;
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-history-modal" role="dialog" aria-modal="true" aria-label={`${section.title} change history`}><header><h2>{section.title} — change history</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body">{entries.length ? <table className="employee-table"><thead><tr><th>When</th><th>By</th><th>Action</th><th>Item</th><th>Changes</th><th>Remarks</th></tr></thead><tbody>{entries.map(entry => <tr key={entry.id}><td>{stamp(entry.at)}</td><td>{entry.by}</td><td>{entry.action}</td><td>{entry.item}</td><td>{entry.changes.length ? entry.changes.map(change => <div key={change.field}>{change.label}: {change.from || '—'} → {change.to || '—'}</div>) : '—'}</td><td>{entry.reason || '—'}</td></tr>)}</tbody></table> : <div className="empty-state compact"><h3>No changes recorded yet</h3><p>Adds, edits and deletes made here are listed with who made them and why.</p></div>}</div></section></div>;
 }
 
 function CustomExport({ sections, onClose, onExport }) {
@@ -793,13 +820,12 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const payrollContext = ytdContextOf(employee);
   const runExport = (keys, format) => { if (exportEmployeeData(Object.fromEntries(sectionDefinitions.map(section => [section.key, rowsFor(employee, section)])), keys, format, employee.name)) notify({ type: 'success', message: 'Employee payroll export prepared.' }); setCustomExport(false); setExportMenu(false); };
   const selectEmployee = item => { setEmployeeId(item.id); setActiveTab('Personal Details'); setDetailOpen(true); };
-  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts'];
+  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts', 'Leaves', 'Documents', 'Custom Fields'];
 
   return <div className="app-shell employee-screen">
     <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
     <main className="employee-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} /><div className="employee-page">
-      <div className="employee-module-shortcuts"><button className="button secondary" onClick={() => { setModule('bulk'); setDetailOpen(false); }}><FileCsv /> Bulk Actions</button></div>
-      {module === 'bulk' ? <BulkActions employees={employeeList} setEmployees={setEmployeeList} notify={notify} /> : module === 'accounts' ? <AccountSettings notify={notify} /> : !detailOpen ? <EmployeeDirectory employees={employeeList} setEmployees={setEmployeeList} onSelect={selectEmployee} onBulk={() => setModule('bulk')} notify={notify} /> : <>
+      {module === 'bulk' ? <BulkActions employees={employeeList} setEmployees={setEmployeeList} notify={notify} /> : module === 'accounts' ? <AccountSettings notify={notify} /> : module === 'configuration' ? <MasterfileConfiguration notify={notify} definitions={MASTERFILE_FIELD_DEFINITIONS} /> : !detailOpen ? <EmployeeDirectory employees={employeeList} setEmployees={setEmployeeList} onSelect={selectEmployee} notify={notify} /> : <>
         <button className="inline-back" onClick={() => setDetailOpen(false)}>← Employee Information</button>
         <p className="breadcrumb">Employee Information / {employee.name}</p>
         <section className="employee-hero"><div className="employee-photo">{employee.initials}</div><div><div className="employee-title-row"><h1>{employee.name} <span>[{employee.id}]</span></h1><button onClick={() => setEmployeePicker(!employeePicker)}><PencilSimple /></button></div><p>{employee.role} | {employee.location}</p><small>Hire date: {employee.hireDate || '2024-05-30'}</small><span className="employee-active">ACTIVE</span></div>
@@ -811,13 +837,14 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Benefits' && <Benefits employee={employee} notify={notify} />}
         {activeTab === 'Time Off' && <TimeOff employee={employee} notify={notify} />}
         {activeTab === 'Contacts' && <Contacts employee={employee} notify={notify} />}
+        {activeTab === 'Leaves' && <Leaves employee={employee} notify={notify} />}
+        {activeTab === 'Documents' && <Documents employee={employee} notify={notify} />}
+        {activeTab === 'Custom Fields' && <CustomFields employee={employee} notify={notify} fieldNames={referenceValues('custom-fields')} />}
         {activeTab === 'Payroll & Allocation' && <>
-          <div className="employee-export-row"><div className="menu-anchor"><button className="button secondary" onClick={() => setExportMenu(!exportMenu)}><DownloadSimple /> Export <CaretDown /></button>{exportMenu && <div className="export-menu employee-export-menu"><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'csv')}>Export All — Excel / CSV</button><button onClick={() => runExport(sectionDefinitions.map(section => section.key), 'pdf')}>Export All — PDF / Print</button><button onClick={() => { setCustomExport(true); setExportMenu(false); }}>Custom export…</button></div>}</div></div>
           <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}
     </div></main>
-    {customExport && <CustomExport sections={sectionDefinitions} onClose={() => setCustomExport(false)} onExport={runExport} />}
   </div>;
 }
 

@@ -47,6 +47,7 @@ button:disabled { cursor: not-allowed; }
 .company-switch-anchor { position: relative; }
 .company-switch-menu { position: absolute; z-index: 40; left: 0; top: calc(100% + 8px); min-width: 268px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: white; box-shadow: 0 16px 38px rgba(35,24,47,.2); }
 .company-switch-title { padding: 6px 9px 4px; color: var(--muted); font-size: 11.7px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.company-switch-scope { margin: 0 0 4px; padding: 0 9px 6px; color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--line, #e5e7eb); }
 .company-switch-menu button { width: 100%; padding: 8px 9px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 5px; text-align: left; }
 .company-switch-menu button span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .company-switch-menu button strong { font-size: 12.5px; font-weight: 600; }
@@ -3711,3 +3712,162 @@ code.diff-after { padding: 1px 5px; border-radius: 4px; color: #167a4f; backgrou
 #root .status-pill.active { background: #e5f6ed; color: #147d4f; }
 #root .status-pill.inactive { background: #f1eff2; color: #756e79; }
 #root .breadcrumb, #root .eyebrow { color: #736c79; }
+
+/* HRM ▸ My Tasks, Biometric Integration and the other screens brought over from Atlas Core */
+.hrm-mytask-list { display: grid; margin: 12px 0 0; padding: 0; list-style: none; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.hrm-mytask-list li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.hrm-mytask-list li:first-child { border-top: 0; }
+.hrm-mytask-list li.overdue small { color: #b42318; }
+.hrm-mytask-list li.done strong { color: #9d95a8; text-decoration: line-through; }
+.hrm-task-check { display: inline-flex; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.hrm-task-body { display: grid; flex: 1; gap: 2px; min-width: 0; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.hrm-task-body small { color: var(--muted); }
+.hrm-radio-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.hrm-radio-row label { display: inline-flex; align-items: center; gap: 6px; }
+.hrm-day-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.hrm-switch { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+.status-pill.pending { background: #fff4e5; color: #9a5b00; }
+.status-pill.rejected { background: #fdecec; color: #b42318; }
+
+/* Atlas chatbot (FAQ) */
+.faq-chat-toggle { position: fixed; right: 24px; bottom: 24px; z-index: 900; display: grid; place-items: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--violet); color: #fff; box-shadow: 0 6px 18px rgba(79, 45, 127, .35); cursor: pointer; }
+.faq-chat-window { position: fixed; right: 24px; bottom: 24px; z-index: 900; display: grid; grid-template-rows: auto 1fr auto; width: min(360px, calc(100vw - 32px)); height: min(480px, calc(100vh - 48px)); overflow: hidden; border-radius: 12px; background: #fff; box-shadow: 0 12px 36px rgba(0, 0, 0, .18); }
+.faq-chat-window > header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--violet); color: #fff; font-weight: 600; }
+.faq-chat-window > header button { display: inline-flex; padding: 5px; border: 0; border-radius: 6px; background: #fff; color: var(--violet); cursor: pointer; }
+.faq-chat-body { display: grid; align-content: start; gap: 10px; padding: 12px; overflow-y: auto; background: var(--canvas); }
+.faq-chat-row { display: flex; }
+.faq-chat-row.you { justify-content: flex-end; }
+.faq-chat-bubble { display: grid; gap: 2px; max-width: 82%; padding: 8px 11px; border-radius: 10px; background: #fff; border: 1px solid var(--line); font-size: 13px; line-height: 1.4; }
+.faq-chat-row.you .faq-chat-bubble { background: var(--violet); border-color: var(--violet); color: #fff; }
+.faq-chat-bubble small { justify-self: end; font-size: 10.5px; opacity: .7; }
+.faq-chat-window > footer { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--line); }
+.faq-chat-window > footer input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.faq-chat-window > footer button { display: inline-grid; place-items: center; width: 38px; border: 0; border-radius: 8px; background: var(--violet); color: #fff; cursor: pointer; }
+.faq-chat-window > footer button:disabled { opacity: .5; cursor: default; }
+.faq-answer-cell { max-width: 320px; white-space: normal; }
+.faq-publish-options { display: flex; gap: 18px; }
+
+/* Atlas Core screens (src/atlasCore) */
+.atlas-page .page-heading { margin-bottom: 14px; }
+.atlas-tabs { margin-bottom: 14px; }
+.atlas-subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.atlas-subtabs button { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--violet); font-size: 12px; cursor: pointer; }
+.atlas-subtabs button.active { background: var(--violet-soft); border-color: var(--violet-2); font-weight: 600; }
+.atlas-table-block { margin-bottom: 22px; }
+.atlas-section-title { margin: 6px 0 8px; font-size: 16px; }
+.atlas-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.atlas-toolbar .button.active { border-color: var(--violet); color: var(--violet); }
+.atlas-table { overflow-x: auto; }
+.atlas-table table { min-width: 100%; }
+.atlas-table th, .atlas-table td { white-space: nowrap; }
+.atlas-dialog { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+.atlas-dialog.wide { width: min(880px, calc(100vw - 32px)); }
+.atlas-dialog .canonical-form-grid label > span:first-child { font-weight: 600; font-size: 12.5px; }
+.atlas-dialog small, .atlas-page small { color: var(--muted); }
+.atlas-wide { grid-column: 1 / -1; }
+.atlas-radio-row, .atlas-multi { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.atlas-radio-row label, .atlas-multi label, .atlas-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; }
+.atlas-file { display: grid; gap: 4px; }
+.atlas-color-chip { display: inline-flex; align-items: center; gap: 6px; }
+.atlas-color-chip i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); }
+.atlas-view-list { display: grid; gap: 10px; margin: 12px 16px; }
+.atlas-view-list.two-col { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: 12px 0; }
+.atlas-view-list dt { color: var(--muted); font-size: 12px; }
+.atlas-view-list dd { margin: 2px 0 0; white-space: pre-wrap; }
+.atlas-settings-card { margin-bottom: 16px; }
+.atlas-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.atlas-switch-row input { width: 38px; height: 20px; accent-color: var(--violet); }
+.atlas-link-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 0; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; text-align: left; cursor: pointer; }
+.atlas-link-row span { display: grid; gap: 2px; }
+.atlas-link-row svg { color: var(--violet); }
+.atlas-confirmation { display: flex; align-items: center; gap: 6px; color: #15803d; }
+.atlas-stepper { display: flex; gap: 8px; margin: 12px 16px; padding: 0; list-style: none; counter-reset: step; }
+.atlas-stepper li { flex: 1; padding: 8px; border-radius: 8px; background: var(--canvas); color: var(--muted); font-size: 12px; counter-increment: step; }
+.atlas-stepper li::before { content: counter(step) '. '; font-weight: 700; }
+.atlas-stepper li.current { background: var(--violet-soft); color: var(--violet); font-weight: 600; }
+.atlas-stepper li.done { color: #15803d; }
+.atlas-guide { width: min(520px, calc(100vw - 32px)); }
+.atlas-guide .modal-actions { align-items: center; }
+.atlas-ci-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.atlas-ci-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.atlas-ci-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; min-height: 92px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: inherit; text-align: left; cursor: pointer; }
+.atlas-ci-card svg:first-child { color: var(--violet); }
+.atlas-ci-card:hover { border-color: var(--violet-2); }
+.atlas-ci-progress { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.atlas-ci-progress h2 { margin: 0 0 10px; font-size: 15px; }
+.atlas-ci-progress ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; }
+.atlas-ci-progress li { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.atlas-ci-progress li.done { color: inherit; }
+.atlas-ci-progress li.done svg { color: #16a34a; }
+.atlas-progress-bar { position: relative; height: 14px; overflow: hidden; border-radius: 999px; background: var(--violet-soft); }
+.atlas-progress-bar i { position: absolute; inset: 0 auto 0 0; background: var(--violet); }
+.atlas-progress-bar b { position: relative; padding-left: 8px; color: #fff; font-size: 10px; line-height: 14px; mix-blend-mode: difference; }
+.atlas-kyc-row { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.atlas-kyc-row small { display: block; }
+.atlas-kyc-file { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.atlas-kyc-file em { color: var(--muted); font-style: normal; font-size: 12.5px; }
+.atlas-kyc-optional { margin: 0 0 6px; font-size: 12.5px; }
+@media (max-width: 900px) { .atlas-ci-layout { grid-template-columns: 1fr; } }
+
+/* Settings ▸ Company Management */
+.atlas-menu-cell { position: relative; }
+.atlas-row-menu { position: absolute; right: 8px; top: 34px; z-index: 20; display: grid; min-width: 140px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); }
+.atlas-row-menu button { padding: 8px 10px; border: 0; border-radius: 6px; background: none; text-align: left; cursor: pointer; }
+.atlas-row-menu button:hover { background: var(--violet-soft); }
+.atlas-service-list { display: grid; border: 1px solid var(--line); border-radius: 8px; }
+.atlas-service-list label { padding: 12px 14px; border-top: 1px solid var(--line); }
+.atlas-service-list label:first-child { border-top: 0; }
+.atlas-accordion { margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.atlas-accordion-head { display: flex; justify-content: space-between; width: 100%; padding: 12px 14px; border: 0; background: none; font-weight: 600; cursor: pointer; }
+.atlas-accordion-body { padding: 0 14px 12px; }
+.atlas-module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: 18px; }
+.atlas-assign-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.atlas-assign-row select { flex: 1; }
+.atlas-link-button { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--violet); cursor: pointer; }
+
+/* HRM: expense lines, agreement checkbox */
+.hrm-records { display: grid; gap: 8px; }
+.hrm-records-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.hrm-records-table input, .hrm-records-table select { width: 100%; min-width: 110px; }
+.hrm-records.has-error .hrm-records-table { outline: 1px solid #b42318; }
+.hrm-agree { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; }
+.hrm-agree.has-error span { color: #b42318; }
+
+/* Employee Masterfile - Atlas-style Bulk Import / Bulk Update wizard */
+.employee-bulk-modal { --modal-width: 860px; }
+.employee-bulk-modal h4 { margin: 0 0 12px; font-size: 18px; }
+.employee-bulk-modal .form-text { margin: 0 0 14px; color: #6c757d; font-size: 13px; }
+.employee-bulk-modal hr { border: 0; border-top: 1px solid #dee2e6; margin: 18px 0 0; }
+.employee-bulk-modal .form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.employee-bulk-modal .form-label.required::after { content: ' *'; color: #dc3545; }
+.bulk-radio-row { display: flex; gap: 28px; margin-top: 6px; }
+.bulk-radio-row label, .bulk-check, .bulk-section-children label, .bulk-section-parent { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.bulk-file-pick { margin-top: 16px; }
+.bulk-upload-button { display: inline-flex; align-items: center; cursor: pointer; }
+.bulk-file-name { margin-left: 10px; font-size: 13px; }
+.bulk-check { margin-top: 18px; }
+.bulk-names { max-width: 50%; display: grid; gap: 8px; }
+.bulk-names select { min-height: 38px; border: 1px solid #ced4da; border-radius: 4px; padding: 0 8px; }
+.bulk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bulk-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 14px; background: var(--violet-soft); color: var(--violet); font-size: 12.5px; }
+.bulk-chip button { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; }
+.bulk-sections-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+.bulk-section-parent { font-weight: 600; margin-bottom: 6px; }
+.bulk-section-children { margin-left: 22px; display: grid; gap: 5px; margin-bottom: 14px; }
+.bulk-errors-backdrop { z-index: 60; }
+
+/* Employee Masterfile - Atlas-style Filter Table modal */
+.employee-filter-modal { --modal-width: 440px; }
+.employee-filter-modal .form-text { margin: 0 0 12px; color: #6c757d; font-size: 13px; }
+.filter-item { border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 8px; }
+.filter-item summary { padding: 11px 14px; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+.filter-item input:not([type=checkbox]) { width: calc(100% - 28px); margin: 0 14px 14px; min-height: 38px; border: 1px solid #ced4da; border-radius: 4px; padding: 0 10px; }
+.filter-checks { display: grid; gap: 7px; padding: 0 14px 14px; }
+.filter-checks label { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.button.filter-active { border-color: var(--violet); color: var(--violet); }
+.filter-select { width: calc(100% - 28px); margin: 0 14px 14px; min-height: 38px; border: 1px solid #ced4da; border-radius: 4px; padding: 0 10px; background: white; }
+/* Atlas "btn-outline-primary" Filter button: white, primary border and text, fills on hover. */
+#root .button.filter-button { background: white; color: var(--violet); border: 1px solid var(--violet); box-shadow: none; }
+#root .button.filter-button:hover, #root .button.filter-button.filter-active { background: var(--violet); color: white; }
+#root .button.filter-button svg { width: 20px; height: 20px; }
+.employee-directory-toolbar .button { white-space: nowrap; }

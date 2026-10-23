@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bell, CaretDown, Clock, Cube, CurrencyCircleDollar, Gear, House, MagnifyingGlass, PlayCircle, SignOut, Sparkle, Tray, Users } from '@phosphor-icons/react';
-import { PA_ADMIN_NAME, RoleSwitch, SIGNED_IN_NAME, SUPERADMIN_NAME, useRole } from './RoleContext';
-import { canAccessModule } from './moduleAccess';
+import { PA_ADMIN_NAME, PA_USER_NAME, RoleSwitch, SIGNED_IN_NAME, SUPERADMIN_NAME, useRole } from './RoleContext';
+import { canAccessModule, companiesFor, PA_ROLES } from './moduleAccess';
 import { readCompanies } from './companyRepository';
 
 /**
@@ -48,15 +48,18 @@ export function Topbar({ company, companies = [], onSelectCompany, profileName =
   const { isPaSuperAdmin, role } = useRole();
   // The P&A Admin and the P&A SuperAdmin are two named people, so a change one of them makes can be approved by the other.
   const isPaAdminSeat = role === 'pa_admin';
-  const shownName = isPaSuperAdmin ? SUPERADMIN_NAME : isPaAdminSeat ? PA_ADMIN_NAME : profileName;
-  const shownInitials = isPaSuperAdmin ? 'MS' : isPaAdminSeat ? 'PR' : profileInitials;
+  const isPaUserSeat = role === 'pa_user';
+  const shownName = isPaSuperAdmin ? SUPERADMIN_NAME : isPaAdminSeat ? PA_ADMIN_NAME : isPaUserSeat ? PA_USER_NAME : profileName;
+  const shownInitials = isPaSuperAdmin ? 'MS' : isPaAdminSeat ? 'PR' : isPaUserSeat ? 'CM' : profileInitials;
   const [open, setOpen] = useState(false);
   // Read the repository when the menu opens so companies onboarded in another
   // workspace during this session are immediately selectable.
   const [live, setLive] = useState(null);
   const companyName = company?.displayName || company?.legalName || 'ABC Company Ltd';
   const fallback = companies.length ? companies : (company ? [company] : []);
-  const selectable = live?.length ? live : fallback;
+  const everyCompany = live?.length ? live : fallback;
+  // A P&A User only switches between the companies a P&A Admin assigned them.
+  const selectable = companiesFor(role, everyCompany);
   const toggle = () => setOpen(value => { if (!value) setLive(readCompanies()); return !value; });
   return (
     <header className="topbar">
@@ -64,6 +67,7 @@ export function Topbar({ company, companies = [], onSelectCompany, profileName =
         <button className="company-switch" onClick={toggle} aria-haspopup="listbox" aria-expanded={open}>{companyName} <small>{company?.companyCode || 'ABC-PH-001'}</small><CaretDown weight="bold" /></button>
         {open && <div className="company-switch-menu" role="listbox">
           <p className="company-switch-title">Switch company</p>
+          {PA_ROLES.includes(role) && <p className="company-switch-scope">{isPaUserSeat ? `Assigned to ${selectable.length} of ${everyCompany.length} companies by a P&A Admin` : `All ${everyCompany.length} client companies`}</p>}
           {selectable.map(item => <button key={item.companyId} role="option" aria-selected={item.companyId === company?.companyId} className={item.companyId === company?.companyId ? 'selected' : ''} onClick={() => { onSelectCompany?.(item.companyId); setOpen(false); }}>
             <span><strong>{item.displayName || item.legalName}</strong><small>{item.companyCode}</small></span>
             <em className={`status-pill ${String(item.lifecycleStatus || 'Draft').toLowerCase().replaceAll(' ', '-')}`}>{item.lifecycleStatus || 'Draft'}</em>

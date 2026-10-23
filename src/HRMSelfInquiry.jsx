@@ -108,12 +108,26 @@ function LoanInquiryScreen({ data, setData, user, access, onNavigateSelfService,
 
   const pageRows = paginate(filtered, table.page, table.pageSize);
 
+  // The full Atlas Core Loan Inquiry column set.
   const columns = [
-    { key: 'applicationDate', label: 'Application Date', type: 'date' },
     { key: 'transactionNumber', label: 'Transaction Number' },
+    { key: 'applicationDate', label: 'Application Date', type: 'date' },
     { key: 'loanName', label: 'Loan Name' },
     { key: 'loanType', label: 'Loan Type' },
     { key: 'principalAmount', label: 'Principal Amount', type: 'currency' },
+    { key: 'loanTerms', label: 'Loan Terms' },
+    { key: 'interestRate', label: 'Interest Rate' },
+    { key: 'interestAmount', label: 'Interest Amount', type: 'currency' },
+    { key: 'totalLoan', label: 'Total Loan', type: 'currency' },
+    { key: 'periodStartDate', label: 'Period Start Date', type: 'date' },
+    { key: 'periodEndDate', label: 'Period End Date', type: 'date' },
+    { key: 'deductionAmount', label: 'Deduction Amount', type: 'currency' },
+    { key: 'paymentMode', label: 'Payment Mode' },
+    { key: 'frequency', label: 'Frequency' },
+    { key: 'accumulatedPaymentComputed', label: 'Accumulated Payment', type: 'currency' },
+    { key: 'balance', label: 'Balance', type: 'currency' },
+    { key: 'status', label: 'Status', type: 'status' },
+    { key: 'statusDate', label: 'Status Date', type: 'date' },
   ];
 
   function exportRows(format) {
@@ -795,10 +809,30 @@ function AttendanceSummaryScreen({ data, user, access, onNotify }) {
   </div>;
 }
 
+/** One attendance log as Atlas Core's My Time Logs Summary lists it. */
+function timeLogSummaryRow(row, shift) {
+  const day = row.date ? new Date(`${row.date}T00:00:00`).getDay() : 1;
+  const status = String(row.status || '');
+  return {
+    ...row,
+    shiftSchedule: shift ? `${shift.name}${shift.window ? ` (${shift.window})` : ''}` : '—',
+    coreHours: shift?.coreHours || '—',
+    dayType: /holiday/i.test(status) ? 'Holiday' : day === 0 || day === 6 ? 'Rest Day' : 'Regular Day',
+    duration: row.workedHours ?? '—',
+    totalBreak: row.breakHours ?? '—',
+    tardiness: row.tardMins ? `${row.tardMins} min` : '—',
+    undertime: row.underMins ? `${row.underMins} min` : '—',
+    absence: /absent/i.test(status) ? '1 day' : '—',
+    leave: /leave/i.test(status) ? '1 day' : '—',
+    officialBusiness: /official business|ob/i.test(status) ? 'Yes' : '—',
+  };
+}
+
 function ViewEmployeeAttendanceScreen({ employee, subTab, setSubTab, data, period, setPeriod, onBack, onNotify }) {
   const table = useTableState();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const logs = data.attendanceSummaries?.logs || [];
+  const shift = (data.shifts || []).find(item => item.id === employee?.shiftId || item.shiftId === employee?.shiftId);
+  const logs = useMemo(() => (data.attendanceSummaries?.logs || []).map(row => timeLogSummaryRow(row, shift)), [data.attendanceSummaries, shift]);
 
   const filteredLogs = useMemo(() => {
     const term = table.search.trim().toLowerCase();
@@ -810,18 +844,26 @@ function ViewEmployeeAttendanceScreen({ employee, subTab, setSubTab, data, perio
 
   const pageLogs = paginate(filteredLogs, table.page, table.pageSize);
 
+  // Atlas Core's My Time Logs Summary columns.
   const dtrColumns = [
     { key: 'date', label: 'Date', type: 'date' },
+    { key: 'shiftSchedule', label: 'Shift Schedule' },
+    { key: 'coreHours', label: 'Core Hours' },
+    { key: 'dayType', label: 'Day Type' },
     { key: 'timeIn', label: 'Time In' },
     { key: 'timeOut', label: 'Time Out' },
-    { key: 'workedHours', label: 'Worked Hours' },
+    { key: 'duration', label: 'Duration' },
     { key: 'breakIn', label: 'Break In' },
     { key: 'breakOut', label: 'Break Out' },
-    { key: 'breakHours', label: 'Break Hours' },
+    { key: 'totalBreak', label: 'Total Break Duration' },
     { key: 'ot', label: 'Overtime Hours' },
-    { key: 'tool', label: 'Tool Used' },
+    { key: 'tardiness', label: 'Tardiness' },
+    { key: 'undertime', label: 'Undertime' },
+    { key: 'absence', label: 'Absence' },
+    { key: 'leave', label: 'Leave' },
+    { key: 'officialBusiness', label: 'Official Business' },
+    { key: 'tool', label: 'Tools Used' },
     { key: 'loc', label: 'Work Location' },
-    { key: 'status', label: 'Status', type: 'status' },
   ];
 
   const tardinessColumns = [

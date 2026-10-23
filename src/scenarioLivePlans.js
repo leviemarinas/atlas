@@ -244,12 +244,12 @@ export const SCENARIO_LIVE_PLANS = Object.freeze({
   'pa-negative-net': plan('Payroll', 'Payroll Processing'),
   'pa-import': plan('Payroll', 'Payroll Processing', 'Create Transaction'),
 
-  'tc-basic-pay': connectedFlowPlan('basicPay', { 'Effectivity Date': '2025-01-01', 'Pay Type': 'Monthly', 'Basic Pay Amount': '62000' }),
-  'tc-earning': connectedFlowPlan('earnings', { 'Earning Name': 'Housing Allowance', 'Earning Amount': '2000', Frequency: 'Monthly', Taxability: 'Taxable', 'Effectivity Date': '2025-01-01' }),
+  'tc-basic-pay': connectedFlowPlan('basicPay', { 'Effectivity Date': '01/01/2025', 'Pay Type': 'Monthly', 'Basic Pay Amount': '62000' }),
+  'tc-earning': connectedFlowPlan('earnings', { 'Earning Name': 'Housing Allowance', 'Earning Amount': '2000', Frequency: 'Monthly', Taxability: 'Taxable', 'Effectivity Date': '01/01/2025' }),
   'tc-deduction': connectedFlowPlan('deductions', { 'Deduction Name': 'Cooperative Dues', 'Amount of Deduction': '500', 'Number of Deductions': '10', 'Accumulated Amount': '0' }),
   'tc-company-loan': connectedFlowPlan('loans', { 'Loan Source': 'Company Loan', 'Loan Reference': 'Test Loan', 'Amortization Amount': '2500', Principal: '30000', 'Accumulated Payment (Manual)': '17500' }),
   'tc-bonus': connectedFlowPlan('bonuses', { 'Bonus Name': 'Performance Bonus', 'Bonus Type': 'Performance Bonus', 'Total Amount': '20000' }),
-  'tc-payroll-transaction': connectedFlowPlan('basicPay', { 'Effectivity Date': '2025-01-01', 'Pay Type': 'Monthly', 'Basic Pay Amount': '80000' }),
+  'tc-payroll-transaction': connectedFlowPlan('basicPay', { 'Effectivity Date': '01/01/2025', 'Pay Type': 'Monthly', 'Basic Pay Amount': '80000' }),
 });
 
 export function livePlanFor(scenarioId) {

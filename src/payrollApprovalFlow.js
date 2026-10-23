@@ -17,7 +17,8 @@
  * that is already moving. Pure: no React, no storage.
  */
 
-export const ROLE_LABEL = Object.freeze({ client_admin: 'Client Admin', pa_admin: 'P&A Admin', admin: 'P&A Admin', pa_superadmin: 'P&A SuperAdmin' });
+// A P&A User signs a payroll level in the P&A Admin's place: same access, different companies.
+export const ROLE_LABEL = Object.freeze({ client_admin: 'Client Admin', pa_user: 'P&A Admin', pa_admin: 'P&A Admin', admin: 'P&A Admin', pa_superadmin: 'P&A SuperAdmin' });
 export const APPROVER_CHOICES = Object.freeze(['Client Admin', 'P&A Admin', 'P&A SuperAdmin']);
 export const FLOW_MODES = Object.freeze(['Sequential', 'Parallel', 'Any one of them']);
 export const MAX_ACROSS = 3;

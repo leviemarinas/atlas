@@ -482,7 +482,7 @@ export function bindableConfigFields(def) {
 }
 
 /**
- * The Computation Binding step every module in `BINDABLE_MODULES` carries.
+ * The Computation Mapping step every module in `BINDABLE_MODULES` carries.
  *
  * It is appended here rather than typed into each definition because the step
  * is identical for all of them, and because a module becoming bindable should
@@ -497,7 +497,7 @@ function withComputationBinding(moduleKey, def) {
     ...def,
     bindable: true,
     steps: [...def.steps, {
-      title: 'Computation Binding',
+      title: 'Computation Mapping',
       fields: [
         {
           key: 'computationCode',
@@ -506,7 +506,7 @@ function withComputationBinding(moduleKey, def) {
           moduleKey,
           hint: `The published Computational Basis formula that produces ${definition.produces}. Leave it unbound to keep the built-in payroll treatment.`,
         },
-        { key: 'computationBindings', label: 'Variable Binding', type: 'bindings', moduleKey },
+        { key: 'computationBindings', label: 'Variable Mapping', type: 'bindings', moduleKey },
       ],
     }],
   };
@@ -541,6 +541,25 @@ const BINDING_FIELD_KEYS = ['computationCode', 'computationBindings'];
 
 export function isPaOwnedField(moduleKey, fieldKey) {
   return BINDING_FIELD_KEYS.includes(fieldKey) || (PA_OWNED_CONFIGURATION_FIELDS[moduleKey] || []).includes(fieldKey);
+}
+
+/** The modules whose Computation Mapping decides whether a Client Admin may edit a record at all. */
+export const MAPPING_GATED_MODULES = Object.freeze(['earnings', 'deductions', 'loans', 'bonuses']);
+
+/**
+ * A Client Admin may edit a pay item in a gated module only when its
+ * Computation Mapping carries fixed parameters P&A approved for the client to
+ * change. An unmapped item, or one whose values all come from payroll, another
+ * field or a reference source, is read-only: there is nothing for the client
+ * to set.
+ */
+export function clientMayEditRecord(moduleKey, def, record, library = []) {
+  if (!MAPPING_GATED_MODULES.includes(moduleKey)) return true;
+  const code = String(record?.computationCode || '').trim().toUpperCase();
+  const computation = code ? library.find(item => item.code === code) : null;
+  if (!computation) return false;
+  const bindings = normalizeBindings(record, library, bindableConfigFields(def));
+  return bindableTokens(code, library).some(token => bindings[token]?.kind === 'fixed' && computation.parameters?.[token]?.clientEditable);
 }
 
 /**
@@ -946,7 +965,7 @@ function BindingField({ field, value, onChange, draft, def, catalog }) {
     configFields,
   }), [draft, bindings, catalog, configFields]);
 
-  if (!code) return <p className="binding-empty"><LinkBreak weight="duotone" /> Choose a basis of computation above and its variables appear here for binding.</p>;
+  if (!code) return <p className="binding-empty"><LinkBreak weight="duotone" /> Choose a basis of computation above and its variables appear here for mapping.</p>;
   if (!tokens.length) return <p className="binding-empty"><Link weight="duotone" /> {code} takes no mapped input — it needs no variable binding.</p>;
 
   const entryFor = token => resolution?.entries?.find(item => item.token === token);
@@ -990,7 +1009,7 @@ function BindingField({ field, value, onChange, draft, def, catalog }) {
       }))}><Flask /> Preview with sample runtime values</button>
       {preview && (preview.resolved
         ? <div className="test-result passed"><Check weight="bold" /><span><small>{preview.code} resolved</small><strong>₱ {preview.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong></span></div>
-        : <div className="test-result failed"><Warning weight="bold" /><span><small>Binding incomplete</small><strong>{preview.problem}</strong></span></div>)}
+        : <div className="test-result failed"><Warning weight="bold" /><span><small>Mapping incomplete</small><strong>{preview.problem}</strong></span></div>)}
     </div>
     <p className="field-hint">A bound formula returns the amount for the payroll period being computed. The recurring frequency decides whether the item falls due — it never rescales a bound amount.</p>
   </div>;
@@ -1136,7 +1155,7 @@ function Field({ field, value, onChange, draft, def, catalog, companyId }) {
 /**
  * `clientView` is a Client Admin in a formula-bound module: the fields P&A
  * owns and the formula binding are shown read-only, and the Computation
- * Binding step becomes the approved values the client may change.
+ * Mapping step becomes the approved values the client may change.
  */
 function ConfigurationForm({ def, moduleKey, record, companyId, clientView = false, onClose, onSave }) {
   const [draft, setDraft] = useState(() => {
@@ -1184,10 +1203,6 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
       ...(def.validate?.(draft, { companyId }) || []),
     ];
     if (problems.length) { setError(problems[0]); setStep(def.steps.length - 1); return; }
-    if (editing && pendingChanges.length && !changeReason.trim()) {
-      setError('Give a reason for this change. It is kept, with your name and the values before and after, in the audit trail.');
-      return;
-    }
     setError('');
     const trimmed = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, typeof value === 'string' && def.steps.some(step => step.fields.some(field => field.key === key && (field.type ?? 'text') === 'text')) ? value.trim() : value]));
     const saved = editing
@@ -1221,7 +1236,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
             </div>
             {lastStep && editing && <div className="change-details">
               <label>Change effective from<DateInput value={changeEffective} onChange={value => setChangeEffective(value)} /></label>
-              <label>Reason for change{pendingChanges.length > 0 && <span className="required">*</span>}<input value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Rate revised under the 2026 company policy" /></label>
+              <label>Remarks<input value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Optional" /></label>
               <p className="field-hint">{pendingChanges.length
                 ? `${pendingChanges.length} ${pendingChanges.length === 1 ? 'change' : 'changes'} will be recorded with your name, the value before and after, and this effective date. A changed formula value applies to payrolls paid from this date; earlier payrolls keep the value they used.`
                 : 'Nothing has changed yet.'}</p>
@@ -1274,7 +1289,7 @@ function BindingDetail({ def, record, catalog }) {
   </>;
 }
 
-function ViewDrawer({ def, record, companyId, onClose, onEdit }) {
+function ViewDrawer({ def, record, companyId, onClose, onEdit, canEdit = true }) {
   const catalog = useBindingCatalog(companyId);
   return (
     <div className="drawer-backdrop view-drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -1296,7 +1311,7 @@ function ViewDrawer({ def, record, companyId, onClose, onEdit }) {
               : <p className="field-hint">No change has been recorded on this pay item yet.</p>}
           </section>
         </div>
-        <footer><button className="button secondary" onClick={onClose}>Close</button><button className="button primary" onClick={() => onEdit(record)}><PencilSimple /> Edit</button></footer>
+        <footer><button className="button secondary" onClick={onClose}>Close</button><button className="button primary" onClick={() => onEdit(record)} disabled={!canEdit} title={canEdit ? undefined : 'Read-only: this item’s Computation Mapping has no fixed parameters you can change.'}><PencilSimple /> Edit</button></footer>
       </aside>
     </div>
   );
@@ -1339,6 +1354,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   // P&A's and the client maintains its values. Adding or deleting a pay item
   // changes what payroll computes, so in a formula-bound module that is P&A's too.
   const clientLocked = Boolean(def?.bindable) && !isPaAdmin;
+  const mappingGated = clientLocked && MAPPING_GATED_MODULES.includes(moduleKey);
   const storageKey = serviceStorageKey(moduleKey, companyId);
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));
   const [query, setQuery] = useState('');
@@ -1351,6 +1367,8 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const uploadRef = useRef(null);
   const pageSize = 8;
   const catalog = useBindingCatalog(companyId);
+  const mayEdit = record => !mappingGated || clientMayEditRecord(moduleKey, def, record, catalog.library);
+  const lockedReason = 'Read-only: this item’s Computation Mapping has no fixed parameters you can change. Ask P&A.';
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(records)), [records, storageKey]);
 
   const filtered = useMemo(() => records.filter(record => {
@@ -1405,7 +1423,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
         : null;
       const stored = { ...draft, companyId, ...(entry ? { changeLog: [entry, ...(draft.changeLog || [])] } : {}) };
       setRecords(previous => previous.map(record => record.id === draft.id ? stored : record));
-      if (entry) recordChange({ action: 'ConfigurationUpdated', summary: `${audit.reason} · effective ${audit.effectiveDate}`, record: stored, changes: audit.changes, reason: audit.reason, effectiveDate: audit.effectiveDate });
+      if (entry) recordChange({ action: 'ConfigurationUpdated', summary: [audit.reason, `effective ${audit.effectiveDate}`].filter(Boolean).join(' · '), record: stored, changes: audit.changes, reason: audit.reason, effectiveDate: audit.effectiveDate });
     } else {
       if (clientLocked) { notify({ type: 'error', message: `New ${def.plural} are set up by P&A.` }); return; }
       const created = { ...draft, companyId, id: Math.max(0, ...records.map(record => record.id)) + 1, dateCreated: new Date().toLocaleDateString('en-US') };
@@ -1468,7 +1486,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
     <div className="page-content service-config-page">
       <button className="inline-back" onClick={onBack}><ArrowLeft /> {backLabel}</button>
       <div className="page-heading"><div><p className="breadcrumb">{breadcrumb}</p><h1>{def.title}</h1><p className="page-description">{def.description}</p></div></div>
-      {clientLocked && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>Pay items and the formulas they use are set up by P&amp;A.</strong> You can update the approved values — amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who each item applies to. A new pay item, or a change in how one computes, is requested from P&amp;A.</span></div>}
+      {clientLocked && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>Pay items and the formulas they use are set up by P&amp;A.</strong> You can update the approved values — amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who each item applies to. A pay item is editable only when its Computation Mapping has fixed parameters; otherwise it is read-only. A new pay item, or a change in how one computes, is requested from P&amp;A.</span></div>}
       <div className="config-toolbar">
         <div className="search-box"><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder={`Search ${def.plural}...`} /><MagnifyingGlass /></div>
         <button className={`filter-button ${Object.values(filters).some(Boolean) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
@@ -1487,12 +1505,12 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
             {def.bindable && <td>{record.computationCode
               ? <span className="binding-chip" title={bindingSummary(record, catalog.library)}><Function weight="duotone" />{record.computationCode}</span>
               : <span className="binding-chip none"><LinkBreak />Not bound</span>}</td>}
-            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit"><PencilSimple /></button>{!clientLocked && <button onClick={() => setDeleting(record)} aria-label="Delete"><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 2 : 1)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
+            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit" disabled={!mayEdit(record)} title={mayEdit(record) ? undefined : lockedReason}><PencilSimple /></button>{!clientLocked && <button onClick={() => setDeleting(record)} aria-label="Delete"><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 2 : 1)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
         </table>
       </div>
       <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
       {editing && <ConfigurationForm def={def} moduleKey={moduleKey} record={editing.id ? editing : null} companyId={companyId} clientView={clientLocked} onClose={() => setEditing(null)} onSave={save} />}
-      {viewing && <ViewDrawer def={def} record={viewing} companyId={companyId} onClose={() => setViewing(null)} onEdit={record => { setViewing(null); setEditing(record); }} />}
+      {viewing && <ViewDrawer def={def} record={viewing} companyId={companyId} onClose={() => setViewing(null)} canEdit={mayEdit(viewing)} onEdit={record => { setViewing(null); setEditing(record); }} />}
       {deleting && !clientLocked && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
         const holder = usedInPayroll(deleting, readUsedRuns(companyId));
         if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} · ${deleting.name} is already used in ${holder.transactionNumber}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
@@ -1500,6 +1518,92 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       {filterOpen && <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />}
     </div>
   );
+}
+
+/**
+ * Computational Basis › Computation Mapping: P&A Admin and Super Admin map a
+ * formula, and where each of its variables comes from, onto a company's
+ * earnings, deductions, company loans and bonuses without leaving the
+ * Computational Basis screen. It writes the same records the Services
+ * Information configurations read, with the same checks and audit trail.
+ */
+export function ComputationMappingSettings({ companyId = readActiveCompanyId(), notify }) {
+  const { isPaAdmin, actor } = useRole();
+  const [moduleKey, setModuleKey] = useState(MAPPING_GATED_MODULES[0]);
+  const [records, setRecords] = useState(() => readServiceConfiguration(MAPPING_GATED_MODULES[0], companyId));
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [error, setError] = useState('');
+  const def = moduleDefinitions[moduleKey];
+  const catalog = useBindingCatalog(companyId);
+  const configFields = useMemo(() => bindableConfigFields(def), [def]);
+
+  useEffect(() => { setRecords(readServiceConfiguration(moduleKey, companyId)); }, [moduleKey, companyId]);
+
+  const open = record => { setEditing(record); setDraft({ ...record }); setError(''); };
+  const close = () => { setEditing(null); setDraft(null); setError(''); };
+  const save = event => {
+    event.preventDefault();
+    const code = String(draft.computationCode || '').trim().toUpperCase();
+    const problems = code ? [
+      ...bindingProblems({ record: draft, library: catalog.library, references: catalog.references, configFields }),
+      ...parameterValueProblems({ record: draft, library: catalog.library, configFields }),
+    ] : [];
+    if (problems.length) { setError(problems[0]); return; }
+    const changes = describeConfigurationChanges(def, editing, draft);
+    if (!changes.length) { close(); return; }
+    const entry = { at: new Date().toISOString(), by: actor, reason: 'Computation Mapping updated', effectiveDate: localToday(), changes };
+    const stored = { ...draft, changeLog: [entry, ...(draft.changeLog || [])] };
+    const next = records.map(record => record.id === stored.id ? stored : record);
+    localStorage.setItem(serviceStorageKey(moduleKey, companyId), JSON.stringify(next));
+    setRecords(next);
+    writeHistory(companyId, [historyEntry({ item: `${stored.code} · ${stored.name}`, code: stored.computationCode || '', type: def.title, action: 'Computation Mapping updated', version: '—', user: actor, changes }), ...readHistory(companyId)]);
+    appendAuditEvent({ companyId, actor, action: 'ConfigurationUpdated', entityType: def.title, entityId: stored.code, summary: `${stored.code} · Computation Mapping updated`, changes, reason: 'Computation Mapping updated', effectiveDate: entry.effectiveDate });
+    notify?.({ type: 'success', message: `Computation Mapping for ${stored.code} saved.` });
+    close();
+  };
+
+  if (!isPaAdmin) return <div className="library-notice governed-notice"><Lock weight="duotone" /><span>Computation Mapping is set by P&amp;A.</span></div>;
+  const mappingField = def.steps.flatMap(step => step.fields).find(field => field.type === 'computation');
+  const bindingField = def.steps.flatMap(step => step.fields).find(field => field.type === 'bindings');
+  const update = (key, value) => { setError(''); setDraft(previous => ({ ...previous, [key]: value })); };
+
+  return <>
+    <div className="library-notice"><Lock weight="duotone" /><span><strong>Computation Mapping.</strong> Choose the formula each pay item uses and where each variable gets its value. A Client Admin can edit a pay item only when its mapping has fixed parameters marked client-editable.</span></div>
+    <div className="basis-tabs" role="tablist">
+      {MAPPING_GATED_MODULES.map(key => <button key={key} type="button" className={moduleKey === key ? 'active' : ''} onClick={() => setModuleKey(key)}>{moduleDefinitions[key].plural}</button>)}
+    </div>
+    <div className="table-card config-table-card">
+      <table className="config-table">
+        <thead><tr><th>Code</th><th>Name</th><th>Computation Mapping</th><th>Action</th></tr></thead>
+        <tbody>{records.length ? records.map(record => <tr key={record.id}>
+          <td>{record.code}</td><td>{record.name}</td>
+          <td>{record.computationCode
+            ? <span className="binding-chip" title={bindingSummary(record, catalog.library)}><Function weight="duotone" />{record.computationCode}</span>
+            : <span className="binding-chip none"><LinkBreak />Not mapped</span>}</td>
+          <td><div className="row-actions always"><button onClick={() => open(record)} aria-label={`Edit mapping for ${record.code}`}><PencilSimple /></button></div></td>
+        </tr>) : <tr><td colSpan={4}><div className="empty-state"><h3>No {def.plural} yet</h3></div></td></tr>}</tbody>
+      </table>
+    </div>
+    {draft && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
+      <section className="modal config-modal" role="dialog" aria-modal="true" aria-label={`Computation Mapping for ${draft.code}`}>
+        <header><h2>Computation Mapping · {draft.code} · {draft.name}</h2><button className="icon-button" onClick={close} aria-label="Close"><X /></button></header>
+        <form onSubmit={save}>
+          <div className="config-form-body">
+            <div className="config-form-grid">
+              <label>{mappingField.label}<ComputationField field={mappingField} value={draft.computationCode} onChange={value => update('computationCode', value)} catalog={catalog} /></label>
+              <label className="full">{bindingField.label}<BindingField field={bindingField} value={draft.computationBindings} onChange={value => update('computationBindings', value)} draft={draft} def={def} catalog={catalog} /></label>
+            </div>
+            {error && <div className="basis-error">{error}</div>}
+          </div>
+          <footer className="modal-actions sticky-actions">
+            <button type="button" className="button secondary" onClick={close}>Cancel</button>
+            <button className="button primary">Save mapping</button>
+          </footer>
+        </form>
+      </section>
+    </div>}
+  </>;
 }
 
 export { moduleDefinitions };

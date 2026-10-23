@@ -927,22 +927,21 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
       }
     }
     if (!changes.length) { notify({ type: 'info', message: `${label} has no policy change to save.` }); return false; }
-    if (!reason) { notify({ type: 'error', message: 'Give a reason for this change. It is kept, with your name and the values before and after, in the audit trail.' }); return false; }
     if (mode === 'activate' && !effectiveDate) { notify({ type: 'error', message: 'Choose the date this version takes effect.' }); return false; }
     const recorded = changes.map(({ field, from, to }) => ({ field, from, to }));
     const version = recordEngineVersion(companyId, section, { values: after, mode, effectiveDate, by: actor, reason, changes: recorded });
     setVersions(readEngineVersions(companyId));
     if (version.status !== 'Active') {
-      addHistory?.({ item: label, type: 'Policy', action: `${reason} · v${version.version} ${version.status === 'Draft' ? 'saved as draft' : `scheduled for ${version.effectiveDate}`}`, version: version.version, changes: recorded });
-      appendAuditEvent({ companyId, actor, action: version.status === 'Draft' ? 'PolicyEngineDraftSaved' : 'PolicyEngineScheduled', entityType: 'Policy engine', entityId: section, summary: `${label} v${version.version} · ${reason}`, changes: recorded, reason });
+      addHistory?.({ item: label, type: 'Policy', action: [reason, `v${version.version} ${version.status === 'Draft' ? 'saved as draft' : `scheduled for ${version.effectiveDate}`}`].filter(Boolean).join(' · '), version: version.version, changes: recorded });
+      appendAuditEvent({ companyId, actor, action: version.status === 'Draft' ? 'PolicyEngineDraftSaved' : 'PolicyEngineScheduled', entityType: 'Policy engine', entityId: section, summary: [`${label} v${version.version}`, reason].filter(Boolean).join(' · '), changes: recorded, reason });
       notify({ type: 'success', message: version.status === 'Draft' ? `${label} v${version.version} saved as a draft. Payroll keeps using the active version until it is activated.` : `${label} v${version.version} is scheduled to take effect on ${version.effectiveDate}.` });
       return true;
     }
     const next = { ...savedRef.current, [section]: after };
     writePolicies(companyId, next);
     savedRef.current = next;
-    addHistory?.({ item: label, type: 'Policy', action: `${reason} · ${summary}`, version: version.version, changes: recorded });
-    appendAuditEvent({ companyId, actor, action: 'PolicyEngineUpdated', entityType: 'Policy engine', entityId: section, summary: `${label} · ${reason}`, changes: recorded, reason });
+    addHistory?.({ item: label, type: 'Policy', action: [reason, summary].filter(Boolean).join(' · '), version: version.version, changes: recorded });
+    appendAuditEvent({ companyId, actor, action: 'PolicyEngineUpdated', entityType: 'Policy engine', entityId: section, summary: [label, reason].filter(Boolean).join(' · '), changes: recorded, reason });
     notify({ type: 'success', message: `${label} v${version.version} is active from ${version.effectiveDate} and recorded in Change history.` });
     return true;
   };
@@ -1082,7 +1081,7 @@ function EngineVersionHistory({ label, history, onActivate, onLoad }) {
   const todayIso = new Date().toISOString().slice(0, 10);
   return <section className="engine-version-history">
     <header><h3>{label} — version history</h3><span>{history.length ? `${history.length} ${history.length === 1 ? 'version' : 'versions'}` : 'No saved versions yet — the standard values apply.'}</span></header>
-    {history.length > 0 && <div className="table-wrap"><table className="data-table"><thead><tr><th>Version</th><th>Status</th><th>Effective</th><th>Saved by</th><th>Reason</th><th>Changes</th><th>Action</th></tr></thead><tbody>{history.map(item => <tr key={item.version}>
+    {history.length > 0 && <div className="table-wrap"><table className="data-table"><thead><tr><th>Version</th><th>Status</th><th>Effective</th><th>Saved by</th><th>Remarks</th><th>Changes</th><th>Action</th></tr></thead><tbody>{history.map(item => <tr key={item.version}>
       <td><strong>v{item.version}</strong></td>
       <td><span className={`status-pill ${item.status.toLowerCase()}`}>{item.status}</span>{item.supersededBy && <small> by v{item.supersededBy}</small>}</td>
       <td>{item.effectiveDate || '—'}</td>

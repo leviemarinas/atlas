@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ArrowsLeftRight,
   CalendarCheck,
   ChartBar,
   ChartLine,
@@ -44,25 +45,23 @@ import {
 } from './timekeepingData.js';
 
 /** The tiles the Timekeeping landing grid offers. */
+// Atlas Core (QA) tiles first, in QA's order and wording; the mockup's own tiles follow.
 const moduleTiles = [
   { key: 'time-in-out', label: 'Time In & Time Out', icon: Timer },
   { key: 'attendance-summary', label: 'Time & Attendance Summary', icon: ClockCounterClockwise },
-  { key: 'shift-schedule', label: 'Shift Schedule Tracking', icon: CalendarCheck },
   { key: 'work-hours', label: 'Work Hours Comparison', icon: ChartBar },
   { key: 'ytd-metrics', label: 'Year-to-Date Metrics', icon: ChartLine },
-  { key: 'charge-code', label: 'Charge Code', icon: Receipt },
+  { key: 'shift-schedule', label: 'Shift Schedule Management', icon: CalendarCheck },
   { key: 'absence', label: 'Absence Management', icon: UserMinus },
-  { key: 'leaves', label: 'Leaves Management', icon: Suitcase },
   { key: 'tardiness', label: 'Tardiness/Undertime Management', icon: HourglassMedium },
   { key: 'overtime', label: 'Overtime Summary', icon: Coffee },
-  { key: 'ot-earning', label: 'OT With Earning Condition', icon: Star },
-  // The TK Reports Module BRD rows are 100% "P&A Admin, Client Admin" — the
-  // bulk/export reporting suite is a separate feature from the DTR Summary and
-  // leave-ledger self-inquiry every actor already keeps under Time & Attendance
-  // Summary, which the BRD marks "All users" / "Client Approver, P&A Admin,
-  // Client Admin" in its own module.
-  { key: 'reports', label: 'Reports', icon: FileText, adminOnly: true },
   { key: 'others', label: 'Others', icon: SquaresFour },
+  { key: 'transfer-summary', label: 'Transfer Request Summary', icon: ArrowsLeftRight },
+  { key: 'charge-code', label: 'Charge Codes', icon: Receipt },
+  { key: 'leaves', label: 'Leaves Management', icon: Suitcase },
+  { key: 'ot-earning', label: 'OT With Earning Condition', icon: Star },
+  // The TK Reports Module BRD rows are 100% 'P&A Admin, Client Admin', so the tile is admin-only.
+  { key: 'reports', label: 'Reports', icon: FileText, adminOnly: true },
 ];
 
 export function timekeepingTilesFor(access) {
