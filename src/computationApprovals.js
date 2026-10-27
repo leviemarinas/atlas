@@ -26,7 +26,7 @@ export const APPROVALS_KEY = 'atlas-computation-approvals-v1';
 export const REQUEST_STATUSES = Object.freeze(['For Approval', 'Approved', 'Rejected', 'Withdrawn']);
 export const REQUEST_KINDS = Object.freeze({ version: 'New version', activate: 'Activation' });
 
-const MAKER_ROLES = ['pa_admin', 'admin', 'pa_superadmin'];
+const MAKER_ROLES = ['pa_user', 'pa_admin', 'admin', 'pa_superadmin'];
 const APPROVER_ROLES = ['pa_superadmin'];
 
 const stamp = () => new Date().toISOString().slice(0, 19).replace('T', ' ');

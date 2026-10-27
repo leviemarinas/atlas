@@ -22,10 +22,27 @@
  */
 
 /** Canonical actor ids, in privilege order. */
-export const ACTORS = ['employee', 'approver', 'client_admin', 'pa_admin', 'pa_superadmin'];
+export const ACTORS = ['employee', 'approver', 'client_admin', 'pa_user', 'pa_admin', 'pa_superadmin'];
 
-/** Both P&A roles; the SuperAdmin holds everything a P&A Admin does. */
-export const PA_ROLES = ['pa_admin', 'pa_superadmin'];
+/**
+ * Every P&A role. A P&A User holds the same access as a P&A Admin; what sets
+ * them apart is company access (see `companiesFor`). The SuperAdmin holds
+ * everything a P&A Admin does.
+ */
+export const PA_ROLES = ['pa_user', 'pa_admin', 'pa_superadmin'];
+
+/**
+ * The client companies a P&A User has been assigned. A P&A Admin assigns these
+ * in Access Rights; the mock-up has no setup screen, so the assignment is fixed
+ * here. P&A Admin and SuperAdmin see every company; client actors are unchanged.
+ */
+export const PA_USER_COMPANY_IDS = ['cmp-abc-001', 'cmp-northstar-001'];
+
+/** The companies this actor may switch to. */
+export function companiesFor(role, companies = []) {
+  if (normalizeRole(role) !== 'pa_user') return companies;
+  return companies.filter(company => PA_USER_COMPANY_IDS.includes(company.companyId));
+}
 const ADMINS = ['client_admin', ...PA_ROLES];
 const EVERY_ACTOR = ['employee', 'approver', ...ADMINS];
 
@@ -61,7 +78,7 @@ export function canAccessModule(role, moduleKey) {
  * rather than "P&A Admin, Client Admin" — P&A bills the client, so the client
  * does not see its own billing register.
  */
-export const PA_ADMIN_ONLY_TILES = ['Billing'];
+export const PA_ADMIN_ONLY_TILES = ['Billing', 'Company Databases'];
 
 export function canAccessTile(role, label) {
   if (PA_ADMIN_ONLY_TILES.includes(label)) return PA_ROLES.includes(normalizeRole(role));

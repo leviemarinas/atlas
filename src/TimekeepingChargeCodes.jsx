@@ -62,6 +62,7 @@ import {
   parseTimeToMinutes,
   validateTimeOverlap,
 } from './timekeepingData.js';
+import { dayTypeOf, timeReportTimeliness } from './timekeepingData.js';
 
 const toCsv = (headers, rows) =>
   [headers.join(','), ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
@@ -166,12 +167,14 @@ function TimeReportApplicationScreen({ data, setData, user, onConfigureDate, onN
 
   const reports = data.timeReports || [];
   const dailyRows = useMemo(() => deriveDailyTimeReports(reports, user.employeeId), [reports, user.employeeId]);
+  // Atlas Core lists every entry, not one row per day.
+  const entryRows = useMemo(() => reports.filter(row => row.employeeId === user.employeeId).map(row => ({ ...row, id: row.reportId, typeOfDay: dayTypeOf(row.timeReportDate || row.date) })), [reports, user.employeeId]);
 
   const filtered = useMemo(() => {
     const term = table.search.trim().toLowerCase();
-    return dailyRows.filter(row => {
+    return entryRows.filter(row => {
       if (term) {
-        const matches = [row.date, row.timeReportDate, row.dateCreated, row.timeStart, row.timeEnd, String(row.totalDuration)]
+        const matches = [row.timeReportDate, row.dateCreated, row.chargeCode, row.chargeAccount, row.project, row.activity, row.approverName]
           .some(v => String(v ?? '').toLowerCase().includes(term));
         if (!matches) return false;
       }
@@ -180,21 +183,27 @@ function TimeReportApplicationScreen({ data, setData, user, onConfigureDate, onN
         return String(row[key] ?? '').toLowerCase().includes(String(value).toLowerCase());
       });
     });
-  }, [dailyRows, table.search, table.filters]);
+  }, [entryRows, table.search, table.filters]);
 
   const pageRows = paginate(filtered, table.page, table.pageSize);
 
   const columns = [
     { key: 'dateCreated', label: 'Date Created' },
     { key: 'timeReportDate', label: 'Time Report Date' },
-    { key: 'timeStart', label: 'Time Start' },
-    { key: 'timeEnd', label: 'Time End' },
-    { key: 'totalDuration', label: 'Total Duration' },
+    { key: 'chargeCode', label: 'Charge Code' },
+    { key: 'chargeAccount', label: 'Charge Account' },
+    { key: 'project', label: 'Project' },
+    { key: 'activity', label: 'Activity' },
+    { key: 'startTime', label: 'Time Start' },
+    { key: 'endTime', label: 'Time End' },
+    { key: 'durationHours', label: 'Duration (hrs)' },
+    { key: 'typeOfDay', label: 'Type of Day' },
+    { key: 'approverName', label: 'Approver' },
   ];
 
   function exportDaily(format) {
-    const headers = ['Date Created', 'Time Report Date', 'Time Start', 'Time End', 'Total Duration'];
-    const rows = filtered.map(r => [r.dateCreated, r.timeReportDate, r.timeStart, r.timeEnd, `${r.totalDuration} hrs`]);
+    const headers = columns.map(column => column.label);
+    const rows = filtered.map(r => columns.map(column => r[column.key]));
     downloadFile(`time-report-applications.${format === 'PDF' ? 'txt' : 'csv'}`, toCsv(headers, rows));
     onNotify(`Time report applications exported to ${format}.`);
   }
@@ -246,13 +255,11 @@ function TimeReportApplicationScreen({ data, setData, user, onConfigureDate, onN
             </button>
           );
         }
-        if (col.key === 'totalDuration') {
-          return `${row.totalDuration.toFixed(2)}`;
-        }
+        if (col.key === 'durationHours') return Number(row.durationHours || 0).toFixed(2);
         return formatCell(row[col.key], col.type);
       }}
       actions={row => [
-        { kind: 'view', label: 'View', onSelect: () => setViewingDaily(row) },
+        { kind: 'view', label: 'View', onSelect: () => setViewingDaily(dailyRows.find(day => day.date === row.date) || null) },
         { kind: 'edit', label: 'Configure', onSelect: () => onConfigureDate(row.date) },
       ]}
     />
@@ -261,9 +268,10 @@ function TimeReportApplicationScreen({ data, setData, user, onConfigureDate, onN
       fields={[
         { key: 'dateCreated', label: 'Date Created' },
         { key: 'timeReportDate', label: 'Time Report Date' },
-        { key: 'timeStart', label: 'Time Start' },
-        { key: 'timeEnd', label: 'Time End' },
-        { key: 'totalDuration', label: 'Duration in Hours' },
+        { key: 'chargeCode', label: 'Charge Code', options: [...new Set(entryRows.map(row => row.chargeCode))] },
+        { key: 'project', label: 'Project', options: [...new Set(entryRows.map(row => row.project))] },
+        { key: 'activity', label: 'Activity', options: [...new Set(entryRows.map(row => row.activity))] },
+        { key: 'typeOfDay', label: 'Type of Day', options: ['Regular Day', 'Rest Day', 'Holiday'] },
       ]}
       value={table.filters}
       onApply={next => { table.setFilters(next); setDrawerOpen(false); }}
@@ -791,13 +799,19 @@ function TimeReportApprovalScreen({ data, setData, user, onNotify }) {
     <DataTable
       columns={[
         { key: 'dateCreated', label: 'Date Created' },
-        { key: 'chargeCode', label: 'Charge Code' },
-        { key: 'chargeAccount', label: 'Charge Account' },
-        { key: 'employeeCode', label: 'Employee Code' },
-        { key: 'employeeName', label: 'Employee Name' },
+        { key: 'timeReportDate', label: 'Time Report Date' },
         { key: 'startTime', label: 'Time Start' },
         { key: 'endTime', label: 'Time End' },
-        { key: 'durationHours', label: 'Duration in Hours' },
+        { key: 'durationHours', label: 'Duration (hrs)' },
+        { key: 'chargeCode', label: 'Charge Code' },
+        { key: 'chargeAccount', label: 'Charge Account' },
+        { key: 'project', label: 'Project' },
+        { key: 'activity', label: 'Activity' },
+        { key: 'approverName', label: 'Approver' },
+        { key: 'team', label: 'Team' },
+        { key: 'typeOfHours', label: 'Type of Hours' },
+        { key: 'applicationTimeliness', label: 'Application Timeliness' },
+        { key: 'approvalTimeliness', label: 'Approval Timeliness' },
         { key: 'status', label: 'Status' },
       ]}
       rows={pageRows}
@@ -815,6 +829,7 @@ function TimeReportApprovalScreen({ data, setData, user, onNotify }) {
         if (col.key === 'status') {
           return <StatusText status={row.status} />;
         }
+        if (col.key === 'applicationTimeliness' || col.key === 'approvalTimeliness') return timeReportTimeliness(row)[col.key];
         return formatCell(row[col.key], col.type);
       }}
       actions={row => [
@@ -946,7 +961,7 @@ function TimeReportManagementScreen({ data, onNotify }) {
   const [tab, setTab] = useState('All');
   const table = useTableState();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const reports = data.timeReports || [];
+  const reports = useMemo(() => (data.timeReports || []).map(row => ({ ...row, ...timeReportTimeliness(row) })), [data.timeReports]);
 
   const filtered = useMemo(() => {
     return reports.filter(row => {
@@ -1022,12 +1037,16 @@ function TimeReportManagementScreen({ data, onNotify }) {
         { key: 'dateCreated', label: 'Date Created' },
         { key: 'employeeCode', label: 'Employee Code' },
         { key: 'employeeName', label: 'Employee Name' },
-        { key: 'project', label: 'Project' },
-        { key: 'activity', label: 'Activity' },
-        { key: 'team', label: 'Team' },
+        { key: 'timeReportDate', label: 'Time Report Date' },
         { key: 'startTime', label: 'Time Start' },
         { key: 'endTime', label: 'Time End' },
         { key: 'durationHours', label: 'Duration in Hours' },
+        { key: 'project', label: 'Project' },
+        { key: 'activity', label: 'Activity' },
+        { key: 'team', label: 'Team' },
+        { key: 'approverName', label: 'Approver' },
+        { key: 'applicationTimeliness', label: 'Application Timeliness' },
+        { key: 'approvalTimeliness', label: 'Approval Timeliness' },
         { key: 'status', label: 'Status' },
       ]}
       rows={pageRows}
@@ -1045,6 +1064,7 @@ function TimeReportManagementScreen({ data, onNotify }) {
         if (col.key === 'status') {
           return <StatusText status={row.status} />;
         }
+        if (col.key === 'applicationTimeliness' || col.key === 'approvalTimeliness') return timeReportTimeliness(row)[col.key];
         return formatCell(row[col.key], col.type);
       }}
     />
@@ -1072,6 +1092,63 @@ function TimeReportManagementScreen({ data, onNotify }) {
       onApply={next => { table.setFilters(next); setDrawerOpen(false); }}
       onClose={() => setDrawerOpen(false)}
     />}
+  </div>;
+}
+
+/* ---------------------------------------------- 5b. Charge Code Reports */
+
+/** Atlas Core's Charge Code Reports landing: Charge Code Summary and Time Report Management. */
+function ChargeCodeReportsScreen({ data, onNotify }) {
+  const [report, setReport] = useState(null);
+  if (report === 'summary') return <ChargeCodeSummaryScreen data={data} onNotify={onNotify} onBack={() => setReport(null)} />;
+  if (report === 'management') return <><button type="button" className="hrm-btn ghost tk-back" onClick={() => setReport(null)}>← Charge Code Reports</button><TimeReportManagementScreen data={data} onNotify={onNotify} /></>;
+  return <div className="hrm-ss-content">
+    <PageHeading title="Charge Code Reports" />
+    <div className="hrm-ss-card-grid">
+      <button type="button" className="hrm-ss-card" onClick={() => setReport('summary')}><Receipt size={22} /><span>Charge Code Summary</span></button>
+      <button type="button" className="hrm-ss-card" onClick={() => setReport('management')}><Clock size={22} /><span>Time Report Management</span></button>
+    </div>
+  </div>;
+}
+
+/** Hours charged per charge code (and project, activity, team), with the entries behind each. */
+function ChargeCodeSummaryScreen({ data, onNotify, onBack }) {
+  const table = useTableState();
+  const [filters, setFilters] = useState({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const inRange = row => {
+    const [month, day, year] = String(row.timeReportDate || row.date || '').split('/');
+    const iso = year ? `${year}-${month}-${day}` : '';
+    if (filters.year && year !== String(filters.year)) return false;
+    if (filters.month && Number(month) !== Number(filters.month)) return false;
+    if (filters.dateFrom && iso < filters.dateFrom) return false;
+    if (filters.dateTo && iso > filters.dateTo) return false;
+    return ['chargeAccount', 'project', 'activity', 'team'].every(key => !filters[key] || row[key] === filters[key]);
+  };
+  const entries = (data.timeReports || []).filter(row => row.status !== 'Rejected').filter(inRange).map(row => ({ ...row, ...timeReportTimeliness(row) }));
+  const groups = Object.values(entries.reduce((byKey, row) => {
+    const key = [row.chargeCode, row.project, row.activity, row.team].join('|');
+    byKey[key] = byKey[key] || { key, chargeCode: row.chargeCode, chargeAccount: row.chargeAccount, project: row.project, activity: row.activity, team: row.team, totalHours: 0, entries: [] };
+    byKey[key].totalHours += Number(row.durationHours) || 0;
+    byKey[key].entries.push(row);
+    return byKey;
+  }, {})).filter(group => !table.search || Object.values(group).join(' ').toLowerCase().includes(table.search.toLowerCase()));
+  const options = key => [...new Set((data.timeReports || []).map(row => row[key]).filter(Boolean))];
+  const exportRows = format => {
+    const rows = detail ? detail.entries.map(row => [row.chargeCode, row.chargeAccount, row.dateCreated, row.employeeCode, row.employeeName, row.timeReportDate, row.startTime, row.endTime, row.durationHours, row.project, row.activity, row.team, row.approverName, row.applicationTimeliness, row.approvalTimeliness, row.status]) : groups.map(group => [group.chargeCode, group.chargeAccount, group.project, group.activity, group.totalHours.toFixed(2), group.team]);
+    const headers = detail ? ['Charge Code', 'Charge Account', 'Date Created', 'Employee Code', 'Employee Name', 'Time Report Date', 'Time Start', 'Time End', 'Duration in Hours', 'Project', 'Activity', 'Team', 'Approver', 'Application Timeliness', 'Approval Timeliness', 'Status'] : ['Charge Code', 'Charge Account', 'Project', 'Activity', 'Total Hours', 'Team'];
+    downloadFile(`charge-code-summary.${format === 'PDF' ? 'txt' : 'csv'}`, toCsv(headers, rows));
+    onNotify(`Charge code summary exported to ${format}.`);
+  };
+  return <div className="hrm-ss-content">
+    <button type="button" className="hrm-btn ghost tk-back" onClick={detail ? () => setDetail(null) : onBack}>← {detail ? 'Charge Code Summary' : 'Charge Code Reports'}</button>
+    <PageHeading title={detail ? `${detail.chargeCode} · ${detail.project}` : 'Charge Code Summary'} />
+    <div className="hrm-toolbar"><div className="hrm-toolbar-left"><SearchInput value={table.search} onChange={table.setSearch} /><FilterButton onClick={() => setDrawerOpen(true)} active={Object.values(filters).some(Boolean)} /></div><div className="hrm-toolbar-right"><ExportMenu onExport={exportRows} disabled={!(detail ? detail.entries.length : groups.length)} /></div></div>
+    {detail
+      ? <DataTable columns={[{ key: 'chargeCode', label: 'Charge Code' }, { key: 'chargeAccount', label: 'Charge Account' }, { key: 'dateCreated', label: 'Date Created' }, { key: 'employeeCode', label: 'Employee Code' }, { key: 'employeeName', label: 'Employee Name' }, { key: 'timeReportDate', label: 'Time Report Date' }, { key: 'startTime', label: 'Time Start' }, { key: 'endTime', label: 'Time End' }, { key: 'durationHours', label: 'Duration in Hours' }, { key: 'project', label: 'Project' }, { key: 'activity', label: 'Activity' }, { key: 'team', label: 'Team' }, { key: 'approverName', label: 'Approver' }, { key: 'applicationTimeliness', label: 'Application Timeliness' }, { key: 'approvalTimeliness', label: 'Approval Timeliness' }, { key: 'status', label: 'Status' }]} rows={paginate(detail.entries, table.page, table.pageSize)} total={detail.entries.length} rowKey={row => row.reportId} page={table.page} pageSize={table.pageSize} onPageChange={table.setPage} onPageSizeChange={table.setPageSize} renderCell={(row, column) => column.key === 'status' ? <StatusText status={row.status} /> : formatCell(row[column.key], column.type)} />
+      : <DataTable columns={[{ key: 'chargeCode', label: 'Charge Code' }, { key: 'chargeAccount', label: 'Charge Account' }, { key: 'project', label: 'Project' }, { key: 'activity', label: 'Activity' }, { key: 'totalHours', label: 'Total Hours' }, { key: 'team', label: 'Team' }]} rows={paginate(groups, table.page, table.pageSize)} total={groups.length} rowKey={row => row.key} page={table.page} pageSize={table.pageSize} onPageChange={table.setPage} onPageSizeChange={table.setPageSize} empty="No hours charged for this filter." renderCell={(row, column) => column.key === 'totalHours' ? row.totalHours.toFixed(2) : formatCell(row[column.key], column.type)} actions={row => [{ kind: 'view', label: 'View', onSelect: () => { setDetail(row); table.setPage(1); } }]} />}
+    {drawerOpen && <FilterDrawer fields={[{ key: 'year', label: 'Year', options: [...new Set((data.timeReports || []).map(row => String(row.timeReportDate || '').split('/')[2]).filter(Boolean))] }, { key: 'month', label: 'Month', options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] }, { key: 'dateFrom', label: 'Date From', type: 'date' }, { key: 'dateTo', label: 'Date To', type: 'date' }, { key: 'chargeAccount', label: 'Charge Account', options: options('chargeAccount') }, { key: 'project', label: 'Project', options: options('project') }, { key: 'activity', label: 'Activity', options: options('activity') }, { key: 'team', label: 'Team', options: options('team') }]} value={filters} onApply={next => { setFilters(next); table.setPage(1); setDrawerOpen(false); }} onClose={() => setDrawerOpen(false)} />}
   </div>;
 }
 
@@ -1133,11 +1210,6 @@ export function ChargeCodesWorkspace({
       />
     )}
 
-    {activeSubView === 'charge-code-reports' && (
-      <TimeReportManagementScreen
-        data={data}
-        onNotify={onNotify}
-      />
-    )}
+    {activeSubView === 'charge-code-reports' && <ChargeCodeReportsScreen data={data} onNotify={onNotify} />}
   </div>;
 }

@@ -61,6 +61,8 @@ import {
 } from './HRMWorkspaces.jsx';
 import { HRMDashboard } from './HRMDashboard.jsx';
 import { LeavePlannerWorkspace } from './HRMLeavePlanner.jsx';
+import { MyTasksWorkspace } from './HRMMyTasks.jsx';
+import { PeoplePreboardingWorkspace } from './HRMPeoplePreboarding.jsx';
 import { EmailNotificationModal, EmptyState, PageHeading, Toasts, formatDate, useToasts } from './HRMKit.jsx';
 import {
   accessFor,
@@ -77,29 +79,32 @@ import {
 /**
  * Modules exposed on the HRM landing grid (P&A HRM Module Masterfile Part 1-6).
  */
+// Atlas Core (QA) tiles first, in QA's order and wording; the mockup's own tiles follow.
 const moduleTiles = [
-  { key: 'wellness', label: 'Health and Wellness', icon: Heartbeat, experience: 'both' },
+  { key: 'self-service', label: 'Employee Self-Service', icon: Hand, experience: 'both' },
+  { key: 'management', label: 'Manage Approvals', icon: ThumbsUp, experience: 'approver' },
+  { key: 'onboarding', label: 'People Preboarding', icon: UserPlus, experience: 'both' },
+  { key: 'offboarding', label: 'Employee Offboarding', icon: UserMinus, experience: 'both' },
+  { key: 'benefits', label: 'Benefits', icon: Gift, experience: 'both' },
+  { key: 'self-inquiry', label: 'Employee Self-inquiry', icon: Question, experience: 'both' },
+  { key: 'calendar', label: 'Calendar', icon: CalendarBlank, experience: 'both' },
+  { key: 'wellness', label: 'Wellness and Events', icon: Heartbeat, experience: 'both' },
+  { key: 'my-tasks', label: 'My Tasks', icon: CheckSquare, experience: 'both' },
   { key: 'leave', label: 'Leave Balances', icon: Suitcase, experience: 'both' },
   { key: 'leave-planner', label: 'Leave Planner', icon: CalendarCheck, experience: 'both' },
   { key: 'mdo', label: 'Mandatory Day-off Balances', icon: Umbrella, experience: 'both' },
-  { key: 'onboarding', label: 'Employee Onboarding', icon: UserPlus, experience: 'both' },
-  { key: 'management', label: 'Manage Approvals', icon: ThumbsUp, experience: 'approver' },
-  { key: 'self-service', label: 'Employee Self-service', icon: Hand, experience: 'both' },
-  { key: 'self-inquiry', label: 'Employee Self-inquiry', icon: Question, experience: 'both' },
-  { key: 'benefits', label: 'Benefits', icon: Gift, experience: 'both' },
   { key: 'loans', label: 'Loan Management', icon: Bank, experience: 'both' },
   // The HRM and TK Reports Module BRD rows are 100% "P&A Admin, Client Admin" —
   // not one of the 49 rows across both modules grants Employee or Approver
   // access, unlike every other tile here which the BRD marks "both".
   { key: 'reports', label: 'Reports', icon: ChartLine, experience: 'admin' },
   { key: 'resignation', label: 'Resignation', icon: Door, experience: 'both' },
-  { key: 'offboarding', label: 'Employee Offboarding', icon: UserMinus, experience: 'both' },
   { key: 'certification', label: 'Certification Request', icon: Medal, experience: 'both' },
-  { key: 'calendar', label: 'Calendar and Events', icon: CalendarBlank, experience: 'both' },
 ];
 
 /** Active interactive workspaces */
 const routedTiles = new Set([
+  'my-tasks',
   'wellness',
   'leave',
   'leave-planner',
@@ -365,12 +370,13 @@ export function HRMPortal({ company, companies = [], companyId, onSelectCompany,
               onOpenApplication={application => setRoute({ view: 'self-service', group: route.group, application })}
             />)}
 
+        {route.view === 'my-tasks' && <MyTasksWorkspace {...workspaceProps} />}
         {route.view === 'wellness' && <HealthWellnessWorkspace {...workspaceProps} />}
         {route.view === 'leave' && <LeaveBalancesWorkspace {...workspaceProps} />}
         {route.view === 'leave-planner' && <LeavePlannerWorkspace {...workspaceProps} />}
         {route.view === 'mdo' && <MdoBalancesWorkspace {...workspaceProps} />}
         {route.view === 'calendar' && <CalendarWorkspace data={data} onBack={goHome} onNotify={flash} />}
-        {route.view === 'onboarding' && <PreboardingWorkspace {...workspaceProps} />}
+        {route.view === 'onboarding' && (access.canManageOnboarding ? <PeoplePreboardingWorkspace {...workspaceProps} /> : <PreboardingWorkspace {...workspaceProps} />)}
         {inManagement && (route.screen
           ? <ManagementScreen
               screenKey={route.screen}

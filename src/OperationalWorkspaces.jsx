@@ -27,6 +27,10 @@ import {
 import { AccessRightsWorkspace, CalendarWorkspace, OvertimeGateway, SecurityWorkspace, SettingsConfigurationWorkspace } from './CanonicalWorkspaces';
 import { ChargeCodesWorkspace, EmployeeOnboardingWorkspace, HappinessWorkspace, NotificationsWorkspace, TicketingWorkspace, WellnessWorkspace } from './InheritedCapabilities';
 import { EnhancedReportShellWorkspace } from './EnhancedReports';
+import { BiometricIntegrationWorkspace, CompanyDatabasesWorkspace, CoreReportsWorkspace } from './CoreAdditions';
+import { FaqManagementWorkspace } from './FaqChatbot';
+import { CompanyManagementScreen, OvertimeConfigurationScreen, TicketingConfigurationScreen } from './atlasCore/SettingsScreens.jsx';
+import { AccessRightConfigurationScreen, AuditLogScreen, CalendarSettingsScreen, ChargeCodesScreen, CompanyOffboardingScreen, EmployeeOnboardingScreen, HappinessMeterScreen, NavigationConfigurationScreen, NotificationsScreen, SecurityConfigurationScreen, TicketFilingScreen, WellnessEventsScreen } from './atlasCore/CoreScreens.jsx';
 import { PayrollProcessingWorkspace } from './PayrollProcessing';
 import { TimeCorrectionWorkspace } from './TimeCorrectionWorkspace';
 import { employeeDirectory } from './PolicyApplicability';
@@ -36,6 +40,7 @@ import { rejectUpload } from './uploadErrorLog.js';
 import { withFbt, withSssEstimate } from './payrollBenefits.js';
 import { employeeRoster } from './employeeRoster.js';
 import { DateInput } from './DateInput.jsx';
+import { MWE_CLASSIFICATIONS, MWE_LOCALITIES, MWE_RATE_ROWS, MWE_REGIONS, MWE_SECTORS, withComputedMweRates } from './mweRates.js';
 import {
   operationalStorageKey,
   postedPayrollOptionsForCompany,
@@ -144,15 +149,17 @@ export const operationalDefinitions = {
     ],
   },
   mweRates: {
-    version: 2,
-    title: 'MWE Rate Tables',
-    description: 'Regional minimum wage rates by sector and municipality, with the wage order each rate was issued under.',
-    fields: [f('code', 'Code'), f('effectiveDate', 'Effective Date', 'date'), f('region', 'MWE Region', 'select', ['NCR', 'Region I', 'Region III', 'Region IV-A', 'Region VI', 'Region VII', 'Region XI']), f('sector', 'MWE Sector', 'select', ['Non-agriculture', 'Agriculture (Plantation)', 'Agriculture (Non-plantation)', 'Retail/Service Establishments']), f('municipality', 'Municipality'), f('classification', 'MWE Municipalities Classification', 'select', ['1st', '2nd', '3rd', '4th', '5th', '6th']), f('dailyRate', 'MWE Daily Rate', 'number'), f('wageOrder', 'Wage Order'), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive'])],
-    rows: [
-      ['MWE-2026-001', '2026-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '700', 'Wage Order NCR-25', '', 'Active'],
-      ['MWE-2026-002', '2026-01-01', 'NCR', 'Retail/Service Establishments', 'Marikina', '1st', '663', 'Wage Order NCR-25', '', 'Active'],
-      ['MWE-2025-001', '2025-01-01', 'NCR', 'Non-agriculture', 'Manila', '1st', '645', 'Wage Order NCR-24', 'Superseded by NCR-25', 'Inactive'],
-    ],
+    // v3: the Annex A (D2. MWE 2026 Updated Table) layout — Locality, Classification, both tranches and the computed New and Increase Rate — with the 2026 rates.
+    version: 3,
+    title: 'MWE Management',
+    description: 'Regional minimum wage rates by region, locality, classification and sector, in up to two tranches, with the wage order each rate was issued under.',
+    fields: [f('code', 'MWE Code'), f('region', 'MWE Region', 'select', MWE_REGIONS), f('locality', 'Locality', 'select', MWE_LOCALITIES), f('localityName', 'Locality Name'),
+      f('classification', 'MWE Municipalities Classification', 'select', MWE_CLASSIFICATIONS, false), f('sector', 'MWE Sector', 'select', MWE_SECTORS), f('currency', 'Currency', 'select', ['PHP'], false),
+      f('dailyRate', 'MWE Daily Rate - 1st Tranche', 'number'), f('effectiveDate', 'Effective Date - 1st Tranche', 'date'), f('dailyRate2', 'MWE Daily Rate - 2nd Tranche', 'number', [], false), f('effectiveDate2', 'Effective Date - 2nd Tranche', 'date', [], false),
+      f('oldRate', 'Old Rate', 'number', [], false), auto(f('newRate', 'New Rate', 'number')), auto(f('increaseRate', 'Increase Rate', 'number')),
+      f('wageOrder', 'Wage Order'), f('status', 'Status', 'select', ['Active', 'Inactive']), f('remarks', 'Remarks', 'text', [], false), f('url', 'URL Link', 'text', [], false)],
+    listFields: ['code', 'region', 'locality', 'localityName', 'classification', 'sector', 'dailyRate', 'effectiveDate', 'dailyRate2', 'effectiveDate2', 'status'],
+    rows: MWE_RATE_ROWS,
   },
   remittance: {
     // v3: the register now records the filing itself (who filed and paid, the
@@ -202,6 +209,7 @@ const salaryOf = option => {
 const computeRegisterRows = workspaceKey => list => {
   if (workspaceKey === 'bonuses') return splitBonusCeiling(list);
   if (workspaceKey === 'fringeBenefits') return list.map(withFbt);
+  if (workspaceKey === 'mweRates') return list.map(withComputedMweRates);
   if (workspaceKey === 'sssBenefits') return list.map(row => withSssEstimate({ ...row, monthlySalary: row.monthlySalary || salaryOf(row.employee) }));
   return list;
 };
@@ -456,6 +464,26 @@ const delegatedWorkspaces = {
   tickets: ({ onBack, notify }) => <SettingsConfigurationWorkspace kind="tickets" onBack={onBack} notify={notify} />,
   onboarding: ({ onBack, notify }) => <LifecycleWorkspace workspaceKey="onboarding" onBack={onBack} notify={notify} />,
   offboarding: ({ onBack, notify }) => <LifecycleWorkspace workspaceKey="offboarding" onBack={onBack} notify={notify} />,
+  biometric: ({ onBack, notify, companyId }) => <BiometricIntegrationWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  companyDatabases: ({ onBack, notify, companyId }) => <CompanyDatabasesWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  // Atlas Core (QA) screens for the Core module and Settings.
+  companyManagement: ({ onBack, notify }) => <CompanyManagementScreen onBack={onBack} notify={notify} />,
+  ticketingConfig: ({ onBack, notify }) => <TicketingConfigurationScreen onBack={onBack} notify={notify} />,
+  overtimeConfig: ({ onBack, notify }) => <OvertimeConfigurationScreen onBack={onBack} notify={notify} />,
+  atlasCalendar: ({ onBack, notify, companyId }) => <CalendarSettingsScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  atlasOnboarding: ({ onBack, notify, companyId }) => <EmployeeOnboardingScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  atlasChargeCodes: ({ onBack, notify, companyId }) => <ChargeCodesScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  atlasHappiness: ({ onBack, notify, companyId }) => <HappinessMeterScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  atlasWellness: ({ onBack, notify, companyId }) => <WellnessEventsScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  atlasNotifications: ({ onBack, notify, companyId }) => <NotificationsScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  accessRight: ({ onBack, notify, companyId }) => <AccessRightConfigurationScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  securityConfig: ({ onBack, notify, companyId }) => <SecurityConfigurationScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  navigationConfig: ({ onBack, notify, companyId }) => <NavigationConfigurationScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  ticketFiling: ({ onBack, notify, companyId }) => <TicketFilingScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  companyOffboarding: ({ onBack, notify }) => <CompanyOffboardingScreen onBack={onBack} notify={notify} />,
+  auditLog: ({ onBack, notify, companyId }) => <AuditLogScreen key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  faqManagement: ({ onBack, notify, companyId }) => <FaqManagementWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
+  coreReports: ({ onBack, notify, companyId }) => <CoreReportsWorkspace key={companyId} companyId={companyId} onBack={onBack} notify={notify} />,
 };
 
 function UnknownWorkspace({ workspaceKey, onBack }) {
@@ -494,6 +522,8 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }
   const visible = useMemo(() => rows
     .filter(row => statusTab === 'All' || row.status === statusTab)
     .filter(row => Object.values(row).join(' ').toLowerCase().includes(query.toLowerCase())), [rows, query, statusTab]);
+  // A register lists its first six fields unless it names the ones a reader needs to compare rows.
+  const listedFields = definition.listFields ? definition.fields.filter(field => definition.listFields.includes(field.key)) : definition.fields.slice(0, 6);
   const emitAudit = (action, record, summary) => appendAuditEvent({ companyId, actor: 'Client Admin', action, entityType: definition.title, entityId: record.code, summary });
 
   const save = draft => {
@@ -510,9 +540,13 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }
     if (workspaceKey === 'deductions' && Number(draft.amount) <= 0) return notify({ type: 'error', message: 'Enter a deduction amount greater than zero.' });
     if (workspaceKey === 'deductions' && Number(draft.balance) < 0) return notify({ type: 'error', message: 'An outstanding balance cannot be negative — a deduction stops once the balance clears.' });
     if (workspaceKey === 'mweRates' && Number(draft.dailyRate) <= 0) return notify({ type: 'error', message: 'Enter a minimum wage daily rate greater than zero.' });
-    // One region, sector and municipality can only have one rate in force, or
-    // payroll would have two minimum wages to choose between for the same day.
-    if (workspaceKey === 'mweRates' && draft.status === 'Active' && rows.some(row => row.id !== draft.id && row.status === 'Active' && row.region === draft.region && row.sector === draft.sector && row.municipality === draft.municipality)) return notify({ type: 'error', message: `${draft.municipality} already has an active ${draft.sector} rate. Set the superseded row to Inactive first.` });
+    // A 2nd tranche needs both its rate and its date, and starts after the 1st.
+    if (workspaceKey === 'mweRates' && Boolean(draft.dailyRate2) !== Boolean(draft.effectiveDate2)) return notify({ type: 'error', message: 'Enter both the 2nd tranche daily rate and its effective date, or leave both blank.' });
+    if (workspaceKey === 'mweRates' && draft.effectiveDate2 && String(draft.effectiveDate2) <= String(draft.effectiveDate)) return notify({ type: 'error', message: 'The 2nd tranche must take effect after the 1st tranche.' });
+    if (workspaceKey === 'mweRates' && draft.dailyRate2 && Number(draft.dailyRate2) <= 0) return notify({ type: 'error', message: 'Enter a 2nd tranche daily rate greater than zero.' });
+    // One place and sector can only have one rate in force, or payroll would
+    // have two minimum wages to choose between for the same day.
+    if (workspaceKey === 'mweRates' && draft.status === 'Active' && rows.some(row => row.id !== draft.id && row.status === 'Active' && ['region', 'locality', 'localityName', 'classification', 'sector'].every(key => (row[key] || '') === (draft[key] || '')))) return notify({ type: 'error', message: `${draft.localityName} already has an active ${draft.sector} rate. Set the superseded row to Inactive first.` });
     if (rows.some(row => row.id !== draft.id && row.code === draft.code)) return notify({ type: 'error', message: `${draft.code} already exists.` });
 
     let prepared = { ...draft };
@@ -609,9 +643,9 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }
     <div className="page-heading"><div><p className="breadcrumb">Atlas / {definition.title}</p><h1>{definition.title}</h1><p className="page-description">{definition.description}</p></div></div>
     {definition.statusTabs && <div className="record-status-tabs" role="tablist">{definition.statusTabs.map(tab => <button key={tab} role="tab" aria-selected={statusTab === tab} className={statusTab === tab ? 'selected' : ''} onClick={() => setStatusTab(tab)}>{tab}<span>{tab === 'All' ? rows.length : rows.filter(row => row.status === tab).length}</span></button>)}</div>}
     <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Template</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /><button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div>
-    <div className="table-card"><table><thead><tr>{definition.fields.slice(0, 6).map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => {
+    <div className="table-card"><table><thead><tr>{listedFields.map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => {
       const workflow = workflowAction(row);
-      return <tr key={row.id}>{definition.fields.slice(0, 6).map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></div></td></tr>;
+      return <tr key={row.id}>{listedFields.map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></div></td></tr>;
     })}</tbody></table>{!visible.length && <div className="empty-state"><h3>No records found</h3><p>Add a record or adjust the search.</p></div>}</div>
     <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {rows.length} {plural(rows.length, 'record')}</span><span>1 of 1</span></div>
     {editing !== undefined && <EntryModal definition={definition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}

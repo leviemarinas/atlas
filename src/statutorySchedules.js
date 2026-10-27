@@ -28,7 +28,8 @@ export const agencyDefinitions = {
       ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER'], ['totalMpf', 'Total MPF'],
       ['totalEe', 'Total EE'], ['totalEr', 'Total ER'], ['overallTotal', 'Overall Total'],
     ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['totalEe', 'Total EE'], ['totalEr', 'Total ER'], ['overallTotal', 'Overall Total']],
+    // Columns as Atlas Core lists them; the totals stay in the entry view.
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'], ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER']],
   },
   philhealth: {
     name: 'PhilHealth', short: 'PhilHealth', prefix: 'PHIC',
@@ -38,7 +39,7 @@ export const agencyDefinitions = {
       ['minimumEmployeeShare', 'Employee Share (in Range) - Minimum'], ['maximumEmployeeShare', 'Employee Share (in Range) - Maximum'],
       ['minimumEmployerShare', 'Employer Share (in Range) - Minimum'], ['maximumEmployerShare', 'Employer Share (in Range) - Maximum'],
     ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share'], ['monthlyPremium', 'Monthly Premium']],
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'], ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'], ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate']],
     note: 'PhilHealth \u20b10.01 rounding difference: when the total premium cannot be split equally, the \u20b10.01 is assigned to the Employer Share so the total stays exact.',
   },
   pagibig: {
@@ -49,29 +50,29 @@ export const agencyDefinitions = {
       ['minimumEmployeeShare', 'Employee Contribution - Minimum'], ['maximumEmployeeShare', 'Employee Contribution - Maximum'],
       ['minimumEmployerShare', 'Employer Contribution - Minimum'], ['maximumEmployerShare', 'Employer Contribution - Maximum'],
     ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Contribution'], ['employerShare', 'Employer Contribution'], ['totalContribution', 'Total Contribution']],
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'], ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'], ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate']],
     note: 'The maximum fund amount is \u20b110,000.00. For example, an employee who earns \u20b130,000.00 has the contribution worked out on the maximum fund amount.',
   },
   tax: {
     name: 'BIR Compensation Tax Table', short: 'Compensation Tax', prefix: 'WTC',
     fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax'], ['frequency', 'Payment Mode', 'select', ['Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly', 'Annual']]],
-    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax'], ['frequency', 'Payment Mode']],
+    columns: [['frequency', 'Payment Mode'], ['minimum', 'Minimum Compensation'], ['maximum', 'Maximum Compensation'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
   },
   annualTax: {
     name: 'BIR Annual Tax Table', short: 'Annual Tax', prefix: 'WTA',
     fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax']],
-    columns: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax']],
+    columns: [['minimum', 'Minimum Compensation'], ['maximum', 'Maximum Compensation'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
   },
   expandedTax: {
     name: 'BIR Expanded Withholding Tax Table', short: 'Expanded Tax', prefix: 'WTE',
-    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['taxType', 'Tax Type'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['fixedTax', 'Fixed Tax'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    columns: [['taxType', 'Tax Type Name'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['atcCode', 'ATC Code'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
     taxType: 'WE',
   },
   finalTax: {
     name: 'BIR Final Tax Table', short: 'Final Tax', prefix: 'WTF',
-    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['taxType', 'Tax Type'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['fixedTax', 'Fixed Tax'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
+    columns: [['taxType', 'Tax Type Name'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['atcCode', 'ATC Code'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
     taxType: 'WF',
   },
   deMinimis: {

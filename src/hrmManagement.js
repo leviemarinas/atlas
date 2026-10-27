@@ -38,6 +38,7 @@ export const managementScreens = Object.freeze([
 
   { key: 'leave-approval', group: 'leave-management', kind: 'request', application: 'leave', title: 'Leave Manage & Approval', icon: 'suitcase' },
   { key: 'time-off-approval', group: 'leave-management', kind: 'request', application: 'time-off', title: 'Time Off Manage & Approval', icon: 'calendar-x' },
+  { key: 'management-leave-approval', group: 'leave-management', kind: 'leave-summary', title: 'Management and Approval', cardLabel: 'Management and Approval (Leave Summary)', icon: 'users' },
 
   { key: 'shift-change-approval', group: 'work-shift-management', kind: 'request', application: 'shift-change', title: 'Shift Change Manage & Approval', icon: 'calendar-clock' },
   { key: 'shift-assignment', group: 'work-shift-management', kind: 'shift-assignment', title: 'Shift Assignment (Assign Subordinate)', icon: 'clock-counter' },

@@ -58,7 +58,9 @@ import {
   shiftAssignmentStatus,
 } from './hrmData.js';
 import { approvalLogFor } from './hrmApplications.js';
+import { requestColumnValue } from './HRMSelfService.jsx';
 import { TeamValidationScreen, WellnessApprovalScreen } from './HRMTeamWellness.jsx';
+import { LeaveSummaryScreen } from './HRMLeaveSummary.jsx';
 import { REQUEST_PERMISSIONS, REQUEST_STATUSES } from './requestWorkflow.js';
 import { approveRequest, isActorAuthorizedForDecision, rejectRequest } from './requestService.js';
 import { applyRequestDecision, openClearanceForSeparation, openLoanScheduleForLoan, openQuitClaimForClearance } from './hrmPosting.js';
@@ -228,7 +230,16 @@ function RequestApprovalScreen({ screen, requests, data, setData, actor, teamEmp
     return Object.entries(table.filters).every(([key, value]) => !value || String(details[key] ?? '').toLowerCase().includes(String(value).toLowerCase()));
   });
 
-  const columns = [{ key: 'employeeName', label: 'Employee Full Name' }, ...definition.columns];
+  // Atlas Core's approval queues lead with the application date and the
+  // employee's code, name, department and division, then the filed columns.
+  const columns = [
+    { key: 'applicationDate', label: 'Application Date', type: 'date' },
+    { key: 'employeeCode', label: 'Employee Code', fromEmployee: true },
+    { key: 'employeeName', label: 'Employee Name' },
+    { key: 'department', label: 'Department', fromEmployee: true },
+    { key: 'division', label: 'Division', fromEmployee: true },
+    ...definition.columns.filter(column => !['applicationDate', 'employeeName'].includes(column.key)),
+  ];
 
   function decide(kind) {
     const request = decision.request;
@@ -289,7 +300,8 @@ function RequestApprovalScreen({ screen, requests, data, setData, actor, teamEmp
           return <span className="hrm-approver"><span className="hrm-avatar-sm">{employee?.initials || initialsOf(request.employee?.name)}</span>{employee?.name || request.employeeId}</span>;
         }
         if (column.key === 'status') return <StatusText status={request.status} />;
-        return formatCell(request.requestDetails?.[column.key], column.type);
+        if (column.fromEmployee) { const employee = findEmployee(data, request.employeeId); return formatCell(employee?.[column.key] || request.employee?.[column.key], column.type); }
+        return formatCell(requestColumnValue(request, column), column.type);
       }}
       actions={request => [
         ...(request.status === REQUEST_STATUSES.PENDING_APPROVAL ? [
@@ -3033,5 +3045,6 @@ export function ManagementScreen(props) {
   if (screen.kind === 'onboarding-documents-approval') return <OnboardingDocumentsApprovalScreen {...props} screen={screen} />;
   if (screen.kind === 'team-validation') return <TeamValidationScreen {...props} screen={screen} />;
   if (screen.kind === 'wellness-approval') return <WellnessApprovalScreen {...props} screen={screen} />;
+  if (screen.kind === 'leave-summary') return <LeaveSummaryScreen {...props} screen={screen} />;
   return <EmptyState title={`${screen.title} is not available`}>This screen has no implementation registered.</EmptyState>;
 }

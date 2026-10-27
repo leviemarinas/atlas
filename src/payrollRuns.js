@@ -20,6 +20,7 @@
  * a payslip can always be traced back to the module that owns it.
  */
 
+import { readPayrollRounding } from './payrollRounding.js';
 import { readHrmData } from './hrmData.js';
 import { currentRoster, readMasterfileList, YTD_AS_OF } from './employeeRoster.js';
 import { seedComputations } from './computationCatalog.js';
@@ -733,6 +734,8 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
       const collected = paid.get(row.transactionNumber || row.id) || 0;
       return collected ? { ...row, balance: round2(Math.max(0, Number(row.balance || 0) - collected)), collectedThroughPayroll: collected } : row;
     }),
+    // The company's decimal places for each kind of pay amount.
+    rounding: readPayrollRounding(companyId, storage),
     corrections: readCorrections(companyId, storage),
     deferralHistory: deferralHistory(storedRuns, run),
     leaveBalances: data.leaveBalances || [],

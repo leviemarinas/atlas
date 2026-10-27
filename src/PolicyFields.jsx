@@ -194,14 +194,14 @@ export function EngineSwitch({ on, onToggle }) {
 }
 
 /**
- * Saving an engine records the change: who, what moved from what, and why.
+ * Saving an engine records the change: who, what moved from what, and any remarks.
  * `onSave` returns false when the save was refused, so the reason stays on
  * screen for the user to correct and retry.
  */
 export function PolicySaveBar({ label, onSave }) {
   const [reason, setReason] = useState('');
   return <div className="policy-save">
-    <input className="policy-save-reason" value={reason} onChange={event => setReason(event.target.value)} placeholder="Reason for change — kept in the audit trail" aria-label="Reason for change" />
+    <input className="policy-save-reason" value={reason} onChange={event => setReason(event.target.value)} placeholder="Remarks (optional) — kept in the audit trail" aria-label="Remarks" />
     <button type="button" className="button primary" onClick={() => { if (onSave(reason.trim()) !== false) setReason(''); }}>{label}</button>
   </div>;
 }

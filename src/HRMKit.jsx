@@ -72,6 +72,7 @@ export function formatCell(value, type) {
   if (value === null || value === undefined || value === '') return '—';
   if (type === 'date') return formatDate(value);
   if (type === 'time') return formatTime(value);
+  if (type === 'currency' && Number.isFinite(Number(value))) return `₱ ${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return String(value);
 }
 

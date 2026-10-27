@@ -7,12 +7,16 @@ import {
   Buildings,
   CalendarBlank,
   CaretDown,
+  ChatDots,
   Check,
   CheckCircle,
   ClockCounterClockwise,
+  ChartLine,
   CurrencyCircleDollar,
   Cube,
   DownloadSimple,
+  Eye,
+  Fingerprint,
   FirstAid,
   Gear,
   House,
@@ -63,35 +67,45 @@ import { defaultCompanyRecord, readActiveCompanyId, readCompanies, saveCompany, 
 import { ModulesFeaturesTab } from './ModulesFeaturesTab';
 import { HRMPortal } from './HRMPortal';
 import { useRole } from './RoleContext';
-import { canAccessScreen, landingScreen } from './moduleAccess';
+import { canAccessScreen, companiesFor, landingScreen } from './moduleAccess';
 import { TimekeepingPortal } from './TimekeepingPortal';
 import { ScenarioStudio } from './ScenarioStudio';
+import { CompanyInformationScreen } from './atlasCore/CompanyInformationScreens.jsx';
 import { readPayrollRuns } from './payrollRuns';
 import { canEditPolicy, createPolicyVersion, normalizePolicy, policyUsage, readManagedPolicies } from './policyManagement';
 
 const violet = '#4f2d7f';
 
+// Same tiles, in the same order, as Atlas Core (QA). Access & Approvals (the
+// mockup's approval-hierarchy workspace) stays reachable from Settings.
 const coreModules = [
   { label: 'Company Configuration', icon: Buildings, enabled: true },
   { label: 'Employee Masterfile', icon: IdentificationCard, enabled: true },
-  { label: 'Access & Approvals', icon: UserFocus, enabled: true },
+  { label: 'Access Right Configuration', icon: UserFocus, enabled: true },
   { label: 'Security Configuration', icon: Key, enabled: true },
   { label: 'Reference Table', icon: Table, enabled: true },
   { label: 'Navigation Configuration', icon: SlidersHorizontal, enabled: true },
+  { label: 'Reports', icon: ChartLine, enabled: true },
   { label: 'Tickets', icon: Ticket, enabled: true },
+  { label: 'Company Offboarding', icon: SignOut, enabled: true },
   { label: 'Others', icon: SquaresFour },
+  { label: 'Audit Log', icon: Eye, enabled: true },
+  { label: 'FAQ', icon: Info, enabled: true },
+  { label: 'Chatbox', icon: ChatDots, enabled: true },
 ];
 
 const sideItems = [
   { label: 'Company Information', icon: Buildings, enabled: true, view: 'information' },
-  { label: 'Calendar Settings', icon: CalendarBlank, enabled: true, view: 'workspace:calendar' },
-  { label: 'Employee Onboarding', icon: IdentificationCard, enabled: true, view: 'workspace:employeeOnboarding', serviceCode: 'HRM' },
+  { label: 'Calendar', icon: CalendarBlank, enabled: true, view: 'workspace:atlasCalendar' },
+  { label: 'People Preboarding', icon: IdentificationCard, enabled: true, view: 'workspace:atlasOnboarding', serviceCode: 'HRM' },
+  { label: 'Employee Charge Codes', icon: CurrencyCircleDollar, enabled: true, view: 'workspace:atlasChargeCodes', serviceCode: 'HRM' },
+  { label: 'Happiness Meter', icon: CheckCircle, enabled: true, view: 'workspace:atlasHappiness', serviceCode: 'HAPPINESS' },
+  { label: 'Wellness and Events', icon: FirstAid, enabled: true, view: 'workspace:atlasWellness', serviceCode: 'WELLNESS' },
+  { label: 'Notifications', icon: Bell, enabled: true, view: 'workspace:atlasNotifications' },
+  { label: 'Reports', icon: ChartLine, enabled: true, view: 'workspace:coreReports' },
+  { label: 'Biometric Integration', icon: Fingerprint, enabled: true, view: 'workspace:biometric', serviceCode: 'HRM' },
+  // Mockup additions beyond Atlas Core.
   { label: 'Employee Requests', icon: ClockCounterClockwise, enabled: true, view: 'workspace:timeCorrections', serviceCode: 'HRM' },
-  { label: 'Employee Charge Codes', icon: CurrencyCircleDollar, enabled: true, view: 'workspace:chargeCodes', serviceCode: 'HRM' },
-  { label: 'Happiness Meter', icon: CheckCircle, enabled: true, view: 'workspace:happiness', serviceCode: 'HAPPINESS' },
-  { label: 'Health & Wellness', icon: FirstAid, enabled: true, view: 'workspace:wellness', serviceCode: 'WELLNESS' },
-  { label: 'Notifications', icon: Bell, enabled: true, view: 'workspace:notifications' },
-  { label: 'FAQ and Self-Learning', icon: Info, enabled: true, view: 'workspace:faq' },
   { label: 'Connected Systems', icon: PuzzlePiece, enabled: true, view: 'workspace:connectedSystems' },
 ];
 
@@ -319,7 +333,7 @@ function CompanyLayout({ children, view, setView, onBack, onNavigate, company, c
 }
 
 function PlatformLayout({ children, screen, onNavigate, company, companies, onSelectCompany }) {
-  const active = screen.includes('settings') || screen.includes('computation-admin') ? 'settings' : 'payroll';
+  const active = screen.startsWith('core-') ? 'core' : screen.includes('settings') || screen.includes('computation-admin') ? 'settings' : 'payroll';
   return <div className="app-shell core-screen platform-screen">
     <BrandRail onHome={() => onNavigate('core')} onCore={() => onNavigate('core')} onHrm={() => onNavigate('hrm')} onTime={() => onNavigate('timekeeping')} onPayroll={() => onNavigate('payroll')} onSettings={() => onNavigate('settings')} active={active} />
     <main className="shell-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} />{children}</main>
@@ -847,6 +861,13 @@ export function App() {
     setView('information');
   }, [role]);
 
+  // A P&A User works only in the companies assigned to them. Switching to that
+  // persona while another company is open moves them to their first one.
+  useEffect(() => {
+    const allowed = companiesFor(role, readCompanies());
+    if (allowed.length && !allowed.some(company => company.companyId === activeCompanyId)) selectCompany(allowed[0].companyId);
+  }, [role]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A screen reached before a rule changed — or restored from a previous
   // session — must never render for an actor who may not open it.
   const reachable = canAccessScreen(role, screen);
@@ -873,10 +894,15 @@ export function App() {
   if (screen === 'core') return <CoreHome onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} onOpen={(module) => {
     if (module === 'Employee Masterfile') setScreen('employee');
     else if (module === 'Reference Table') setScreen('reference');
-    else if (module === 'Access & Approvals') setScreen('settings-workspace:accessRights');
-    else if (module === 'Security Configuration') setScreen('settings-workspace:security');
-    else if (module === 'Navigation Configuration') setScreen('settings-workspace:navigation');
-    else if (module === 'Tickets') setScreen('ticketing');
+    else if (module === 'Access Right Configuration') setScreen('core-workspace:accessRight');
+    else if (module === 'Security Configuration') setScreen('core-workspace:securityConfig');
+    else if (module === 'Navigation Configuration') setScreen('core-workspace:navigationConfig');
+    else if (module === 'Tickets') setScreen('core-workspace:ticketFiling');
+    else if (module === 'Reports') setScreen('core-workspace:coreReports');
+    else if (module === 'Company Offboarding') setScreen('core-workspace:companyOffboarding');
+    else if (module === 'Audit Log') setScreen('core-workspace:auditLog');
+    else if (module === 'FAQ') setScreen('core-workspace:faqManagement');
+    else if (module === 'Chatbox') window.dispatchEvent(new Event('atlas:open-chat'));
     else { setScreen('company'); setView('information'); }
   }} />;
   if (screen === 'scenarios') return <ScenarioStudio onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />;
@@ -886,6 +912,7 @@ export function App() {
     <Toast toast={toast} onClose={() => setToast(null)} />
     <EmployeeMasterfile onBack={() => setScreen('core')} onNavigate={navigate} notify={notify} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany} />
   </>;
+  if (screen.startsWith('core-workspace:')) return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('core')} notify={notify} companyId={activeCompanyId} company={activeCompany} /></PlatformLayout>;
   if (screen === 'ticketing') return <PlatformLayout screen={screen} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}><Toast toast={toast} onClose={() => setToast(null)} /><TicketingWorkspace onBack={() => setScreen('core')} notify={notify} /></PlatformLayout>;
   if (screen === 'reference' || screen === 'reference-settings') return <>
     <Toast toast={toast} onClose={() => setToast(null)} />
@@ -907,7 +934,7 @@ export function App() {
   return (
     <CompanyLayout view={view} setView={setView} onBack={() => setScreen('core')} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
       <Toast toast={toast} onClose={() => setToast(null)} />
-      {view === 'information' && <CompanyInformation data={companyData} setData={setCompanyData} completed={completed} setCompleted={setCompleted} setToast={notify} onOpenServices={() => setView('services')} company={activeCompany} onSaveCompany={persistCompany} />}
+      {view === 'information' && <CompanyInformationScreen key={activeCompanyId} company={activeCompany} companyId={activeCompanyId} onSaveCompany={persistCompany} notify={notify} onOpenEmployeeMasterfile={() => setScreen('employee')} payrollConfiguration={<ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />} />}
       {view === 'rules' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
         const [scope, ...parts] = target.split(':');
         const destination = parts.join(':');

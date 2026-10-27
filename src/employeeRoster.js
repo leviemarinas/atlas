@@ -309,7 +309,7 @@ const rosterDefinitions = [
   },
   {
     // Minimum wage earner, daily paid, with ECOLA — statutory-exempt from
-    // withholding tax and priced off the active MWE rate table.
+    // withholding tax and priced off the active MWE Management rates.
     employeeId: 'EMP-1008', employeeCode: '0000112351', code: '0000112351', name: 'Rafael Bautista', initials: 'RB',
     position: 'Field Technician', department: 'Operations', division: 'Service Delivery', section: 'Field Services',
     site: 'Marikina Depot', costCenter: 'CC-OPS-01', jobLevel: 'Rank and File', group: 'Rank and File',

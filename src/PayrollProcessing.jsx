@@ -1042,9 +1042,6 @@ function EditLineModal({ line, run, onClose, onSave, isPaAdmin }) {
   const setItem = (key, patchValue) => setDraft(previous => ({ ...previous, payItems: { ...previous.payItems, [key]: { ...(previous.payItems[key] || {}), ...patchValue } } }));
   const itemChanged = key => { const change = itemChange(key); return Boolean(change.exclude) || (change.amount !== undefined && change.amount !== ''); };
   const requestSave = () => {
-    const missingReason = lineItems.find(row => itemChanged(row.key) && !String(itemChange(row.key).reason || '').trim());
-    if (missingReason) { setEditError(`Give the reason for changing ${missingReason.name} on this run.`); return; }
-    if (draft.takeHome.mode !== 'policy' && !String(draft.takeHome.reason || '').trim()) { setEditError('Give the reason for changing the take-home pay protection on this run.'); return; }
     if (draft.takeHome.mode === 'minimum' && !(Number(draft.takeHome.minimum) >= 0 && draft.takeHome.minimum !== '' && draft.takeHome.minimum !== undefined)) { setEditError('Enter the protected minimum take-home pay for this run.'); return; }
     if (draft.takeHome.mode === 'off' && !isPaAdmin) { setEditError('Only P&A can switch take-home pay protection off.'); return; }
     setEditError('');
@@ -1091,7 +1088,7 @@ function EditLineModal({ line, run, onClose, onSave, isPaAdmin }) {
 
       <fieldset className="payroll-fieldset">
         <legend>Pay items on this line</legend>
-        <p className="payroll-note">The earnings, bonuses, deductions and loans setup produced for this employee. Change the amount or skip an item for this run only — setup and the Earning, Deduction and Bonus Management lists stay as they are, and a skipped deduction or loan keeps its balance for the next run. A reason is required.</p>
+        <p className="payroll-note">The earnings, bonuses, deductions and loans setup produced for this employee. Change the amount or skip an item for this run only — setup and the Earning, Deduction and Bonus Management lists stay as they are, and a skipped deduction or loan keeps its balance for the next run. Remarks are optional.</p>
         <MiniTable
           columns={[
             { key: 'group', label: 'Type' },
@@ -1099,7 +1096,7 @@ function EditLineModal({ line, run, onClose, onSave, isPaAdmin }) {
             { key: 'computed', label: 'From setup', align: 'right', render: row => peso(row.computed) },
             { key: 'amount', label: 'This run', align: 'right', render: row => (row.runExcluded ? <span className="payroll-muted">Left out of the run</span> : <input type="number" min="0" step="0.01" disabled={itemChange(row.key).exclude} value={itemChange(row.key).amount ?? ''} placeholder={String(row.computed)} onChange={event => setItem(row.key, { amount: event.target.value === '' ? '' : Number(event.target.value) })} />) },
             { key: 'exclude', label: 'Skip', render: row => (row.runExcluded ? '—' : <input type="checkbox" checked={Boolean(itemChange(row.key).exclude)} onChange={event => setItem(row.key, { exclude: event.target.checked })} aria-label={`Skip ${row.name} this run`} />) },
-            { key: 'reason', label: 'Reason', render: row => (row.runExcluded ? '' : <input value={itemChange(row.key).reason || ''} disabled={!itemChanged(row.key)} placeholder={itemChanged(row.key) ? 'Required' : ''} onChange={event => setItem(row.key, { reason: event.target.value })} />) },
+            { key: 'reason', label: 'Remarks', render: row => (row.runExcluded ? '' : <input value={itemChange(row.key).reason || ''} disabled={!itemChanged(row.key)} placeholder={itemChanged(row.key) ? 'Optional' : ''} onChange={event => setItem(row.key, { reason: event.target.value })} />) },
           ]}
           rows={lineItems.map(row => ({ ...row, key: row.key }))}
           empty="No earnings, bonuses, deductions or loans from setup on this line."
@@ -1118,7 +1115,7 @@ function EditLineModal({ line, run, onClose, onSave, isPaAdmin }) {
           {draft.takeHome.mode === 'minimum' && <FieldRow label="Protected minimum for this run" required>
             <input type="number" min="0" step="0.01" value={draft.takeHome.minimum ?? ''} onChange={event => setDraft({ ...draft, takeHome: { ...draft.takeHome, minimum: event.target.value === '' ? '' : Number(event.target.value) } })} />
           </FieldRow>}
-          {draft.takeHome.mode !== 'policy' && <FieldRow label="Reason" required>
+          {draft.takeHome.mode !== 'policy' && <FieldRow label="Remarks">
             <input value={draft.takeHome.reason || ''} onChange={event => setDraft({ ...draft, takeHome: { ...draft.takeHome, reason: event.target.value } })} />
           </FieldRow>}
         </div>
@@ -1228,7 +1225,7 @@ function EditLineModal({ line, run, onClose, onSave, isPaAdmin }) {
 /**
  * Reclassification order and limits for this run only. The Earning Configuration
  * keeps the default rank and limit; a reorder or a lowered limit lives on the
- * transaction, needs a reason, and is audited. P&A may reorder; a client may
+ * transaction, takes optional remarks, and is audited. P&A may reorder; a client may
  * only lower a limit, never raise it above the configured one.
  */
 function RunReclassificationPanel({ run, editable, isPaAdmin, onNotify, onSave }) {
@@ -1268,7 +1265,6 @@ function RunReclassificationPanel({ run, editable, isPaAdmin, onNotify, onSave }
     return '';
   };
   const save = () => {
-    if (!reason.trim()) { onNotify('Give the reason for changing the reclassification on this run.', 'bad'); return; }
     if (reordered && !isPaAdmin) { onNotify('Only P&A can reorder the reclassification hierarchy on a run.', 'bad'); return; }
     const problem = Object.keys(cleanLimits).map(limitProblem).find(Boolean);
     if (problem) { onNotify(problem, 'bad'); return; }
@@ -1279,7 +1275,7 @@ function RunReclassificationPanel({ run, editable, isPaAdmin, onNotify, onSave }
 
   return <section className="hrm-section payroll-currency-panel">
     <div className="payroll-currency-panel-head"><h3 className="hrm-section-title">Reclassification order in this run</h3></div>
-    <p className="payroll-note">The Earning Configuration sets the default order and limit. Reordering or lowering a limit here applies to this transaction only and is recorded with your reason. {isPaAdmin ? '' : 'Only P&A can reorder; you can lower a limit.'}</p>
+    <p className="payroll-note">The Earning Configuration sets the default order and limit. Reordering or lowering a limit here applies to this transaction only and is recorded with any remarks you add. {isPaAdmin ? '' : 'Only P&A can reorder; you can lower a limit.'}</p>
     <MiniTable
       columns={[
         { key: 'rank', label: 'Rank', render: row => order.indexOf(row.code) + 1 },
@@ -1292,7 +1288,7 @@ function RunReclassificationPanel({ run, editable, isPaAdmin, onNotify, onSave }
       rows={order.map(code => byCode[code]).filter(Boolean).map(item => ({ ...item, key: item.code }))}
       empty="No earning is marked Eligible for reclassification."
     />
-    {dirty && <div className="payroll-field-grid payroll-run-items-controls"><FieldRow label="Reason" required><input value={reason} onChange={event => setReason(event.target.value)} placeholder="Why this run differs from the Earning Configuration" /></FieldRow></div>}
+    {dirty && <div className="payroll-field-grid payroll-run-items-controls"><FieldRow label="Remarks"><input value={reason} onChange={event => setReason(event.target.value)} placeholder="Optional" /></FieldRow></div>}
     {dirty && <div className="hrm-toolbar end"><button type="button" className="hrm-btn primary" onClick={save}>Save and recalculate</button></div>}
     {!editable && <p className="payroll-note">Reclassification can be changed while the transaction is Open.</p>}
   </section>;
@@ -1316,7 +1312,6 @@ function RunPayItemsPanel({ run, result, editable, isPaAdmin, onNotify, onSave }
   useEffect(() => { setExcluded(run.config?.excludedPayItems || []); setTakeHomeMode(run.config?.takeHome?.mode || 'policy'); }, [run.config?.excludedPayItems, run.config?.takeHome?.mode]);
   const dirty = JSON.stringify([...excluded].sort()) !== JSON.stringify([...saved].sort()) || takeHomeMode !== savedTakeHome;
   const save = () => {
-    if (!reason.trim()) { onNotify('Give the reason for changing the pay items on this run.', 'bad'); return; }
     if (takeHomeMode === 'off' && !isPaAdmin) { onNotify('Only P&A can switch take-home pay protection off.', 'bad'); return; }
     onSave({ runItems: { excludedPayItems: excluded, takeHome: takeHomeMode === 'policy' ? undefined : { mode: takeHomeMode, reason: reason.trim() }, reason: reason.trim() } });
     setReason('');
@@ -1346,7 +1341,7 @@ function RunPayItemsPanel({ run, result, editable, isPaAdmin, onNotify, onSave }
             <option value="off" disabled={!isPaAdmin}>Don't apply take-home protection{isPaAdmin ? '' : ' (P&A only)'}</option>
           </select>
         </FieldRow>
-        {dirty && <FieldRow label="Reason" required><input value={reason} onChange={event => setReason(event.target.value)} placeholder="Why this run differs from setup" /></FieldRow>}
+        {dirty && <FieldRow label="Remarks"><input value={reason} onChange={event => setReason(event.target.value)} placeholder="Optional" /></FieldRow>}
       </div>
       {dirty && <div className="hrm-toolbar end"><button type="button" className="hrm-btn primary" onClick={save}>Save and recalculate</button></div>}
       {!editable && <p className="payroll-note">Pay items can be changed while the transaction is Open.</p>}
@@ -1955,7 +1950,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       .filter(item => item.type === 'Approval Hierarchy' && item.status !== 'Inactive');
     return !controls.length || controls.some(item => item.backdatedApproval !== 'No');
   }, [companyId]);
-  const canCreate = ['pa_admin', 'pa_superadmin', 'admin', 'client_admin'].includes(role);
+  const canCreate = ['pa_user', 'pa_admin', 'pa_superadmin', 'admin', 'client_admin'].includes(role);
 
   const hrmData = useMemo(() => readHrmData(companyId), [companyId]);
   const calendars = useMemo(() => readCalendars(companyId, 'Payout'), [companyId]);
@@ -2144,7 +2139,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       next = { ...next, overrides: { ...(next.overrides || {}), [payload.employeeId]: payload.override } };
       const currentLine = openRun.result?.lines.find(line => line.employeeId === payload.employeeId);
       const itemNames = new Map(currentLine ? payItemsOfLine(currentLine).map(row => [row.key, row.name]) : []);
-      const changes = Object.entries(payload.override?.payItems || {}).map(([key, change]) => `${itemNames.get(key) || key.split(':').slice(1).join(':')}: ${change.exclude ? 'skipped' : `₱${Number(change.amount).toLocaleString()}`} (${change.reason})`);
+      const changes = Object.entries(payload.override?.payItems || {}).map(([key, change]) => `${itemNames.get(key) || key.split(':').slice(1).join(':')}: ${change.exclude ? 'skipped' : `₱${Number(change.amount).toLocaleString()}`}${change.reason ? ` (${change.reason})` : ''}`);
       const entered = Object.keys(payload.override?.statutory || {});
       if (entered.length) {
         const name = currentRoster().find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
@@ -2153,7 +2148,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       const takeHome = payload.override?.takeHome;
       if (changes.length || takeHome) {
         const name = currentRoster().find(employee => employee.employeeId === payload.employeeId)?.name || payload.employeeId;
-        next = withAudit(next, { action: 'Pay items changed for one employee', actor, detail: `${name} — ${[...changes, takeHome ? `take-home: ${takeHome.mode === 'off' ? 'not applied' : `minimum ₱${Number(takeHome.minimum).toLocaleString()}`} (${takeHome.reason})` : ''].filter(Boolean).join('; ')}` });
+        next = withAudit(next, { action: 'Pay items changed for one employee', actor, detail: `${name} — ${[...changes, takeHome ? `take-home: ${takeHome.mode === 'off' ? 'not applied' : `minimum ₱${Number(takeHome.minimum).toLocaleString()}`}${takeHome.reason ? ` (${takeHome.reason})` : ''}` : ''].filter(Boolean).join('; ')}` });
       }
     }
     if (payload.runItems) {
@@ -2162,7 +2157,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       next = withAudit({ ...next, config: { ...next.config, excludedPayItems, takeHome } }, {
         action: 'Pay items changed for the run',
         actor,
-        detail: `${excludedPayItems.length ? `Left out: ${excludedPayItems.map(key => (openRun.result?.lines || []).flatMap(payItemsOfLine).find(row => row.key === key)?.name || key.split(':').slice(1).join(':')).join(', ')}` : 'All pay items included'}; take-home protection ${takeHome?.mode === 'off' ? 'not applied' : 'per policy'} — ${reason}`,
+        detail: `${excludedPayItems.length ? `Left out: ${excludedPayItems.map(key => (openRun.result?.lines || []).flatMap(payItemsOfLine).find(row => row.key === key)?.name || key.split(':').slice(1).join(':')).join(', ')}` : 'All pay items included'}; take-home protection ${takeHome?.mode === 'off' ? 'not applied' : 'per policy'}${reason ? ` — ${reason}` : ''}`,
       });
       toast('Pay items saved and the transaction recalculated.');
     }
@@ -2174,7 +2169,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       next = withAudit({ ...next, config: { ...next.config, reclassification: { ...next.config.reclassification, runOrder, runLimits } } }, {
         action: 'Reclassification changed for the run',
         actor,
-        detail: `Order: ${runOrder.length ? `${label(runOrder)} (was ${label(defaultOrder)})` : 'as configured'}; ${limitText || 'limits as configured'} — ${reason}`,
+        detail: `Order: ${runOrder.length ? `${label(runOrder)} (was ${label(defaultOrder)})` : 'as configured'}; ${limitText || 'limits as configured'}${reason ? ` — ${reason}` : ''}`,
       });
       toast('Reclassification saved and the transaction recalculated.');
     }
