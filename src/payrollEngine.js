@@ -1052,10 +1052,39 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     earnings.push({ ...item, amount: split.nonTaxable, ceiling: split.ceiling, usedToDate });
     if (split.taxable > 0) {
       record({ code: 'RCL-001', category: 'Tax', amount: split.taxable, evaluate: false, inputs: { de_minimis_paid_ytd: usedToDate, non_taxable_earnings: item.amount, de_minimis_ceiling: split.ceiling ?? 0 }, detail: `${item.name} above ceiling reclassified as taxable`, source: 'De Minimis statutory table' });
-      earnings.push({ code: `${item.code}-X`, name: `${item.name} (above ceiling)`, classification: 'Taxable Allowance', amount: split.taxable, source: 'Reclassified from De Minimis' });
+      // The earning chosen as Adjustment after Threshold carries the excess; with none chosen it is "<benefit> (above ceiling)".
+      const adjustedTo = (context.serviceConfig?.earnings || []).find(row => (row.code === item.code || row.name === item.name))?.deMinimisAdjustment;
+      earnings.push({ code: `${item.code}-X`, name: adjustedTo || `${item.name} (above ceiling)`, classification: 'Taxable Allowance', amount: split.taxable, source: adjustedTo ? `Adjustment after De Minimis threshold of ${item.name}` : 'Reclassified from De Minimis' });
       exceptions.push({ severity: 'Info', message: `${item.name} exceeded its De Minimis ceiling; ₱${split.taxable.toLocaleString()} was reclassified as taxable.` });
     }
   });
+  // Earning Configuration rules. A capped earning never pays more than its Cap Amount in a payroll.
+  // An earning set to Adjust If Absent gives up its Adjustment Earning once the employee's absences reach the minimum.
+  const earningSetups = context.serviceConfig?.earnings || [];
+  if (earningSetups.length) {
+    const setupOf = item => earningSetups.find(row => row.code === item.code || row.name === item.name);
+    const adjustments = [];
+    earnings.forEach((item, index) => {
+      const setup = setupOf(item);
+      if (!setup || !(item.amount > 0)) return;
+      const cap = number(setup.cappedAmount);
+      if (setup.cappedEarning === 'Yes' && cap > 0 && item.amount > cap) {
+        earnings[index] = { ...item, amount: cap, uncappedAmount: item.amount };
+        exceptions.push({ severity: 'Info', message: `${item.name} is capped at ₱${cap.toLocaleString()}; ₱${round2(item.amount - cap).toLocaleString()} was not paid.` });
+      }
+      const minimum = number(setup.minimumAbsent);
+      if (setup.adjustIfAbsent === 'Yes' && setup.adjustmentEarning && minimum > 0 && number(attendance.absentDays) >= minimum) {
+        const adjustment = earningSetups.find(row => row.name === setup.adjustmentEarning);
+        const held = earnings.find(row => row.name === setup.adjustmentEarning);
+        const deducted = Math.min(earnings[index].amount, number(held?.amount) || number(adjustment?.defaultAmount));
+        if (deducted > 0) {
+          adjustments.push({ code: `${item.code}-ABS`, name: `${setup.adjustmentEarning} (absence adjustment)`, classification: item.classification, amount: -round2(deducted), source: 'Earning Configuration — Adjust If Absent' });
+          exceptions.push({ severity: 'Info', message: `${attendance.absentDays} absences reached the minimum of ${minimum}: ${setup.adjustmentEarning} of ₱${round2(deducted).toLocaleString()} was deducted from ${item.name}.` });
+        }
+      }
+    });
+    earnings.push(...adjustments);
+  }
   // Variable allowances follow the same effective dates as basic pay: a new hire
   // or a separation is paid the days actually payable, not the whole period.
   const isVariableAllowance = item => item.source === 'Employee salary record' && item.classification === 'Taxable Allowance';
