@@ -8,7 +8,7 @@
  * HRM headers keep working off the same data.
  */
 import { PAYROLL_ROUNDING_KEY } from '../payrollRounding';
-import { useMemo, useState } from 'react';
+import { cloneElement, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Bank, Buildings, CheckCircle, Circle, DownloadSimple, IdentificationCard, Phone, Plus, ShieldCheck, Trash, UserFocus, Wrench } from '@phosphor-icons/react';
 import { appendAuditEvent } from '../companyRepository';
 import { useRole } from '../RoleContext';
@@ -180,6 +180,7 @@ const servicesTabs = {
   ],
   attendance: [
     { key: 'workHours', label: 'Work Hours Per Day', definition: { title: 'Work Hours Per Day', singular: 'Work Hours Per Day', storageKey: 'atlas-core-si-work-hours-v1', uniqueKey: 'code', columns: [c('code', 'Work Hours Code'), c('hours', 'Number of Work Hours Per Day')], fields: [f('code', 'Work Hours Code', 'text', { ...req, placeholder: 'Input Code' }), f('hours', 'Number of Work Hours Per Day', 'select', { ...req, options: ['4', '6', '8', '9', '10', '12'] })], filters: ['code', 'hours'], seed: [{ id: 'wh-1', code: 'WH-8', hours: '8' }] } },
+    { key: 'workDays', label: 'Work Days Per Year', definition: { title: 'Work Days Per Year', singular: 'Work Days Per Year', storageKey: 'atlas-core-si-work-days-v1', uniqueKey: 'code', columns: [c('code', 'Work Days Code'), c('perYear', 'Number of Work Days Per Year'), c('perMonth', 'Number of Work Days Per Month'), c('perWeek', 'Number of Work Days Per Week'), c('perBiWeek', 'Number of Work Days Per Bi-Week'), c('perFourWeek', 'Number of Work Days Per Four-Week')], fields: [f('code', 'Work Days Code', 'text', { ...req, placeholder: 'Input Code' }), f('type', 'Type of Work Days', 'select', { ...req, options: ['5 days a week', '6 days a week', '7 days a week'] }), f('perYear', 'Number of Workdays Per Year', 'select', { ...req, options: ['261', '313', '365'] }), f('perMonth', 'Number of Workdays Per Month', 'number', { ...req, min: 1, max: 31, step: '0.01' }), f('perWeek', 'Number of Workdays Per Week', 'number', { ...req, min: 1, max: 7 }), f('perBiWeek', 'Number of Workdays Per Bi-Week', 'number', { min: 1, max: 14 }), f('perFourWeek', 'Number of Workdays Per Four-Week', 'number', { min: 1, max: 28 })], filters: ['code', 'perYear'], seed: [{ id: 'wd-1', code: 'WD-261', type: '5 days a week', perYear: '261', perMonth: '21.75', perWeek: '5', perBiWeek: '10', perFourWeek: '20' }] } },
     { key: 'breaks', label: 'Break Hours Per Day', definition: { title: 'Break Hours Per Day', singular: 'Break Hours Per Day', storageKey: 'atlas-core-si-break-hours-v1', uniqueKey: 'code', columns: [c('code', 'Break Hours Code'), c('name', 'Break Hours Name'), c('start', 'Start Time'), c('end', 'End time')], fields: [f('code', 'Break Hours Code', 'text', { ...req, placeholder: 'Input Code' }), f('name', 'Break Hours Name', 'select', { ...req, options: ['Lunch Break', 'Coffee Break', 'Dinner Break'] }), f('start', 'Start Time', 'time', req), f('end', 'End Time', 'time', req)], filters: ['code', 'name'], validate: draft => draft.end <= draft.start ? 'End Time must be after Start Time.' : '', seed: [{ id: 'br-1', code: 'BR-LUNCH', name: 'Lunch Break', start: '12:00', end: '13:00' }] } },
     { key: 'core', label: 'Core Hours & Days', definition: { title: 'Core Hours & Days', singular: 'Core Hours and Days', storageKey: 'atlas-core-si-core-hours-v1', uniqueKey: 'code', wideForm: true, columns: [c('code', 'Core Hours and Days Code'), c('start', 'Start Time'), c('end', 'End Time'), c('name', 'Core Hours Name'), c('days', 'Core Days Per Week', 'multiselect'), c('halfDay', 'Half-Day Core'), c('occurrence', 'Occurrence')], fields: [f('code', 'Core Hours and Days Code', 'text', { ...req, placeholder: 'Input Code' }), f('start', 'Start Time', 'time', req), f('end', 'End Time', 'time', req), f('name', 'Core Hours Name', 'text', { readOnly: true, placeholder: 'Auto-generated' }), f('days', 'Core Days Per Week', 'multiselect', { ...req, options: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] }), f('halfDay', 'Half Day Core Day', 'radio', { options: [...yesNo, 'Custom'], default: 'No' }), f('repeat', 'Repeat Core Day', 'select', { options: ['Week', 'Month', 'Year'] }), f('repeatEvery', 'Repeat every', 'number', { min: 1 }), f('startsOn', 'Starts On', 'date'), f('upTo', 'Up To', 'date')], filters: ['code', 'halfDay'], beforeSave: draft => ({ ...draft, name: `${draft.start}–${draft.end}`, occurrence: draft.repeat ? `Every ${draft.repeatEvery || 1} ${String(draft.repeat).toLowerCase()}` : 'Weekly' }), validate: draft => draft.end <= draft.start ? 'End Time must be after Start Time.' : '', seed: [] } },
     { key: 'shift', label: 'Shift Schedule', definition: { title: 'Shift Schedule', singular: 'Shift Schedule', storageKey: 'atlas-core-si-shift-v1', uniqueKey: 'code', wideForm: true, columns: [c('code', 'Shift Schedule Code'), c('name', 'Shift Hours Name'), c('start', 'Start Time'), c('end', 'End Time'), c('flexible', 'Flexible Time'), c('graceUnit', 'Grace Period Unit'), c('graceNo', 'No. of Grace Period'), c('graceCondition', 'Grace Period Condition Per Day'), c('breakCode', 'Break Hours Code'), c('autoDeduct', 'Auto Deduct Break'), c('workHours', 'Work Hours'), c('days', 'Shift Days Per Week', 'multiselect'), c('restDays', 'Rest Days', 'multiselect'), c('holidayOt', 'Holiday Pay Part of Overtime'), c('holidayCalendar', 'Overtime Pay and Holiday Pay Based On Holiday Calendar')], fields: [f('code', 'Shift Schedule Code', 'text', { ...req, placeholder: 'Input code' }), f('flexible', 'Flexible Time', 'radio', { options: yesNo, default: 'No' }), f('shiftType', 'Shift Type', 'select', { ...req, options: ['Fixed', 'Flexible', 'Rotating', 'Compressed'] }), f('start', 'Start Time', 'time', req), f('end', 'End Time', 'time', req), f('name', 'Shift Hours Name', 'text', { ...req, placeholder: 'Enter Shift Hours Name' }), f('graceUnit', 'Grace Period Unit', 'select', { options: ['Minutes', 'Hours'] }), f('graceNo', 'Number of Grace Period', 'number', { min: 0 }), f('graceCondition', 'Grace Period Condition Per Day', 'select', { options: ['Per occurrence', 'Accumulated per day'] }), f('breakCode', 'Break Hours Code', 'select', { options: ['BR-LUNCH'] }), f('autoDeduct', 'Auto Deduct Break', 'radio', { options: yesNo, default: 'Yes' }), f('workHours', 'Work Hours', 'number', { ...req, min: 1, max: 24 }), f('days', 'Shift Days Per Week', 'multiselect', { ...req, options: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] }), f('restDays', 'Rest Days', 'multiselect', { options: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] }), f('holidayOt', 'Holiday Pay Part of Overtime', 'radio', { options: yesNo, default: 'No' }), f('holidayCalendar', 'Overtime Pay and Holiday Pay Based on Holiday Calendar', 'radio', { options: yesNo, default: 'Yes' })], filters: ['code', 'flexible', 'autoDeduct'], validate: draft => (draft.days || []).some(day => (draft.restDays || []).includes(day)) ? 'A day cannot be both a shift day and a rest day.' : '', seed: [{ id: 'sh-1', code: 'SH-DAY', flexible: 'No', shiftType: 'Fixed', start: '09:00', end: '18:00', name: 'Day Shift', graceUnit: 'Minutes', graceNo: '15', graceCondition: 'Per occurrence', breakCode: 'BR-LUNCH', autoDeduct: 'Yes', workHours: '8', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], restDays: ['Sat', 'Sun'], holidayOt: 'No', holidayCalendar: 'Yes' }] } },
@@ -193,11 +194,6 @@ const servicesTabs = {
   ],
   payroll: [
     { key: 'payrollRounding', label: 'Rounding Off', render: props => <PayrollRoundingOff {...props} /> },
-    { key: 'workDays', label: 'Work Days Per Year', definition: { title: 'Work Days Per Year', singular: 'Work Days Per Year', storageKey: 'atlas-core-si-work-days-v1', uniqueKey: 'code', columns: [c('code', 'Work Days Code'), c('perYear', 'Number of Work Days Per Year'), c('perMonth', 'Number of Work Days Per Month'), c('perWeek', 'Number of Work Days Per Week'), c('perBiWeek', 'Number of Work Days Per Bi-Week'), c('perFourWeek', 'Number of Work Days Per Four-Week')], fields: [f('code', 'Work Days Code', 'text', { ...req, placeholder: 'Input Code' }), f('type', 'Type of Work Days', 'select', { ...req, options: ['5 days a week', '6 days a week', '7 days a week'] }), f('perYear', 'Number of Workdays Per Year', 'select', { ...req, options: ['261', '313', '365'] }), f('perMonth', 'Number of Workdays Per Month', 'number', { ...req, min: 1, max: 31, step: '0.01' }), f('perWeek', 'Number of Workdays Per Week', 'number', { ...req, min: 1, max: 7 }), f('perBiWeek', 'Number of Workdays Per Bi-Week', 'number', { min: 1, max: 14 }), f('perFourWeek', 'Number of Workdays Per Four-Week', 'number', { min: 1, max: 28 })], filters: ['code', 'perYear'], seed: [{ id: 'wd-1', code: 'WD-261', type: '5 days a week', perYear: '261', perMonth: '21.75', perWeek: '5', perBiWeek: '10', perFourWeek: '20' }] } },
-    { key: 'paymentMode', label: 'Payment Mode', definition: { title: 'Payment Mode', singular: 'Payment Mode', storageKey: 'atlas-core-si-payment-mode-v1', uniqueKey: 'mode', columns: [c('mode', 'Payment Mode'), c('status', 'Status', 'status')], fields: [f('mode', 'Payment Mode', 'select', { ...req, options: ['Daily', 'Weekly', 'Bi-Weekly', 'Semi-Monthly', 'Monthly'] }), f('status', 'Status', 'select', { ...req, options: L.status, default: 'Active' })], seed: [{ id: 'pm-1', mode: 'Semi-Monthly', status: 'Active' }] } },
-    { key: 'paymentType', label: 'Payment Type', definition: { title: 'Payment Type', singular: 'Payment Type', storageKey: 'atlas-core-si-payment-type-v1', uniqueKey: 'type', columns: [c('type', 'Payment Type'), c('status', 'Status', 'status')], fields: [f('type', 'Payment Type', 'select', { ...req, options: ['Bank Transfer', 'Check', 'Cash', 'Electronic Wallet'] }), f('status', 'Status', 'select', { ...req, options: L.status, default: 'Active' })], seed: [{ id: 'pt-1', type: 'Bank Transfer', status: 'Active' }] } },
-    { key: 'currency', label: 'Multi Currency', definition: { title: 'Multi Currency', singular: 'Currency', storageKey: 'atlas-core-si-currency-v1', uniqueKey: 'currency', columns: [c('currency', 'Currency'), c('isBase', 'Base Currency'), c('status', 'Status', 'status')], fields: [f('currency', 'Currency', 'select', { ...req, options: ['PHP', 'USD', 'SGD', 'EUR', 'JPY'] }), f('isBase', 'Base Currency', 'radio', { options: yesNo, default: 'No' }), f('status', 'Status', 'select', { ...req, options: L.status, default: 'Active' })], afterSave: (next, saved) => saved.isBase === 'Yes' ? next.map(row => row.currency === saved.currency ? row : { ...row, isBase: 'No' }) : next, seed: [{ id: 'cur-1', currency: 'PHP', isBase: 'Yes', status: 'Active' }] } },
-    { key: 'statutory', label: 'Government Statutory', definition: { title: 'Government Statutory', singular: 'Government Statutory', storageKey: 'atlas-core-si-statutory-v1', uniqueKey: 'agency', columns: [c('agency', 'Government Statutory'), c('basis', 'Computation Basis'), c('deductionSchedule', 'Deduction Schedule'), c('status', 'Status', 'status')], fields: [f('agency', 'Government Statutory', 'select', { ...req, options: ['SSS', 'PhilHealth', 'HDMF', 'Withholding Tax'] }), f('basis', 'Computation Basis', 'select', { ...req, options: ['Monthly Basic Pay', 'Gross Pay', 'Fixed Amount'] }), f('deductionSchedule', 'Deduction Schedule', 'select', { ...req, options: ['Every Payroll', 'First Payroll', 'Second Payroll'] }), f('status', 'Status', 'select', { ...req, options: L.status, default: 'Active' })], seed: [{ id: 'gs-1', agency: 'SSS', basis: 'Monthly Basic Pay', deductionSchedule: 'Second Payroll', status: 'Active' }, { id: 'gs-2', agency: 'PhilHealth', basis: 'Monthly Basic Pay', deductionSchedule: 'Second Payroll', status: 'Active' }, { id: 'gs-3', agency: 'HDMF', basis: 'Fixed Amount', deductionSchedule: 'Second Payroll', status: 'Active' }] } },
   ],
 };
 
@@ -242,9 +238,9 @@ function SubTabs({ tabs, notify, companyId }) {
   </>;
 }
 
-function SectionPage({ title, crumb, onBack, children, guideKey }) {
+function SectionPage({ title, crumb, onBack, backLabel = 'Company Information', children, guideKey }) {
   return <div className="page-content operational-workspace atlas-page">
-    <button className="inline-back" onClick={onBack}><ArrowLeft /> Company Information</button>
+    <button className="inline-back" onClick={onBack}><ArrowLeft /> {backLabel}</button>
     <div className="page-heading"><div><p className="breadcrumb">Company Information / {crumb || title}</p><h1>{title}</h1></div></div>
     {guideKey && <NavigationGuideHost guideKey={guideKey} />}
     {children}
@@ -372,12 +368,41 @@ function BankManagement({ company, onSaveCompany, notify, companyId, onBack }) {
   return <SectionPage title="Bank Management" onBack={onBack}><AtlasTable definition={bankTable} notify={notify} companyId={companyId} rows={rows} setRows={update} /></SectionPage>;
 }
 
+/**
+ * These sit as cards under Payroll Configuration (HRM and Timekeeping), not as tabs of their own.
+ * The two Timekeeping ones are called "Setup" because the hub already has policy cards named Time & Attendance and Overtime.
+ */
+const HOSTED_CARDS = {
+  HRM: [
+    { key: 'benefits', short: 'Benefits Management', detail: 'Benefit codes, employee groups, frequency, amounts and limits' },
+    { key: 'leave', short: 'Leave Management', detail: 'Leave types, credits, accrual, pay and conversion rules' },
+  ],
+  Timekeeping: [
+    { key: 'attendance', short: 'Time and Attendance Setup', detail: 'Work hours, breaks, core hours and days, shift schedules and flexible time' },
+    { key: 'overtime', short: 'Overtime Setup', detail: 'Overtime rate table, minimum and maximum hours and the earnings considered' },
+  ],
+  Payroll: [
+    { key: 'payroll', short: 'Rounding Off', detail: 'Decimal places for earnings, deductions, company loans, bonuses and basic pay' },
+  ],
+};
+const HOSTED_LIST = Object.values(HOSTED_CARDS).flat();
+
 function ServicesInformation({ notify, companyId, onBack, payrollConfiguration }) {
-  const tabs = [['benefits', 'Benefits Management'], ['leave', 'Leave Management'], ['attendance', 'Time and Attendance'], ['overtime', 'Overtime'], ['payroll', 'Payroll Information'], ...(payrollConfiguration ? [['payrollConfiguration', 'Payroll Configuration']] : [])];
-  const [active, setActive] = useState('benefits');
+  // With the service hub present, Services Information is the hub itself (HRM, Timekeeping, Payroll cards), not a tab inside a tab.
+  const tabs = payrollConfiguration ? [] : [['benefits', 'Benefits Management'], ['leave', 'Leave Management'], ['attendance', 'Time and Attendance'], ['overtime', 'Overtime'], ['payroll', 'Payroll Information']];
+  const [active, setActive] = useState(tabs[0]?.[0]);
+  const [card, setCard] = useState(null);
+  const open = HOSTED_LIST.find(item => item.key === card);
+  if (open) return <SectionPage title={open.short} crumb={`Services Information / ${open.short}`} onBack={() => setCard(null)} backLabel="Services Information">
+    <SubTabs key={open.key} tabs={servicesTabs[open.key]} notify={notify} companyId={companyId} />
+  </SectionPage>;
   return <SectionPage title="Services Information" onBack={onBack}>
-    <nav className="employee-tabs atlas-tabs">{tabs.map(([key, label]) => <button key={key} className={key === active ? 'active' : ''} onClick={() => setActive(key)}>{label}</button>)}</nav>
-    {active === 'payrollConfiguration' ? payrollConfiguration : <SubTabs key={active} tabs={servicesTabs[active]} notify={notify} companyId={companyId} />}
+    {payrollConfiguration
+      ? cloneElement(payrollConfiguration, { hostedCards: HOSTED_CARDS, onOpenCard: setCard, embedded: true })
+      : <>
+        <nav className="employee-tabs atlas-tabs">{tabs.map(([key, label]) => <button key={key} className={key === active ? 'active' : ''} onClick={() => setActive(key)}>{label}</button>)}</nav>
+        <SubTabs key={active} tabs={servicesTabs[active]} notify={notify} companyId={companyId} />
+      </>}
   </SectionPage>;
 }
 
@@ -437,7 +462,7 @@ export function CompanyInformationScreen({ company, onSaveCompany, notify, compa
     <NavigationGuideHost guideKey="Company Information" />
     <div className="atlas-ci-layout">
       <div className="atlas-ci-cards">{SECTIONS.map(section => { const Icon = section.icon; return <button key={section.key} type="button" className="atlas-ci-card" onClick={() => section.key === 'employee' ? onOpenEmployeeMasterfile?.() : setOpen(section.key)}><Icon size={26} /><span>{section.label}</span><ArrowRight /></button>; })}</div>
-      <aside className="atlas-ci-progress"><h2>Your Progress</h2><div className="atlas-progress-bar" aria-label={`${percent}% complete`}><i style={{ width: `${percent}%` }} /><b>{percent}%</b></div><ul>{progress.map(item => <li key={item.key} className={item.done ? 'done' : ''}>{item.done ? <CheckCircle weight="fill" /> : <Circle />}{item.progressLabel || item.label}</li>)}</ul></aside>
+      <aside className="atlas-ci-progress"><h2>Your Progress</h2><div className="atlas-progress-bar" aria-label={`${percent}% complete`}><span className="atlas-progress-track"><i style={{ width: `${percent}%` }} /></span><b>{percent}%</b></div><ul>{progress.map(item => <li key={item.key} className={item.done ? 'done' : ''}>{item.done ? <CheckCircle weight="fill" /> : <Circle />}{item.progressLabel || item.label}</li>)}</ul></aside>
     </div>
   </div>;
 }

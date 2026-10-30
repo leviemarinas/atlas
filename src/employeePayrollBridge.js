@@ -1,5 +1,5 @@
 /**
- * Employee Masterfile › Payroll & Allocation → the payroll transaction.
+ * Employee Masterfile › Payroll Allocation → the payroll transaction.
  *
  * The Project Plan assigns earnings, deductions, loans and bonuses in the Employee Masterfile (ATLAS-1419,
  * ATLAS-1420), so that is where the payroll transaction reads them from. Each employee's entries are kept
@@ -131,7 +131,9 @@ const BASIC_PAY_MONTHS = Object.freeze(['January', 'February', 'March', 'April',
 
 /** Annex B (Dorado Basic Pay): Period Start and Period End follow the payment frequency. A semi-monthly employee has both halves; every other frequency has Every Payroll. */
 export function periodsForFrequency(paymentMode = '') {
-  return paymentMode === 'Semi-monthly' ? [...BASIC_PAY_PERIODS] : [BASIC_PAY_PERIODS[0]];
+  // "Semi-monthly", "Semi-Monthly" and "Semimonthly" are the same frequency; an employee with no payment mode yet is not restricted.
+  const mode = String(paymentMode || '').toLowerCase().replace(/[^a-z]/g, '');
+  return !mode || mode === 'semimonthly' ? [...BASIC_PAY_PERIODS] : [BASIC_PAY_PERIODS[0]];
 }
 
 /**

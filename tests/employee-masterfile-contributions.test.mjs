@@ -9,7 +9,7 @@ const { buildPayrollContext } = await import('../src/payrollRuns.js');
 const bridge = await import('../src/employeePayrollBridge.js');
 
 /**
- * Employee Masterfile › Payroll & Allocation: Statutory Deductions and Shares, HDMF Contribution, Payroll Records (YTD)
+ * Employee Masterfile › Payroll Allocation: Statutory Deductions and Shares, HDMF Contribution, Payroll Records (YTD)
  * and Previous Employer Data. What is entered there replaces what the roster holds; an employee nobody edited is paid as before.
  */
 const hrm = defaultHrmData('ABC-PH-001');

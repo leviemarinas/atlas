@@ -25,7 +25,7 @@ export const moduleFeatureCatalog = [
     area: 'Payroll configuration',
     name: 'Basic pay',
     description: 'Set the effective-dated basic pay of each employee, pay type, factor days, working hours, minimum wage and ECOLA in the Employee Masterfile.',
-    location: 'Employee Masterfile / Payroll & Allocation / Basic Pay',
+    location: 'Employee Masterfile / Payroll Allocation / Basic Pay',
     target: 'screen:employee',
     features: [
       { name: 'Regional minimum wage setup', refs: ['HTP020'] },

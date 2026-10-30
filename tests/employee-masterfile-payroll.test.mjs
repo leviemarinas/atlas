@@ -9,7 +9,7 @@ const { buildPayrollContext } = await import('../src/payrollRuns.js');
 const bridge = await import('../src/employeePayrollBridge.js');
 
 /**
- * Employee Masterfile › Payroll & Allocation is where earnings, deductions, loans and bonuses are assigned
+ * Employee Masterfile › Payroll Allocation is where earnings, deductions, loans and bonuses are assigned
  * (ATLAS-1419, ATLAS-1420), so the payroll transaction reads them from there. An employee with no entries keeps
  * the HR record; one with entries gets exactly what the Masterfile holds.
  */

@@ -829,7 +829,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const shift = shiftFor(context.shiftAssignments, employee.employeeId, transaction.periodEnd);
   const workHours = number(shift?.workHours) || number(pay.workHoursPerDay) || number(config.workHoursPerDay) || 8;
   const monthlyRate = number(basicRecord.monthlyRate) || number(pay.monthlyRate);
-  if (!monthlyRate && employee.addedInMasterfile) exceptions.push({ severity: 'Warning', message: 'No basic pay yet. Enter it in Employee Masterfile › Payroll & Allocation › Basic Pay.' });
+  if (!monthlyRate && employee.addedInMasterfile) exceptions.push({ severity: 'Warning', message: 'No basic pay yet. Enter it in Employee Masterfile › Payroll Allocation › Basic Pay.' });
   const dailyRate = record({
     code: 'BAS-001', category: 'Basic Pay', source: 'Employee salary record',
     inputs: { monthly_basic: monthlyRate, factor_days: factorDays },
@@ -1301,7 +1301,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   if (masterfileKeys.length) {
     masterfileKeys.forEach(key => { statutoryLine[key] = fromMasterfile.amounts[key]; });
     if (masterfileKeys.includes('sssEmployee')) statutoryLine.sssRegularEmployee = round2(Math.max(0, statutoryLine.sssEmployee - statutoryLine.sssMpfEmployee));
-    record({ code: 'GOV-001', label: 'Contributions from the Employee Masterfile', category: 'Government', amount: round2(sum(masterfileKeys, key => statutoryLine[key])), evaluate: false, inputs: {}, detail: `Entered for this employee instead of the table: ${masterfileKeys.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${statutoryLine[key].toLocaleString()} (${fromMasterfile.from[key]})`).join(', ')}`, source: 'Employee Masterfile › Payroll & Allocation' });
+    record({ code: 'GOV-001', label: 'Contributions from the Employee Masterfile', category: 'Government', amount: round2(sum(masterfileKeys, key => statutoryLine[key])), evaluate: false, inputs: {}, detail: `Entered for this employee instead of the table: ${masterfileKeys.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${statutoryLine[key].toLocaleString()} (${fromMasterfile.from[key]})`).join(', ')}`, source: 'Employee Masterfile › Payroll Allocation' });
     exceptions.push({ severity: 'Info', message: `Contributions entered in the Employee Masterfile were used instead of the table: ${masterfileKeys.map(key => STATUTORY_OVERRIDE_LABELS[key]).join(', ')}.` });
   }
   // Maximum first, balance next: the month's figure, less what earlier payrolls this month already

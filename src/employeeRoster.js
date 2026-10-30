@@ -392,7 +392,7 @@ export function readMasterfileList(storage = globalThis.localStorage) {
 /**
  * An employee added in the Masterfile, on the company's default pay setup:
  * semi-monthly, 261 factor days, 8 hours, every statutory deduction on, and no
- * basic pay until one is entered in Payroll & Allocation › Basic Pay.
+ * basic pay until one is entered in Payroll Allocation › Basic Pay.
  */
 function newHire(person) {
   const code = String(person.id);

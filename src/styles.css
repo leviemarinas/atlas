@@ -3871,3 +3871,42 @@ code.diff-after { padding: 1px 5px; border-radius: 4px; color: #167a4f; backgrou
 #root .button.filter-button:hover, #root .button.filter-button.filter-active { background: var(--violet); color: white; }
 #root .button.filter-button svg { width: 20px; height: 20px; }
 .employee-directory-toolbar .button { white-space: nowrap; }
+
+/* Company Configuration: boxes that overlapped at narrower widths. */
+@media (min-width: 761px) {
+  /* The company name stays on one line instead of wrapping to three lines taller than the top bar. */
+  .topbar .company-switch { flex: 0 0 auto; flex-wrap: nowrap; white-space: nowrap; }
+  /* The role switch shrinks and scrolls instead of pushing the company name out of its row. */
+  .topbar .top-actions { flex: 1 1 0; min-width: 0; justify-content: flex-end; }
+  .topbar .role-switch { min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .topbar .role-switch::-webkit-scrollbar { display: none; }
+  .topbar .role-switch button { flex: 0 0 auto; }
+}
+/* Your Progress: the percentage sits beside the bar, not on top of it. */
+.atlas-ci-progress .atlas-progress-bar { display: flex; align-items: center; gap: 8px; height: auto; overflow: visible; background: none; }
+.atlas-ci-progress .atlas-progress-track { position: relative; flex: 1 1 auto; height: 10px; overflow: hidden; border-radius: 999px; background: var(--violet-soft); }
+.atlas-ci-progress .atlas-progress-track i { position: absolute; inset: 0 auto 0 0; background: var(--violet); }
+.atlas-ci-progress .atlas-progress-bar b { flex: 0 0 auto; min-width: 44px; padding: 0; color: var(--violet); font-size: 12px; line-height: 1; text-align: right; mix-blend-mode: normal; }
+
+/* Earning Configuration assignment: Employee Group list, hire-date rule, Employee Names chips. */
+.earning-assignment { display: grid; gap: 12px; margin-top: 2px; }
+.earning-assignment-group { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.earning-assignment-label { display: block; margin-bottom: 5px; font-size: 11.7px; font-weight: 600; }
+.earning-assignment-list { max-height: 176px; overflow-y: auto; border: 1px solid var(--line); border-radius: 5px; }
+.earning-assignment-list > div { display: flex; align-items: center; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--line); font-size: 11.7px; font-weight: 500; cursor: pointer; }
+.earning-assignment-list > div:last-child { border-bottom: 0; }
+.earning-assignment-list > div:hover { background: #faf8fc; }
+.earning-assignment-list > div.selected { background: #ecebf0; }
+.earning-assignment-list > div i { flex: none; width: 13px; height: 13px; border: 1px solid #b9b2c2; border-radius: 50%; background: #fff; }
+.earning-assignment-list > div.selected i { border: 4px solid var(--violet); }
+.earning-assignment-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; }
+.earning-assignment-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px 2px 8px; border-radius: 4px; background: #f1eef3; font-size: 11.5px; }
+.earning-assignment-chip button { border: 0; background: transparent; color: #6b6275; font-size: 13px; line-height: 1; cursor: pointer; }
+.earning-assignment-chips select { flex: 1; min-width: 150px; margin: 0; border: 0; box-shadow: none; }
+.earning-assignment-list > div i { border-radius: 3px; }
+.earning-assignment-list > div.selected i { border: 1px solid var(--violet); background: var(--violet) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E") center / 11px no-repeat; }
+.earning-assignment-dates { display: grid; gap: 10px; }
+/* A field the Earning Setup slides enable only on a Yes: kept on screen, greyed out. */
+fieldset.field-switch { margin: 0; padding: 0; border: 0; min-width: 0; }
+fieldset.field-switch.off { opacity: .55; }
+fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fieldset.field-switch.off select { background: #f1eef3; cursor: not-allowed; }
