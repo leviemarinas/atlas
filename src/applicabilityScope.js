@@ -54,6 +54,9 @@ function hiredMatches(rule, hired, on) {
   return hired === on;
 }
 
+/** Reference Table job levels, in the names the employee roster uses for the same group. */
+const GROUP_ALIASES = Object.freeze({ Manager: 'Managers', Supervisor: 'Supervisors', 'Rank & File': 'Rank and File' });
+
 /** Whether one employee falls inside a configured scope. */
 export function coversEmployee(scope, employee) {
   const applied = normalizeScope(scope);
@@ -65,7 +68,7 @@ export function coversEmployee(scope, employee) {
   // Earning Configuration lets several groups and hire-date rules be ticked together: an employee is covered by any of them.
   else if (applied.scope === 'Criteria') {
     const groups = applied.groups || [];
-    inScope = groups.includes('All Employees') || groups.includes(employee?.group)
+    inScope = groups.includes('All Employees') || groups.some(group => group === employee?.group || GROUP_ALIASES[group] === employee?.group)
       || (applied.hired || []).some(item => hiredMatches(item.rule, employee?.dateHired, item.date));
   }
   return inScope && (!applied.names?.length || applied.names.includes(employee?.code));
@@ -82,7 +85,9 @@ export function describeScope(scope) {
     text = applied.dateHired ? `${label}: ${applied.dateHired}` : `${label} — no date yet`;
   } else if (applied.scope === 'Criteria') {
     const groups = applied.groups || [];
+    const extraParts = Object.entries(applied.extra || {}).map(([key, entry]) => `${key} ${typeof entry === 'object' ? [entry.from && `from ${entry.from}`, entry.to && `to ${entry.to}`].filter(Boolean).join(' ') : entry}`);
     const parts = [
+      ...extraParts,
       ...(groups.includes('All Employees') ? ['All employees'] : groups.length ? [`Employee group: ${groups.join(', ')}`] : []),
       ...(applied.hired || []).map(item => {
         const label = Object.keys(DATE_HIRED_RULES).find(key => DATE_HIRED_RULES[key] === item.rule) || 'Date Hired';

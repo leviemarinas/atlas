@@ -3892,7 +3892,15 @@ code.diff-after { padding: 1px 5px; border-radius: 4px; color: #167a4f; backgrou
 
 /* Earning Configuration assignment: Employee Group list, hire-date rule, Employee Names chips. */
 .earning-assignment { display: grid; gap: 12px; margin-top: 2px; }
-.earning-assignment-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: start; }
+.earning-assignment-select { display: grid; gap: 5px; max-width: 320px; font-size: 11.7px; font-weight: 600; }
+.earning-assignment-group { display: grid; grid-template-columns: minmax(190px, 240px) minmax(0, 1fr); gap: 12px; align-items: start; }
+.earning-assignment-values { display: grid; gap: 10px; align-content: start; }
+.earning-assignment-values > label { display: grid; gap: 5px; max-width: 280px; font-size: 11.7px; font-weight: 600; }
+.earning-assignment-list > div.current { background: #ecebf0; font-weight: 600; }
+.earning-assignment-list > div.has-value::after { content: ''; flex: none; width: 6px; height: 6px; margin-left: auto; border-radius: 50%; background: var(--violet); }
+.earning-assignment-values .earning-assignment-list.checks > label { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--line); font-size: 11.7px; cursor: pointer; }
+.earning-assignment-list.checks > label.selected { background: #ecebf0; }
+.earning-assignment-list.checks .empty { padding: 8px 11px; color: #6b6275; font-size: 11.7px; }
 .earning-assignment-label { display: block; margin-bottom: 5px; font-size: 11.7px; font-weight: 600; }
 .earning-assignment-list { max-height: 176px; overflow-y: auto; border: 1px solid var(--line); border-radius: 5px; }
 .earning-assignment-list > div { display: flex; align-items: center; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--line); font-size: 11.7px; font-weight: 500; cursor: pointer; }

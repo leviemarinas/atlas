@@ -260,10 +260,9 @@ const baseModuleDefinitions = {
       const assigned = normalizeScope(draft.applicability);
       if (assigned.scope === 'Date Hired' && !assigned.dateHired) problems.push('Pick the Date Hired this earning applies from.');
       if (assigned.scope === 'Criteria') {
-        if (!(assigned.groups || []).length && !(assigned.hired || []).length) problems.push('Select at least one Employee Group or SubGroup.');
-        const unchosen = (assigned.groups || []).find(group => subGroupsOf(group).length && !subGroupsOf(group).some(value => assigned.groups.includes(value)));
-        if (unchosen) problems.push(`Pick at least one Employee SubGroup under ${unchosen}.`);
-        else if ((assigned.hired || []).some(item => !item.date)) problems.push('Enter a date for each Date Hired rule that is ticked.');
+        const picked = (assigned.groups || []).length || (assigned.hired || []).length || Object.keys(assigned.extra || {}).length;
+        if (!assigned.mode) problems.push('Select All Employee Group or Filter for Employee Group.');
+        else if (assigned.mode === 'filter' && !picked) problems.push('Pick at least one value under Filter, or choose All Employee Group.');
       }
       if (draft.cappedEarning === 'Yes' && !(Number(draft.cappedAmount) > 0)) problems.push('Enter the Capped Amount — the most an employee can receive, greater than zero.');
       return problems;
@@ -1162,94 +1161,106 @@ function FrequencyField({ paymentMode, value, onChange }) {
   </div>;
 }
 
-/** Employee Group, as Annex A (D1. Reference Table Updated) lists it. The five Date Hired entries are the date rules, each with its own date. */
-const ANNEX_EMPLOYEE_GROUPS = Object.freeze([
-  'All Employees', 'Employment Type', 'Job Level', 'Job Grade', 'Job Title', 'Site', 'Section', 'Department', 'Employee Category',
-  'Date Hired', 'Date Hired On and After', 'Date Hired After', 'Date Hired Prior', 'Date Hired Upto',
-  'Regularization Date', 'Tenure', 'Entitlement Date', 'Tax Type', 'Division', 'Employment Status', 'Office Location', 'OT Related Area',
-  'Home Address - City/Municipality', 'Absence Classification', 'Overtime Classification', 'Tardiness Classification', 'Undertime Classification',
-  'Age', 'None', 'P&A Client', 'Payment Mode', 'Employee Code / Name', 'Others',
+/**
+ * Employee Group filter, as the Atlas QA "Add Leave" form works it: a dropdown of All Employee Group or Filter. Filter opens a
+ * list of filter categories on the left and, for the one picked, its values on the right. What is ticked stays ticked while
+ * you move between categories. Annex A (D1. Reference Table Updated, Employee Group) is the category list.
+ */
+const GROUP_CATEGORIES = Object.freeze([
+  'Absence Classification', 'Age', 'Date Hired', 'Date Hired After', 'Date Hired On and After', 'Date Hired Prior', 'Date Hired Upto',
+  'Department', 'Division', 'Employee Category', 'Employment Status', 'Employment Type', 'Entitlement Date', 'Home Address City / Municipality',
+  'Job Grade', 'Job Level', 'Job Title', 'Office Location', 'OT Related Area', 'Overtime Classification', 'Regularization Date',
+  'Section', 'Site', 'Tardiness Classification', 'TaxType', 'Tenure', 'Undertime Classification',
 ]);
 
-/** The reference table that supplies the SubGroup values of a group; a group not listed here has none, or a fixed list below. */
-const SUBGROUP_TABLES = Object.freeze({
-  'Employment Type': 'employment-type', 'Job Level': 'job-levels', 'Job Grade': 'job-grades', 'Job Title': 'job-titles', Site: 'sites',
-  Section: 'sections', Department: 'departments', Division: 'divisions', 'Employment Status': 'employment-status', 'Tax Type': 'tax-type',
-  'Office Location': 'office-location',
+/** Where a category's values come from: a Reference Table, or a short list the annex gives. */
+const CATEGORY_TABLES = Object.freeze({
+  Department: 'departments', Division: 'divisions', 'Employment Status': 'employment-status', 'Employment Type': 'employment-type',
+  'Job Grade': 'job-grades', 'Job Level': 'job-levels', 'Job Title': 'job-titles', 'Office Location': 'office-location',
+  Section: 'sections', Site: 'sites', TaxType: 'tax-type',
 });
-const FIXED_SUBGROUPS = Object.freeze({
+const CATEGORY_LISTS = Object.freeze({
+  'Absence Classification': ['Exempt', 'Non-exempt'], 'Overtime Classification': ['Exempt', 'Non-exempt'],
+  'Tardiness Classification': ['Exempt', 'Non-exempt'], 'Undertime Classification': ['Exempt', 'Non-exempt'],
   'Employee Category': ['Project-based Employees', 'Retirement Eligible', 'Confidential', 'Non-Confidential'],
-  'Payment Mode': ['Hourly', 'Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly'],
+  'OT Related Area': ['Sampaloc', 'Bacoor', 'Mandaue', 'Region 2'],
 });
-/** Employee SubGroup: the values of the group that is ticked, read from the Reference Tables. */
-const subGroupsOf = group => (SUBGROUP_TABLES[group] ? referenceValues(SUBGROUP_TABLES[group]) : FIXED_SUBGROUPS[group] || []);
-const everySubGroup = () => [...Object.keys(SUBGROUP_TABLES), ...Object.keys(FIXED_SUBGROUPS)].flatMap(subGroupsOf);
+const valuesOf = category => (CATEGORY_TABLES[category] ? referenceValues(CATEGORY_TABLES[category]) : CATEGORY_LISTS[category] || null);
+/** The other kinds of category: a date, a range of numbers, or free text. */
+const DATE_CATEGORIES = Object.freeze(['Entitlement Date', 'Regularization Date']);
+const TEXT_CATEGORIES = Object.freeze(['Tenure', 'Home Address City / Municipality']);
 
 /**
- * Earning Configuration's assignment, laid out as the approved screen and the Assignment Rules slide:
- * the Employee Group list (several groups and hire-date rules can be ticked together), a date for each
- * hire-date rule beside it, then Employee Names to narrow the earning to specific people.
- * It reads and writes the same applicability scope every other configuration uses.
+ * Earning Configuration's assignment: the Employee Group filter, then Employee Names to narrow the earning to specific people.
+ * It reads and writes the same applicability scope every other configuration uses; `groups` and `hired` are what payroll
+ * enforces, `filters` is every pick as the screen shows it, and `extra` holds the ones payroll has no employee data for yet.
  */
 function EarningAssignmentField({ value, onChange }) {
   const scope = normalizeScope(value);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const choices = ANNEX_EMPLOYEE_GROUPS;
-  // What is ticked today, whichever way an older record stored it.
+  const [category, setCategory] = useState(GROUP_CATEGORIES[0]);
+  // What is chosen today, whichever way an older record stored it.
   const groups = scope.scope === 'Criteria' ? (scope.groups || []) : scope.scope === 'Employee Group' ? [scope.group] : scope.scope === 'Date Hired' ? [] : ['All Employees'];
   const hired = scope.scope === 'Criteria' ? (scope.hired || []) : scope.scope === 'Date Hired' ? [{ rule: scope.hiredRule, date: scope.dateHired || '' }] : [];
+  const extra = scope.extra || {};
   const names = scope.names || [];
-  const ruleLabel = rule => Object.keys(DATE_HIRED_RULES).find(key => DATE_HIRED_RULES[key] === rule) || 'Date Hired';
-  // The SubGroup list follows the groups ticked; a value saved earlier stays listed so it can be unticked.
-  const subGroups = [...new Set([...groups.flatMap(subGroupsOf), ...groups.filter(item => everySubGroup().includes(item) || (employeeGroups.includes(item) && item !== 'All Employees'))])];
-  const isTicked = choice => (DATE_HIRED_RULES[choice] ? hired.some(item => item.rule === DATE_HIRED_RULES[choice]) : groups.includes(choice));
-  const save = (nextGroups, nextHired) => onChange({ ...scope, scope: 'Criteria', groups: nextGroups, hired: nextHired, names: [] });
-  const toggle = choice => {
-    const rule = DATE_HIRED_RULES[choice];
-    if (rule) return save(groups.filter(item => item !== 'All Employees'), isTicked(choice) ? hired.filter(item => item.rule !== rule) : [...hired, { rule, date: '' }]);
-    if (choice === 'All Employees') return save(isTicked(choice) ? [] : ['All Employees'], isTicked(choice) ? hired : []);
-    const others = groups.filter(item => item !== 'All Employees');
-    // Unticking a group also clears the SubGroups that belonged to it.
-    const owned = subGroupsOf(choice);
-    return save(isTicked(choice) ? others.filter(item => item !== choice && !owned.includes(item)) : [...others, choice], hired);
+  const mode = scope.mode || (groups.includes('All Employees') ? 'all' : groups.length || hired.length || Object.keys(extra).length ? 'filter' : scope.scope === 'Criteria' ? '' : 'all');
+  const pickedIn = cat => scope.filters?.[cat] ?? groups.filter(item => (valuesOf(cat) || []).includes(item));
+  const hiredRule = DATE_HIRED_RULES[category];
+  const hiredDate = hired.find(item => item.rule === hiredRule)?.date || '';
+  // Saves the whole filter at once: the picked values of every list, the hire-date rules and the rest.
+  const commit = ({ nextMode = mode, filters = {}, nextHired = hired, nextExtra = extra, nextNames = names } = {}) => {
+    if (nextMode !== 'filter') return onChange({ ...scope, scope: 'Criteria', mode: nextMode, groups: nextMode === 'all' ? ['All Employees'] : [], hired: [], filters: {}, extra: {}, names: [] });
+    const all = Object.fromEntries(GROUP_CATEGORIES.filter(cat => valuesOf(cat)).map(cat => [cat, filters[cat] ?? pickedIn(cat)]));
+    const legacy = groups.filter(item => item !== 'All Employees' && !GROUP_CATEGORIES.some(cat => (valuesOf(cat) || []).includes(item)));
+    return onChange({ ...scope, scope: 'Criteria', mode: 'filter', groups: [...new Set([...legacy, ...Object.values(all).flat()])], filters: all, hired: nextHired, extra: nextExtra, names: nextNames });
   };
-  const setDate = (rule, date) => onChange({ ...scope, scope: 'Criteria', groups, hired: hired.map(item => (item.rule === rule ? { ...item, date } : item)) });
-  // Employee Names offers the people the ticked groups cover, minus the ones already chosen.
+  const setPicked = (cat, next) => commit({ filters: { [cat]: next } });
+  const list = valuesOf(category);
+  const picked = list ? pickedIn(category) : [];
+  const toggle = item => setPicked(category, picked.includes(item) ? picked.filter(entry => entry !== item) : [...picked, item]);
+  const setExtra = (key, next) => commit({ nextExtra: Object.fromEntries(Object.entries({ ...extra, [key]: next }).filter(([, entry]) => (typeof entry === 'object' ? entry.from || entry.to : entry))) });
+  const setDate = date => commit({ nextHired: date ? [...hired.filter(item => item.rule !== hiredRule), { rule: hiredRule, date }] : hired.filter(item => item.rule !== hiredRule) });
+  const has = cat => (valuesOf(cat) ? pickedIn(cat).length > 0 : DATE_HIRED_RULES[cat] ? hired.some(item => item.rule === DATE_HIRED_RULES[cat] && item.date) : Boolean(extra[cat]));
+  // Employee Names offers the people the filter covers, minus the ones already chosen.
   const candidates = employeeDirectory.filter(employee => coversEmployee({ ...scope, scope: 'Criteria', groups, hired, names: [] }, employee) && !names.includes(employee.code));
   // Shown everywhere as "Employee Code - Employee Name".
   const nameOf = code => { const employee = employeeDirectory.find(item => item.code === code); return employee ? `${employee.code} - ${employee.name}` : code; };
   const needle = query.trim().toLowerCase();
   const matches = candidates.filter(employee => !needle || `${employee.code} ${employee.name}`.toLowerCase().includes(needle)).slice(0, 50);
-  const setNames = next => onChange({ ...scope, scope: 'Criteria', groups, hired, names: next });
+  const setNames = next => commit({ nextNames: next });
   return <div className="earning-assignment">
-    <div className="earning-assignment-group">
-      <div className="earning-assignment-column">
-        <span className="earning-assignment-label">Employee Group<span className="required">*</span></span>
-        <div className="earning-assignment-list" role="group" aria-label="Employee group">
-          {choices.map(choice => <div key={choice} role="checkbox" aria-checked={isTicked(choice)} tabIndex={0} className={isTicked(choice) ? 'selected' : ''}
-            onClick={() => toggle(choice)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(choice); } }}>
-            <i aria-hidden="true" /> {choice}
-          </div>)}
-        </div>
+    <label className="earning-assignment-select"><span>Employee Group<span className="required">*</span></span>
+      <select value={mode} required onChange={event => commit({ nextMode: event.target.value })}>
+        <option value="">Please select</option>
+        <option value="all">All Employee Group</option>
+        <option value="filter">Filter</option>
+      </select>
+    </label>
+    {mode === 'filter' && <div className="earning-assignment-group">
+      <div className="earning-assignment-list" role="listbox" aria-label="Filter by">
+        {GROUP_CATEGORIES.map(cat => <div key={cat} role="option" aria-selected={cat === category} tabIndex={0} className={`${cat === category ? 'current' : ''}${has(cat) ? ' has-value' : ''}`}
+          onClick={() => setCategory(cat)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setCategory(cat); } }}>{cat}</div>)}
       </div>
-      {subGroups.length > 0 && <div className="earning-assignment-column">
-        <span className="earning-assignment-label">Employee SubGroup</span>
-        <div className="earning-assignment-list" role="group" aria-label="Employee subgroup">
-          {subGroups.map(choice => <div key={choice} role="checkbox" aria-checked={isTicked(choice)} tabIndex={0} className={isTicked(choice) ? 'selected' : ''}
-            onClick={() => toggle(choice)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(choice); } }}>
-            <i aria-hidden="true" /> {choice}
-          </div>)}
-        </div>
-      </div>}
-      {hired.length > 0 && <div className="earning-assignment-column earning-assignment-dates">
-        {hired.map(item => <div key={item.rule}>
-          <span className="earning-assignment-label">{ruleLabel(item.rule)}<span className="required">*</span></span>
-          <DateInput value={item.date || ''} onChange={next => setDate(item.rule, next)} />
-        </div>)}
-      </div>}
-    </div>
-    <div className="earning-assignment-names">
+      <div className="earning-assignment-values">
+        {list && <div className="earning-assignment-list checks" role="group" aria-label={`${category} values`}>
+          {[{ all: true, label: 'All' }, ...list.map(item => ({ label: item }))].map(item => {
+            const on = item.all ? list.length > 0 && picked.length === list.length : picked.includes(item.label);
+            return <label key={item.label} className={on ? 'selected' : ''}><input type="checkbox" checked={on} onChange={() => (item.all ? setPicked(category, on ? [] : [...list]) : toggle(item.label))} /> {item.label}</label>;
+          })}
+          {!list.length && <div className="empty">No values set up yet in Reference Tables.</div>}
+        </div>}
+        {hiredRule && <label>{category}<DateInput value={hiredDate} onChange={setDate} /></label>}
+        {DATE_CATEGORIES.includes(category) && <label>{category}<DateInput value={extra[category] || ''} onChange={next => setExtra(category, next)} /></label>}
+        {TEXT_CATEGORIES.includes(category) && <label>{category}<input value={extra[category] || ''} onChange={event => setExtra(category, event.target.value)} /></label>}
+        {category === 'Age' && <>
+          <label>Age From<input type="number" min="0" value={extra.Age?.from || ''} onChange={event => setExtra('Age', { ...extra.Age, from: event.target.value })} /></label>
+          <label>Age To<input type="number" min="0" value={extra.Age?.to || ''} onChange={event => setExtra('Age', { ...extra.Age, to: event.target.value })} /></label>
+        </>}
+      </div>
+    </div>}
+    {mode === 'filter' && <div className="earning-assignment-names">
       <span className="earning-assignment-label">Employee Names</span>
       <div className="earning-assignment-chips">
         {names.map(code => <span key={code} className="earning-assignment-chip">{nameOf(code)}<button type="button" onClick={() => setNames(names.filter(item => item !== code))} aria-label={`Remove ${nameOf(code)}`}>×</button></span>)}
@@ -1264,8 +1275,8 @@ function EarningAssignmentField({ value, onChange }) {
           </ul>}
         </div>
       </div>
-      <p className="field-hint">{describeScope({ ...scope, scope: 'Criteria', groups, hired, names })}. Payroll applies this earning only to the employees it covers.</p>
-    </div>
+    </div>}
+    {mode && <p className="field-hint">{describeScope({ ...scope, scope: 'Criteria', groups: mode === 'all' ? ['All Employees'] : groups, hired, extra, names })}. Payroll applies this earning only to the employees it covers.</p>}
   </div>;
 }
 
