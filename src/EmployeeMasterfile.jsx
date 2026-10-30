@@ -2,7 +2,7 @@ import { DateInput } from './DateInput.jsx';
 import { readPayrollRounding, roundTo } from './payrollRounding.js';
 import { entryProblems } from './configValidation.js';
 import { PAYROLL_SECTIONS, ROSTER_SECTIONS, basicPayPeriodProblems, basicPayUsage, masterfileRowsFromHrm, recordUsage, periodsForFrequency, masterfileRowsFromRoster, readEmployeePayrollStore, writeEmployeePayrollStore } from './employeePayrollBridge.js';
-import { employeeRoster, YTD_AS_OF } from './employeeRoster.js';
+import { currentRoster, employeeRoster, YTD_AS_OF } from './employeeRoster.js';
 import { readHrmData } from './hrmData.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -123,7 +123,7 @@ const sectionDefinitions = [
     ],
   },
   {
-    key: 'earnings', title: 'Earnings', upload: true,
+    key: 'earnings', title: 'Fixed Earnings', upload: true,
     columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
     fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'select', () => configuredNames('earnings', referenceValues('earning-types'))], ['code', 'Earning Code', 'computed'], ['amount', 'Earning Amount', 'number'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
@@ -135,7 +135,7 @@ const sectionDefinitions = [
     ],
   },
   {
-    key: 'bonuses', title: '13th Month Pay and Bonuses', upload: true,
+    key: 'bonuses', title: 'Fixed Bonuses', upload: true,
     columns: [['code', 'Bonus Code'], ['name', 'Name'], ['type', 'Type'], ['amount', 'Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
     // No Taxability: the remaining non-taxable ceiling is used first and only the excess is taxable.
     fields: [['name', 'Bonus Name', 'select', () => configuredNames('bonuses')], ['code', 'Bonus Code', 'computed'], ['type', 'Bonus Type', 'select', ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Other Bonus']], ['computationBasis', 'Computation Basis', 'select', ['Basic Pay', 'Basic Pay + Taxable Earnings', 'Eligible Earnings', 'Custom Policy Code']], ['employeeGroup', 'Eligible Employee Group'], ['hierarchyPriority', 'Bonus Hierarchy Priority', 'number'], ['releaseMonth', 'Release Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']], ['effectiveDate', 'Effectivity Date', 'date'], ['amount', 'Total Amount', 'number'], ['nonTaxableAmount', 'Non-Taxable Amount', 'computed'], ['taxableAmount', 'Taxable Amount', 'computed'], ['transactionThreshold', 'Per Transaction Non-Taxable Threshold', 'number'], ['annualThreshold', 'Annual Non-Taxable Threshold', 'number'], ['source', 'Entry Source', 'select', ['Computed', 'Manual', 'Upload']], ['remarks', 'Remarks', 'textarea']],
@@ -148,7 +148,7 @@ const sectionDefinitions = [
     rows: [{ statutoryCode: 'SSS', frequency: 'Second Half', effectiveDate: '04/30/2026', employee: '2250', employer: '4950' }],
   },
   {
-    key: 'deductions', title: 'Company Deductions', upload: false,
+    key: 'deductions', title: 'Fixed Deductions', upload: false,
     columns: [['name', 'Deduction Name'], ['amount', 'Amount of Deduction'], ['startDate', 'Start Date'], ['endDate', 'End Date'], ['count', 'Number of Deductions'], ['total', 'Total Deduction'], ['balance', 'Balance'], ['scheduledDeduction', 'Scheduled This Payroll'], ['deductionStatus', 'Status']],
     fields: [['name', 'Deduction Name', 'select', () => configuredNames('deductions', referenceValues('deduction-types'))], ['code', 'Deduction Code', 'computed'], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Payment Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Amount of Deduction', 'number'], ['effectiveDate', 'Effectivity Date', 'date'], ['startDate', 'Start Date', 'date'], ['endDate', 'End Date', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['count', 'Number of Deductions', 'number'], ['total', 'Total Deduction Amount', 'number'], ['accumulated', 'Accumulated Amount', 'computed'], ['balance', 'Total Balance', 'computed'], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [{ name: 'Cooperative Dues', amount: '500', startDate: '01/01/2026', endDate: '12/31/2026', count: '24', total: '12000', accumulated: '3000', balance: '9000' }],
@@ -507,7 +507,8 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
     if (section.key === 'basicPay') return basicPayUsage(rows, readRunsOfEmployee(employee.id));
     return ['earnings', 'bonuses', 'deductions', 'loans'].includes(section.key) ? recordUsage(section.key, rows, readRunsOfEmployee(employee.id)) : new Map();
   }, [section.key, rows, employee]);
-  const setup = useMemo(() => { const rostered = employee ? employeeRoster.find(item => item.code === employee.id) : null; return { workDays: rostered?.payroll?.factorDays, workHours: rostered?.payroll?.workHoursPerDay, paymentMode: rostered?.payroll?.paymentMode }; }, [employee]);
+  const setup = useMemo(() => { // An employee added in the Masterfile is not in the seed roster, so the current roster (which includes new hires) is read too.
+    const rostered = employee ? (employeeRoster.find(item => item.code === employee.id) || currentRoster().find(item => item.code === employee.id)) : null; return { workDays: rostered?.payroll?.factorDays, workHours: rostered?.payroll?.workHoursPerDay, paymentMode: rostered?.payroll?.paymentMode }; }, [employee]);
   const cellText = (row, key) => String(formatCell(key, row[key]) ?? '');
   const matchedRows = allRows
     .filter(row => !query.trim() || section.columns.some(([key]) => cellText(row, key).toLowerCase().includes(query.trim().toLowerCase())))
@@ -655,7 +656,7 @@ function exportEmployeeData(data, selectedKeys, format, employeeName = 'Employee
   }).join('\n\n');
   if (format === 'pdf') {
     const popup = window.open('', '_blank', 'noopener,noreferrer'); if (!popup) return false;
-    popup.document.write(`<html><head><title>Employee Payroll and Allocation</title><style>body{font-family:Arial;padding:24px;white-space:pre-wrap}h1{color:#54248f}</style></head><body><h1>${employeeName} — Payroll and Allocation</h1>${csv}<script>window.onload=()=>window.print()<\/script></body></html>`); popup.document.close(); return true;
+    popup.document.write(`<html><head><title>Employee Payroll Allocation</title><style>body{font-family:Arial;padding:24px;white-space:pre-wrap}h1{color:#54248f}</style></head><body><h1>${employeeName} — Payroll Allocation</h1>${csv}<script>window.onload=()=>window.print()<\/script></body></html>`); popup.document.close(); return true;
   }
   if (format === 'word') download(`${employeeName.toLowerCase().replace(/\s+/g, '-')}-payroll.doc`, `<html><body><pre>${csv}</pre></body></html>`, 'application/msword'); else download(`${employeeName.toLowerCase().replace(/\s+/g, '-')}-payroll.csv`, csv);
   return true;
@@ -820,7 +821,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const payrollContext = ytdContextOf(employee);
   const runExport = (keys, format) => { if (exportEmployeeData(Object.fromEntries(sectionDefinitions.map(section => [section.key, rowsFor(employee, section)])), keys, format, employee.name)) notify({ type: 'success', message: 'Employee payroll export prepared.' }); setCustomExport(false); setExportMenu(false); };
   const selectEmployee = item => { setEmployeeId(item.id); setActiveTab('Personal Details'); setDetailOpen(true); };
-  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll & Allocation', 'Contacts', 'Leaves', 'Documents', 'Custom Fields'];
+  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll Allocation', 'Contacts', 'Leaves', 'Documents', 'Custom Fields'];
 
   return <div className="app-shell employee-screen">
     <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
@@ -840,7 +841,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Leaves' && <Leaves employee={employee} notify={notify} />}
         {activeTab === 'Documents' && <Documents employee={employee} notify={notify} />}
         {activeTab === 'Custom Fields' && <CustomFields employee={employee} notify={notify} fieldNames={referenceValues('custom-fields')} />}
-        {activeTab === 'Payroll & Allocation' && <>
+        {activeTab === 'Payroll Allocation' && <>
           <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}

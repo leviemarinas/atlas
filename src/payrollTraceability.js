@@ -22,7 +22,7 @@ export const PAYROLL_UI_PATHS = Object.freeze({
   policy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines'),
   takeHome: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Minimum Take-Home Pay'),
   deductionHierarchy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Deduction and Loan Hierarchy'),
-  basicPayConfig: path('Core', 'Employee Masterfile', 'Payroll & Allocation', 'Basic Pay'),
+  basicPayConfig: path('Core', 'Employee Masterfile', 'Payroll Allocation', 'Basic Pay'),
   salaryBasic: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Basic Pay'),
   salaryEarnings: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Earnings'),
   salaryStatutory: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Statutory Deductions'),

@@ -36,7 +36,7 @@ function connectedFlow({ id, workbook, testCase, title, section, entry, data, ex
   return scenario(id, 'client_admin', 'Masterfile to payroll', `${workbook}: ${title}`,
     `add ${entry} for ${CONNECTED_FLOW_EMPLOYEE} in the Employee Masterfile and run it through a payroll`,
     `the payroll line shows the figures expected by ${workbook} ${testCase}`, [
-      step('Core', `Open Ethan Collins' ${section}`, `Go to Employee Masterfile › ${CONNECTED_FLOW_EMPLOYEE} › Payroll & Allocation › ${section}.`),
+      step('Core', `Open Ethan Collins' ${section}`, `Go to Employee Masterfile › ${CONNECTED_FLOW_EMPLOYEE} › Payroll Allocation › ${section}.`),
       step(section, `Add the ${entry} entry`, `Select Add entry. Test data: ${data}.`),
       step(section, 'Save the entry', 'Select Add. The entry is listed in the section.', 'Entry saved'),
       step('Payroll', 'Open Payroll Processing', 'Go to Payroll › Payroll Processing.'),
@@ -322,14 +322,14 @@ export const SCENARIOS = [
   }),
   connectedFlow({
     id: 'tc-earning', workbook: 'Earning Setup', testCase: 'TC-002', title: 'A taxable monthly earning',
-    section: 'Earnings', entry: 'earning',
+    section: 'Fixed Earnings', entry: 'earning',
     data: 'Housing Allowance, Earning Amount 2,000.00, Frequency Monthly, Taxable, Effectivity Date 01/01/2025',
     expected: 'Housing Allowance 1,000.00 on the line · Gross 32,057.01 · Taxable income 30,307.01 · Withholding tax 3,665.57 · Net pay 21,278.22',
     tags: ['earning', 'allowance'],
   }),
   connectedFlow({
     id: 'tc-deduction', workbook: 'Deduction Setup', testCase: 'TC-001', title: '10 deductions of 500.00, none paid',
-    section: 'Company Deductions', entry: 'company deduction',
+    section: 'Fixed Deductions', entry: 'company deduction',
     data: 'Cooperative Dues, Amount of Deduction 500.00, Number of Deductions 10, Accumulated Amount 0.00',
     expected: 'Cooperative Dues collected 500.00 (balance after 4,500.00) · Net pay 23,908.22',
     tags: ['deduction'],
@@ -343,7 +343,7 @@ export const SCENARIOS = [
   }),
   connectedFlow({
     id: 'tc-bonus', workbook: 'Bonus Setup', testCase: 'TC-001', title: 'A performance bonus of 20,000.00',
-    section: '13th Month Pay and Bonuses', entry: 'bonus',
+    section: 'Fixed Bonuses', entry: 'bonus',
     data: 'Performance Bonus, Total Amount 20,000.00. 13th month and bonus are on, with a 90,000.00 ceiling',
     expected: 'Performance Bonus 20,000.00 (non-taxable 20,000.00, taxable 0.00) · Taxable income 30,407.01 · Net pay 43,608.22',
     tags: ['bonus', '13th month'],

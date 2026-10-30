@@ -111,7 +111,7 @@ export function stepPlanFor(scenario) {
  * `data-section` key; the module switch to Payroll goes through the rail
  * because only the first step navigates.
  */
-const connectedFlowPlan = (section, fields) => planWith('Core', ['Employee Masterfile', '0000112345', 'Payroll & Allocation'], {
+const connectedFlowPlan = (section, fields) => planWith('Core', ['Employee Masterfile', '0000112345', 'Payroll Allocation'], {
   1: { kind: 'form', targets: [`css:[data-section="${section}"] .employee-section-actions button`], fields, narration: 'Opening Add entry in the employee’s own Masterfile section and typing the test data.' },
   2: { kind: 'commit', targets: ['Add'], narration: 'Reaching the Add button that saves the entry.' },
   3: { kind: 'open', targets: ['css:.brand-rail button[aria-label="Payroll"]'], after: ['Payroll Processing'], narration: 'Switching to Payroll and opening Payroll Processing.' },

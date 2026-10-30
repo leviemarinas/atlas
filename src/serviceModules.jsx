@@ -32,6 +32,7 @@ import { referenceValues } from './ReferenceTables';
 import { seedVersion } from './statutorySchedules.js';
 import { rejectUpload } from './uploadErrorLog.js';
 import { DateInput } from './DateInput.jsx';
+import { formatUsDate } from './textFormat.js';
 import {
   SCOPE_KINDS,
   coveredEmployees,
@@ -39,6 +40,8 @@ import {
   describeScope,
   employeeDirectory,
   employeeGroups,
+  DATE_HIRED_RULES,
+  coversEmployee,
   normalizeScope,
   scopeFromLegacyFields,
   seedScope,
@@ -146,9 +149,16 @@ const DATE_SET_DEFAULTS = Object.freeze({ effectivityDate: '2026-01-01', startDa
 
 // Taxability decides the classifications on offer: a non-taxable earning is a receivable, De Minimis or other non-taxable.
 const EARNING_CLASSIFICATIONS = Object.freeze({
-  Taxable: ['Regular Earning', 'Retirement', 'Fringe Benefit'],
+  // Variable earnings are treated as part of basic pay (Earning Classification slide).
+  Taxable: ['Regular Earning', 'Variable', 'Retirement', 'Fringe Benefit'],
   'Non-taxable': ['Receivable', 'De Minimis', 'Other Non-taxable'],
 });
+
+// The bases an earning can compute from, as the Earning Setup slides list them. "Amount" is a fixed amount.
+const COMPUTATION_BASES = Object.freeze([
+  'Current Basic Pay', 'Previous Basic Pay',
+  'Current Taxable Variable Allowance per EE 201 Setup', 'Previous Taxable Variable Allowance per EE 201 Setup', 'Amount',
+]);
 
 // De Minimis benefits and their ceilings come from the statutory De Minimis table, never from a number typed on the earning.
 const deMinimisBenefits = () => seedVersion('deMinimis', 2026, 1, true).rows;
@@ -169,45 +179,54 @@ const baseModuleDefinitions = {
     table: [
       ['code', 'Earning Code'], ['name', 'Earning Name'], ['type', 'Earning Type'], ['applicability', 'Applies To'], ['status', 'Status'],
     ],
+    // Three steps: details, setup and accounting. Payment mode, frequency and the effectivity dates are not asked for
+    // here; a new earning takes the defaults below (Semi-monthly, Every Payroll, in effect from 01/01/2026).
     steps: [
       {
         title: 'Earning Details', fields: [
           { key: 'code', label: 'Earning Code', required: true, half: true },
           { key: 'name', label: 'Earning Name', required: true, half: true },
-          { key: 'type', label: 'Earning Type', type: 'select', options: ['Normal', 'Basic Pay Adjustment', 'Allowance', 'Special Privilege Leave', 'Undertime', 'Late', 'Reimbursement'], required: true },
-          { key: 'applicability', label: 'Applies to', type: 'applicability' },
-          ...scheduleFields(),
-          ...dateSetFields(),
+          { key: 'type', label: 'Earning Type', type: 'select', options: () => referenceValues('earning-config-types'), required: true },
+          { key: 'applicability', label: 'Applies to', type: 'applicability', variant: 'earning', hideLabel: true },
           { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+          // Stamped with today when the earning is created and never editable.
+          { key: 'dateCreated', label: 'Date Created', type: 'readonly', show: draft => (draft.dateCreated ? formatUsDate(draft.dateCreated) : '—'), half: true },
+          { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
         ],
       },
       {
         title: 'Earning Setup', fields: [
-          { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true, half: true },
+          { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true },
+          // A capped earning stops being applied once the employee has received this much.
+          { key: 'cappedAmount', label: 'Cap Amount', type: 'number', required: true, visible: draft => draft.cappedEarning === 'Yes' },
           { key: 'adjustIfAbsent', label: 'Adjust If Absent?', type: 'boolean', required: true, half: true },
           // Adjust If Absent opens the absence rules.
-          { key: 'adjustmentEarning', label: 'Adjustment Earning', type: 'multiselect', options: (draft, { companyId } = {}) => readServiceConfiguration('earnings', companyId).map(item => item.name).filter(name => name && name !== draft.name), visible: draft => draft.adjustIfAbsent === 'Yes' },
-          { key: 'minimumAbsent', label: 'Minimum Number of Absent', type: 'number', half: true, visible: draft => draft.adjustIfAbsent === 'Yes' },
-          { key: 'autoCompute', label: 'Auto-compute?', type: 'boolean', required: true, half: true },
-          { key: 'defaultAmount', label: 'Default Amount', type: 'number', half: true },
-          // Auto-compute opens the basis it computes from and the unit it counts in.
-          { key: 'computationBasis', label: 'Computation Basis', type: 'select', options: ['Current Basic Pay', 'Previous Basic Pay', 'Taxable Earning / Variable Allowance (per EE 201 setup)'], required: true, half: true, visible: draft => draft.autoCompute === 'Yes' },
-          { key: 'unit', label: 'Unit', type: 'select', options: ['in Minutes', 'in Hours', 'in Days', 'Fixed Amount'], half: true, visible: draft => draft.autoCompute === 'Yes' },
-          { key: 'variableAllowance', label: 'Variable Allowance', type: 'select', options: ['Variable Allowance 1', 'Variable Allowance 2', 'Not applicable'], half: true },
+          // Per the Earning Setup slides these are enabled only when their switch is Yes; otherwise they stay on screen, greyed out.
+          { key: 'adjustmentEarning', label: 'Adjustment Earning', type: 'multiselect', variant: 'chips', options: (draft, { companyId } = {}) => [...new Set(readServiceConfiguration('earnings', companyId).filter(item => (item.status || 'Active') === 'Active' && item.id !== draft.id && item.name !== draft.name).map(item => item.name).filter(Boolean))], required: true, half: true, enabled: draft => draft.adjustIfAbsent === 'Yes' },
+          { key: 'minimumAbsent', label: 'Minimum Number of Absent', type: 'number', required: true, half: true, enabled: draft => draft.adjustIfAbsent === 'Yes' },
+          { key: 'autoCompute', label: 'Auto-compute?', type: 'boolean', required: true },
+          // Auto-compute enables the basis it computes from; the unit and its number, or a fixed amount, follow from the basis.
+          { key: 'computationBasis', label: 'Computation Basis', type: 'select', options: COMPUTATION_BASES, required: true, half: true, enabled: draft => draft.autoCompute === 'Yes' },
+          { key: 'variableAllowance', label: 'Variable Allowance', type: 'select', options: ['Variable Allowance 1', 'Variable Allowance 2', 'Not applicable'], required: true, half: true, enabled: draft => draft.autoCompute === 'Yes' && /Variable Allowance/.test(draft.computationBasis || '') },
           { key: 'negativeComputation', label: 'Negative Computation?', type: 'boolean', half: true },
-          // Which earning a "specific earning" Gross Up applies to. The Gross Up policy decides how and for whom.
-          { key: 'grossUp', label: 'Gross up this earning?', type: 'boolean', half: true },
-          { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true, half: true },
-          { key: 'classification', label: 'Earning Classification', type: 'select', options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, half: true },
-          { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, half: true, visible: draft => draft.taxability === 'Taxable' || ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
+          { key: 'unit', label: 'Unit', type: 'select', options: ['Daily', 'Hourly', 'Per Minute'], half: true, enabled: draft => draft.autoCompute === 'Yes' && draft.computationBasis !== 'Amount' },
+          // Daily, Hourly and Per Minute count a number the company enters: 2 days, 5 hours or 30 minutes of the basis rate.
+          { key: 'unitQuantity', label: 'Number of Days / Hours / Minutes', type: 'number', placeholder: 'e.g. 2 days, 5 hours or 30 minutes', half: true, enabled: draft => draft.autoCompute === 'Yes' && draft.computationBasis !== 'Amount' },
+          { key: 'defaultAmount', label: 'Amount', type: 'number', half: true, visible: draft => draft.autoCompute === 'Yes' && draft.computationBasis === 'Amount' },
+          { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
+          { key: 'classification', label: 'Earning Classification', type: 'select', options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true },
+          { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, visible: draft => ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
           { key: 'deMinimisBenefit', label: 'De Minimis Benefit', type: 'select', options: () => deMinimisBenefits().map(row => row.benefitName), required: true, half: true, visible: draft => draft.classification === 'De Minimis' },
-          { key: 'deMinimisThreshold', label: 'Applicable Threshold', type: 'readonly', show: draft => (deMinimisRule(draft) ? pesos(deMinimisRule(draft).ceiling) : 'Pick a benefit'), half: true, visible: draft => draft.classification === 'De Minimis' },
+          { key: 'deMinimisThreshold', label: 'De Minimis Threshold', type: 'readonly', show: draft => (deMinimisRule(draft) ? pesos(deMinimisRule(draft).ceiling) : 'Pick a benefit'), half: true, visible: draft => draft.classification === 'De Minimis' },
           { key: 'deMinimisBasis', label: 'Threshold Basis', type: 'readonly', show: draft => deMinimisRule(draft)?.frequency || '—', half: true, visible: draft => draft.classification === 'De Minimis' },
           { key: 'deMinimisEffective', label: 'Threshold Effective Date', type: 'readonly', show: () => '01/01/2026', half: true, visible: draft => draft.classification === 'De Minimis' },
-          { key: 'workDays', label: 'Work Days', type: 'number', half: true },
+          // Optional override of the yearly factor (workdays a year). It only matters when the earning computes from a daily, hourly or per-minute rate, which is the yearly factor's job.
+          { key: 'workDays', label: 'Work Days', type: 'number', placeholder: 'Optional — overrides the yearly factor, e.g. 261', enabled: draft => draft.autoCompute === 'Yes' && draft.computationBasis !== 'Amount' },
+          // Which earning a "specific earning" Gross Up applies to. The Gross Up policy decides how and for whom.
+          { key: 'grossUp', label: 'Gross up this earning?', type: 'boolean', required: true },
           // Reclassification: whether this earning may move between taxable and non-taxable,
           // which way, in what order against the others, and how much of it may move.
-          { key: 'eligibleForReclassification', label: 'Eligible for reclassification?', type: 'boolean', required: true, half: true },
+          { key: 'eligibleForReclassification', label: 'Eligible for reclassification?', type: 'boolean', required: true },
           { key: 'reclassDirection', label: 'Reclassification direction', type: 'select', options: ['Taxable to non-taxable', 'Non-taxable to taxable'], half: true, visible: draft => draft.eligibleForReclassification === 'Yes' },
           { key: 'reclassPriority', label: 'Reclassification hierarchy (1 = first)', type: 'number', half: true, visible: draft => draft.eligibleForReclassification === 'Yes' },
           { key: 'reclassCapBasis', label: 'How much may be reclassified', type: 'select', options: ['No limit', 'Amount per payroll', 'Percent of the earning'], half: true, visible: draft => draft.eligibleForReclassification === 'Yes' },
@@ -216,16 +235,23 @@ const baseModuleDefinitions = {
       },
       {
         title: 'Accounting Setup', fields: [
-          { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'] },
-          { key: 'glName', label: 'GL Name', type: 'select', options: ['General Ledger Name 1', 'Payroll Expense', 'Employee Benefits'] },
-          { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Account Name', 'Salaries and Wages', 'Allowances'] },
+          { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'], required: true },
+          { key: 'glName', label: 'GL Name', type: 'select', options: ['General Ledger Name 1', 'Payroll Expense', 'Employee Benefits'], required: true },
+          { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Account Name', 'Salaries and Wages', 'Allowances'], required: true },
         ],
       },
     ],
     /** Hierarchy and limit are refused here, at the screen, rather than discovered at payroll. */
     validate: (draft, { companyId } = {}) => {
-      if (draft.eligibleForReclassification !== 'Yes') return [];
       const problems = [];
+      const assigned = normalizeScope(draft.applicability);
+      if (assigned.scope === 'Date Hired' && !assigned.dateHired) problems.push('Pick the Date Hired this earning applies from.');
+      if (assigned.scope === 'Criteria') {
+        if (!(assigned.groups || []).length && !(assigned.hired || []).length) problems.push('Select at least one Employee Group.');
+        else if ((assigned.hired || []).some(item => !item.date)) problems.push('Enter a date for each Date Hired rule that is ticked.');
+      }
+      if (draft.cappedEarning === 'Yes' && !(Number(draft.cappedAmount) > 0)) problems.push('Enter the Cap Amount — the most an employee can receive, greater than zero.');
+      if (draft.eligibleForReclassification !== 'Yes') return problems;
       const rank = Number(draft.reclassPriority);
       if (!Number.isInteger(rank) || rank < 1) problems.push('Give the reclassification hierarchy a whole number from 1 (first) upward.');
       else {
@@ -242,7 +268,7 @@ const baseModuleDefinitions = {
     // A taxability change keeps only a classification that taxability still allows.
     derive: (draft, key) => (key === 'taxability' && !(EARNING_CLASSIFICATIONS[draft.taxability] || []).includes(draft.classification)
       ? { classification: EARNING_CLASSIFICATIONS[draft.taxability]?.[0] || '' } : null),
-    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'No', grossUp: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'in Minutes', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '261', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
+    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', cappedAmount: '0', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'No', grossUp: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'Daily', unitQuantity: '1', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance', { defaultAmount: '1500' }], ['47218662', 'Night Differential', 'Normal'],
       // Tagged for retirement so the Retirement engine can resolve its salary
@@ -526,7 +552,7 @@ const moduleDefinitions = Object.fromEntries(
  * it lives in this one list rather than in each screen.
  */
 export const PA_OWNED_CONFIGURATION_FIELDS = Object.freeze({
-  earnings: ['type', 'cappedEarning', 'adjustIfAbsent', 'adjustmentEarning', 'autoCompute', 'computationBasis', 'variableAllowance', 'unit', 'negativeComputation', 'taxability', 'classification', 'includedInRate', 'eligibleForReclassification', 'reclassDirection'],
+  earnings: ['type', 'cappedEarning', 'cappedAmount', 'adjustIfAbsent', 'adjustmentEarning', 'autoCompute', 'computationBasis', 'variableAllowance', 'unit', 'unitQuantity', 'negativeComputation', 'taxability', 'classification', 'includedInRate', 'eligibleForReclassification', 'reclassDirection'],
   bonuses: ['type', 'thresholdSplitting'],
   deductions: ['type', 'basis', 'partOfNetPay', 'tax', 'takeHomeTreatment', 'hierarchyPriority'],
   loans: ['type', 'balanceHandling', 'hierarchyPriority'],
@@ -722,21 +748,24 @@ function exportRecords(def, records, format, library = []) {
   return true;
 }
 
-export function ServicesHub({ onOpen, companyName = 'ABC Company Ltd' }) {
+export function ServicesHub({ onOpen, companyName = 'ABC Company Ltd', hostedCards = {}, onOpenCard, embedded = false }) {
   const [tab, setTab] = useState('HRM');
-  const items = serviceTabs[tab];
+  // Cards a host screen owns (Benefits, Leave, Time and Attendance, Overtime setup) join their tab and open through the host.
+  const cardsOf = name => [...serviceTabs[name], ...(hostedCards[name] || []).map(card => ({ ...card, hosted: true }))];
+  const items = cardsOf(tab);
   return (
     <div className="page-content services-hub">
       <div className="page-heading">
-        <div><p className="breadcrumb">Company Info / Services Information</p><h1>Services Information</h1><p className="page-description">Configure HRM, Timekeeping, and Payroll services for {companyName}. Each policy remains effective-dated and owned by its module.</p></div>
+        {/* Embedded in Services Information, the page already carries the title and trail; only the description is added. */}
+        <div>{!embedded && <><p className="breadcrumb">Company Info / Services Information</p><h1>Services Information</h1></>}<p className="page-description">Configure HRM, Timekeeping, and Payroll services for {companyName}. Each policy remains effective-dated and owned by its module.</p></div>
       </div>
       <div className="tabs service-tabs" role="tablist" aria-label="Service modules">
-        {Object.keys(serviceTabs).map(name => <button type="button" role="tab" aria-selected={tab === name} key={name} className={tab === name ? 'active' : ''} onClick={() => setTab(name)}>{name}<span>{serviceTabs[name].length}</span></button>)}
+        {Object.keys(serviceTabs).map(name => <button type="button" role="tab" aria-selected={tab === name} key={name} className={tab === name ? 'active' : ''} onClick={() => setTab(name)}>{name}<span>{cardsOf(name).length}</span></button>)}
       </div>
       <section className="service-grid" aria-label={`${tab} service configuration`}>
         {items.map((item, index) => {
           return (
-            <button key={item.key} className="service-card" onClick={() => onOpen(item.key)}>
+            <button key={item.hosted ? `hosted-${item.key}` : item.key} className="service-card" onClick={() => (item.hosted ? onOpenCard?.(item.key) : onOpen(item.key))}>
               <span className="service-number">{String(index + 1).padStart(2, '0')}</span>
               <div><h2>{item.short}</h2><p>{item.detail}</p></div>
               <ArrowRight />
@@ -1119,6 +1148,81 @@ function FrequencyField({ paymentMode, value, onChange }) {
   </div>;
 }
 
+/**
+ * Earning Configuration's assignment, laid out as the approved screen and the Assignment Rules slide:
+ * the Employee Group list (several groups and hire-date rules can be ticked together), a date for each
+ * hire-date rule beside it, then Employee Names to narrow the earning to specific people.
+ * It reads and writes the same applicability scope every other configuration uses.
+ */
+function EarningAssignmentField({ value, onChange }) {
+  const scope = normalizeScope(value);
+  const [pick, setPick] = useState('');
+  const choices = [...employeeGroups, ...Object.keys(DATE_HIRED_RULES)];
+  // What is ticked today, whichever way an older record stored it.
+  const groups = scope.scope === 'Criteria' ? (scope.groups || []) : scope.scope === 'Employee Group' ? [scope.group] : scope.scope === 'Date Hired' ? [] : ['All Employees'];
+  const hired = scope.scope === 'Criteria' ? (scope.hired || []) : scope.scope === 'Date Hired' ? [{ rule: scope.hiredRule, date: scope.dateHired || '' }] : [];
+  const names = scope.names || [];
+  const ruleLabel = rule => Object.keys(DATE_HIRED_RULES).find(key => DATE_HIRED_RULES[key] === rule) || 'Date Hired';
+  const isTicked = choice => (DATE_HIRED_RULES[choice] ? hired.some(item => item.rule === DATE_HIRED_RULES[choice]) : groups.includes(choice));
+  const save = (nextGroups, nextHired) => onChange({ ...scope, scope: 'Criteria', groups: nextGroups, hired: nextHired, names: [] });
+  const toggle = choice => {
+    const rule = DATE_HIRED_RULES[choice];
+    if (rule) return save(groups.filter(item => item !== 'All Employees'), isTicked(choice) ? hired.filter(item => item.rule !== rule) : [...hired, { rule, date: '' }]);
+    if (choice === 'All Employees') return save(isTicked(choice) ? [] : ['All Employees'], isTicked(choice) ? hired : []);
+    const others = groups.filter(item => item !== 'All Employees');
+    return save(isTicked(choice) ? others.filter(item => item !== choice) : [...others, choice], hired);
+  };
+  const setDate = (rule, date) => onChange({ ...scope, scope: 'Criteria', groups, hired: hired.map(item => (item.rule === rule ? { ...item, date } : item)) });
+  // Employee Names offers the people the ticked groups cover, minus the ones already chosen.
+  const candidates = employeeDirectory.filter(employee => coversEmployee({ ...scope, scope: 'Criteria', groups, hired, names: [] }, employee) && !names.includes(employee.code));
+  const nameOf = code => employeeDirectory.find(employee => employee.code === code)?.name || code;
+  const setNames = next => onChange({ ...scope, scope: 'Criteria', groups, hired, names: next });
+  return <div className="earning-assignment">
+    <div className="earning-assignment-group">
+      <div className="earning-assignment-column">
+        <span className="earning-assignment-label">Employee Group<span className="required">*</span></span>
+        <div className="earning-assignment-list" role="group" aria-label="Employee group">
+          {choices.map(choice => <div key={choice} role="checkbox" aria-checked={isTicked(choice)} tabIndex={0} className={isTicked(choice) ? 'selected' : ''}
+            onClick={() => toggle(choice)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(choice); } }}>
+            <i aria-hidden="true" /> {choice}
+          </div>)}
+        </div>
+      </div>
+      {hired.length > 0 && <div className="earning-assignment-column earning-assignment-dates">
+        {hired.map(item => <div key={item.rule}>
+          <span className="earning-assignment-label">{ruleLabel(item.rule)}<span className="required">*</span></span>
+          <DateInput value={item.date || ''} onChange={next => setDate(item.rule, next)} />
+        </div>)}
+      </div>}
+    </div>
+    <div className="earning-assignment-names">
+      <span className="earning-assignment-label">Employee Names</span>
+      <div className="earning-assignment-chips">
+        {names.map(code => <span key={code} className="earning-assignment-chip">{nameOf(code)}<button type="button" onClick={() => setNames(names.filter(item => item !== code))} aria-label={`Remove ${nameOf(code)}`}>×</button></span>)}
+        <select value={pick} aria-label="Add employee name" onChange={event => { if (event.target.value) setNames([...names, event.target.value]); setPick(''); }}>
+          <option value="">{names.length ? 'Add another…' : 'All covered employees — pick to limit'}</option>
+          {candidates.map(employee => <option key={employee.code} value={employee.code}>{employee.name}</option>)}
+        </select>
+      </div>
+      <p className="field-hint">{describeScope({ ...scope, scope: 'Criteria', groups, hired, names })}. Payroll applies this earning only to the employees it covers.</p>
+    </div>
+  </div>;
+}
+
+/** Several picks shown as removable chips, with a list to add from (the approved Adjustment Earning field). */
+function ChipMultiSelect({ options, value, onChange }) {
+  const picked = String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+  const save = next => onChange(next.join(', '));
+  const remaining = options.filter(option => !picked.includes(option));
+  return <div className="earning-assignment-chips">
+    {picked.map(name => <span key={name} className="earning-assignment-chip">{name}<button type="button" onClick={() => save(picked.filter(item => item !== name))} aria-label={`Remove ${name}`}>×</button></span>)}
+    <select value="" aria-label="Add earning" onChange={event => { if (event.target.value) save([...picked, event.target.value]); }}>
+      <option value="">{!options.length ? 'No other earnings yet' : picked.length ? 'Add another…' : 'Please select'}</option>
+      {remaining.map(option => <option key={option} value={option}>{option}</option>)}
+    </select>
+  </div>;
+}
+
 function MultiSelectField({ options, value, onChange }) {
   const picked = String(value || '').split(',').map(item => item.trim()).filter(Boolean);
   if (!options.length) return <div className="frequency-single">Nothing to select yet</div>;
@@ -1132,11 +1236,13 @@ function MultiSelectField({ options, value, onChange }) {
 }
 
 function Field({ field, value, onChange, draft, def, catalog, companyId }) {
+  if (field.type === 'applicability' && field.variant === 'earning') return <EarningAssignmentField value={value} onChange={onChange} />;
   const common = { value: value ?? '', onChange: event => onChange(event.target.value), required: field.required };
   // Options may depend on the rest of the record; a stored value stays selectable.
   const listed = typeof field.options === 'function' ? field.options(draft, { companyId }) : (field.options || []);
   const options = field.type === 'select' && value && !listed.includes(value) ? [...listed, value] : listed;
   if (field.type === 'frequency') return <FrequencyField paymentMode={draft.paymentMode} value={value} onChange={onChange} />;
+  if (field.type === 'multiselect' && field.variant === 'chips') return <ChipMultiSelect options={options} value={value} onChange={onChange} />;
   if (field.type === 'multiselect') return <MultiSelectField options={options} value={value} onChange={onChange} />;
   if (field.type === 'applicability') return <ApplicabilityField value={value} onChange={onChange} />;
   if (field.type === 'readonly') return <div className="locked-value">{field.show(draft)}</div>;
@@ -1159,7 +1265,9 @@ function Field({ field, value, onChange, draft, def, catalog, companyId }) {
  */
 function ConfigurationForm({ def, moduleKey, record, companyId, clientView = false, onClose, onSave }) {
   const [draft, setDraft] = useState(() => {
-    const initial = { ...def.defaults, ...record };
+    // A new item that carries a Date Created is stamped with today; an existing one keeps the date it was created on.
+    const stamped = !record?.id && def.steps.some(step => step.fields.some(field => field.key === 'dateCreated')) ? { dateCreated: localToday() } : {};
+    const initial = { ...def.defaults, ...stamped, ...record };
     return usesSchedule(def) ? migrateSchedule(initial) : initial;
   });
   const [step, setStep] = useState(0);
@@ -1223,14 +1331,16 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
               {current.fields.filter(field => !field.visible || field.visible(draft)).map(field => {
                 const fieldLocked = locked(field.key);
                 const bindingField = field.type === 'computation' || field.type === 'bindings';
-                return <label key={field.key} className={field.half ? 'half' : field.type === 'bindings' ? 'full' : ''}>{field.label}{field.required && !fieldLocked && <span className="required">*</span>}{fieldLocked && !bindingField && <span className="pa-owned-tag"><Lock weight="bold" /> Set by P&amp;A</span>}
+                return <label key={field.key} className={field.half ? 'half' : field.type === 'bindings' ? 'full' : ''}>{!field.hideLabel && field.label}{field.required && !fieldLocked && !field.hideLabel && <span className="required">*</span>}{fieldLocked && !bindingField && <span className="pa-owned-tag"><Lock weight="bold" /> Set by P&amp;A</span>}
                   {clientView && field.type === 'computation'
                     ? <ComputationSummary value={draft.computationCode} catalog={catalog} />
                     : clientView && field.type === 'bindings'
                       ? <ParameterValuesField value={draft.computationBindings} onChange={value => update('computationBindings', value)} draft={draft} def={def} catalog={catalog} />
                       : fieldLocked
                         ? <div className="locked-value">{field.type === 'applicability' ? describeScope(draft.applicability) : String(draft[field.key] ?? '') || '—'}</div>
-                        : <Field field={field} value={draft[field.key]} onChange={value => update(field.key, value)} draft={draft} def={def} catalog={catalog} companyId={companyId} />}
+                        : field.enabled
+                          ? <fieldset className={`field-switch${field.enabled(draft) ? '' : ' off'}`} disabled={!field.enabled(draft)}><Field field={field} value={draft[field.key]} onChange={value => update(field.key, value)} draft={draft} def={def} catalog={catalog} companyId={companyId} /></fieldset>
+                          : <Field field={field} value={draft[field.key]} onChange={value => update(field.key, value)} draft={draft} def={def} catalog={catalog} companyId={companyId} />}
                 </label>;
               })}
             </div>

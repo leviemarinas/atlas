@@ -22,7 +22,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowClockwise, ArrowLeft, LockKey, Warning } from '@phosphor-icons/react';
+import { readScoped } from './atlasCore/AtlasTable.jsx';
+import { ArrowClockwise, ArrowLeft, LockKey, Warning, X } from '@phosphor-icons/react';
 import {
   DangerButton,
   DataTable,
@@ -1923,8 +1924,33 @@ function RemarksModal({ action, onClose, onConfirm }) {
  * `OperationalWorkspaces` already imports this component to register it — taking
  * the reader as a prop keeps the dependency pointing one way.
  */
+/**
+ * The employees whose De Minimis benefit went past its ceiling in a computed run. The engine already
+ * reclassifies the excess as taxable (RCL-001); this is what the screen tells the user about it.
+ */
+function deMinimisCeilingHits(run) {
+  return (run?.result?.lines || []).flatMap(line => (line.steps || [])
+    .filter(step => step.code === 'RCL-001' && /De Minimis/.test(step.source || ''))
+    .map(step => ({
+      transaction: run.transactionNumber, code: line.employeeCode, name: line.name,
+      benefit: String(step.detail || '').replace(/ above ceiling reclassified as taxable$/, ''),
+      ceiling: Number(step.inputs?.de_minimis_ceiling) || 0, over: Number(step.amount) || 0,
+    })));
+}
+
 export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack, notify, readRegister = () => [] }) {
   const { role, actor, isPaAdmin } = useRole();
+  // De Minimis ceiling prompt: shown when a computation puts employees over a ceiling (Earning Setup slide).
+  const [ceilingNotice, setCeilingNotice] = useState(null);
+  const ceilingSeen = useRef({});
+  const noticeCeiling = run => {
+    const hits = deMinimisCeilingHits(run);
+    const signature = hits.map(hit => `${hit.code}:${hit.benefit}:${hit.over}`).join('|');
+    if (ceilingSeen.current[run.id] === signature) return;
+    ceilingSeen.current[run.id] = signature;
+    if (!hits.length) return;
+    setCeilingNotice(previous => ({ rows: [...(previous?.rows || []).filter(row => row.transaction !== run.transactionNumber), ...hits] }));
+  };
   const companyId = scopedCompanyId || readActiveCompanyId();
   const company = readActiveCompany();
   const { toasts, push, dismiss } = useToasts();
@@ -2004,7 +2030,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
 
   const toast = (message, tone = 'ok') => { push(message, tone); notify?.({ type: tone === 'ok' ? 'success' : 'error', message }); };
 
-  const commit = next => { setRuns(savePayrollRun(companyId, next).slice()); return next; };
+  const commit = next => { setRuns(savePayrollRun(companyId, next).slice()); noticeCeiling(next); return next; };
   const publishTakeHomeWarnings = run => minimumTakeHomeNotifications({ run, result: run.result, rules: readNotificationRules(companyId) }).forEach(event => publishNotificationEvent({ eventKey: notificationEventKeys.MinimumTakeHomePayRisk, companyId, actor: 'Payroll Engine', ...event }));
 
   const handleAction = (run, actionKey, remarks = '') => {
@@ -2057,7 +2083,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
       if (current && capabilitiesOf(current).recalculate) {
         const outcome = applyAction(current, 'recalculate', { actor: by, runs: readPayrollRuns(companyId), isPaAdmin, context: contextFor(current) });
         if (outcome.error) failed += 1;
-        else { savePayrollRun(companyId, outcome.run); employees += outcome.run.result?.lines.length || 0; }
+        else { savePayrollRun(companyId, outcome.run); noticeCeiling(outcome.run); employees += outcome.run.result?.lines.length || 0; }
       }
       setBulk({ auto, done: index + 1, total: targets.length, employees, current: targets[index + 1]?.transactionNumber || '' });
     }
@@ -2106,7 +2132,9 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     const ecolaTreatment = controls.find(item => item.ecolaTreatment)?.ecolaTreatment || 'Part of Basic Pay';
     // Company defaults for the rate divisors; the employee's pay record and shift still win.
     const conversionWindow = draft.config.leaveConversion.enabled ? leaveConversionWindow(draft.config.leaveConversion, readServiceConfiguration('leaveBenefits', companyId)) : null;
-    const workDaysPerYear = Number(controls.find(item => Number(item.factorDays) > 0)?.factorDays) || draft.config.workDaysPerYear;
+    // Work days a year come from Timekeeping (Time and Attendance Setup ▸ Work Days Per Year) unless Payroll Controls sets its own.
+    const timekeepingWorkDays = Number((readScoped('atlas-core-si-work-days-v1', [], companyId) || [])[0]?.perYear) || 0;
+    const workDaysPerYear = Number(controls.find(item => Number(item.factorDays) > 0)?.factorDays) || timekeepingWorkDays || draft.config.workDaysPerYear;
     const workHoursPerDay = Number(controls.find(item => Number(item.workHoursPerDay) > 0)?.workHoursPerDay) || draft.config.workHoursPerDay;
     const bonusCeilingOrder = referenceRows('bonus-ceiling-order').sort((left, right) => Number(left.priority) - Number(right.priority)).map(row => row.name);
     const funds = controls.filter(item => item.type === 'Provident / Pension Fund').map(item => ({ code: item.code, name: item.name, fundType: item.fundType || 'Provident Fund', basis: item.fundBasis || 'Basic Pay', employeeRate: item.employeeRate || 0, employerRate: item.employerRate || 0 }));
@@ -2207,6 +2235,19 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
   };
 
   return <div className="page-content payroll-processing">
+    {ceilingNotice && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCeilingNotice(null); }}>
+      <section className="modal" role="alertdialog" aria-modal="true" aria-label="De Minimis threshold reached">
+        <header><h2>De Minimis threshold reached</h2><button className="icon-button" onClick={() => setCeilingNotice(null)} aria-label="Close"><X /></button></header>
+        <div className="config-form-body">
+          <p>{ceilingNotice.rows.length === 1 ? 'An employee has' : `${new Set(ceilingNotice.rows.map(row => row.code)).size} employees have`} already reached the De Minimis threshold set for the benefit. The amount above the ceiling was reclassified as taxable.</p>
+          <table className="mapping-table">
+            <thead><tr><th>Transaction</th><th>Employee</th><th>Benefit</th><th>Annual ceiling</th><th>Taxed above ceiling</th></tr></thead>
+            <tbody>{ceilingNotice.rows.map((row, index) => <tr key={`${row.transaction}-${row.code}-${index}`}><td>{row.transaction}</td><td>{row.name}</td><td>{row.benefit}</td><td>₱{row.ceiling.toLocaleString()}</td><td>₱{row.over.toLocaleString()}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <footer className="modal-actions"><button className="button primary" onClick={() => setCeilingNotice(null)}>OK</button></footer>
+      </section>
+    </div>}
     <button className="inline-back" onClick={view === 'register' ? onBack : () => { setView('register'); setOpenRunId(''); }}>
       <ArrowLeft /> {view === 'register' ? 'Back to Payroll' : 'Back to Payroll Processing'}
     </button>
