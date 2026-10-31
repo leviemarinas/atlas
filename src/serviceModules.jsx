@@ -224,7 +224,7 @@ const baseModuleDefinitions = {
           { key: 'defaultAmount', label: 'Amount', type: 'number', required: true, half: true, visible: draft => draft.autoCompute === 'Yes' && draft.computationBasis === 'Amount' },
           { key: 'unit', label: 'Unit', type: 'select', options: ['Daily', 'Hourly'], half: true, visible: draft => draft.autoCompute === 'Yes' },
           { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
-          { key: 'classification', label: 'Earning Classification', type: 'select', options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
+          { key: 'classification', label: 'Earning Classification', type: 'select', searchable: true, options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
           { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, visible: draft => ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
           { key: 'deMinimisBenefit', label: 'De Minimis Benefit', type: 'select', options: () => deMinimisBenefits().map(row => row.benefitName), required: true, half: true, visible: draft => draft.classification === 'De Minimis' },
           { key: 'deMinimisThreshold', label: 'De Minimis Threshold', type: 'readonly', show: draft => (deMinimisRule(draft) ? pesos(deMinimisRule(draft).ceiling) : 'Pick a benefit'), half: true, visible: draft => draft.classification === 'De Minimis' },
@@ -253,6 +253,8 @@ const baseModuleDefinitions = {
           { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
           // The date the earning goes Inactive on its own and is no longer offered in the system.
           { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
+          // What the Status and Hold Date add up to, in words.
+          { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => (draft.holdDate ? (effectiveEarningStatus(draft) === 'Inactive' ? `Inactive since ${formatUsDate(draft.holdDate)}` : `${draft.status === 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}, then Inactive`) : (draft.status || 'Active')) },
     ],
     /** Hierarchy and limit are refused here, at the screen, rather than discovered at payroll. */
     validate: (draft, { companyId } = {}) => {
@@ -686,8 +688,17 @@ function withApplicability(record, companyId) {
   return { ...rest, applicability: scopeFromLegacyFields(record), companyId };
 }
 
-/** An earning whose Hold Date has arrived is Inactive: it is no longer offered in the system. */
-const heldByDate = record => (record.holdDate && String(record.holdDate).slice(0, 10) <= localToday() ? { ...record, status: 'Inactive' } : record);
+/**
+ * The status an earning has today. From its Hold Date an earning is Inactive and no longer offered. Before it, an
+ * earning whose Status was set to Inactive stays usable until the Hold Date, then goes Inactive on that date.
+ */
+export function effectiveEarningStatus(record) {
+  const hold = record?.holdDate ? String(record.holdDate).slice(0, 10) : '';
+  if (hold && hold <= localToday()) return 'Inactive';
+  if (hold && record.status === 'Inactive') return 'Active';
+  return record?.status || 'Active';
+}
+const heldByDate = record => ({ ...record, status: effectiveEarningStatus(record) });
 
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
   const rows = readSavedServiceConfiguration(moduleKey, companyId);
@@ -1359,7 +1370,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const stamped = !record?.id && def.steps.some(step => step.fields.some(field => field.key === 'dateCreated')) ? { dateCreated: localToday() } : {};
     // A field that can suggest a value (the next Earning Code) fills it in on a new item.
     const suggested = record?.id ? {} : Object.fromEntries(def.steps.flatMap(step => step.fields).filter(field => field.suggest).map(field => [field.key, field.suggest({ companyId })]));
-    const blanks = moduleKey === 'earnings' && !record?.id ? { taxability: '', classification: '' } : {};
+    const blanks = moduleKey === 'earnings' && !record?.id ? { taxability: '', classification: '', computationBasis: '' } : {};
     const initial = { ...def.defaults, ...blanks, ...stamped, ...suggested, ...record };
     // An earning saved without a Unit opens on Daily.
     if (moduleKey === 'earnings' && !initial.unit) initial.unit = 'Daily';
