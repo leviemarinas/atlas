@@ -126,7 +126,9 @@ const sectionDefinitions = [
     key: 'earnings', title: 'Fixed Earnings', upload: true,
     columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
-    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'select', () => configuredNames('earnings', referenceValues('earning-types'))], ['code', 'Earning Code', 'computed'], ['amount', 'Earning Amount', 'number'], ['cappedAmount', 'Capped Amount', 'computed', null, draft => Number(draft.cappedAmount) > 0], ['paymentMode', 'Payment Mode', 'select', CONFIG_PAYMENT_MODES], ['frequency', 'Frequency', 'select', draft => frequencyOptions(draft.paymentMode)], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start Month / Year', 'date'], ['end', 'End Month / Year', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    // Follows the approved Add Earnings screen. Picking the earning (Earning Code - Earning Name, searchable) fills in what applies to it
+    // from Earning Configuration: taxability, classification, amount, frequency, dates and hold date. The code is kept with the entry.
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'earningpick'], ['amount', 'Earning Amount', 'number'], ['cappedAmount', 'Capped Amount', 'computed', null, draft => Number(draft.cappedAmount) > 0], ['paymentMode', 'Frequency', 'select', CONFIG_PAYMENT_MODES], ['taxability', 'Taxability', 'computed'], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'date'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
     rows: [
       { dateCreated: '01/01/2026', code: 'EXA-001', name: 'Salary', amount: '50000', frequency: 'Semi-monthly', taxability: 'Taxable', classification: 'Taxable' },
       { dateCreated: '01/01/2026', code: 'EXA-002', name: 'Lecture Fee', amount: '7500', frequency: 'One-time', taxability: 'Non-taxable', classification: 'Non-Taxable' },
@@ -138,7 +140,9 @@ const sectionDefinitions = [
     key: 'bonuses', title: 'Fixed Bonuses', upload: true,
     columns: [['code', 'Bonus Code'], ['name', 'Name'], ['type', 'Type'], ['amount', 'Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
     // No Taxability: the remaining non-taxable ceiling is used first and only the excess is taxable.
-    fields: [['name', 'Bonus Name', 'select', () => configuredNames('bonuses')], ['code', 'Bonus Code', 'computed'], ['type', 'Bonus Type', 'select', ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Other Bonus']], ['computationBasis', 'Computation Basis', 'select', ['Basic Pay', 'Basic Pay + Taxable Earnings', 'Eligible Earnings', 'Custom Policy Code']], ['employeeGroup', 'Eligible Employee Group'], ['hierarchyPriority', 'Bonus Hierarchy Priority', 'number'], ['releaseMonth', 'Release Month', 'select', ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']], ['effectiveDate', 'Effectivity Date', 'date'], ['amount', 'Total Amount', 'number'], ['nonTaxableAmount', 'Non-Taxable Amount', 'computed'], ['taxableAmount', 'Taxable Amount', 'computed'], ['transactionThreshold', 'Per Transaction Non-Taxable Threshold', 'number'], ['annualThreshold', 'Annual Non-Taxable Threshold', 'number'], ['source', 'Entry Source', 'select', ['Computed', 'Manual', 'Upload']], ['remarks', 'Remarks', 'textarea']],
+    // Follows the approved Add Bonus screen: Name (Bonus Code - Bonus Name, searchable), Type, Taxability and Amount. Picking the bonus fills the
+    // rest from Bonus Configuration; the release month, schedule and thresholds an entry also carries are kept with it and are not asked again.
+    fields: [['name', 'Name', 'bonuspick'], ['type', 'Type', 'computed'], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['amount', 'Amount', 'number']],
     rows: [{ name: '13th Month Pay', type: '13th Month Pay', amount: '50000' }, { name: 'Performance Bonus', type: 'Performance Bonus', amount: '10000' }],
   },
   {
@@ -168,7 +172,9 @@ const sectionDefinitions = [
   {
     key: 'allowances', title: 'Variable Allowances', upload: true,
     columns: [['dateCreated', 'Date Created'], ['amount', 'Amount'], ['unitBasis', 'Unit Basis'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type']],
-    fields: [['dateCreated', 'Date Created', 'date'], ['code', 'Allowance Reference Code'], ['name', 'Allowance Name'], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly', 'Per Minute']], ['workDays', 'Work Days', 'number'], ['workDaysType', 'Work Days Type', 'select', ['Work Days per Year', 'Work Days per Month']], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'computed'], ['monthlyRate', 'Monthly Rate', 'computed'], ['dailyRate', 'Daily Rate', 'computed'], ['hourlyRate', 'Hourly Rate', 'computed'], ['minuteRate', 'Minute Rate', 'computed'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']]],
+    // Follows the approved Add Variable Allowance screen: Work Days and Work Days Type fill in (read-only), Work Hours per Day can be changed,
+    // and the rates the amount works out to are shown as the entry is typed.
+    fields: [['dateCreated', 'Date Created', 'date'], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly', 'Per Minute']], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'rate'], ['monthlyRate', 'Monthly Rate', 'rate'], ['dailyRate', 'Daily Rate', 'rate'], ['hourlyRate', 'Hourly Rate', 'rate'], ['minuteRate', 'Per Minute Rate', 'rate'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']]],
     rows: [{ dateCreated: '01/01/2026', amount: '35000', unitBasis: 'Monthly', workDays: '261', workDaysType: 'Work Days per Year' }, { dateCreated: '01/01/2026', amount: '500', unitBasis: 'Daily', workDays: '313', workDaysType: 'Work Days per Year' }],
   },
   {
@@ -197,8 +203,10 @@ const sectionDefinitions = [
   },
   {
     key: 'costAllocation', title: 'Cost Allocation', upload: true,
-    columns: [['type', 'Type'], ['name', 'Name'], ['percentage', 'Percentage']],
-    fields: [['type', 'Type', 'select', chargeCodeTypes], ['name', 'Name', 'select', draft => chargeCodeNames(draft.type)], ['percentage', 'Percentage (all rows must total 100%)', 'number']],
+    columns: [['type', 'Cost Allocation Type'], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage']],
+    // Follows the approved Add Cost Allocation screen: the type, the name typed in, and a read-only percentage. A new entry takes the share of
+    // 100% that the employee's other allocations leave over (so it shows 0 once they total 100%).
+    fields: [['type', 'Cost Allocation Type', 'select', chargeCodeTypes], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage', 'percent']],
     rows: [{ type: 'Department', name: 'Marketing', percentage: '35' }, { type: 'Job Title', name: 'Payroll Specialist', percentage: '20' }, { type: 'Site', name: 'Makati', percentage: '45' }],
   },
   {
@@ -244,8 +252,51 @@ function EmployeeSidebar({ onBack, module, setModule, closeDetail }) {
   return <aside className="company-sidebar employee-sidebar"><button className="back-link" onClick={onBack}>← Back to Core</button><h2>Employee<br />Masterfile</h2><nav><button className={`side-link ${module === 'employees' ? 'selected' : ''}`} onClick={() => { setModule('employees'); closeDetail(); }}><UserCircle weight={module === 'employees' ? 'fill' : 'regular'} /> Employee Information</button><button className={`side-link ${module === 'accounts' ? 'selected' : ''}`} onClick={() => setModule('accounts')}><IdentificationCard weight={module === 'accounts' ? 'fill' : 'regular'} /> Account Settings Information</button><button className={`side-link ${module === 'configuration' ? 'selected' : ''}`} onClick={() => setModule('configuration')}><SlidersHorizontal weight={module === 'configuration' ? 'fill' : 'regular'} /> Masterfile Configuration</button></nav></aside>;
 }
 
+/**
+ * The earning to assign, picked from the company's Active Earning Configuration and shown as "Earning Code - Earning Name".
+ * The list narrows as the user types a code or a name.
+ */
+function EarningPicker({ value, onChange, required, moduleKey = 'earnings', noun = 'earning' }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const items = configured(moduleKey).filter(item => item.name);
+  const labelOf = item => `${item.code} - ${item.name}`;
+  const current = items.find(item => item.name === value);
+  const matches = items.filter(item => labelOf(item).toLowerCase().includes(query.trim().toLowerCase())).slice(0, 50);
+  return <div className="search-select">
+    <input type="text" role="combobox" aria-expanded={open} aria-label={`${noun[0].toUpperCase()}${noun.slice(1)} Code - ${noun[0].toUpperCase()}${noun.slice(1)} Name`} autoComplete="off" required={required}
+      value={open ? query : (current ? labelOf(current) : value || '')} placeholder={items.length ? `Search ${noun} code or name` : `No active ${noun}s`}
+      onChange={event => { setQuery(event.target.value); setOpen(true); }} onFocus={() => { setQuery(''); setOpen(true); }} onBlur={() => setOpen(false)} />
+    {open && <ul className="name-search-list" role="listbox">
+      {matches.map(item => <li key={item.code} role="option" aria-selected={item.name === value} onMouseDown={event => { event.preventDefault(); onChange(item.name); setOpen(false); }}>{labelOf(item)}</li>)}
+      {!matches.length && <li className="empty">{query.trim() ? `No ${noun} matches “${query.trim()}”.` : `No active ${noun}s.`}</li>}
+    </ul>}
+  </div>;
+}
+
+/** What Earning Configuration already knows about an earning, for the entry that picks it. */
+function earningDefaults(name) {
+  const item = configured('earnings').find(entry => entry.name === name);
+  if (!item) return {};
+  const classification = ['Regular Earning', 'Retirement', 'Fringe Benefit', 'Receivable', 'De Minimis', 'Other Non-taxable'].includes(item.classification) ? item.classification : (item.taxability === 'Non-taxable' ? 'Other Non-taxable' : 'Regular Earning');
+  const fill = { taxability: item.taxability, classification, deMinimisBenefit: classification === 'De Minimis' ? item.deMinimisBenefit : '', paymentMode: item.paymentMode, effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
+  if (Number(item.defaultAmount) > 0) fill.amount = item.defaultAmount;
+  return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
+}
+
+/** What Bonus Configuration already knows about a bonus, for the entry that picks it. */
+function bonusDefaults(name) {
+  const item = configured('bonuses').find(entry => entry.name === name);
+  if (!item) return {};
+  const fill = { type: item.type, taxability: item.taxability, annualThreshold: item.threshold };
+  if (Number(item.amount) > 0) fill.amount = item.amount;
+  return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
+}
+
 function InputField({ field, value, onChange, draft = {}, required = true }) {
   const [key, label, type = 'text', options = []] = field;
+  if (type === 'earningpick') return <EarningPicker value={value} onChange={onChange} required={required} />;
+  if (type === 'bonuspick') return <EarningPicker value={value} onChange={onChange} required={required} moduleKey="bonuses" noun="bonus" />;
   // Options may be a function so a field can be sourced from another module's
   // register (cost allocation reads the company charge codes, for example).
   const sourced = typeof options === 'function' ? options(draft) : options;
@@ -253,6 +304,8 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   // record came from an upload, so editing a row never silently clears it.
   const choices = value && !sourced.includes(value) ? [...sourced, value] : sourced;
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
+  if (type === 'rate') return <div className="rate-value">{peso(value)}</div>;
+  if (type === 'percent') return <div className="percent-field"><input value={value ?? 0} readOnly aria-label={`${label} (computed)`} /><span>%</span></div>;
   if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required={required}><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
   if (type === 'boolean') return <div className="radio-group">{['Yes', 'No'].map(item => <label key={item}><input type="radio" name={key} checked={(value || 'No') === item} onChange={() => onChange(item)} /> {item}</label>)}</div>;
   // Date Created is stamped with today's date when the entry is made and never edited.
@@ -438,11 +491,13 @@ function applicableLoanNames(employee) {
   return covering.length || !configured('loans').length ? (covering.length ? covering.map(item => item.name) : referenceValues('loan-types')) : [];
 }
 
-function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null }) {
-  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null, left = 0 }) {
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'costAllocation' && !record?.id ? { percentage: String(left) } : {}), ...(section.key === 'allowances' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Work Days per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
   const [reason, setReason] = useState('');
   // Pay-affecting sections keep an employee-level audit, with optional remarks.
   const audited = AUDITED_SECTIONS.includes(section.key);
+  // A form that already has a Remarks field uses it as the change remarks, so Remarks is not asked twice.
+  const hasRemarksField = section.fields.some(field => field[0] === 'remarks');
   // De Minimis: warn while the amount is typed, not only after saving (§10.2).
   const previewed = preview?.(draft);
   const ceilingWarning = draft.classification === 'De Minimis' && previewed?.thresholdNote
@@ -459,8 +514,8 @@ function EntryModal({ section, record, onClose, onSave, preview, setup = {}, emp
   // Computed values (rates, totals, balances, codes) follow the entry as it is filled in.
   // Changing one MWE place field clears the narrower choices below it, which may no longer apply.
   const narrower = key => (section.key === 'basicPay' && MWE_PLACE_FIELDS.includes(key) ? Object.fromEntries(MWE_PLACE_FIELDS.slice(MWE_PLACE_FIELDS.indexOf(key) + 1).map(field => [field, ''])) : null);
-  const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, ...narrower(key), [key]: value }));
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid">{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => section.key === 'basicPay' && ['periodStart', 'periodEnd'].includes(field[0]) ? [field[0], field[1], field[2], periodsForFrequency(setup.paymentMode), field[4]] : section.key === 'loans' && field[0] === 'payItem' ? [field[0], field[1], field[2], draft => (draft.loanSource === 'Government Loan' ? field[3](draft) : applicableLoanNames(employee)), field[4]] : field).map(field => { const required = isRequired(section, field); return <label key={field[0]}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && <label className="employee-change-reason">Remarks<textarea value={reason} placeholder="Optional — kept in the employee change history." onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
+  const change = (key, value) => setDraft(previous => normalizePayrollRecord(section, { ...previous, ...narrower(key), ...(key === 'name' ? (section.key === 'earnings' ? earningDefaults(value) : section.key === 'bonuses' ? bonusDefaults(value) : {}) : {}), [key]: value }));
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="modal employee-entry-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${section.title.replace('13th Month Pay and ', '')}`}><header><h2>{record?.id ? 'Edit' : 'Add'} {section.title.replace('13th Month Pay and ', '')}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><form onSubmit={e => { e.preventDefault(); onSave(normalizePayrollRecord(section, draft), hasRemarksField ? String(draft.remarks || '').trim() : reason.trim()); }}>{ceilingWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{ceilingWarning}</p>}{mweWarning && <p className="lifecycle-warning deminimis-warning" role="alert">{mweWarning}</p>}<div className="employee-form-grid" data-section={section.key}>{section.fields.filter(field => typeof field[4] !== 'function' || field[4](draft)).map(field => section.key === 'basicPay' && ['periodStart', 'periodEnd'].includes(field[0]) ? [field[0], field[1], field[2], periodsForFrequency(setup.paymentMode), field[4]] : section.key === 'loans' && field[0] === 'payItem' ? [field[0], field[1], field[2], draft => (draft.loanSource === 'Government Loan' ? field[3](draft) : applicableLoanNames(employee)), field[4]] : field).map(field => { const required = isRequired(section, field); return <label key={field[0]} className={`ef-${field[0]}`}>{field[1]} {required && <span className="required">*</span>}<InputField field={field} draft={draft} value={draft[field[0]]} required={required} onChange={value => change(field[0], value)} /></label>; })}{audited && !hasRemarksField && <label className="employee-change-reason">Remarks<textarea value={reason} placeholder="Optional — kept in the employee change history." onChange={event => setReason(event.target.value)} /></label>}</div><footer className="modal-actions sticky-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button className="button primary">{record?.id ? 'Save' : 'Add'}</button></footer></form></section></div>;
 }
 
 function ConfirmDelete({ name, onClose, onDelete, askReason = false }) {
@@ -634,7 +689,7 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
       <div className="employee-table-wrap"><table className="employee-table"><thead><tr>{section.columns.map(([key, label]) => <th key={label} aria-sort={sort.key === key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}><button className="th-sort" onClick={() => sortBy(key)} aria-label={`Sort by ${label}`}>{label}{sort.key === key ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}</button></th>)}<th>Action</th></tr></thead><tbody>{shownRows.length ? shownRows.map(row => <tr key={row.id}>{section.columns.map(([key]) => <td key={key}>{formatCell(key, row[key])}</td>)}<td><div className="row-actions always">{usedBy.has(row.id) ? <><span className="status-pill locked" title={`Used by ${usedBy.get(row.id).join(', ')}. Add a new entry with a new Effectivity Date to change it.`}>Used in payroll</span><button disabled aria-label="Edit" title="Used in payroll"><PencilSimple /></button><button disabled aria-label="Delete" title="Used in payroll"><Trash /></button></> : <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button>{!row.inherited && <button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button>}</>}</div></td></tr>) : <tr><td colSpan={section.columns.length + 1}><div className="empty-state compact"><h3>{allRows.length ? 'No entries match' : 'No entries yet'}</h3><p>{allRows.length ? 'Change the search or the filter.' : 'Add or upload this employee’s payroll data.'}</p></div></td></tr>}</tbody></table></div>
       <div className="employee-pagination"><span>Display <select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }} aria-label="Items per page">{[5, 10, 20].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · <strong>{matchedRows.length}</strong> item{matchedRows.length === 1 ? '' : 's'}</span><span className="employee-pager"><button onClick={() => setPage(currentPage - 1)} disabled={currentPage <= 1} aria-label="Previous page">‹</button>{currentPage} of {pageCount}<button onClick={() => setPage(currentPage + 1)} disabled={currentPage >= pageCount} aria-label="Next page">›</button></span></div>
     </div>}
-    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} setup={setup} employee={employee} preview={section.key === 'earnings' ? previewRow : undefined} />}
+    {editing && <EntryModal section={section} record={editing.id ? editing : null} onClose={() => setEditing(null)} onSave={save} setup={setup} employee={employee} left={Math.max(0, 100 - rows.reduce((total, row) => total + Number(row.percentage || 0), 0))} preview={section.key === 'earnings' ? previewRow : undefined} />}
     {deleting && <ConfirmDelete askReason={audited} name={deleting.name || deleting.payItem || deleting.type || section.title} onClose={() => setDeleting(null)} onDelete={reason => { if (audited) logEmployeeChange({ employeeId: employee.id, section: section.key, action: 'Deleted', item: deleting.name || deleting.payItem || deleting.type || section.title, reason, changes: [], actor }); setRows(rows.filter(row => row.id !== deleting.id)); setDeleting(null); notify({ type: 'success', message: `${section.title} entry deleted.` }); }} />}
   </section>;
 }

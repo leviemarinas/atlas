@@ -17,6 +17,9 @@ import {
   MagnifyingGlass,
   PencilSimple,
   Plus,
+  PlusSquare,
+  FileXls,
+  Export as ExportIcon,
   SlidersHorizontal,
   Trash,
   UploadSimple,
@@ -147,6 +150,19 @@ const dateSetFields = () => [
 ];
 const DATE_SET_DEFAULTS = Object.freeze({ effectivityDate: '2026-01-01', startDate: '2026-01-01', periodStart: 'Every Payroll' });
 
+/** What is wrong with the Employee Group filter of an earning or a bonus, in the words shown on the form. */
+function employeeGroupProblems(draft, noun) {
+  const problems = [];
+  const assigned = normalizeScope(draft.applicability);
+  if (assigned.scope === 'Date Hired' && !assigned.dateHired) problems.push(`Pick the Date Hired this ${noun} applies from.`);
+  if (assigned.scope === 'Criteria') {
+    const picked = (assigned.groups || []).length || (assigned.hired || []).length || Object.keys(assigned.extra || {}).length;
+    if (!assigned.mode) problems.push('Select All Employee Group or Filter for Employee Group.');
+    else if (assigned.mode === 'filter' && !picked) problems.push('Pick at least one value under Filter, or choose All Employee Group.');
+  }
+  return problems;
+}
+
 // Taxability decides the classifications on offer: a non-taxable earning is a receivable, De Minimis or other non-taxable.
 const EARNING_CLASSIFICATIONS = Object.freeze({
   // Variable earnings are treated as part of basic pay (Earning Classification slide).
@@ -208,10 +224,10 @@ const baseModuleDefinitions = {
       },
       {
         title: 'Earning Setup', fields: [
-          { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true },
+          { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true, half: true },
           // A capped earning stops being applied once the employee has received this much.
-          { key: 'cappedAmount', label: 'Capped Amount', type: 'number', required: true, visible: draft => draft.cappedEarning === 'Yes' },
-          { key: 'adjustIfAbsent', label: 'Adjust If Absent?', type: 'boolean', required: true, half: true },
+          { key: 'cappedAmount', label: 'Capped Amount', type: 'number', required: true, half: true, visible: draft => draft.cappedEarning === 'Yes' },
+          { key: 'adjustIfAbsent', label: 'Adjust If Absent?', type: 'boolean', required: true, half: true, rowStart: true },
           // Adjust If Absent opens the absence rules; they are hidden when it is No.
           // When the employee's absences reach the minimum, the Adjustment Earning chosen here is deducted.
           { key: 'adjustmentEarning', label: 'Adjustment Earning', type: 'select', searchable: true, options: (draft, { companyId } = {}) => [...new Set(readServiceConfiguration('earnings', companyId).filter(item => (item.status || 'Active') === 'Active' && item.id !== draft.id && item.name !== draft.name).map(item => item.name).filter(Boolean))], required: true, half: true, visible: draft => draft.adjustIfAbsent === 'Yes' },
@@ -223,8 +239,8 @@ const baseModuleDefinitions = {
           { key: 'negativeComputation', label: 'Negative Computation?', type: 'boolean', half: true, visible: draft => draft.autoCompute === 'Yes' },
           { key: 'defaultAmount', label: 'Amount', type: 'number', required: true, half: true, visible: draft => draft.autoCompute === 'Yes' && draft.computationBasis === 'Amount' },
           { key: 'unit', label: 'Unit', type: 'select', options: ['Daily', 'Hourly'], half: true, visible: draft => draft.autoCompute === 'Yes' },
-          { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
-          { key: 'classification', label: 'Earning Classification', type: 'select', searchable: true, options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
+          { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true, half: true, rowStart: true },
+          { key: 'classification', label: 'Earning Classification', type: 'select', searchable: true, half: true, options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
           { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, visible: draft => ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
           { key: 'deMinimisBenefit', label: 'De Minimis Benefit', type: 'select', options: () => deMinimisBenefits().map(row => row.benefitName), required: true, half: true, visible: draft => draft.classification === 'De Minimis' },
           { key: 'deMinimisThreshold', label: 'De Minimis Threshold', type: 'readonly', show: draft => (deMinimisRule(draft) ? pesos(deMinimisRule(draft).ceiling) : 'Pick a benefit'), half: true, visible: draft => draft.classification === 'De Minimis' },
@@ -235,7 +251,7 @@ const baseModuleDefinitions = {
           // Which earning a "specific earning" Gross Up applies to. The Gross Up policy decides how and for whom.
           { key: 'grossUp', label: 'Gross up this earning?', type: 'boolean', required: true, visible: draft => draft.taxability === 'Taxable' },
           // The workdays a year, entered for any earning; optional.
-          { key: 'workDays', label: 'Work Days', type: 'number', half: true, placeholder: 'e.g. 261' },
+          { key: 'workDays', label: 'Work Days', type: 'number', half: true, rowStart: true, placeholder: 'e.g. 261' },
         ],
       },
       {
@@ -246,6 +262,12 @@ const baseModuleDefinitions = {
         ],
       },
     ],
+    filterCriteria: [
+      { key: 'code', label: 'Earning Code', kind: 'text' }, { key: 'type', label: 'Earning Type', kind: 'list' }, { key: 'applicability', label: 'Employee Group', kind: 'group' },
+      { key: 'taxability', label: 'Taxability', kind: 'list' }, { key: 'classification', label: 'Earning Classification', kind: 'list' },
+      { key: 'glBreakdown', label: 'GL Breakdown', kind: 'list' }, { key: 'glName', label: 'GL Name', kind: 'list' }, { key: 'subGlName', label: 'Sub GL Name', kind: 'list' },
+      { key: 'status', label: 'Status', kind: 'list', options: ['Active', 'Inactive'] },
+    ],
     // The formula fields of Computation Mapping show only when Auto-compute is Yes.
     computationVisible: draft => draft.autoCompute === 'Yes',
     // Shown at the end of the last step, Computation Mapping.
@@ -254,18 +276,12 @@ const baseModuleDefinitions = {
           // The date the earning goes Inactive on its own and is no longer offered in the system.
           { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
           // What the Status and Hold Date add up to, in words.
-          { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => (draft.holdDate ? (effectiveEarningStatus(draft) === 'Inactive' ? `Inactive since ${formatUsDate(draft.holdDate)}` : `${draft.status === 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}, then Inactive`) : (draft.status || 'Active')) },
+          { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => effectiveStatusText(draft) },
+          { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
     ],
     /** Hierarchy and limit are refused here, at the screen, rather than discovered at payroll. */
     validate: (draft, { companyId } = {}) => {
-      const problems = [];
-      const assigned = normalizeScope(draft.applicability);
-      if (assigned.scope === 'Date Hired' && !assigned.dateHired) problems.push('Pick the Date Hired this earning applies from.');
-      if (assigned.scope === 'Criteria') {
-        const picked = (assigned.groups || []).length || (assigned.hired || []).length || Object.keys(assigned.extra || {}).length;
-        if (!assigned.mode) problems.push('Select All Employee Group or Filter for Employee Group.');
-        else if (assigned.mode === 'filter' && !picked) problems.push('Pick at least one value under Filter, or choose All Employee Group.');
-      }
+      const problems = employeeGroupProblems(draft, 'earning');
       if (draft.cappedEarning === 'Yes' && !(Number(draft.cappedAmount) > 0)) problems.push('Enter the Capped Amount — the most an employee can receive, greater than zero.');
       return problems;
     },
@@ -286,18 +302,20 @@ const baseModuleDefinitions = {
     plural: 'bonuses',
     // No Taxability field: the non-taxable and taxable split is derived from the remaining ₱90,000 ceiling.
     description: 'Define fixed or scheduled bonuses, the non-taxable threshold, employee coverage, schedules and ledger mappings.',
-    table: [['code', 'Bonus Code'], ['name', 'Bonus Name'], ['type', 'Bonus Type'], ['threshold', 'Bonus Threshold'], ['applicability', 'Applies To'], ['status', 'Status']],
+    table: [['code', 'Bonus Code'], ['name', 'Bonus Name'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['threshold', 'Bonus Threshold'], ['applicability', 'Applies To'], ['status', 'Status']],
     steps: [
       { title: 'Bonus Details', fields: [
         { key: 'code', label: 'Bonus Code', required: true, half: true }, { key: 'name', label: 'Bonus Name', required: true, half: true },
-        { key: 'type', label: 'Bonus Type', type: 'select', options: ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Productivity Bonus'], required: true, half: true },
-        { key: 'applicability', label: 'Applies to', type: 'applicability' },
-        { key: 'threshold', label: 'Annual Non-Taxable Threshold', type: 'readonly', show: () => { const ceiling = referenceValues('bonus-ceilings', 'ceiling')[0]; return ceiling ? `${pesos(ceiling)} (from Settings)` : 'From Settings'; }, half: true },
+        { key: 'type', label: 'Bonus Type', type: 'select', options: ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Productivity Bonus'], required: true },
+        // The non-taxable ceilings come from the Bonus Ceiling Reference Table; Threshold Splitting from its own Reference Table.
+        { key: 'threshold', label: 'Bonus Threshold', type: 'select', options: () => referenceValues('bonus-ceilings', 'ceiling').map(String), required: true, half: true },
+        { key: 'thresholdSplitting', label: 'Threshold Splitting', type: 'select', options: () => referenceValues('bonus-threshold-splitting'), required: true, half: true },
+        { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
+        { key: 'applicability', label: 'Applies to', type: 'applicability', variant: 'earning', hideLabel: true },
         { key: 'amount', label: 'Bonus Amount', type: 'number', required: true, half: true },
-        ...scheduleFields(),
-        ...dateSetFields(),
-        { key: 'dateStart', label: 'Date Start', type: 'date', required: true, half: true }, { key: 'dateEnd', label: 'Date End', type: 'date', half: true },
-        { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+        // Stamped with today when the bonus is created and never editable.
+        { key: 'dateCreated', label: 'Date Created', type: 'readonly', show: draft => (draft.dateCreated ? formatUsDate(draft.dateCreated) : '—'), half: true, rowStart: true },
+        // Payment Mode, Frequency and the effectivity, start, end and period dates are not asked for here; a new bonus takes the defaults below (Yearly, in effect from 01/01/2026).
       ] },
       { title: 'Accounting Setup', fields: [
         { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'] },
@@ -305,7 +323,23 @@ const baseModuleDefinitions = {
         { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['13th Month Pay', 'Performance Incentives'] },
       ] },
     ],
-    defaults: { type: 'Performance Bonus', threshold: '90000', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
+    filterCriteria: [
+      { key: 'code', label: 'Bonus Code', kind: 'text' }, { key: 'name', label: 'Bonus Name', kind: 'text' }, { key: 'type', label: 'Bonus Type', kind: 'list' },
+      { key: 'applicability', label: 'Employee Group', kind: 'group' }, { key: 'taxability', label: 'Taxability', kind: 'list' }, { key: 'threshold', label: 'Bonus Threshold', kind: 'text' },
+      { key: 'glBreakdown', label: 'GL Breakdown', kind: 'list' }, { key: 'glName', label: 'GL Name', kind: 'list' }, { key: 'subGlName', label: 'Sub-GL Name', kind: 'list' },
+    ],
+    // On the last step, Computation Mapping: the Bonus Mapping shows once a Basis of Computation is assigned, then Status, Hold Date and Remarks.
+    bindingsVisible: draft => Boolean(String(draft.computationCode || '').trim()),
+    mappingLabel: 'Bonus Mapping',
+    finalFields: [
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+      // The date the bonus goes Inactive on its own and is no longer offered in the system.
+      { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
+      { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => effectiveStatusText(draft) },
+      { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
+    ],
+    validate: draft => employeeGroupProblems(draft, 'bonus'),
+    defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplitting: '100%', taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
     rows: [['BON-001', '13th Month Pay', '13th Month Pay'], ['BON-002', 'Performance Bonus', 'Performance Bonus'], ['BON-003', 'Signing Bonus', 'Signing Bonus'], ['BON-004', 'Productivity Incentive', 'Productivity Bonus'], ['BON-005', 'Service Award', 'Performance Bonus']],
   },
   deductions: {
@@ -537,7 +571,7 @@ function withComputationBinding(moduleKey, def) {
           hint: `The published Computational Basis formula that produces ${definition.produces}. Leave it unbound to keep the built-in payroll treatment.`,
           visible: def.computationVisible,
         },
-        { key: 'computationBindings', label: 'Variable Mapping', type: 'bindings', moduleKey, visible: def.computationVisible },
+        { key: 'computationBindings', label: def.mappingLabel || 'Variable Mapping', type: 'bindings', moduleKey, visible: def.bindingsVisible || def.computationVisible },
         ...(def.finalFields || []),
       ],
     }],
@@ -699,10 +733,14 @@ export function effectiveEarningStatus(record) {
   return record?.status || 'Active';
 }
 const heldByDate = record => ({ ...record, status: effectiveEarningStatus(record) });
+/** The Status and Hold Date of an earning or a bonus, in words. */
+const effectiveStatusText = draft => (draft.holdDate
+  ? (effectiveEarningStatus(draft) === 'Inactive' ? `Inactive since ${formatUsDate(draft.holdDate)}` : `${draft.status === 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}, then Inactive`)
+  : (draft.status || 'Active'));
 
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
   const rows = readSavedServiceConfiguration(moduleKey, companyId);
-  return moduleKey === 'earnings' ? rows.map(heldByDate) : rows;
+  return moduleKey === 'earnings' || moduleKey === 'bonuses' ? rows.map(heldByDate) : rows;
 }
 
 function readSavedServiceConfiguration(moduleKey, companyId) {
@@ -1356,6 +1394,7 @@ function Field({ field, value, onChange, draft, def, catalog, companyId }) {
     </div>
   );
   if (field.type === 'date') return <DateInput value={value ?? ''} onChange={onChange} />;
+  if (field.type === 'textarea') return <textarea rows={3} value={value ?? ''} onChange={event => onChange(event.target.value)} placeholder={field.placeholder ?? ''} />;
   return <input {...common} maxLength={(field.type ?? 'text') === 'text' ? maxLengthOf(field) : undefined} type={field.type ?? 'text'} min={field.type === 'number' ? '0' : undefined} step={field.type === 'number' ? 'any' : undefined} placeholder={field.placeholder ?? (field.type === 'number' ? '0.00' : `Input ${field.label.toLowerCase()}`)} />;
 }
 
@@ -1370,7 +1409,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const stamped = !record?.id && def.steps.some(step => step.fields.some(field => field.key === 'dateCreated')) ? { dateCreated: localToday() } : {};
     // A field that can suggest a value (the next Earning Code) fills it in on a new item.
     const suggested = record?.id ? {} : Object.fromEntries(def.steps.flatMap(step => step.fields).filter(field => field.suggest).map(field => [field.key, field.suggest({ companyId })]));
-    const blanks = moduleKey === 'earnings' && !record?.id ? { taxability: '', classification: '', computationBasis: '' } : {};
+    const blanks = !record?.id ? (moduleKey === 'earnings' ? { taxability: '', classification: '', computationBasis: '' } : moduleKey === 'bonuses' ? { threshold: '', thresholdSplitting: '', taxability: '' } : {}) : {};
     const initial = { ...def.defaults, ...blanks, ...stamped, ...suggested, ...record };
     // An earning saved without a Unit opens on Daily.
     if (moduleKey === 'earnings' && !initial.unit) initial.unit = 'Daily';
@@ -1422,7 +1461,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const saved = editing
       ? { ...trimmed, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
       : trimmed;
-    onSave(saved, { changes: pendingChanges, reason: changeReason.trim(), effectiveDate: changeEffective });
+    onSave(saved, { changes: pendingChanges, reason: ['bonuses', 'earnings'].includes(moduleKey) ? String(draft.remarks || '').trim() : changeReason.trim(), effectiveDate: changeEffective });
   };
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -1437,7 +1476,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
               {current.fields.filter(field => !field.visible || field.visible(draft)).map(field => {
                 const fieldLocked = locked(field.key);
                 const bindingField = field.type === 'computation' || field.type === 'bindings';
-                return <label key={field.key} className={field.half ? 'half' : field.type === 'bindings' ? 'full' : ''}>{!field.hideLabel && field.label}{field.required && !fieldLocked && !field.hideLabel && <span className="required">*</span>}{fieldLocked && !bindingField && <span className="pa-owned-tag"><Lock weight="bold" /> Set by P&amp;A</span>}
+                return <label key={field.key} className={field.half ? `half${field.rowStart ? ' row-start' : ''}` : field.type === 'bindings' || field.type === 'textarea' ? 'full' : ''}>{!field.hideLabel && field.label}{field.required && !fieldLocked && !field.hideLabel && <span className="required">*</span>}{fieldLocked && !bindingField && <span className="pa-owned-tag"><Lock weight="bold" /> Set by P&amp;A</span>}
                   {clientView && field.type === 'computation'
                     ? <ComputationSummary value={draft.computationCode} catalog={catalog} />
                     : clientView && field.type === 'bindings'
@@ -1452,7 +1491,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
             </div>
             {lastStep && editing && <div className="change-details">
               {moduleKey !== 'earnings' && <label>Change effective from<DateInput value={changeEffective} onChange={value => setChangeEffective(value)} /></label>}
-              <label className="change-remarks">Remarks<textarea rows={3} value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Optional" /></label>
+              {!['bonuses', 'earnings'].includes(moduleKey) && <label className="change-remarks">Remarks<textarea rows={3} value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Optional" /></label>}
               <p className="field-hint">{pendingChanges.length
                 ? `${pendingChanges.length} ${pendingChanges.length === 1 ? 'change' : 'changes'} will be recorded with your name, the value before and after, and this effective date. A changed formula value applies to payrolls paid from this date; earlier payrolls keep the value they used.`
                 : 'Nothing has changed yet.'}</p>
@@ -1533,6 +1572,61 @@ function ViewDrawer({ def, record, companyId, onClose, onEdit, canEdit = true })
   );
 }
 
+/** The values a list criterion offers: the ones the form offers for that field. */
+function criterionOptions(def, criterion) {
+  if (criterion.options) return criterion.options;
+  const field = def.steps.flatMap(step => step.fields).find(item => item.key === criterion.key);
+  const options = typeof field?.options === 'function' ? field.options({}, {}) : field?.options;
+  return [...new Set(options || [])];
+}
+
+/** Employee Group choices of the Filter Table: All Employee Group, then the categories of the Employee Group filter. */
+const FILTER_GROUP_CHOICES = Object.freeze(['All Employee Group', ...GROUP_CATEGORIES]);
+
+function matchesCriterion(record, criterion, value) {
+  if (value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length)) return true;
+  if (criterion.kind === 'text') return String(record[criterion.key] ?? '').toLowerCase().includes(String(value).toLowerCase());
+  if (criterion.kind === 'group') {
+    const scope = normalizeScope(record.applicability);
+    const all = scope.scope === 'All Employees' || scope.mode === 'all' || (scope.groups || []).includes('All Employees');
+    return value.some(choice => (choice === 'All Employee Group' ? all
+      : DATE_HIRED_RULES[choice] ? (scope.hired || []).some(item => item.rule === DATE_HIRED_RULES[choice])
+        : Boolean(scope.filters?.[choice]?.length) || (scope.groups || []).some(group => (valuesOf(choice) || []).includes(group)) || Boolean(scope.extra?.[choice])));
+  }
+  return value.some(item => String(record[criterion.key] ?? '').toLowerCase() === String(item).toLowerCase());
+}
+
+/** The Filter Table of an earning or a bonus: one collapsible row for each criterion, applied together. */
+function FilterTableDialog({ def, filters, onApply, onClose }) {
+  const [draft, setDraft] = useState(filters);
+  const [open, setOpen] = useState('');
+  const set = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="modal filter-table-modal" role="dialog" aria-modal="true" aria-label="Filter Table">
+      <header><h2>Filter Table</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header>
+      <div className="filter-table-body">
+        <p>Choose criteria to filter the table:</p>
+        {def.filterCriteria.map(criterion => {
+          const choices = criterion.kind === 'group' ? FILTER_GROUP_CHOICES : criterion.kind === 'list' ? criterionOptions(def, criterion) : [];
+          const value = draft[criterion.key];
+          const count = Array.isArray(value) ? value.length : value ? 1 : 0;
+          const isOpen = open === criterion.key;
+          return <div key={criterion.key} className={`filter-criterion${isOpen ? ' open' : ''}`}>
+            <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? '' : criterion.key)}><span>{criterion.label}{count > 0 && <em>{count}</em>}</span><CaretDown /></button>
+            {isOpen && <div className="filter-criterion-body">
+              {criterion.kind === 'text'
+                ? <input value={value || ''} placeholder={`Search ${criterion.label.toLowerCase()}`} onChange={event => set(criterion.key, event.target.value)} />
+                : choices.map(choice => <label key={choice}><input type="checkbox" checked={(value || []).includes(choice)} onChange={() => set(criterion.key, (value || []).includes(choice) ? value.filter(item => item !== choice) : [...(value || []), choice])} /> {choice}</label>)}
+              {criterion.kind !== 'text' && !choices.length && <p className="field-hint">Nothing to choose from yet.</p>}
+            </div>}
+          </div>;
+        })}
+      </div>
+      <footer className="modal-actions"><button type="button" className="button secondary" onClick={onClose}>Cancel</button><button type="button" className="button primary" onClick={() => { onApply(Object.fromEntries(Object.entries(draft).filter(([, entry]) => (Array.isArray(entry) ? entry.length : entry)))); onClose(); }}>Apply Filter</button></footer>
+    </section>
+  </div>;
+}
+
 function FilterDrawer({ def, filters, setFilters, onClose }) {
   const filterFields = [...new Map(def.steps.flatMap(step => step.fields).filter(field => ['select', 'text'].includes(field.type ?? 'text')).map(field => [field.key, field])).values()].slice(0, 7);
   return (
@@ -1548,9 +1642,9 @@ function FilterDrawer({ def, filters, setFilters, onClose }) {
   );
 }
 
-function ExportMenu({ onExport }) {
+function ExportMenu({ onExport, figma = false }) {
   const [open, setOpen] = useState(false);
-  return <div className="menu-anchor"><button className="button secondary" onClick={() => setOpen(!open)}><DownloadSimple /> Export <CaretDown /></button>{open && <div className="export-menu">
+  return <div className="menu-anchor"><button className="button secondary" onClick={() => setOpen(!open)}>{figma ? <ExportIcon /> : <DownloadSimple />} Export <CaretDown /></button>{open && <div className="export-menu">
     <button onClick={() => { onExport('excel'); setOpen(false); }}><FileCsv /> Excel / CSV</button>
     <button onClick={() => { onExport('pdf'); setOpen(false); }}><FilePdf /> PDF / Print</button>
     <button onClick={() => { onExport('word'); setOpen(false); }}><FileText /> Word</button>
@@ -1572,6 +1666,8 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const clientLocked = Boolean(def?.bindable) && !isPaAdmin;
   // A Client Admin may add and edit earnings; the Basis of Computation stays P&A's.
   const clientMayAdd = !clientLocked || moduleKey === 'earnings';
+  // The Earning and Bonus lists carry the approved button design: Add, Upload and Export.
+  const figmaActions = moduleKey === 'earnings' || moduleKey === 'bonuses';
   const mappingGated = clientLocked && moduleKey !== 'earnings' && MAPPING_GATED_MODULES.includes(moduleKey);
   const storageKey = serviceStorageKey(moduleKey, companyId);
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));
@@ -1591,7 +1687,9 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
 
   const filtered = useMemo(() => records.filter(record => {
     const queryMatch = Object.values(record).join(' ').toLowerCase().includes(query.trim().toLowerCase());
-    const filterMatch = Object.entries(filters).every(([key, value]) => !value || String(record[key] ?? '').toLowerCase().includes(String(value).toLowerCase()));
+    const filterMatch = def.filterCriteria
+      ? def.filterCriteria.every(criterion => matchesCriterion(record, criterion, filters[criterion.key]))
+      : Object.entries(filters).every(([key, value]) => !value || String(record[key] ?? '').toLowerCase().includes(String(value).toLowerCase()));
     return queryMatch && filterMatch;
   }), [records, query, filters]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -1706,16 +1804,16 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       <div className="page-heading"><div><p className="breadcrumb">{breadcrumb}</p><h1>{def.title}</h1><p className="page-description">{def.description}</p></div></div>
       {clientLocked && moduleKey === 'earnings' && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>You can add and update earnings.</strong> The Basis of Computation is set by P&amp;A and cannot be edited; in the Variable Mapping you can enter or update a value only where its source is a fixed value.</span></div>}
       {clientLocked && moduleKey !== 'earnings' && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>Pay items and the formulas they use are set up by P&amp;A.</strong> You can update the approved values — amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who each item applies to. A pay item is editable only when its Computation Mapping has fixed parameters; otherwise it is read-only. A new pay item, or a change in how one computes, is requested from P&amp;A.</span></div>}
-      <div className="config-toolbar">
+      <div className={`config-toolbar${figmaActions ? ' figma-actions' : ''}`}>
         <div className="search-box"><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder={`Search ${def.plural}...`} /><MagnifyingGlass /></div>
         <button className={`filter-button ${Object.values(filters).some(Boolean) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
         <div className="toolbar-spacer" />
-        {clientMayAdd && <button className="button primary" onClick={() => setEditing({})}><Plus /> Add</button>}
+        {clientMayAdd && <button className="button primary" onClick={() => setEditing({})}>{figmaActions ? <PlusSquare /> : <Plus />} Add</button>}
         {!clientLocked && <>
-          <button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button>
+          <button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload{figmaActions && <FileXls />}</button>
           <input ref={uploadRef} className="sr-only" type="file" accept=".csv,text/csv" onChange={importCsv} />
         </>}
-        <ExportMenu onExport={format => { if (exportRecords(def, filtered, format, catalog.library)) notify({ type: 'success', message: `${def.title} export prepared.` }); }} />
+        <ExportMenu figma={figmaActions} onExport={format => { if (exportRecords(def, filtered, format, catalog.library)) notify({ type: 'success', message: `${def.title} export prepared.` }); }} />
       </div>
       <div className="table-card config-table-card">
         <table className="config-table">
@@ -1734,7 +1832,9 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
         const holder = usedInPayroll(deleting, readUsedRuns(companyId));
         if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} · ${deleting.name} is already used in ${holder.transactionNumber}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
         setRecords(previous => previous.filter(record => record.id !== deleting.id)); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
-      {filterOpen && <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />}
+      {filterOpen && (def.filterCriteria
+        ? <FilterTableDialog def={def} filters={filters} onApply={setFilters} onClose={() => setFilterOpen(false)} />
+        : <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />)}
     </div>
   );
 }
