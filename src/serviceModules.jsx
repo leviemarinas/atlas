@@ -354,18 +354,31 @@ const baseModuleDefinitions = {
         { key: 'applicability', label: 'Applies to', type: 'applicability' },
         { key: 'basis', label: 'Deduction Basis', type: 'select', options: ['Fixed Amount', 'Percentage of Basic Pay', 'Percentage of Gross Pay', 'Balance'] }, { key: 'deductionTag', label: 'Deduction Tag', type: 'select', options: ['Company Deduction', 'Withholding Tax', 'Other Statutory Deduction'], half: true, required: true, half: true },
         { key: 'amount', label: 'Default Amount / Rate', type: 'number', required: true, half: true },
-        ...scheduleFields(),
-        ...dateSetFields(),
+        // Payment Mode, Frequency and the effectivity, start, end and period dates are not asked here; a new deduction takes the defaults below (Semi-monthly, Every Payroll, in effect from 01/01/2026). The employee's own deduction holds its schedule.
         { key: 'partOfNetPay', label: 'Is part of net pay?', type: 'boolean', required: true, half: true }, { key: 'tax', label: 'Tax Treatment', type: 'select', options: ['Pre-tax', 'Post-tax', 'Not applicable'], half: true },
         { key: 'takeHomeTreatment', label: 'Insufficient Net Pay Handling', type: 'select', options: ['Defer Balance', 'Partial Deduction', 'Deduct in Full'], required: true, half: true },
         { key: 'hierarchyPriority', label: 'Hierarchy Rank', type: 'select', options: HIERARCHY_RANKS, required: true, half: true },
-        { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
       ] },
       { title: 'Accounting Setup', fields: [
         { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'] },
         { key: 'glName', label: 'GL Name', type: 'select', options: ['Payroll Deductions', 'Employee Receivable'] },
         { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Company Deductions', 'Other Receivables'] },
       ] },
+    ],
+    filterCriteria: [
+      { key: 'code', label: 'Deduction Code', kind: 'text' }, { key: 'name', label: 'Deduction Name', kind: 'text' }, { key: 'type', label: 'Deduction Type', kind: 'list' },
+      { key: 'applicability', label: 'Employee Group', kind: 'group' }, { key: 'basis', label: 'Deduction Basis', kind: 'list' },
+      { key: 'partOfNetPay', label: 'Is part of net pay?', kind: 'list', options: ['Yes', 'No'] },
+      { key: 'glBreakdown', label: 'GL Breakdown', kind: 'list' }, { key: 'glName', label: 'GL Name', kind: 'list' }, { key: 'subGlName', label: 'Sub GL Name', kind: 'list' },
+      { key: 'status', label: 'Status', kind: 'list', options: ['Active', 'Inactive'] },
+    ],
+    // Step 3 is Computation Mapping: the Basis of Computation and its mapping, then Status, Hold Date, Effective Status and Remarks.
+    finalFields: [
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+      // The date the deduction goes Inactive on its own and is no longer offered in the system.
+      { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
+      { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => effectiveStatusText(draft) },
+      { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
     ],
     // The number of deductions and the total belong to the employee's own deduction record, not to the company configuration.
     defaults: { type: 'Fixed Deduction', basis: 'Fixed Amount', amount: '500', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, partOfNetPay: 'Yes', tax: 'Post-tax', takeHomeTreatment: 'Partial Deduction', hierarchyPriority: '20', status: 'Active', glBreakdown: 'Per Employee', glName: 'Payroll Deductions', subGlName: 'Company Deductions' },
@@ -683,9 +696,8 @@ const serviceTabs = Object.freeze({
   Payroll: [
     { key: 'computations', short: 'Computational Basis', detail: 'Standard formulas, client assignments, test calculations and reference tables' },
     { key: 'earnings', short: 'Earning Configuration', detail: 'Earning types, taxability, computation and GL setup' },
-    { key: 'allowances', short: 'Variable Allowances', detail: 'Allowance basis, derived rates and timekeeping integration' },
-    { key: 'deductions', short: 'Deduction Configuration', detail: 'Deduction basis, recurring schedules and GL setup' },
     { key: 'bonuses', short: 'Bonus Configuration', detail: 'Bonus schedules, non-taxable thresholds and GL setup' },
+    { key: 'deductions', short: 'Deduction Configuration', detail: 'Deduction basis, recurring schedules and GL setup' },
     { key: 'loans', short: 'Company Loan Configuration', detail: 'Principal, interest, terms, amortization and balances' },
     { key: 'governmentLoans', short: 'Government Loans', detail: 'SSS and HDMF loan references, collection schedules and priority' },
     { key: 'payrollControls', short: 'Payroll Controls', detail: 'Calendars, currencies, deduction order, approvals and payslips' },
@@ -740,7 +752,7 @@ const effectiveStatusText = draft => (draft.holdDate
 
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
   const rows = readSavedServiceConfiguration(moduleKey, companyId);
-  return moduleKey === 'earnings' || moduleKey === 'bonuses' ? rows.map(heldByDate) : rows;
+  return ['earnings', 'bonuses', 'deductions'].includes(moduleKey) ? rows.map(heldByDate) : rows;
 }
 
 function readSavedServiceConfiguration(moduleKey, companyId) {
@@ -810,8 +822,12 @@ function exportRecords(def, records, format, library = []) {
   return true;
 }
 
+// The tab the hub was last on, so coming back from a card (Rounding Off, Earning Configuration and the rest) lands on the same tab.
+let lastHubTab = 'HRM';
+
 export function ServicesHub({ onOpen, companyName = 'ABC Company Ltd', hostedCards = {}, onOpenCard, embedded = false }) {
-  const [tab, setTab] = useState('HRM');
+  const [tab, setTabState] = useState(() => (serviceTabs[lastHubTab] ? lastHubTab : 'HRM'));
+  const setTab = name => { lastHubTab = name; setTabState(name); };
   // Cards a host screen owns (Benefits, Leave, Time and Attendance, Overtime setup) join their tab and open through the host.
   const cardsOf = name => [...serviceTabs[name], ...(hostedCards[name] || []).map(card => ({ ...card, hosted: true }))];
   const items = cardsOf(tab);
@@ -1461,7 +1477,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const saved = editing
       ? { ...trimmed, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
       : trimmed;
-    onSave(saved, { changes: pendingChanges, reason: ['bonuses', 'earnings'].includes(moduleKey) ? String(draft.remarks || '').trim() : changeReason.trim(), effectiveDate: changeEffective });
+    onSave(saved, { changes: pendingChanges, reason: ['bonuses', 'earnings', 'deductions'].includes(moduleKey) ? String(draft.remarks || '').trim() : changeReason.trim(), effectiveDate: changeEffective });
   };
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -1490,8 +1506,8 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
               })}
             </div>
             {lastStep && editing && <div className="change-details">
-              {moduleKey !== 'earnings' && <label>Change effective from<DateInput value={changeEffective} onChange={value => setChangeEffective(value)} /></label>}
-              {!['bonuses', 'earnings'].includes(moduleKey) && <label className="change-remarks">Remarks<textarea rows={3} value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Optional" /></label>}
+              {!['earnings', 'bonuses'].includes(moduleKey) && <label>Change effective from<DateInput value={changeEffective} onChange={value => setChangeEffective(value)} /></label>}
+              {!['bonuses', 'earnings', 'deductions'].includes(moduleKey) && <label className="change-remarks">Remarks<textarea rows={3} value={changeReason} onChange={event => { setError(''); setChangeReason(event.target.value); }} placeholder="Optional" /></label>}
               <p className="field-hint">{pendingChanges.length
                 ? `${pendingChanges.length} ${pendingChanges.length === 1 ? 'change' : 'changes'} will be recorded with your name, the value before and after, and this effective date. A changed formula value applies to payrolls paid from this date; earlier payrolls keep the value they used.`
                 : 'Nothing has changed yet.'}</p>
@@ -1667,7 +1683,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   // A Client Admin may add and edit earnings; the Basis of Computation stays P&A's.
   const clientMayAdd = !clientLocked || moduleKey === 'earnings';
   // The Earning and Bonus lists carry the approved button design: Add, Upload and Export.
-  const figmaActions = moduleKey === 'earnings' || moduleKey === 'bonuses';
+  const figmaActions = ['earnings', 'bonuses', 'deductions'].includes(moduleKey);
   const mappingGated = clientLocked && moduleKey !== 'earnings' && MAPPING_GATED_MODULES.includes(moduleKey);
   const storageKey = serviceStorageKey(moduleKey, companyId);
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));

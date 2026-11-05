@@ -446,8 +446,8 @@ function sectionDone(key, company, companyId) {
   return false;
 }
 
-export function CompanyInformationScreen({ company, onSaveCompany, notify, companyId, payrollConfiguration, onOpenEmployeeMasterfile }) {
-  const [open, setOpen] = useState(null);
+export function CompanyInformationScreen({ company, onSaveCompany, notify, companyId, payrollConfiguration, onOpenEmployeeMasterfile, initialSection = null }) {
+  const [open, setOpen] = useState(initialSection);
   const progress = useMemo(() => SECTIONS.filter(section => !section.notInProgress).map(section => ({ ...section, done: sectionDone(section.key, company, companyId) })), [company, companyId, open]); // eslint-disable-line react-hooks/exhaustive-deps
   const percent = Math.round((progress.filter(item => item.done).length / SECTIONS.length) * 10000) / 100;
   const props = { company, onSaveCompany, notify, companyId, onBack: () => setOpen(null) };

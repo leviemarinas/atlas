@@ -931,17 +931,19 @@ export function App() {
     {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
     {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
   </PlatformLayout>;
+  // Services Information, with the cards the host owns (Benefits, Leave, Time and Attendance, Overtime, Rounding Off), is also where Back from a service page returns to.
+  const servicesHub = <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />;
   return (
     <CompanyLayout view={view} setView={setView} onBack={() => setScreen('core')} onNavigate={navigate} company={activeCompany} companies={companyRecords} onSelectCompany={selectCompany}>
       <Toast toast={toast} onClose={() => setToast(null)} />
-      {view === 'information' && <CompanyInformationScreen key={activeCompanyId} company={activeCompany} companyId={activeCompanyId} onSaveCompany={persistCompany} notify={notify} onOpenEmployeeMasterfile={() => setScreen('employee')} payrollConfiguration={<ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />} />}
+      {view === 'information' && <CompanyInformationScreen key={activeCompanyId} company={activeCompany} companyId={activeCompanyId} onSaveCompany={persistCompany} notify={notify} onOpenEmployeeMasterfile={() => setScreen('employee')} payrollConfiguration={servicesHub} />}
       {view === 'rules' && <RulesPage key={activeCompanyId} rules={rules} setRules={setRules} setToast={notify} onOpenPolicies={() => setView('policies')} onOpenModule={target => {
         const [scope, ...parts] = target.split(':');
         const destination = parts.join(':');
         if (scope === 'view') setView(destination);
         if (scope === 'screen') setScreen(destination);
       }} />}
-      {view === 'services' && <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />}
+      {view === 'services' && <CompanyInformationScreen key={`services:${activeCompanyId}`} company={activeCompany} companyId={activeCompanyId} onSaveCompany={persistCompany} notify={notify} onOpenEmployeeMasterfile={() => setScreen('employee')} initialSection="services" payrollConfiguration={servicesHub} />}
       {(view === 'computations' || view === 'policies') && <ComputationalBasis key={`${view}:${activeCompanyId}`} companyId={activeCompanyId} initialTab={view === 'policies' ? 'policies' : 'computations'} onBack={() => setView('services')} onOpenStatutory={() => setScreen('statutory-settings')} onOpenService={moduleKey => setView(`service:${moduleKey}`)} notify={notify} />}
       {view.startsWith('service:') && <ServiceConfiguration key={`${view}:${activeCompanyId}`} moduleKey={view.split(':')[1]} companyId={activeCompanyId} onBack={() => setView('services')} notify={notify} />}
       {view.startsWith('workspace:') && <OperationalWorkspace workspaceKey={view.split(':')[1]} onBack={() => setView('information')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}

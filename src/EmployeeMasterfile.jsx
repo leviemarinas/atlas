@@ -123,6 +123,14 @@ const sectionDefinitions = [
     ],
   },
   {
+    key: 'allowances', title: 'Variable Allowances', upload: true,
+    columns: [['dateCreated', 'Date Created'], ['name', 'Variable Allowance'], ['amount', 'Amount'], ['unitBasis', 'Unit Basis'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type']],
+    // Follows the approved Add Variable Allowance screen and Annex B: the Variable Allowance comes from the Variable Allowance reference table; Work Days and Work Days Type fill in (read-only), Work Hours per Day can be changed,
+    // and the rates the amount works out to are shown as the entry is typed.
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Variable Allowance', 'select', () => referenceValues('variable-allowances')], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly']], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'rate'], ['monthlyRate', 'Monthly Rate', 'rate'], ['dailyRate', 'Daily Rate', 'rate'], ['hourlyRate', 'Hourly Rate', 'rate'], ['minuteRate', 'Per Minute Rate', 'rate'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'select', START_YEARS], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']]],
+    rows: [{ dateCreated: '01/01/2026', name: 'Transportation Allowance (per hour)', amount: '35000', unitBasis: 'Monthly', workDays: '261', workDaysType: 'Work Days per Year' }, { dateCreated: '01/01/2026', name: 'Lecture Fee', amount: '500', unitBasis: 'Daily', workDays: '313', workDaysType: 'Work Days per Year' }],
+  },
+  {
     key: 'earnings', title: 'Fixed Earnings', upload: true,
     columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
@@ -164,18 +172,18 @@ const sectionDefinitions = [
     rows: [{ payItem: 'SSS Salary Loan', frequency: 'Monthly', amount: '2500', startDate: '01/01/2026', endDate: '12/31/2026', principal: '30000', interest: '1500', accumulatedComputed: '17500', accumulatedManual: '0' }, { payItem: 'Company Salary Loan', frequency: 'Monthly', amount: '1000', startDate: '01/01/2026', endDate: '06/30/2026', principal: '9500', interest: '500', accumulatedComputed: '9400', accumulatedManual: '0' }],
   },
   {
+    key: 'costAllocation', title: 'Cost Allocation', upload: true,
+    columns: [['type', 'Cost Allocation Type'], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage']],
+    // Follows the approved Add Cost Allocation screen: the type, the name typed in, and a read-only percentage. A new entry takes the share of
+    // 100% that the employee's other allocations leave over (so it shows 0 once they total 100%).
+    fields: [['type', 'Cost Allocation Type', 'select', chargeCodeTypes], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage', 'percent']],
+    rows: [{ type: 'Department', name: 'Marketing', percentage: '35' }, { type: 'Job Title', name: 'Payroll Specialist', percentage: '20' }, { type: 'Site', name: 'Makati', percentage: '45' }],
+  },
+  {
     key: 'hdmf', title: 'HDMF Contribution', upload: true,
     columns: [['effectiveDate', 'Effectivity Date'], ['holdDate', 'Hold Date'], ['employee', 'Employee Contribution'], ['employer', 'Employer Contribution']],
     fields: [['effectiveDate', 'Effectivity Date', 'date'], ['holdDate', 'Hold Date', 'date'], ['employee', 'Employee Contribution Amount', 'number'], ['employer', 'Employer Contribution Amount', 'number']],
     rows: [{ effectiveDate: '01/01/2026', holdDate: '01/01/2026', employee: '240', employer: '480' }],
-  },
-  {
-    key: 'allowances', title: 'Variable Allowances', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['amount', 'Amount'], ['unitBasis', 'Unit Basis'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type']],
-    // Follows the approved Add Variable Allowance screen: Work Days and Work Days Type fill in (read-only), Work Hours per Day can be changed,
-    // and the rates the amount works out to are shown as the entry is typed.
-    fields: [['dateCreated', 'Date Created', 'date'], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly', 'Per Minute']], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'rate'], ['monthlyRate', 'Monthly Rate', 'rate'], ['dailyRate', 'Daily Rate', 'rate'], ['hourlyRate', 'Hourly Rate', 'rate'], ['minuteRate', 'Per Minute Rate', 'rate'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'date'], ['startYear', 'Start Year', 'date'], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']]],
-    rows: [{ dateCreated: '01/01/2026', amount: '35000', unitBasis: 'Monthly', workDays: '261', workDaysType: 'Work Days per Year' }, { dateCreated: '01/01/2026', amount: '500', unitBasis: 'Daily', workDays: '313', workDaysType: 'Work Days per Year' }],
   },
   {
     key: 'ytd', title: 'Payroll Records (YTD)', upload: true,
@@ -200,14 +208,6 @@ const sectionDefinitions = [
     columns: [['companyCode', 'Company Code'], ['subAccount', 'Local sub-account'], ['project', 'Business / Activity'], ['costLevel', 'Cost Level'], ['intercompany', 'Intercompany']],
     fields: [['companyCode', 'Company Code'], ['subAccount', 'Local sub-account'], ['costLevel', 'Cost Level', 'select', ['Company', 'Department', 'Project']], ['intercompany', 'Intercompany'], ['project', 'Project', 'select', ['Payroll Operations', 'Client Services']], ['statutoryCode', 'Statutory Code'], ['reserved', 'Reserved', 'boolean'], ['management', 'Management', 'select', ['Operations', 'Corporate']], ['costAllocation', 'Cost allocation', 'select', ['Default allocation', 'Custom allocation']]],
     rows: [{ companyCode: 'COMP00123', subAccount: 'Payroll Services', project: 'Payroll Operations', costLevel: 'Company', intercompany: 'No', statutoryCode: 'STAT-001', reserved: 'No' }],
-  },
-  {
-    key: 'costAllocation', title: 'Cost Allocation', upload: true,
-    columns: [['type', 'Cost Allocation Type'], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage']],
-    // Follows the approved Add Cost Allocation screen: the type, the name typed in, and a read-only percentage. A new entry takes the share of
-    // 100% that the employee's other allocations leave over (so it shows 0 once they total 100%).
-    fields: [['type', 'Cost Allocation Type', 'select', chargeCodeTypes], ['name', 'Cost Allocation Name'], ['percentage', 'Cost Allocation Percentage', 'percent']],
-    rows: [{ type: 'Department', name: 'Marketing', percentage: '35' }, { type: 'Job Title', name: 'Payroll Specialist', percentage: '20' }, { type: 'Site', name: 'Makati', percentage: '45' }],
   },
   {
     key: 'bankInformation', title: 'Bank Information', upload: true,
@@ -304,7 +304,7 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   // record came from an upload, so editing a row never silently clears it.
   const choices = value && !sourced.includes(value) ? [...sourced, value] : sourced;
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
-  if (type === 'rate') return <div className="rate-value">{peso(value)}</div>;
+  if (type === 'rate') return <input className="rate-box" value={value ?? 0} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'percent') return <div className="percent-field"><input value={value ?? 0} readOnly aria-label={`${label} (computed)`} /><span>%</span></div>;
   if (type === 'select') return <select value={value ?? ''} onChange={e => onChange(e.target.value)} required={required}><option value="">{choices.length ? 'Please select' : 'No active reference values'}</option>{choices.map(item => <option key={item}>{item}</option>)}</select>;
   if (type === 'boolean') return <div className="radio-group">{['Yes', 'No'].map(item => <label key={item}><input type="radio" name={key} checked={(value || 'No') === item} onChange={() => onChange(item)} /> {item}</label>)}</div>;
@@ -492,7 +492,7 @@ function applicableLoanNames(employee) {
 }
 
 function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null, left = 0 }) {
-  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'costAllocation' && !record?.id ? { percentage: String(left) } : {}), ...(section.key === 'allowances' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Work Days per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'costAllocation' && !record?.id ? { percentage: String(left) } : {}), ...(section.key === 'allowances' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Work Days per Year', workHours: String(setup.workHours || 8), effectiveDate: today } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
   const [reason, setReason] = useState('');
   // Pay-affecting sections keep an employee-level audit, with optional remarks.
   const audited = AUDITED_SECTIONS.includes(section.key);
@@ -899,7 +899,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Documents' && <Documents employee={employee} notify={notify} />}
         {activeTab === 'Custom Fields' && <CustomFields employee={employee} notify={notify} fieldNames={referenceValues('custom-fields')} />}
         {activeTab === 'Payroll Allocation' && <>
-          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 3 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
+          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 4 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}
     </div></main>

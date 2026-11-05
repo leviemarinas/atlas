@@ -3985,3 +3985,8 @@ fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fiel
 .employee-form-grid .percent-field input { flex: 1; margin-top: 0; background: #eceef1; border-radius: 4px 0 0 4px; }
 .employee-form-grid .percent-field span { display: grid; place-items: center; padding: 0 12px; border: 1px solid #dee2e6; border-left: 0; border-radius: 0 4px 4px 0; background: #eceef1; font-size: 12px; }
 .employee-form-grid[data-section="costAllocation"] > label { grid-column: 1 / -1; }
+
+/* A rate is a grey read-only box, as on the approved Variable Allowance screen. */
+.employee-form-grid .rate-box { background: #eceef1; color: #555; }
+
+.employee-form-grid[data-section="allowances"] > .ef-name { grid-column: 1 / -1; }
