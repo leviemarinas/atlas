@@ -282,7 +282,7 @@ export function overlayMasterfile({ employees = [], salaryInformation = [], loan
     if (has(entries, 'earnings')) {
       out.earnings = entries.earnings.filter(row => counts(row, run)).map(row => ({
         earningCode: row.code || row.name, earningName: row.name, classification: engineClassification(row), frequency: engineFrequency(row), earningsAmount: number(row.amount),
-        periodStart: toIso(row.start) || toIso(row.effectiveDate), periodEnd: toIso(row.end), taxability: row.taxability,
+        periodStart: toIso(row.start) || toIso(row.effectiveDate), periodEnd: toIso(row.end), taxability: row.taxability, cappedEarning: row.cappedEarning, cappedAmount: number(row.cappedAmount),
       }));
     }
     if (has(entries, 'deductions')) {

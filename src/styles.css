@@ -3990,3 +3990,20 @@ fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fiel
 .employee-form-grid .rate-box { background: #eceef1; color: #555; }
 
 .employee-form-grid[data-section="allowances"] > .ef-name { grid-column: 1 / -1; }
+
+/* Fixed Earnings: Frequency | Earning Amount, then Earning Type and Taxability each across the whole form, every other field under them. */
+.employee-form-grid[data-section="earnings"] > .ef-type, .employee-form-grid[data-section="earnings"] > .ef-taxability { grid-column: 1 / -1; }
+.employee-form-grid[data-section="earnings"] > .ef-cappedEarning, .employee-form-grid[data-section="earnings"] > .ef-effectiveDate { grid-column: 1; }
+
+.employee-form-grid .field-hint { display: block; margin-top: 4px; font-size: 11px; font-weight: 400; color: #6b6573; }
+
+.employee-form-grid .locked-value { margin-top: 5px; padding-top: 6px; padding-bottom: 6px; line-height: 1.4; }
+
+/* Auto-populated (read-only) fields in the employee entry forms are grey, like the configuration forms. */
+.employee-form-grid input[readonly], .employee-form-grid input:disabled, .employee-form-grid .locked-value { background: #eceef1; color: #4e4954; }
+.employee-form-grid .locked-value { border-style: solid; }
+
+.employee-form-grid > .ef-holdStatus { grid-column: 1 / -1; }
+.employee-form-grid .ef-holdStatus .locked-value { height: auto; min-height: 44px; white-space: normal; overflow: visible; }
+
+.employee-form-grid[data-section="earnings"] > .ef-grossUp { grid-column: 1 / -1; }

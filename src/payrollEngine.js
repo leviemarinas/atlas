@@ -1067,8 +1067,10 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     earnings.forEach((item, index) => {
       const setup = setupOf(item);
       if (!setup || !(item.amount > 0)) return;
-      const cap = number(setup.cappedAmount);
-      if (setup.cappedEarning === 'Yes' && cap > 0 && item.amount > cap) {
+      // The cap is the employee's own (Employee Masterfile); an earning set up without one keeps its configuration cap.
+      const ownCap = item.cappedEarning === 'Yes' ? number(item.cappedAmount) : 0;
+      const cap = ownCap || number(setup.cappedAmount);
+      if ((item.cappedEarning === 'Yes' || setup.cappedEarning === 'Yes') && cap > 0 && item.amount > cap) {
         earnings[index] = { ...item, amount: cap, uncappedAmount: item.amount };
         exceptions.push({ severity: 'Info', message: `${item.name} is capped at ₱${cap.toLocaleString()}; ₱${round2(item.amount - cap).toLocaleString()} was not paid.` });
       }

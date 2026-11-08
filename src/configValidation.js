@@ -169,5 +169,10 @@ export function entryProblems(sectionKey, draft = {}, fields = [], requiredKeys 
     };
     if (present(draft[start]) && present(draft[end]) && normal(draft[end]) < normal(draft[start])) problems.push(`${labelOf(end)} cannot be before ${labelOf(start)}.`);
   });
+  // A Fixed Earning cannot be held beyond the End it stops at.
+  if (sectionKey === 'earnings' && present(draft.holdDate) && present(draft.end)) {
+    const iso = value => { const text = String(value).trim(); if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10); const parts = text.split(/[/-]/); return parts.length === 3 && parts[2].length === 4 ? `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}` : text; };
+    if (iso(draft.holdDate) > iso(draft.end)) problems.push('Hold Date cannot be after the End of the earning.');
+  }
   return [...new Set(problems)];
 }
