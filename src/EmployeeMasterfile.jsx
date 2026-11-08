@@ -79,7 +79,7 @@ const SECTION_OPTIONAL = { loans: ['payItem', 'loanSource'], basicPay: [] };
 const SECTION_REQUIRED = {};
 // Start Year is picked from the years around today rather than typed.
 const START_YEARS = Array.from({ length: 16 }, (_, index) => String(new Date().getFullYear() - 5 + index));
-const isRequired = (section, [key, , type]) => type !== 'computed' && key !== 'dateCreated' && (!OPTIONAL_FIELDS.has(key) || (SECTION_REQUIRED[section.key] || []).includes(key)) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
+const isRequired = (section, [key, , type]) => type !== 'computed' && type !== 'status' && key !== 'dateCreated' && (!OPTIONAL_FIELDS.has(key) || (SECTION_REQUIRED[section.key] || []).includes(key)) && !(SECTION_OPTIONAL[section.key] || []).includes(key);
 
 /** Active records of a company configuration register, for the entry forms that pick from it. */
 function configured(moduleKey) {
@@ -132,11 +132,11 @@ const sectionDefinitions = [
   },
   {
     key: 'earnings', title: 'Fixed Earnings', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['amount', 'Earnings Amount'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['classification', 'Classification'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
+    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['paymentMode', 'Frequency'], ['amount', 'Earnings Amount'], ['type', 'Earning Type'], ['taxability', 'Taxability'], ['classification', 'Non-taxable Classification'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
     // Follows the approved Add Earnings screen. Picking the earning (Earning Code - Earning Name, searchable) fills in what applies to it
     // from Earning Configuration: taxability, classification, amount, frequency, dates and hold date. The code is kept with the entry.
-    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'earningpick'], ['amount', 'Earning Amount', 'number'], ['cappedAmount', 'Capped Amount', 'computed', null, draft => Number(draft.cappedAmount) > 0], ['paymentMode', 'Frequency', 'select', CONFIG_PAYMENT_MODES], ['taxability', 'Taxability', 'computed'], ['classification', 'Classification', 'select', draft => (draft.taxability === 'Non-taxable' ? ['Receivable', 'De Minimis', 'Other Non-taxable'] : ['Regular Earning', 'Retirement', 'Fringe Benefit'])], ['deMinimisBenefit', 'De Minimis Benefit', 'select', () => seedVersion('deMinimis', 2026, 1, true).rows.map(row => row.benefitName), draft => draft.classification === 'De Minimis'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'date'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'date'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['remarks', 'Remarks', 'textarea']],
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'earningpick'], ['paymentMode', 'Frequency', 'select', CONFIG_PAYMENT_MODES], ['amount', 'Earning Amount', 'number'], ['type', 'Earning Type', 'computed'], ['taxability', 'Taxability', 'computed'], ['grossUp', 'Gross up this earning?', 'computed', null, draft => draft.taxability === 'Taxable'], ['classification', 'Non-taxable Classification', 'select', ['Receivable', 'De Minimis', 'Other Non-taxable'], draft => draft.taxability === 'Non-taxable'], ['cappedEarning', 'Capped Earning?', 'computed'], ['cappedAmount', 'Capped Amount', 'number', null, draft => draft.cappedEarning === 'Yes'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'monthyear'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'monthyear'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['holdStatus', 'Effective Status', 'status', () => 'On hold: this earning will not be released until the Hold Date is removed. Once removed, it will be released retroactively in the payroll transaction.', draft => Boolean(draft.holdDate)], ['remarks', 'Remarks', 'textarea']],
     rows: [
       { dateCreated: '01/01/2026', code: 'EXA-001', name: 'Salary', amount: '50000', frequency: 'Semi-monthly', taxability: 'Taxable', classification: 'Taxable' },
       { dateCreated: '01/01/2026', code: 'EXA-002', name: 'Lecture Fee', amount: '7500', frequency: 'One-time', taxability: 'Non-taxable', classification: 'Non-Taxable' },
@@ -237,6 +237,8 @@ function formatCell(key, value) {
   if (key === 'minuteRate') { const places = readPayrollRounding().basicPay; return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: places, maximumFractionDigits: places })}`; }
   if (['amount', 'total', 'balance', 'principal', 'grossPay', 'taxableIncome', 'taxWithheld', 'netPay', 'employee', 'employer', 'basicPay', 'taxableBonus', 'nonTaxableBonus', 'deMinimis', 'allowableDeductions', 'annualRate', 'monthlyRate', 'dailyRate', 'hourlyRate', 'minuteRate'].includes(key)) return `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
   if (key === 'percentage') return `${value}%`;
+  if (['start', 'end'].includes(key) && /^\d{4}-\d{2}/.test(String(value || ''))) return `${MONTH_NAMES[Number(String(value).slice(5, 7)) - 1]} ${String(value).slice(0, 4)}`;
+  if (key === 'cappedAmount') return Number(value) > 0 ? `₱ ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—';
   // Date inputs store ISO dates; show them like the rest of the table (MM/DD/YYYY).
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) { const [year, month, day] = value.split('-'); return `${month}/${day}/${year}`; }
   return value || '—';
@@ -279,7 +281,7 @@ function earningDefaults(name) {
   const item = configured('earnings').find(entry => entry.name === name);
   if (!item) return {};
   const classification = ['Regular Earning', 'Retirement', 'Fringe Benefit', 'Receivable', 'De Minimis', 'Other Non-taxable'].includes(item.classification) ? item.classification : (item.taxability === 'Non-taxable' ? 'Other Non-taxable' : 'Regular Earning');
-  const fill = { taxability: item.taxability, classification, deMinimisBenefit: classification === 'De Minimis' ? item.deMinimisBenefit : '', paymentMode: item.paymentMode, effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
+  const fill = { type: item.type, grossUp: item.grossUp, taxability: item.taxability, classification: item.taxability === 'Non-taxable' ? classification : '', deMinimisBenefit: classification === 'De Minimis' ? item.deMinimisBenefit : '', paymentMode: item.paymentMode, effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
   if (Number(item.defaultAmount) > 0) fill.amount = item.defaultAmount;
   return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
 }
@@ -293,16 +295,32 @@ function bonusDefaults(name) {
   return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
 }
 
+/** One Month Year dropdown ("January 2026"). The record keeps the first day (Start) or the last day (End) of the month. */
+function MonthYearField({ fieldKey, label, value, onChange, required, notBefore = '' }) {
+  const iso = toIsoDate(value);
+  const current = iso ? iso.slice(0, 7) : '';
+  const months = START_YEARS.flatMap(year => MONTH_NAMES.map((name, index) => ({ key: `${year}-${String(index + 1).padStart(2, '0')}`, text: `${name} ${year}` })));
+  if (current && !months.some(item => item.key === current)) months.push({ key: current, text: `${MONTH_NAMES[Number(current.slice(5, 7)) - 1]} ${current.slice(0, 4)}` });
+  const pick = chosen => {
+    if (!chosen) return onChange('');
+    const [y, m] = chosen.split('-').map(Number);
+    onChange(fieldKey === 'end' ? `${chosen}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}` : `${chosen}-01`);
+  };
+  return <><select aria-label={label} value={current} required={required} onChange={e => pick(e.target.value)}><option value="">Select month and year</option>{months.map(item => <option key={item.key} value={item.key} disabled={Boolean(notBefore) && item.key < notBefore.slice(0, 7)}>{item.text}</option>)}</select>{fieldKey === 'end' && current && <small className="field-hint">Earning is until {months.find(item => item.key === current)?.text}</small>}</>;
+}
+
 function InputField({ field, value, onChange, draft = {}, required = true }) {
   const [key, label, type = 'text', options = []] = field;
   if (type === 'earningpick') return <EarningPicker value={value} onChange={onChange} required={required} />;
   if (type === 'bonuspick') return <EarningPicker value={value} onChange={onChange} required={required} moduleKey="bonuses" noun="bonus" />;
   // Options may be a function so a field can be sourced from another module's
   // register (cost allocation reads the company charge codes, for example).
-  const sourced = typeof options === 'function' ? options(draft) : options;
+  const sourced = (typeof options === 'function' ? options(draft) : options) || [];
   // Keep a stored value selectable even if the reference row was retired or the
   // record came from an upload, so editing a row never silently clears it.
   const choices = value && !sourced.includes(value) ? [...sourced, value] : sourced;
+  // A read-only note, like Effective Status in Earning Configuration; the text is worked out from the entry.
+  if (type === 'status') return <div className="locked-value">{options(draft)}</div>;
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'rate') return <input className="rate-box" value={value ?? 0} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'percent') return <div className="percent-field"><input value={value ?? 0} readOnly aria-label={`${label} (computed)`} /><span>%</span></div>;
@@ -312,6 +330,8 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   if (key === 'dateCreated') return <DateInput value={toIsoDate(value)} disabled aria-label={`${label} (auto-populated)`} onChange={() => {}} />;
   // Dates read and type as mm/dd/yyyy whatever the browser's locale; the record keeps the ISO date.
   if (type === 'date') return <DateInput value={toIsoDate(value)} aria-label={label} onChange={onChange} />;
+  // Start and End are a month and a year; the record keeps the first day (Start) or the last day (End) of that month.
+  if (type === 'monthyear') return <MonthYearField fieldKey={key} label={label} value={value} onChange={onChange} required={required} notBefore={key === 'end' ? toIsoDate(draft.start) : ''} />;
   if (type === 'textarea') return <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="Enter remarks" />;
   return <input type={type} min={type === 'number' ? '0' : undefined} step={type === 'number' ? 'any' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
 }
@@ -335,7 +355,10 @@ function normalizePayrollRecord(section, input) {
         : section.key === 'loans' ? referenceRows('loan-types').find(row => row.name === draft.payItem) : null;
   if (source?.code) draft = { ...draft, code: source.code };
   // A capped earning shows the cap its Earning Configuration sets.
-  if (section.key === 'earnings') draft = { ...draft, cappedAmount: source?.cappedEarning === 'Yes' ? String(source.cappedAmount || '') : '' };
+  // The Capped Amount is the employee's own; it is only kept while the earning is capped.
+  // Capped Earning? follows the earning's Earning Configuration and is not edited here.
+  if (section.key === 'earnings') draft = { ...draft, cappedEarning: source?.cappedEarning || draft.cappedEarning || 'No' };
+  if (section.key === 'earnings' && draft.cappedEarning !== 'Yes') draft = { ...draft, cappedAmount: '' };
   if (section.key === 'basicPay') draft = withMwePlace(draft, mweRateRows());
   if (section.key === 'basicPay' || section.key === 'allowances') {
     const amount = Number(draft.amount || 0);
@@ -538,7 +561,7 @@ function inheritedEarnings(rows, employee) {
     .map(item => normalizePayrollRecord({ key: 'earnings' }, {
       id: `cfg-${item.code}`, inherited: true, source: 'From Earning Configuration', dateCreated: today,
       code: item.code, name: item.name, amount: item.defaultAmount, paymentMode: item.paymentMode, frequency: item.frequency,
-      taxability: item.taxability, classification: item.classification === 'De Minimis' ? 'De Minimis' : item.classification === 'Receivable' ? 'Reimbursement' : 'Regular',
+      type: item.type, grossUp: item.grossUp, cappedEarning: item.cappedEarning || 'No', taxability: item.taxability, classification: item.classification === 'De Minimis' ? 'De Minimis' : item.classification === 'Receivable' ? 'Reimbursement' : 'Regular',
       effectiveDate: item.effectivityDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate,
     }));
 }

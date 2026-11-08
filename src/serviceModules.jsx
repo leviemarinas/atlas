@@ -190,14 +190,24 @@ function loanInterest(draft) {
   return Math.round(Number(draft.principal || 0) * Number(draft.interest || 0) / 100 * Number(draft.terms || 0) / 12 * 100) / 100;
 }
 
-/** The next free "ERN - 2026 - 00001" style code for this company: one more than the highest used this year. */
+/** The next free "ERN - 00001" style code for this company: one more than the highest used. */
 function nextEarningCode(companyId) {
-  const prefix = `ERN - ${new Date().getFullYear()} - `;
+  const prefix = 'ERN - ';
   const used = readServiceConfiguration('earnings', companyId)
     .map(item => String(item.code || ''))
     .filter(code => code.startsWith(prefix))
     .map(code => Number(code.slice(prefix.length)) || 0);
   return `${prefix}${String(Math.max(0, ...used) + 1).padStart(5, '0')}`;
+}
+
+/** The next free "BON - 0001" style code for this company: one more than the highest used. */
+function nextBonusCode(companyId) {
+  const prefix = 'BON - ';
+  const used = readServiceConfiguration('bonuses', companyId)
+    .map(item => String(item.code || ''))
+    .filter(code => code.startsWith(prefix))
+    .map(code => Number(code.slice(prefix.length)) || 0);
+  return `${prefix}${String(Math.max(0, ...used) + 1).padStart(4, '0')}`;
 }
 
 const baseModuleDefinitions = {
@@ -213,8 +223,8 @@ const baseModuleDefinitions = {
     steps: [
       {
         title: 'Earning Details', fields: [
-          // New earnings are numbered ERN - <this year> - 00001, 00002 … ; the code stays editable.
-          { key: 'code', label: 'Earning Code', required: true, half: true, placeholder: `ERN - ${new Date().getFullYear()} - 00001`, suggest: ({ companyId }) => nextEarningCode(companyId) },
+          // New earnings are numbered ERN - 00001, 00002 … ; the code stays editable.
+          { key: 'code', label: 'Earning Code', required: true, half: true, placeholder: 'ERN - 00001', suggest: ({ companyId }) => nextEarningCode(companyId) },
           { key: 'name', label: 'Earning Name', required: true, half: true },
           { key: 'type', label: 'Earning Type', type: 'select', options: () => referenceValues('earning-config-types'), required: true },
           { key: 'applicability', label: 'Applies to', type: 'applicability', variant: 'earning', hideLabel: true },
@@ -225,8 +235,7 @@ const baseModuleDefinitions = {
       {
         title: 'Earning Setup', fields: [
           { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true, half: true },
-          // A capped earning stops being applied once the employee has received this much.
-          { key: 'cappedAmount', label: 'Capped Amount', type: 'number', required: true, half: true, visible: draft => draft.cappedEarning === 'Yes' },
+          // The Capped Amount is not set here: it is entered per employee on the Employee Masterfile (Fixed Earnings).
           { key: 'adjustIfAbsent', label: 'Adjust If Absent?', type: 'boolean', required: true, half: true, rowStart: true },
           // Adjust If Absent opens the absence rules; they are hidden when it is No.
           // When the employee's absences reach the minimum, the Adjustment Earning chosen here is deducted.
@@ -240,7 +249,7 @@ const baseModuleDefinitions = {
           { key: 'defaultAmount', label: 'Amount', type: 'number', required: true, half: true, visible: draft => draft.autoCompute === 'Yes' && draft.computationBasis === 'Amount' },
           { key: 'unit', label: 'Unit', type: 'select', options: ['Daily', 'Hourly'], half: true, visible: draft => draft.autoCompute === 'Yes' },
           { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true, half: true, rowStart: true },
-          { key: 'classification', label: 'Earning Classification', type: 'select', searchable: true, half: true, options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
+          { key: 'classification', label: 'Non-taxable Classification', type: 'select', searchable: true, half: true, options: draft => EARNING_CLASSIFICATIONS[draft.taxability] || [...EARNING_CLASSIFICATIONS.Taxable, ...EARNING_CLASSIFICATIONS['Non-taxable']], required: true, visible: draft => draft.taxability === 'Non-taxable' },
           { key: 'includedInRate', label: 'Included in computing the daily/hourly rate?', type: 'boolean', required: true, visible: draft => ['De Minimis', 'Other Non-taxable'].includes(draft.classification) },
           { key: 'deMinimisBenefit', label: 'De Minimis Benefit', type: 'select', options: () => deMinimisBenefits().map(row => row.benefitName), required: true, half: true, visible: draft => draft.classification === 'De Minimis' },
           { key: 'deMinimisThreshold', label: 'De Minimis Threshold', type: 'readonly', show: draft => (deMinimisRule(draft) ? pesos(deMinimisRule(draft).ceiling) : 'Pick a benefit'), half: true, visible: draft => draft.classification === 'De Minimis' },
@@ -264,7 +273,7 @@ const baseModuleDefinitions = {
     ],
     filterCriteria: [
       { key: 'code', label: 'Earning Code', kind: 'text' }, { key: 'type', label: 'Earning Type', kind: 'list' }, { key: 'applicability', label: 'Employee Group', kind: 'group' },
-      { key: 'taxability', label: 'Taxability', kind: 'list' }, { key: 'classification', label: 'Earning Classification', kind: 'list' },
+      { key: 'taxability', label: 'Taxability', kind: 'list' }, { key: 'classification', label: 'Non-taxable Classification', kind: 'list' },
       { key: 'glBreakdown', label: 'GL Breakdown', kind: 'list' }, { key: 'glName', label: 'GL Name', kind: 'list' }, { key: 'subGlName', label: 'Sub GL Name', kind: 'list' },
       { key: 'status', label: 'Status', kind: 'list', options: ['Active', 'Inactive'] },
     ],
@@ -282,13 +291,12 @@ const baseModuleDefinitions = {
     /** Hierarchy and limit are refused here, at the screen, rather than discovered at payroll. */
     validate: (draft, { companyId } = {}) => {
       const problems = employeeGroupProblems(draft, 'earning');
-      if (draft.cappedEarning === 'Yes' && !(Number(draft.cappedAmount) > 0)) problems.push('Enter the Capped Amount — the most an employee can receive, greater than zero.');
       return problems;
     },
     // A taxability change keeps only a classification that taxability still allows.
     derive: (draft, key) => (key === 'taxability' && !(EARNING_CLASSIFICATIONS[draft.taxability] || []).includes(draft.classification)
       ? { classification: EARNING_CLASSIFICATIONS[draft.taxability]?.[0] || '' } : null),
-    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', cappedAmount: '0', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'Yes', grossUp: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'Daily', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
+    defaults: { type: 'Normal', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, status: 'Active', cappedEarning: 'No', adjustIfAbsent: 'No', minimumAbsent: '0', autoCompute: 'Yes', grossUp: 'No', defaultAmount: '0', eligibleForReclassification: 'No', reclassDirection: 'Taxable to non-taxable', reclassPriority: '1', reclassCapBasis: 'No limit', reclassCap: '0', computationBasis: 'Current Basic Pay', variableAllowance: 'Variable Allowance 1', unit: 'Daily', negativeComputation: 'No', taxability: 'Non-taxable', classification: 'De Minimis', deMinimisBenefit: 'Rice Subsidy', includedInRate: 'No', workDays: '', glBreakdown: 'Per Employee', glName: 'General Ledger Name 1', subGlName: 'Account Name' },
     rows: [
       ['47218653', 'Salary', 'Normal'], ['47218654', 'Lecture Fee', 'Normal'], ['47218655', 'Basic Pay Adjustment', 'Basic Pay Adjustment'], ['47218656', 'Clothing Allowance', 'Allowance'], ['47218657', 'Special Privilege Leave', 'Special Privilege Leave'], ['47218658', 'Transportation Reimbursement', 'Reimbursement'], ['47218659', 'Undertime Adjustment', 'Undertime'], ['47218660', 'Late Adjustment', 'Late'], ['47218661', 'Meal Allowance', 'Allowance', { defaultAmount: '1500' }], ['47218662', 'Night Differential', 'Normal'],
       // Tagged for retirement so the Retirement engine can resolve its salary
@@ -305,14 +313,16 @@ const baseModuleDefinitions = {
     table: [['code', 'Bonus Code'], ['name', 'Bonus Name'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['threshold', 'Bonus Threshold'], ['applicability', 'Applies To'], ['status', 'Status']],
     steps: [
       { title: 'Bonus Details', fields: [
-        { key: 'code', label: 'Bonus Code', required: true, half: true }, { key: 'name', label: 'Bonus Name', required: true, half: true },
+        // Numbered BON - 0001, 0002 … like earning codes; the code stays editable.
+        { key: 'code', label: 'Bonus Code', required: true, half: true, placeholder: 'BON - 0001', suggest: ({ companyId }) => nextBonusCode(companyId) }, { key: 'name', label: 'Bonus Name', required: true, half: true },
         { key: 'type', label: 'Bonus Type', type: 'select', options: ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Productivity Bonus'], required: true },
         // The non-taxable ceilings come from the Bonus Ceiling Reference Table; Threshold Splitting from its own Reference Table.
-        { key: 'threshold', label: 'Bonus Threshold', type: 'select', options: () => referenceValues('bonus-ceilings', 'ceiling').map(String), required: true, half: true },
-        { key: 'thresholdSplitting', label: 'Threshold Splitting', type: 'select', options: () => referenceValues('bonus-threshold-splitting'), required: true, half: true },
+        { key: 'threshold', label: 'Bonus Threshold', type: 'number', half: true },
+        { key: 'thresholdSplitting', label: 'Threshold Splitting (%)', type: 'number', half: true },
         { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
+        // Once the non-taxable threshold is used up, the excess is paid under the taxable bonus chosen here.
+        { key: 'adjustmentAfterThreshold', label: 'Adjustment after Threshold', type: 'select', searchable: true, options: (draft, { companyId } = {}) => [...new Set(readServiceConfiguration('bonuses', companyId).filter(item => item.taxability === 'Taxable' && (item.status || 'Active') === 'Active' && item.id !== draft.id && item.code !== draft.code).map(item => item.name).filter(Boolean))], visible: draft => draft.taxability === 'Non-taxable' },
         { key: 'applicability', label: 'Applies to', type: 'applicability', variant: 'earning', hideLabel: true },
-        { key: 'amount', label: 'Bonus Amount', type: 'number', required: true, half: true },
         // Stamped with today when the bonus is created and never editable.
         { key: 'dateCreated', label: 'Date Created', type: 'readonly', show: draft => (draft.dateCreated ? formatUsDate(draft.dateCreated) : '—'), half: true, rowStart: true },
         // Payment Mode, Frequency and the effectivity, start, end and period dates are not asked for here; a new bonus takes the defaults below (Yearly, in effect from 01/01/2026).
@@ -339,7 +349,7 @@ const baseModuleDefinitions = {
       { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
     ],
     validate: draft => employeeGroupProblems(draft, 'bonus'),
-    defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplitting: '100%', taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
+    defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplitting: '100', taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
     rows: [['BON-001', '13th Month Pay', '13th Month Pay'], ['BON-002', 'Performance Bonus', 'Performance Bonus'], ['BON-003', 'Signing Bonus', 'Signing Bonus'], ['BON-004', 'Productivity Incentive', 'Productivity Bonus'], ['BON-005', 'Service Award', 'Performance Bonus']],
   },
   deductions: {
@@ -1276,7 +1286,7 @@ function EarningAssignmentField({ value, onChange }) {
   const hiredDate = hired.find(item => item.rule === hiredRule)?.date || '';
   // Saves the whole filter at once: the picked values of every list, the hire-date rules and the rest.
   const commit = ({ nextMode = mode, filters = {}, nextHired = hired, nextExtra = extra, nextNames = names } = {}) => {
-    if (nextMode !== 'filter') return onChange({ ...scope, scope: 'Criteria', mode: nextMode, groups: nextMode === 'all' ? ['All Employees'] : [], hired: [], filters: {}, extra: {}, names: [] });
+    if (nextMode !== 'filter') return onChange({ ...scope, scope: 'Criteria', mode: nextMode, groups: nextMode === 'all' ? ['All Employees'] : [], hired: [], filters: {}, extra: {}, names: nextMode === 'all' ? nextNames : [] });
     const all = Object.fromEntries(GROUP_CATEGORIES.filter(cat => valuesOf(cat)).map(cat => [cat, filters[cat] ?? pickedIn(cat)]));
     const legacy = groups.filter(item => item !== 'All Employees' && !GROUP_CATEGORIES.some(cat => (valuesOf(cat) || []).includes(item)));
     return onChange({ ...scope, scope: 'Criteria', mode: 'filter', groups: [...new Set([...legacy, ...Object.values(all).flat()])], filters: all, hired: nextHired, extra: nextExtra, names: nextNames });
@@ -1325,7 +1335,7 @@ function EarningAssignmentField({ value, onChange }) {
         </>}
       </div>
     </div>}
-    {mode === 'filter' && <div className="earning-assignment-names">
+    {mode && <div className="earning-assignment-names">
       <span className="earning-assignment-label">Employee Names</span>
       <div className="earning-assignment-chips">
         {names.map(code => <span key={code} className="earning-assignment-chip">{nameOf(code)}<button type="button" onClick={() => setNames(names.filter(item => item !== code))} aria-label={`Remove ${nameOf(code)}`}>×</button></span>)}
@@ -1725,7 +1735,8 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
     const duplicate = records.some(record => record.id !== draft.id && record.code.toLowerCase() === draft.code.toLowerCase());
     if (duplicate) { notify({ type: 'error', message: `${draft.code} already exists. Use a unique code.` }); return; }
     const sameName = draft.name && records.find(record => record.id !== draft.id && String(record.name || '').trim().toLowerCase() === String(draft.name).trim().toLowerCase());
-    if (sameName) { notify({ type: 'error', message: `${draft.name} already exists as ${sameName.code}. Use a unique name.` }); return; }
+    // A bonus may share its name with another; its code is what must be unique.
+    if (sameName && moduleKey !== 'bonuses') { notify({ type: 'error', message: `${draft.name} already exists as ${sameName.code}. Use a unique name.` }); return; }
     // Deductions and loans share one hierarchy, so a rank can be held by only one of them.
     if (['deductions', 'loans'].includes(moduleKey) && draft.hierarchyPriority) {
       const others = [...records.filter(record => record.id !== draft.id), ...readServiceConfiguration(moduleKey === 'deductions' ? 'loans' : 'deductions', companyId)];
