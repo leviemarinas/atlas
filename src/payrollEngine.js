@@ -1259,7 +1259,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
         record({ code: 'BON-003', category: 'Bonus', amount: taxable, evaluate: false, inputs: { other_bonus: amount, bonus_tax_ceiling: nonTaxable }, detail: `${type} above the remaining ceiling is taxable`, source: 'Bonus ceiling reference table' });
         exceptions.push({ severity: 'Info', message: `${type} exceeded the remaining ₱${bonusCeiling.toLocaleString()} ceiling; ₱${taxable.toLocaleString()} is taxable.` });
       }
-      bonuses.push({ name: type, amount, nonTaxable, taxable, ceilingBefore: round2(available + nonTaxable), source: config.thirteenthMonth.basis === 'Custom / uploaded value' ? 'Uploaded on the transaction' : 'Bonus Management' });
+      bonuses.push({ name: type, amount, nonTaxable, taxable, ceilingBefore: round2(available + nonTaxable), boundCode: boundBonus?.code || '', boundVersion: boundBonus?.version || '', boundProblem: boundBonus && !boundBonus.resolved ? boundBonus.problem : '', source: config.thirteenthMonth.basis === 'Custom / uploaded value' ? 'Uploaded on the transaction' : 'Bonus Management' });
     });
   }
 

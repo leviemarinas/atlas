@@ -77,6 +77,17 @@ export function configFieldProblems(moduleKey, draft = {}, steps = []) {
  * Whether a configuration has already been used by a payroll transaction that is still standing.
  * Delete is allowed only while it has not (Project Plan: "Delete, applicable if not yet used in payroll processing").
  */
+export function payrollsUsing(record = {}, runs = []) {
+  const code = String(record.code || '').trim();
+  const name = String(record.name || '').trim();
+  if (!code && !name) return [];
+  return runs.filter(run => run?.status !== 'Cancelled' && run?.result && (() => {
+    const text = JSON.stringify(run.result.lines || []);
+    return (code && text.includes(`"code":${JSON.stringify(code)}`)) || (name && text.includes(`"name":${JSON.stringify(name)}`));
+  })())
+    .sort((left, right) => String(left.createdAt || '').localeCompare(String(right.createdAt || '')) || String(left.transactionNumber).localeCompare(String(right.transactionNumber)));
+}
+
 export function usedInPayroll(record = {}, runs = []) {
   const code = String(record.code || '').trim();
   const name = String(record.name || '').trim();
@@ -140,14 +151,58 @@ export const ENTRY_LIMITS = Object.freeze({
   ytd: [['year', 2000, 2100, true], ['grossPay', 0, null], ['basicPay', 0, null], ['taxableIncome', 0, null], ['taxableBonus', 0, null], ['nonTaxableBonus', 0, null], ['deMinimis', 0, null], ['otherTaxable', 0, null], ['otherNonTaxable', 0, null], ['statutoryEmployee', 0, null], ['companyDeductions', 0, null], ['loanPayments', 0, null], ['taxWithheld', 0, null], ['netPay', 0, null]],
   previousEmployer: [['employmentYear', 2000, 2100, true], ['lastSalary', 0, null], ['basicPay', 0, null], ['taxableBonus', 0, null], ['otherTaxable', 0, null], ['grossTaxable', 0, null], ['nonTaxableBonus', 0, null], ['deMinimis', 0, null], ['allowableDeductions', 0, null], ['otherNonTaxable', 0, null], ['insurancePremium', 0, null], ['taxWithheld', 0, null]],
 });
-const ENTRY_DATE_ORDER = Object.freeze({ earnings: [['start', 'end']], deductions: [['startDate', 'endDate']], loans: [['startDate', 'endDate']], statutory: [['startDate', 'endDate']], previousEmployer: [['startDate', 'endDate']] });
+const ENTRY_DATE_ORDER = Object.freeze({ earnings: [['start', 'end']], deductions: [['startDate', 'endDate']], loans: [['startDate', 'endDate']], statutory: [['startDate', 'endDate']], previousEmployer: [['startDate', 'endDate']], allowances: [['effectiveDate', 'endDate']] });
 
 /**
  * What an Employee Masterfile payroll entry (Basic Pay, Earnings, Bonuses, Company Deductions, Loans) refuses
  * before it saves: text that is only spaces, a number that is not a number, an amount outside its limit, an
  * end date before its start. `fields` are the section's [key, label, type] rows; `requiredKeys` the ones it requires.
  */
-export function entryProblems(sectionKey, draft = {}, fields = [], requiredKeys = []) {
+const MONEY_MAX = 999999999.99;
+const PREVIOUS_MONEY = ['lastSalary', 'basicPay', 'taxableBonus', 'otherTaxable', 'nonTaxableBonus', 'deMinimis', 'allowableDeductions', 'otherNonTaxable', 'insurancePremium', 'taxWithheld'];
+const isoOf = value => {
+  const text = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const parts = text.split(/[/-]/);
+  return parts.length === 3 && parts[2].length === 4 ? `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}` : '';
+};
+const decimalsOf = value => { const text = String(value).trim(); return text.includes('.') ? text.split('.')[1].replace(/0+$/, '').length : 0; };
+const money = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** What the Previous Employer / Previous Payroll Data and Variable Allowance entries refuse beyond the general limits (client scripts 085 to 087). */
+function clientScriptProblems(sectionKey, draft, labelOf, context) {
+  const problems = [];
+  const amountKeys = sectionKey === 'allowances' ? ['amount'] : PREVIOUS_MONEY;
+  if (['previousEmployer', 'previousPayroll', 'allowances'].includes(sectionKey)) {
+    amountKeys.forEach(key => {
+      if (!isNumber(draft[key])) return;
+      if (Number(draft[key]) > MONEY_MAX) problems.push(`${labelOf(key)} cannot be more than ${money(MONEY_MAX)}.`);
+      else if (decimalsOf(draft[key]) > 2) problems.push(`${labelOf(key)} can have at most 2 decimal places.`);
+    });
+  }
+  if (sectionKey === 'previousEmployer') {
+    if (present(draft.tin) && !/^\d{9,12}$/.test(String(draft.tin).replace(/[\s-]/g, ''))) problems.push('Taxpayer Identification No. must have 9 to 12 digits.');
+    const hire = isoOf(context.hireDate);
+    if (hire && isoOf(draft.endDate) && isoOf(draft.endDate) > hire) problems.push('Previous Employment End Date cannot be later than the Current Employer Hire Date.');
+    const year = String(draft.employmentYear || '').trim();
+    if (/^\d{4}$/.test(year)) {
+      ['startDate', 'endDate'].forEach(key => { const iso = isoOf(draft[key]); if (iso && iso.slice(0, 4) !== year) problems.push(`${labelOf(key)} is outside the taxable year ${year}. Correct the dates before saving.`); });
+    }
+    const same = row => row.id !== draft.id
+      && String(row.employerName || '').trim().toLowerCase() === String(draft.employerName || '').trim().toLowerCase()
+      && String(row.tin || '').replace(/\D/g, '') === String(draft.tin || '').replace(/\D/g, '')
+      && isoOf(row.startDate) === isoOf(draft.startDate) && isoOf(row.endDate) === isoOf(draft.endDate)
+      && PREVIOUS_MONEY.every(key => Number(row[key] || 0) === Number(draft[key] || 0));
+    if (present(draft.employerName) && (context.rows || []).some(same)) problems.push('This previous employer record already exists (same employer, TIN, dates and amounts).');
+  }
+  if (sectionKey === 'allowances') {
+    if (!present(draft.tag)) problems.push('Tag is required. Choose Basic Pay or Earning.');
+    if (present(draft.holdDate) && present(draft.endDate) && isoOf(draft.holdDate) > isoOf(draft.endDate)) problems.push('Hold Date cannot be after the End Date.');
+  }
+  return problems;
+}
+
+export function entryProblems(sectionKey, draft = {}, fields = [], requiredKeys = [], context = {}) {
   const problems = [];
   const labelOf = key => fields.find(field => field[0] === key)?.[1] || key;
   fields.forEach(([key, label, type = 'text']) => {
@@ -174,5 +229,6 @@ export function entryProblems(sectionKey, draft = {}, fields = [], requiredKeys 
     const iso = value => { const text = String(value).trim(); if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10); const parts = text.split(/[/-]/); return parts.length === 3 && parts[2].length === 4 ? `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}` : text; };
     if (iso(draft.holdDate) > iso(draft.end)) problems.push('Hold Date cannot be after the End of the earning.');
   }
+  clientScriptProblems(sectionKey, draft, labelOf, context).forEach(problem => problems.push(problem));
   return [...new Set(problems)];
 }

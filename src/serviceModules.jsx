@@ -28,7 +28,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { downloadFile } from './fileDownload';
-import { configFieldProblems, maxLengthOf, usedInPayroll } from './configValidation.js';
+import { configFieldProblems, maxLengthOf, payrollsUsing, usedInPayroll } from './configValidation.js';
 import { appendAuditEvent, defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
 import { useRole } from './RoleContext';
 import { referenceValues } from './ReferenceTables';
@@ -584,8 +584,12 @@ function withComputationBinding(moduleKey, def) {
     ...def,
     bindable: true,
     steps: [...def.steps, {
-      title: 'Computation Mapping',
+      title: 'Status & Other Settings',
       fields: [
+        // Always shown, to every role: whether P&A has bound a formula to this record yet.
+        { key: 'bindingStatus', label: 'Computation Binding', type: 'readonly', show: draft => (String(draft.computationCode || '').trim()
+          ? `Bound to ${String(draft.computationCode).trim()}`
+          : 'Not bound yet. P&A binds a formula here; until then the built-in payroll treatment applies.') },
         {
           key: 'computationCode',
           label: 'Basis of Computation',
@@ -632,6 +636,9 @@ const BINDING_FIELD_KEYS = ['computationCode', 'computationBindings'];
 export function isPaOwnedField(moduleKey, fieldKey) {
   return BINDING_FIELD_KEYS.includes(fieldKey) || (PA_OWNED_CONFIGURATION_FIELDS[moduleKey] || []).includes(fieldKey);
 }
+
+/** The modules a Client Admin adds, edits and deletes freely; only their Computation Mapping is P&A's. */
+export const CLIENT_FREE_MODULES = Object.freeze(['earnings', 'bonuses']);
 
 /** The modules whose Computation Mapping decides whether a Client Admin may edit a record at all. */
 export const MAPPING_GATED_MODULES = Object.freeze(['earnings', 'deductions', 'loans', 'bonuses']);
@@ -1450,6 +1457,8 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
   const editing = Boolean(record?.id);
   const lastStep = step === def.steps.length - 1;
   const locked = key => clientView && isPaOwnedField(moduleKey, key);
+  // A Client Admin does not see the Basis of Computation or its mapping until P&A has bound a formula to the saved record.
+  const hiddenFromClient = field => clientView && CLIENT_FREE_MODULES.includes(moduleKey) && (field.type === 'computation' || field.type === 'bindings') && !String(record?.computationCode || '').trim();
   const pendingChanges = editing ? describeConfigurationChanges(def, record, draft) : [];
   // Editing anything retires the refusal that was shown for the previous draft:
   // an error still on screen after the thing it complained about was fixed
@@ -1499,7 +1508,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
             {clientView && step === 0 && <div className="linked-reference-note governed-notice"><Lock weight="duotone" /><span>Fields marked “Set by P&amp;A” and the formula this pay item uses are maintained by P&amp;A. You can change amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who the item applies to — every change is recorded with your name.</span></div>}
             <h3>{current.title}</h3>
             <div className="config-form-grid">
-              {current.fields.filter(field => !field.visible || field.visible(draft)).map(field => {
+              {current.fields.filter(field => !hiddenFromClient(field) && (!field.visible || field.visible(draft))).map(field => {
                 const fieldLocked = locked(field.key);
                 const bindingField = field.type === 'computation' || field.type === 'bindings';
                 return <label key={field.key} className={field.half ? `half${field.rowStart ? ' row-start' : ''}` : field.type === 'bindings' || field.type === 'textarea' ? 'full' : ''}>{!field.hideLabel && field.label}{field.required && !fieldLocked && !field.hideLabel && <span className="required">*</span>}{fieldLocked && !bindingField && <span className="pa-owned-tag"><Lock weight="bold" /> Set by P&amp;A</span>}
@@ -1690,11 +1699,12 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   // P&A's and the client maintains its values. Adding or deleting a pay item
   // changes what payroll computes, so in a formula-bound module that is P&A's too.
   const clientLocked = Boolean(def?.bindable) && !isPaAdmin;
-  // A Client Admin may add and edit earnings; the Basis of Computation stays P&A's.
-  const clientMayAdd = !clientLocked || moduleKey === 'earnings';
+  // A Client Admin may add, edit and delete earnings and bonuses; the Computation Mapping stays P&A's until P&A binds one.
+  const clientFree = CLIENT_FREE_MODULES.includes(moduleKey);
+  const clientMayAdd = !clientLocked || clientFree;
   // The Earning and Bonus lists carry the approved button design: Add, Upload and Export.
   const figmaActions = ['earnings', 'bonuses', 'deductions'].includes(moduleKey);
-  const mappingGated = clientLocked && moduleKey !== 'earnings' && MAPPING_GATED_MODULES.includes(moduleKey);
+  const mappingGated = clientLocked && !clientFree && MAPPING_GATED_MODULES.includes(moduleKey);
   const storageKey = serviceStorageKey(moduleKey, companyId);
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));
   const [query, setQuery] = useState('');
@@ -1705,10 +1715,16 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const [deleting, setDeleting] = useState(null);
   const [page, setPage] = useState(1);
   const uploadRef = useRef(null);
-  const pageSize = 8;
+  const [pageSize, setPageSize] = useState(20);
   const catalog = useBindingCatalog(companyId);
-  const mayEdit = record => !mappingGated || clientMayEditRecord(moduleKey, def, record, catalog.library);
+  // A record a payroll transaction already uses can be neither edited nor deleted.
+  const usedRuns = useMemo(() => readUsedRuns(companyId), [companyId, records]);
+  const usersOf = record => payrollsUsing(record, usedRuns).map(run => run.transactionNumber);
+  const holderOf = record => (usersOf(record).length ? usedRuns.find(run => run.transactionNumber === usersOf(record)[0]) : null);
+  const usedReason = record => `Already used in ${usersOf(record).join(', ')}, so it can no longer be edited or deleted.`;
+  const mayEdit = record => !holderOf(record) && (!mappingGated || clientMayEditRecord(moduleKey, def, record, catalog.library));
   const lockedReason = 'Read-only: this item’s Computation Mapping has no fixed parameters you can change. Ask P&A.';
+  const editTitle = record => (holderOf(record) ? usedReason(record) : mayEdit(record) ? undefined : lockedReason);
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(records)), [records, storageKey]);
 
   const filtered = useMemo(() => records.filter(record => {
@@ -1829,8 +1845,8 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
     <div className="page-content service-config-page">
       <button className="inline-back" onClick={onBack}><ArrowLeft /> {backLabel}</button>
       <div className="page-heading"><div><p className="breadcrumb">{breadcrumb}</p><h1>{def.title}</h1><p className="page-description">{def.description}</p></div></div>
-      {clientLocked && moduleKey === 'earnings' && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>You can add and update earnings.</strong> The Basis of Computation is set by P&amp;A and cannot be edited; in the Variable Mapping you can enter or update a value only where its source is a fixed value.</span></div>}
-      {clientLocked && moduleKey !== 'earnings' && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>Pay items and the formulas they use are set up by P&amp;A.</strong> You can update the approved values — amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who each item applies to. A pay item is editable only when its Computation Mapping has fixed parameters; otherwise it is read-only. A new pay item, or a change in how one computes, is requested from P&amp;A.</span></div>}
+      {clientLocked && clientFree && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>You can add, update and delete {def.plural}.</strong> The Computation Mapping is set up by P&amp;A: it shows on a record only once P&amp;A has bound a formula to it, and then you can enter or update a value only where its source is a fixed value.</span></div>}
+      {clientLocked && !clientFree && <div className="library-notice governed-notice"><Lock weight="duotone" /><span><strong>Pay items and the formulas they use are set up by P&amp;A.</strong> You can update the approved values — amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who each item applies to. A pay item is editable only when its Computation Mapping has fixed parameters; otherwise it is read-only. A new pay item, or a change in how one computes, is requested from P&amp;A.</span></div>}
       <div className={`config-toolbar${figmaActions ? ' figma-actions' : ''}`}>
         <div className="search-box"><input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder={`Search ${def.plural}...`} /><MagnifyingGlass /></div>
         <button className={`filter-button ${Object.values(filters).some(Boolean) ? 'applied' : ''}`} onClick={() => setFilterOpen(true)}><SlidersHorizontal /> Filter</button>
@@ -1844,18 +1860,21 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       </div>
       <div className="table-card config-table-card">
         <table className="config-table">
-          <thead><tr>{def.table.map(([, label]) => <th key={label}>{label}</th>)}{def.bindable && <th>Basis of Computation</th>}<th>Action</th></tr></thead>
+          <thead><tr>{def.table.map(([, label]) => <th key={label}>{label}</th>)}{def.bindable && <th>Basis of Computation</th>}<th>Payroll Transaction</th><th>Action</th></tr></thead>
           <tbody>{visible.length ? visible.map(record => <tr key={record.id}>{def.table.map(([key]) => <td key={key}>{key === 'status' ? <span className={`status-pill ${String(record[key]).toLowerCase()}`}>{record[key]}</span> : key === 'applicability' ? <span className="scope-chip"><Users weight="duotone" />{describeScope(record.applicability)}</span> : ['principal', 'amortization', 'threshold'].includes(key) ? `₱ ${Number(record[key] || 0).toLocaleString()}` : record[key] || '—'}</td>)}
             {def.bindable && <td>{record.computationCode
               ? <span className="binding-chip" title={bindingSummary(record, catalog.library)}><Function weight="duotone" />{record.computationCode}</span>
               : <span className="binding-chip none"><LinkBreak />Not bound</span>}</td>}
-            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit" disabled={!mayEdit(record)} title={mayEdit(record) ? undefined : lockedReason}><PencilSimple /></button>{!clientLocked && <button onClick={() => setDeleting(record)} aria-label="Delete"><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 2 : 1)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
+            <td>{holderOf(record)
+              ? <span className="binding-chip used-chip" title={usersOf(record).join(', ')}><Lock weight="duotone" /><span className="used-chip-text">{usersOf(record).join(', ')}</span></span>
+              : <span className="binding-chip none">Not used</span>}</td>
+            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit" disabled={!mayEdit(record)} title={editTitle(record)}><PencilSimple /></button>{(!clientLocked || clientFree) && <button onClick={() => setDeleting(record)} aria-label="Delete" disabled={Boolean(holderOf(record))} title={holderOf(record) ? usedReason(record) : undefined}><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 3 : 2)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
         </table>
       </div>
-      <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
+      <div className="pagination"><span>Displaying <select className="page-size-select" aria-label="Rows per page" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }}>{[20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · showing <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
       {editing && <ConfigurationForm def={def} moduleKey={moduleKey} record={editing.id ? editing : null} companyId={companyId} clientView={clientLocked} onClose={() => setEditing(null)} onSave={save} />}
       {viewing && <ViewDrawer def={def} record={viewing} companyId={companyId} onClose={() => setViewing(null)} canEdit={mayEdit(viewing)} onEdit={record => { setViewing(null); setEditing(record); }} />}
-      {deleting && !clientLocked && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
+      {deleting && (!clientLocked || clientFree) && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
         const holder = usedInPayroll(deleting, readUsedRuns(companyId));
         if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} · ${deleting.name} is already used in ${holder.transactionNumber}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
         setRecords(previous => previous.filter(record => record.id !== deleting.id)); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}

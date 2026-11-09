@@ -124,11 +124,11 @@ const sectionDefinitions = [
   },
   {
     key: 'allowances', title: 'Variable Allowances', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['name', 'Variable Allowance'], ['amount', 'Amount'], ['unitBasis', 'Unit Basis'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type']],
+    columns: [['dateCreated', 'Date Created'], ['name', 'Variable Allowance'], ['tag', 'Tag'], ['amount', 'Amount'], ['unitBasis', 'Unit Basis'], ['workDays', 'Work Days'], ['workDaysType', 'Work Days Type']],
     // Follows the approved Add Variable Allowance screen and Annex B: the Variable Allowance comes from the Variable Allowance reference table; Work Days and Work Days Type fill in (read-only), Work Hours per Day can be changed,
     // and the rates the amount works out to are shown as the entry is typed.
-    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Variable Allowance', 'select', () => referenceValues('variable-allowances')], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly']], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'rate'], ['monthlyRate', 'Monthly Rate', 'rate'], ['dailyRate', 'Daily Rate', 'rate'], ['hourlyRate', 'Hourly Rate', 'rate'], ['minuteRate', 'Per Minute Rate', 'rate'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'select', START_YEARS], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']]],
-    rows: [{ dateCreated: '01/01/2026', name: 'Transportation Allowance (per hour)', amount: '35000', unitBasis: 'Monthly', workDays: '261', workDaysType: 'Work Days per Year' }, { dateCreated: '01/01/2026', name: 'Lecture Fee', amount: '500', unitBasis: 'Daily', workDays: '313', workDaysType: 'Work Days per Year' }],
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Variable Allowance', 'select', () => referenceValues('variable-allowances')], ['tag', 'Tag', 'select', ['Basic Pay', 'Earning']], ['amount', 'Amount', 'number'], ['unitBasis', 'Unit Basis', 'select', ['Monthly', 'Daily', 'Hourly']], ['workDays', 'Work Days', 'computed'], ['workDaysType', 'Work Days Type', 'computed'], ['workHours', 'Work Hours per Day', 'number'], ['annualRate', 'Annual Rate', 'rate'], ['monthlyRate', 'Monthly Rate', 'rate'], ['dailyRate', 'Daily Rate', 'rate'], ['hourlyRate', 'Hourly Rate', 'rate'], ['minuteRate', 'Per Minute Rate', 'rate'], ['effectiveDate', 'Effectivity Date', 'date'], ['startMonth', 'Start Month', 'select', MONTH_NAMES], ['startYear', 'Start Year', 'select', START_YEARS], ['periodStart', 'Period Start', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['periodEnd', 'Period End', 'select', ['Every Payroll', 'First Half', 'Second Half']], ['endDate', 'End Date', 'date'], ['holdDate', 'Hold Date', 'date']],
+    rows: [{ dateCreated: '01/01/2026', name: 'Transportation Allowance (per hour)', tag: 'Earning', amount: '35000', unitBasis: 'Monthly', workDays: '261', workDaysType: 'Work Days per Year' }, { dateCreated: '01/01/2026', name: 'Lecture Fee', tag: 'Earning', amount: '500', unitBasis: 'Daily', workDays: '313', workDaysType: 'Work Days per Year' }],
   },
   {
     key: 'earnings', title: 'Fixed Earnings', upload: true,
@@ -193,14 +193,15 @@ const sectionDefinitions = [
   },
   {
     key: 'previousEmployer', title: 'Previous Employer Data', upload: true,
-    columns: [['employerName', 'Employer Name'], ['employerAddress', 'Employer Address'], ['tin', 'Taxpayer Identification No.'], ['startDate', 'Employment Start'], ['endDate', 'Employment End']],
-    fields: [['hasPreviousBalance', 'Has Previous Employer Balance', 'boolean'], ['employerName', 'Employer Name'], ['employerAddress', 'Employer Address'], ['employmentYear', 'Employment Year', 'number'], ['tin', 'Taxpayer Identification No.'], ['supervisor', 'Supervisor Name'], ['contact', 'Employer Contact Details'], ['position', 'Position'], ['workDescription', 'Work Description', 'textarea'], ['reasonForLeaving', 'Reason for Leaving'], ['startDate', 'Date Hired', 'date'], ['endDate', 'Date Separated', 'date'], ['lastSalary', 'Last Salary', 'number'], ['taxType', 'Tax Type', 'select', ['Normal', 'Minimum Wage']], ['minimumWage', 'Is Minimum Wage', 'boolean'], ['basicPay', 'Basic Pay', 'number'], ['taxableBonus', 'Taxable Bonus', 'number'], ['otherTaxable', 'Other Taxable Income', 'number'], ['grossTaxable', 'Gross Taxable Income', 'number'], ['nonTaxableBonus', 'Non-Taxable Bonus', 'number'], ['deMinimis', 'De Minimis', 'number'], ['allowableDeductions', 'Allowable Deductions', 'number'], ['otherNonTaxable', 'Other Non-Taxable Income', 'number'], ['insurancePremium', 'Insurance Premium', 'number'], ['taxWithheld', 'Tax Withheld', 'number']],
+    columns: [['employerName', 'Employer Name'], ['employerAddress', 'Employer Address'], ['tin', 'Taxpayer Identification No.'], ['startDate', 'Employment Start Date'], ['endDate', 'Employment End Date']],
+    // Annex B order (client script 086): employer, address, TIN, employment dates, tax type, Is Minimum Wage, the non-taxable amounts, the taxable amounts, Gross Taxable Income (worked out), Insurance Premium and Tax Withheld. The other details follow.
+    fields: [['employerName', 'Employer Name'], ['employerAddress', 'Employer Address'], ['tin', 'Taxpayer Identification No.'], ['startDate', 'Employment Start Date', 'date'], ['endDate', 'Employment End Date', 'date'], ['taxType', 'Tax Type', 'select', ['Normal', 'Minimum Wage']], ['minimumWage', 'Is Minimum Wage', 'boolean'], ['nonTaxableBonus', 'Non-Taxable Bonus', 'number'], ['deMinimis', 'De Minimis', 'number'], ['allowableDeductions', 'Allowable Deductions', 'number'], ['otherNonTaxable', 'Other Non-Taxable Income', 'number'], ['basicPay', 'Basic Pay', 'number'], ['taxableBonus', 'Taxable Bonus', 'number'], ['otherTaxable', 'Other Taxable Income', 'number'], ['grossTaxable', 'Gross Taxable Income', 'computed'], ['insurancePremium', 'Insurance Premium', 'number'], ['taxWithheld', 'Tax Withheld', 'number'], ['hasPreviousBalance', 'Has Previous Employer Balance', 'boolean'], ['employmentYear', 'Employment Year', 'number'], ['supervisor', 'Supervisor Name'], ['contact', 'Employer Contact Details'], ['position', 'Position'], ['workDescription', 'Work Description', 'textarea'], ['reasonForLeaving', 'Reason for Leaving'], ['lastSalary', 'Last Salary', 'number']],
     rows: [{ employerName: 'ABC Company', employerAddress: 'Manila, Philippines', tin: '123456789012', startDate: '01/01/2019', endDate: '12/31/2024', taxType: 'Normal', minimumWage: 'No' }],
   },
   {
     key: 'previousPayroll', title: 'Previous Payroll Data', upload: true,
     columns: [['taxType', 'Tax Type'], ['minimumWage', 'Is Minimum Wage'], ['nonTaxableBonus', 'Non-Taxable Bonus'], ['deMinimis', 'De Minimis'], ['allowableDeductions', 'Allowable Deductions']],
-    fields: [['taxType', 'Tax Type', 'select', ['Normal', 'Minimum Wage']], ['minimumWage', 'Is Minimum Wage', 'boolean'], ['nonTaxableBonus', 'Non-Taxable Bonus', 'number'], ['deMinimis', 'De Minimis', 'number'], ['allowableDeductions', 'Allowable Deductions', 'number'], ['otherNonTaxable', 'Other Non-Taxable Income', 'number'], ['basicPay', 'Basic Pay', 'number'], ['taxableBonus', 'Taxable Bonus', 'number'], ['otherTaxable', 'Other Taxable Income', 'number'], ['grossTaxable', 'Gross Taxable Income', 'number'], ['insurancePremium', 'Insurance Premium', 'number'], ['taxWithheld', 'Tax Withheld', 'number']],
+    fields: [['taxType', 'Tax Type', 'select', ['Normal', 'Minimum Wage']], ['minimumWage', 'Is Minimum Wage', 'boolean'], ['nonTaxableBonus', 'Non-Taxable Bonus', 'number'], ['deMinimis', 'De Minimis', 'number'], ['allowableDeductions', 'Allowable Deductions', 'number'], ['otherNonTaxable', 'Other Non-Taxable Income', 'number'], ['basicPay', 'Basic Pay', 'number'], ['taxableBonus', 'Taxable Bonus', 'number'], ['otherTaxable', 'Other Taxable Income', 'number'], ['grossTaxable', 'Gross Taxable Income', 'computed'], ['insurancePremium', 'Insurance Premium', 'number'], ['taxWithheld', 'Tax Withheld', 'number']],
     rows: [{ taxType: 'Normal', minimumWage: 'Yes', nonTaxableBonus: '90000', deMinimis: '18000', allowableDeductions: '25000', basicPay: '450000', taxableBonus: '35000', taxWithheld: '49000' }],
   },
   {
@@ -359,6 +360,10 @@ function normalizePayrollRecord(section, input) {
   // Capped Earning? follows the earning's Earning Configuration and is not edited here.
   if (section.key === 'earnings') draft = { ...draft, cappedEarning: source?.cappedEarning || draft.cappedEarning || 'No' };
   if (section.key === 'earnings' && draft.cappedEarning !== 'Yes') draft = { ...draft, cappedAmount: '' };
+  if (section.key === 'previousEmployer' || section.key === 'previousPayroll') {
+    const gross = Math.round((Number(draft.basicPay || 0) + Number(draft.taxableBonus || 0) + Number(draft.otherTaxable || 0)) * 100) / 100;
+    draft = { ...draft, grossTaxable: gross.toFixed(2) };
+  }
   if (section.key === 'basicPay') draft = withMwePlace(draft, mweRateRows());
   if (section.key === 'basicPay' || section.key === 'allowances') {
     const amount = Number(draft.amount || 0);
@@ -605,7 +610,7 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
   };
   const save = (draft, reason = '') => {
     let completionNote = '';
-    const entryIssues = entryProblems(section.key, draft, section.fields, section.fields.filter(field => isRequired(section, field)).map(field => field[0]));
+    const entryIssues = entryProblems(section.key, draft, section.fields, section.fields.filter(field => isRequired(section, field)).map(field => field[0]), { rows, hireDate: employee?.hireDate });
     if (entryIssues.length) { notify({ type: 'error', message: entryIssues[0] }); return; }
     if (section.key === 'bankInformation' && rows.some(row => row.id !== draft.id && row.accountNumber && row.accountNumber === draft.accountNumber)) {
       notify({ type: 'error', message: 'This bank account number is already registered for the employee.' }); return;

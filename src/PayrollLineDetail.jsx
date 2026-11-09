@@ -144,6 +144,14 @@ export function FormulaVersionsApplied({ run }) {
   </section>;
 }
 
+/** Whether a pay item is bound to a Computational Basis formula, shown beside its amount. */
+function BindingStatus({ row }) {
+  if (row.boundProblem) return <span className="status-pill warning" title={row.boundProblem}>Bound to {row.boundCode} · could not compute</span>;
+  if (row.boundCode) return <span className="status-pill active" title="Priced by the formula bound in Services Information">Bound · <code>{row.boundCode}</code>{row.boundVersion ? ` v${row.boundVersion}` : ''}</span>;
+  return <span className="status-pill" title="No formula is bound, so the built-in payroll treatment applies">Not bound</span>;
+}
+const bindingColumn = { key: 'binding', label: 'Computation binding', render: row => <BindingStatus row={row} /> };
+
 export function ComputationTrail({ steps = [] }) {
   const [openStep, setOpenStep] = useState(null);
   if (!steps.length) return <EmptyState title="Nothing computed yet">Recalculate the transaction to produce this employee's line.</EmptyState>;
@@ -458,6 +466,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
             { key: 'classification', label: 'Classification' },
             { key: 'source', label: 'Source' },
             { key: 'ceiling', label: 'Ceiling', render: row => (row.ceiling ? `${peso(row.ceiling)} annual · ${peso(row.usedToDate)} used` : '—') },
+            bindingColumn,
             { key: 'amount', label: 'Amount', align: 'right', render: row => peso(row.amount) },
           ]}
           rows={line.earnings.map((item, index) => ({ ...item, key: `earn-${index}` }))}
@@ -473,6 +482,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
             { key: 'ceilingBefore', label: 'Ceiling available', align: 'right', render: row => peso(row.ceilingBefore) },
             { key: 'nonTaxable', label: 'Non-taxable', align: 'right', render: row => peso(row.nonTaxable) },
             { key: 'taxable', label: 'Taxable', align: 'right', render: row => peso(row.taxable) },
+            bindingColumn,
             { key: 'amount', label: 'Total', align: 'right', render: row => peso(row.amount) },
           ]}
           rows={line.bonuses.map((item, index) => ({ ...item, key: `bon-${index}` }))}
@@ -534,6 +544,7 @@ export function PayrollLineDetail({ line, run, employee, ytdOpening, onBack, onE
             { key: 'name', label: 'Deduction' },
             { key: 'kind', label: 'Type' },
             { key: 'source', label: 'Source module' },
+            bindingColumn,
             { key: 'due', label: 'Scheduled', align: 'right', render: row => peso(row.due) },
             { key: 'deducted', label: 'Collected', align: 'right', render: row => peso(row.deducted) },
             { key: 'deferred', label: 'Deferred', align: 'right', render: row => peso(row.deferred) },
