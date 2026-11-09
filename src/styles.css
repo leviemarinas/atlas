@@ -4007,3 +4007,7 @@ fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fiel
 .employee-form-grid .ef-holdStatus .locked-value { height: auto; min-height: 44px; white-space: normal; overflow: visible; }
 
 .employee-form-grid[data-section="earnings"] > .ef-grossUp { grid-column: 1 / -1; }
+
+.binding-chip.used-chip { max-width: 170px; }
+.binding-chip .used-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.pagination select.page-size-select { width: 54px !important; height: 22px !important; min-height: 0 !important; padding: 0 2px !important; margin: 0 3px !important; display: inline-block !important; border: 1px solid var(--line); border-radius: 4px; background-color: #fff; font-size: 11.5px !important; line-height: 1; }
