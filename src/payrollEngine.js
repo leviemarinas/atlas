@@ -829,7 +829,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   const shift = shiftFor(context.shiftAssignments, employee.employeeId, transaction.periodEnd);
   const workHours = number(shift?.workHours) || number(pay.workHoursPerDay) || number(config.workHoursPerDay) || 8;
   const monthlyRate = number(basicRecord.monthlyRate) || number(pay.monthlyRate);
-  if (!monthlyRate && employee.addedInMasterfile) exceptions.push({ severity: 'Warning', message: 'No basic pay yet. Enter it in Employee Masterfile › Payroll Allocation › Basic Pay.' });
+  if (!monthlyRate && employee.addedInMasterfile) exceptions.push({ severity: 'Warning', message: 'No basic pay yet. Enter it in Employee Masterfile › Payroll Items › Basic Pay.' });
   const dailyRate = record({
     code: 'BAS-001', category: 'Basic Pay', source: 'Employee salary record',
     inputs: { monthly_basic: monthlyRate, factor_days: factorDays },
@@ -1212,10 +1212,10 @@ export function computeEmployeeLine({ employee, transaction, context }) {
     const remainingCeiling = record({
       code: 'BON-004', category: 'Bonus', inputs: { bonus_tax_ceiling: ceiling, bonus_paid_ytd: round2(number(employee.ytd?.bonusPaid) + number(employee.previousEmployer?.nontaxableBonus) + reclassifiedNonTaxable) },
       detail: ceiling === 0 ? 'Threshold set to zero for this run — every bonus is taxable' : `Non-taxable ceiling less bonuses already paid this year${number(employee.previousEmployer?.nontaxableBonus) ? ' and by the previous employer' : ''}`,
-      source: 'Bonus ceiling reference table',
+      source: 'Bonus Threshold reference table',
     });
     let available = remainingCeiling;
-    // The Bonus Ceiling Order reference table decides which bonus uses the
+    // The Bonus Threshold Order reference table decides which bonus uses the
     // non-taxable ceiling first; types it does not list keep their run order.
     const order = config.bonusCeilingOrder || [];
     const rank = type => (order.indexOf(type) + 1) || order.length + 1;
@@ -1256,7 +1256,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       const taxable = roundTo(amount - nonTaxable, rounding.bonuses);
       available = round2(available - nonTaxable);
       if (taxable > 0) {
-        record({ code: 'BON-003', category: 'Bonus', amount: taxable, evaluate: false, inputs: { other_bonus: amount, bonus_tax_ceiling: nonTaxable }, detail: `${type} above the remaining ceiling is taxable`, source: 'Bonus ceiling reference table' });
+        record({ code: 'BON-003', category: 'Bonus', amount: taxable, evaluate: false, inputs: { other_bonus: amount, bonus_tax_ceiling: nonTaxable }, detail: `${type} above the remaining ceiling is taxable`, source: 'Bonus Threshold reference table' });
         exceptions.push({ severity: 'Info', message: `${type} exceeded the remaining ₱${bonusCeiling.toLocaleString()} ceiling; ₱${taxable.toLocaleString()} is taxable.` });
       }
       bonuses.push({ name: type, amount, nonTaxable, taxable, ceilingBefore: round2(available + nonTaxable), boundCode: boundBonus?.code || '', boundVersion: boundBonus?.version || '', boundProblem: boundBonus && !boundBonus.resolved ? boundBonus.problem : '', source: config.thirteenthMonth.basis === 'Custom / uploaded value' ? 'Uploaded on the transaction' : 'Bonus Management' });
@@ -1332,7 +1332,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
   if (masterfileKeys.length) {
     masterfileKeys.forEach(key => { statutoryLine[key] = fromMasterfile.amounts[key]; });
     if (masterfileKeys.includes('sssEmployee')) statutoryLine.sssRegularEmployee = round2(Math.max(0, statutoryLine.sssEmployee - statutoryLine.sssMpfEmployee));
-    record({ code: 'GOV-001', label: 'Contributions from the Employee Masterfile', category: 'Government', amount: round2(sum(masterfileKeys, key => statutoryLine[key])), evaluate: false, inputs: {}, detail: `Entered for this employee instead of the table: ${masterfileKeys.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${statutoryLine[key].toLocaleString()} (${fromMasterfile.from[key]})`).join(', ')}`, source: 'Employee Masterfile › Payroll Allocation' });
+    record({ code: 'GOV-001', label: 'Contributions from the Employee Masterfile', category: 'Government', amount: round2(sum(masterfileKeys, key => statutoryLine[key])), evaluate: false, inputs: {}, detail: `Entered for this employee instead of the table: ${masterfileKeys.map(key => `${STATUTORY_OVERRIDE_LABELS[key]} ₱${statutoryLine[key].toLocaleString()} (${fromMasterfile.from[key]})`).join(', ')}`, source: 'Employee Masterfile › Payroll Items' });
     exceptions.push({ severity: 'Info', message: `Contributions entered in the Employee Masterfile were used instead of the table: ${masterfileKeys.map(key => STATUTORY_OVERRIDE_LABELS[key]).join(', ')}.` });
   }
   // Maximum first, balance next: the month's figure, less what earlier payrolls this month already

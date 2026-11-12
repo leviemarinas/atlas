@@ -31,7 +31,7 @@ import { downloadFile } from './fileDownload';
 import { configFieldProblems, maxLengthOf, payrollsUsing, usedInPayroll } from './configValidation.js';
 import { appendAuditEvent, defaultCompanyRecord, readActiveCompanyId } from './companyRepository';
 import { useRole } from './RoleContext';
-import { referenceValues } from './ReferenceTables';
+import { effectiveReferenceRow, referenceValues } from './ReferenceTables';
 import { seedVersion } from './statutorySchedules.js';
 import { rejectUpload } from './uploadErrorLog.js';
 import { DateInput } from './DateInput.jsx';
@@ -183,6 +183,19 @@ const COMPUTATION_BASES = Object.freeze([
 const deMinimisBenefits = () => seedVersion('deMinimis', 2026, 1, true).rows;
 const deMinimisRule = draft => deMinimisBenefits().find(row => row.benefitName === draft.deMinimisBenefit);
 const pesos = value => `₱ ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+// Threshold Splitting is a percentage (0 to 100) or a peso amount that cannot exceed the Bonus Threshold; it applies to Non-taxable bonuses only.
+const thresholdSplittingProblems = draft => {
+  if (draft.taxability !== 'Non-taxable') return [];
+  const raw = String(draft.thresholdSplitting ?? '').trim();
+  if (!raw) return [];
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) return ['Threshold Splitting Value must be a number of zero or more.'];
+  if ((draft.thresholdSplittingType || 'Percentage') === 'Percentage') return value > 100 ? ['A percentage cannot be more than 100.'] : [];
+  const ceiling = bonusThresholdValue();
+  return ceiling !== undefined && value > ceiling ? [`The amount cannot be more than the Bonus Threshold of ${pesos(ceiling)}.`] : [];
+};
+// The annual non-taxable bonus threshold, from the Bonus Threshold reference table (undefined until a row is set up).
+const bonusThresholdValue = () => { const value = effectiveReferenceRow('bonus-ceilings')?.ceiling; return value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value) : undefined; };
 const HIERARCHY_RANKS = Object.freeze(Array.from({ length: 30 }, (_, index) => String(index + 1)));
 
 /** Interest for the whole term: principal × annual rate × months ÷ 12. */
@@ -316,16 +329,31 @@ const baseModuleDefinitions = {
         // Numbered BON - 0001, 0002 … like earning codes; the code stays editable.
         { key: 'code', label: 'Bonus Code', required: true, half: true, placeholder: 'BON - 0001', suggest: ({ companyId }) => nextBonusCode(companyId) }, { key: 'name', label: 'Bonus Name', required: true, half: true },
         { key: 'type', label: 'Bonus Type', type: 'select', options: ['13th Month Pay', 'Performance Bonus', 'Signing Bonus', 'Productivity Bonus'], required: true },
-        // The non-taxable ceilings come from the Bonus Ceiling Reference Table; Threshold Splitting from its own Reference Table.
-        { key: 'threshold', label: 'Bonus Threshold', type: 'number', half: true },
-        { key: 'thresholdSplitting', label: 'Threshold Splitting (%)', type: 'number', half: true },
-        { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
-        // Once the non-taxable threshold is used up, the excess is paid under the taxable bonus chosen here.
-        { key: 'adjustmentAfterThreshold', label: 'Adjustment after Threshold', type: 'select', searchable: true, options: (draft, { companyId } = {}) => [...new Set(readServiceConfiguration('bonuses', companyId).filter(item => item.taxability === 'Taxable' && (item.status || 'Active') === 'Active' && item.id !== draft.id && item.code !== draft.code).map(item => item.name).filter(Boolean))], visible: draft => draft.taxability === 'Non-taxable' },
         { key: 'applicability', label: 'Applies to', type: 'applicability', variant: 'earning', hideLabel: true },
         // Stamped with today when the bonus is created and never editable.
         { key: 'dateCreated', label: 'Date Created', type: 'readonly', show: draft => (draft.dateCreated ? formatUsDate(draft.dateCreated) : '—'), half: true, rowStart: true },
         // Payment Mode, Frequency and the effectivity, start, end and period dates are not asked for here; a new bonus takes the defaults below (Yearly, in effect from 01/01/2026).
+      ] },
+      { title: 'Bonus Setup', fields: [
+        { key: 'cappedEarning', label: 'Capped Earning?', type: 'boolean', required: true, half: true },
+        // The Capped Amount is not set here: it is entered per employee on the Employee Masterfile (Fixed Bonuses).
+        { key: 'autoCompute', label: 'Auto-compute?', type: 'boolean', required: true, half: true },
+        // Auto-compute opens everything that computes the bonus; they are hidden when it is No.
+        { key: 'computationBasis', label: 'Computation Basis', type: 'select', options: COMPUTATION_BASES, required: true, half: true, visible: draft => draft.autoCompute === 'Yes' },
+        { key: 'variableAllowance', label: 'Variable Allowance', type: 'select', searchable: true, options: ['Variable Allowance 1', 'Variable Allowance 2', 'Not applicable'], required: true, half: true, visible: draft => draft.autoCompute === 'Yes' && /Variable Allowance/.test(draft.computationBasis || '') },
+        { key: 'negativeComputation', label: 'Negative Computation?', type: 'boolean', half: true, visible: draft => draft.autoCompute === 'Yes' },
+        { key: 'defaultAmount', label: 'Amount', type: 'number', required: true, half: true, visible: draft => draft.autoCompute === 'Yes' && draft.computationBasis === 'Amount' },
+        { key: 'unit', label: 'Unit', type: 'select', options: ['Daily', 'Hourly'], half: true, visible: draft => draft.autoCompute === 'Yes' },
+        // Taxability sits with them: the threshold and the adjustment bonus follow it for a Non-taxable bonus.
+        { key: 'taxability', label: 'Taxability', type: 'select', options: ['Taxable', 'Non-taxable'], required: true },
+        // A taxable bonus has no non-taxable threshold to split, so both fields show only for a Non-taxable bonus.
+        // Filled from the Bonus Threshold reference table, like the De Minimis Threshold; it is never typed here.
+        { key: 'threshold', label: 'Bonus Threshold', type: 'readonly', show: () => (bonusThresholdValue() === undefined ? '—' : pesos(bonusThresholdValue())), half: true, visible: draft => draft.taxability === 'Non-taxable' },
+        { key: 'thresholdSplittingType', label: 'Threshold Splitting Type', type: 'select', options: ['Percentage', 'Amount'], half: true, visible: draft => draft.taxability === 'Non-taxable' },
+        // A percentage (0 to 100, decimals allowed) of the employee's remaining threshold, or a peso amount per run that never exceeds it.
+        { key: 'thresholdSplitting', label: 'Threshold Splitting Value', type: 'number', half: true, visible: draft => draft.taxability === 'Non-taxable' },
+        // Once the non-taxable threshold is used up, the excess is paid under the taxable bonus chosen here.
+        { key: 'adjustmentAfterThreshold', label: 'Adjustment after Threshold', type: 'select', searchable: true, required: true, options: (draft, { companyId } = {}) => [...new Set(readServiceConfiguration('bonuses', companyId).filter(item => item.taxability === 'Taxable' && item.type === draft.type && (item.status || 'Active') === 'Active' && item.id !== draft.id && item.code !== draft.code).map(item => item.name).filter(Boolean))], visible: draft => draft.taxability === 'Non-taxable' },
       ] },
       { title: 'Accounting Setup', fields: [
         { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'] },
@@ -348,8 +376,8 @@ const baseModuleDefinitions = {
       { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => effectiveStatusText(draft) },
       { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
     ],
-    validate: draft => employeeGroupProblems(draft, 'bonus'),
-    defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplitting: '100', taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
+    validate: draft => [...employeeGroupProblems(draft, 'bonus'), ...thresholdSplittingProblems(draft)],
+    defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplittingType: 'Percentage', thresholdSplitting: '100', cappedEarning: 'No', autoCompute: 'Yes',taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
     rows: [['BON-001', '13th Month Pay', '13th Month Pay'], ['BON-002', 'Performance Bonus', 'Performance Bonus'], ['BON-003', 'Signing Bonus', 'Signing Bonus'], ['BON-004', 'Productivity Incentive', 'Productivity Bonus'], ['BON-005', 'Service Award', 'Performance Bonus']],
   },
   deductions: {
@@ -621,7 +649,7 @@ const moduleDefinitions = Object.fromEntries(
 export const PA_OWNED_CONFIGURATION_FIELDS = Object.freeze({
   // A Client Admin sets up and edits an earning's ordinary fields; only its Basis of Computation (BINDING_FIELD_KEYS) is P&A's.
   earnings: [],
-  bonuses: ['type', 'thresholdSplitting'],
+  bonuses: ['type', 'thresholdSplittingType', 'thresholdSplitting'],
   deductions: ['type', 'basis', 'partOfNetPay', 'tax', 'takeHomeTreatment', 'hierarchyPriority'],
   loans: ['type', 'balanceHandling', 'hierarchyPriority'],
   allowances: ['type', 'timekeeping', 'taxability'],
@@ -764,7 +792,7 @@ export function effectiveEarningStatus(record) {
 const heldByDate = record => ({ ...record, status: effectiveEarningStatus(record) });
 /** The Status and Hold Date of an earning or a bonus, in words. */
 const effectiveStatusText = draft => (draft.holdDate
-  ? (effectiveEarningStatus(draft) === 'Inactive' ? `Inactive since ${formatUsDate(draft.holdDate)}` : `${draft.status === 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}, then Inactive`)
+  ? `${draft.status === 'Inactive' && effectiveEarningStatus(draft) !== 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}`
   : (draft.status || 'Active'));
 
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
@@ -1442,7 +1470,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const stamped = !record?.id && def.steps.some(step => step.fields.some(field => field.key === 'dateCreated')) ? { dateCreated: localToday() } : {};
     // A field that can suggest a value (the next Earning Code) fills it in on a new item.
     const suggested = record?.id ? {} : Object.fromEntries(def.steps.flatMap(step => step.fields).filter(field => field.suggest).map(field => [field.key, field.suggest({ companyId })]));
-    const blanks = !record?.id ? (moduleKey === 'earnings' ? { taxability: '', classification: '', computationBasis: '' } : moduleKey === 'bonuses' ? { threshold: '', thresholdSplitting: '', taxability: '' } : {}) : {};
+    const blanks = !record?.id ? (moduleKey === 'earnings' ? { taxability: '', classification: '', computationBasis: '' } : moduleKey === 'bonuses' ? { threshold: '', thresholdSplittingType: '', thresholdSplitting: '', taxability: '' } : {}) : {};
     const initial = { ...def.defaults, ...blanks, ...stamped, ...suggested, ...record };
     // An earning saved without a Unit opens on Daily.
     if (moduleKey === 'earnings' && !initial.unit) initial.unit = 'Daily';
@@ -1493,9 +1521,11 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     if (problems.length) { setError(problems[0]); setStep(def.steps.length - 1); return; }
     setError('');
     const trimmed = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, typeof value === 'string' && def.steps.some(step => step.fields.some(field => field.key === key && (field.type ?? 'text') === 'text')) ? value.trim() : value]));
+    // A bonus keeps the threshold the Bonus Threshold reference table gave it (none when it is taxable), so the list and filter can show it.
+    const withThreshold = moduleKey === 'bonuses' ? { ...trimmed, threshold: trimmed.taxability === 'Non-taxable' ? String(bonusThresholdValue() ?? '') : '' } : trimmed;
     const saved = editing
-      ? { ...trimmed, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
-      : trimmed;
+      ? { ...withThreshold, computationBindings: withDatedValues(record.computationBindings, draft.computationBindings, changeEffective) }
+      : withThreshold;
     onSave(saved, { changes: pendingChanges, reason: ['bonuses', 'earnings', 'deductions'].includes(moduleKey) ? String(draft.remarks || '').trim() : changeReason.trim(), effectiveDate: changeEffective });
   };
   return (

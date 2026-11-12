@@ -91,6 +91,7 @@ export const operationalDefinitions = {
     // point at a roster that no longer exists, so the dropdown could not offer them.
     version: 3,
     title: 'Earning Management',
+    readOnly: true,
     description: 'Assign recurring and one-time earnings to employees with their effectivity window, frequency, basis and payroll period.',
     statusTabs: ['All', 'Active', 'Inactive', 'Expired'],
     fields: [f('code', 'Earning Code'), f('name', 'Earning Name', 'select', ['13th Month Pay', 'Allowance', 'Adjustments', 'Bonuses', 'Incentives', 'De Minimis Benefit']), f('employee', 'Employee', 'select', employeeOptions), f('frequency', 'Earning Frequency', 'select', ['One-time', 'Monthly', 'Quarterly', 'Semi-monthly', 'Annual']), f('basis', 'Basis/Unit', 'select', ['Fixed amount', 'Hourly', 'Daily', 'Percentage', 'Current Basic Rate']), f('amount', 'Amount', 'number'), f('effectiveDate', 'Effectivity Date', 'date'), f('periodStart', 'Period Start', 'date'), f('periodEnd', 'Period End', 'date', [], false), f('endDate', 'End Date', 'date', [], false), f('holdDate', 'Hold Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Inactive', 'Expired']), f('totalAmount', 'Total Entitlement (for an earning paid over several runs)', 'number', [], false)],
@@ -105,6 +106,7 @@ export const operationalDefinitions = {
     // v3: re-keyed to the one company roster, like Earning Management.
     version: 3,
     title: 'Deduction Management',
+    readOnly: true,
     description: 'Track company deductions against each employee with their frequency, recovery window and outstanding balance.',
     fields: [f('code', 'Deduction Code'), f('name', 'Deduction Name', 'select', ['Cash Advance', 'Loan Repayment', 'Tax', 'Late Penalty', 'Allotment', 'MP2 Savings', 'Other']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Deduction Amount', 'number'), f('frequency', 'Deduction Frequency', 'select', ['Once', 'Monthly', 'Semi-monthly', 'Bi-monthly', 'Quarterly']), f('startDate', 'Start Date', 'date'), f('endDate', 'End Date', 'date', [], false), f('balance', 'Balance', 'number', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Settled', 'On Hold'])],
     rows: [
@@ -118,6 +120,7 @@ export const operationalDefinitions = {
     // v3: re-keyed to the one company roster, like Earning Management.
     version: 3,
     title: 'Bonus Management',
+    readOnly: true,
     description: 'Schedule 13th month, performance and retention bonuses and follow each one from active through processed to completed.',
     statusTabs: ['All', 'Active', 'Scheduled', 'Processed', 'Completed'],
     fields: [f('code', 'Bonus Code'), f('name', 'Bonus Name', 'select', ['13th Month Pay', 'Performance Bonus', 'Retention Bonus', 'Signing Bonus', 'Mid-year Bonus']), f('employee', 'Employee', 'select', employeeOptions), f('amount', 'Bonus Amount', 'number'), f('effectiveDate', 'Effective Date', 'date'), auto(f('nonTaxableAmount', 'Non-Taxable Amount (auto, up to the ₱90,000 ceiling)', 'number', [], false)), f('statusDate', 'Status Date', 'date', [], false), f('remarks', 'Remarks', 'text', [], false), f('status', 'Status', 'select', ['Active', 'Scheduled', 'Processed', 'Completed']), auto(f('taxableAmount', 'Taxable Amount (auto, above the ceiling)', 'number', [], false))],
@@ -495,15 +498,17 @@ function UnknownWorkspace({ workspaceKey, onBack }) {
  * declares its own and switching between a delegated and a record workspace
  * would otherwise change the hook count on a mounted component.
  */
-export function OperationalWorkspace({ workspaceKey, onBack, notify, companyId, company }) {
+export function OperationalWorkspace({ workspaceKey, onBack, notify, companyId, company, onOpenEmployeeMasterfile }) {
   const delegate = delegatedWorkspaces[workspaceKey];
   if (delegate) return delegate({ onBack, notify, companyId, company });
   const definition = operationalDefinitions[workspaceKey];
   if (!definition) return <UnknownWorkspace workspaceKey={workspaceKey} onBack={onBack} />;
-  return <RecordWorkspace key={`${workspaceKey}:${companyId}`} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} companyId={companyId} />;
+  return <RecordWorkspace key={`${workspaceKey}:${companyId}`} workspaceKey={workspaceKey} definition={definition} onBack={onBack} notify={notify} companyId={companyId} onOpenEmployeeMasterfile={onOpenEmployeeMasterfile} />;
 }
 
-function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }) {
+function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId, onOpenEmployeeMasterfile }) {
+  // Earning, Deduction and Bonus Management only show what is entered in the Employee Masterfile: view and export, no add, edit or delete.
+  const readOnly = Boolean(definition.readOnly);
   const storageKey = operationalStorageKey(workspaceKey, definition.version || 1);
   const seedRows = () => definition.rows.map((row, index) => recordFromRow(definition, row, index, companyId));
   const [rows, setRows] = useState(() => {
@@ -642,13 +647,14 @@ function RecordWorkspace({ workspaceKey, definition, onBack, notify, companyId }
     <button className="inline-back" onClick={onBack}><ArrowLeft /> Back</button>
     <div className="page-heading"><div><p className="breadcrumb">Atlas / {definition.title}</p><h1>{definition.title}</h1><p className="page-description">{definition.description}</p></div></div>
     {definition.statusTabs && <div className="record-status-tabs" role="tablist">{definition.statusTabs.map(tab => <button key={tab} role="tab" aria-selected={statusTab === tab} className={statusTab === tab ? 'selected' : ''} onClick={() => setStatusTab(tab)}>{tab}<span>{tab === 'All' ? rows.length : rows.filter(row => row.status === tab).length}</span></button>)}</div>}
-    <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" /><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Template</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /><button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div>
+    <div className="config-toolbar"><div className="search-box"><input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search ${definition.title.toLowerCase()}...`} /><MagnifyingGlass /></div><div className="toolbar-spacer" />{readOnly ? <>{onOpenEmployeeMasterfile && <button className="button secondary" onClick={onOpenEmployeeMasterfile}><ArrowRight /> Open in Employee Masterfile</button>}</> : <><button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Template</button><button className="button secondary" onClick={() => uploadRef.current?.click()}><UploadSimple /> Upload</button><input className="sr-only" ref={uploadRef} type="file" accept=".csv" onChange={importRows} /></>}<button className="button secondary" onClick={exportRows}><DownloadSimple /> Export</button></div>
+    {readOnly && <p className="payroll-note">View and export only. Records are added, changed and deleted in the Employee Masterfile, under the employee's {{ earnings: 'Earnings', deductions: 'Deductions', bonuses: 'Bonuses' }[workspaceKey]} section.</p>}
     <div className="table-card"><table><thead><tr>{listedFields.map(field => <th key={field.key}>{field.label}</th>)}<th>Action</th></tr></thead><tbody>{visible.map(row => {
       const workflow = workflowAction(row);
-      return <tr key={row.id}>{listedFields.map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></div></td></tr>;
+      return <tr key={row.id}>{listedFields.map(field => <td key={field.key}>{row[field.key] || '—'}</td>)}<td><div className="row-actions always">{workflow && <button onClick={() => advanceWorkflow(row)} aria-label={workflow.label} title={workflow.label}><CheckCircle /></button>}<button onClick={() => setViewing(row)} aria-label="View"><Eye /></button>{!readOnly && <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button disabled={['Posted', 'Generated'].includes(row.status)} onClick={() => removeRecord(row)} aria-label="Delete"><Trash /></button></>}</div></td></tr>;
     })}</tbody></table>{!visible.length && <div className="empty-state"><h3>No records found</h3><p>Add a record or adjust the search.</p></div>}</div>
     <div className="pagination"><span>Displaying <strong>{visible.length}</strong> of {rows.length} {plural(rows.length, 'record')}</span><span>1 of 1</span></div>
     {editing !== undefined && <EntryModal definition={definition} record={editing || null} onClose={() => setEditing(undefined)} onSave={save} />}
-    {viewing && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setViewing(null); }}><aside className="record-drawer"><header><div><p>Record details</p><h2>{viewing.code}</h2></div><button className="icon-button" onClick={() => setViewing(null)}><X /></button></header><div className="record-drawer-body"><section><h3>{definition.title}</h3><div className="detail-grid">{definition.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{viewing[field.key] || '—'}</span></div>)}</div></section></div><footer><button className="button secondary" onClick={() => setViewing(null)}>Close</button><button className="button primary" onClick={() => { setEditing(viewing); setViewing(null); }}><PencilSimple /> Edit</button></footer></aside></div>}
+    {viewing && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setViewing(null); }}><aside className="record-drawer"><header><div><p>Record details</p><h2>{viewing.code}</h2></div><button className="icon-button" onClick={() => setViewing(null)}><X /></button></header><div className="record-drawer-body"><section><h3>{definition.title}</h3><div className="detail-grid">{definition.fields.map(field => <div key={field.key}><strong>{field.label}</strong><span>{viewing[field.key] || '—'}</span></div>)}</div></section></div><footer><button className="button secondary" onClick={() => setViewing(null)}>Close</button>{readOnly ? (onOpenEmployeeMasterfile && <button className="button primary" onClick={onOpenEmployeeMasterfile}><ArrowRight /> Open in Employee Masterfile</button>) : <button className="button primary" onClick={() => { setEditing(viewing); setViewing(null); }}><PencilSimple /> Edit</button>}</footer></aside></div>}
   </div>;
 }

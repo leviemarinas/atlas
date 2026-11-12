@@ -393,7 +393,7 @@ export function newPayrollRun({ runs = [], companyId, year = 2025, month = 'Nove
       computeAllowableDeduction: true,
       // Copied from Payroll Controls when the run is created (ECOLA Treatment).
       ecolaTreatment: 'Part of Basic Pay',
-      // Order the non-taxable bonus ceiling is used up in (Bonus Ceiling Order reference table).
+      // Order the non-taxable bonus ceiling is used up in (Bonus Threshold Order reference table).
       bonusCeilingOrder: [],
       // Provident and pension funds from Payroll Controls, copied when the run is created.
       funds: [],
@@ -761,7 +761,7 @@ export function buildPayrollContext({ companyId, run, hrmData, registers = {}, h
     serviceConfig,
     references,
     variableAllowances,
-    // The non-taxable ceiling the company set up (Bonus Ceiling), kept on the transaction when it was created.
+    // The non-taxable ceiling the company set up (Bonus Threshold), kept on the transaction when it was created.
     bonusCeiling: Number(run?.config?.bonusCeiling) || 90000,
   };
 }

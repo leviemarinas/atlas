@@ -54,7 +54,7 @@ import { RoleSwitch, useRole } from './RoleContext';
 import { AUDITED_SECTIONS, logEmployeeChange, readEmployeeChanges, recordChanges } from './employeeChangeLog.js';
 import { appendAuditEvent } from './companyRepository';
 import { chargeCodeNames, chargeCodeTypes } from './chargeCodeService';
-import { referenceRows, referenceValues } from './ReferenceTables';
+import { effectiveReferenceRow, referenceRows, referenceValues } from './ReferenceTables';
 import { CONFIG_PAYMENT_MODES, frequencyOptions, migrateSchedule, readServiceConfiguration } from './serviceModules';
 import { MASTERFILE_STORAGE_KEY, coversEmployee, employeeDirectory, refreshEmployeeDirectory } from './applicabilityScope';
 import { deMinimisSplit } from './statutoryService';
@@ -146,11 +146,12 @@ const sectionDefinitions = [
   },
   {
     key: 'bonuses', title: 'Fixed Bonuses', upload: true,
-    columns: [['code', 'Bonus Code'], ['name', 'Name'], ['type', 'Type'], ['amount', 'Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
+    columns: [['dateCreated', 'Date Created'], ['code', 'Bonus Code'], ['name', 'Bonus Name'], ['paymentMode', 'Frequency'], ['amount', 'Amount'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
     // No Taxability: the remaining non-taxable ceiling is used first and only the excess is taxable.
     // Follows the approved Add Bonus screen: Name (Bonus Code - Bonus Name, searchable), Type, Taxability and Amount. Picking the bonus fills the
     // rest from Bonus Configuration; the release month, schedule and thresholds an entry also carries are kept with it and are not asked again.
-    fields: [['name', 'Name', 'bonuspick'], ['type', 'Type', 'computed'], ['taxability', 'Taxability', 'select', ['Taxable', 'Non-taxable']], ['amount', 'Amount', 'number']],
+    // The same fields as Fixed Earnings; picking the bonus fills Bonus Type, Taxability, Capped Earning?, Frequency, the dates and the Hold Date from Bonus Configuration.
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Bonus Name', 'bonuspick'], ['paymentMode', 'Frequency', 'select', CONFIG_PAYMENT_MODES], ['amount', 'Amount', 'number'], ['type', 'Bonus Type', 'computed'], ['taxability', 'Taxability', 'computed'], ['cappedEarning', 'Capped Earning?', 'computed'], ['cappedAmount', 'Capped Amount', 'number', null, draft => draft.cappedEarning === 'Yes'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'monthyear'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'monthyear'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['holdStatus', 'Effective Status', 'status', () => 'On hold: this bonus will not be released until the Hold Date is removed. Once removed, it will be released retroactively in the payroll transaction.', draft => Boolean(draft.holdDate)], ['remarks', 'Remarks', 'textarea']],
     rows: [{ name: '13th Month Pay', type: '13th Month Pay', amount: '50000' }, { name: 'Performance Bonus', type: 'Performance Bonus', amount: '10000' }],
   },
   {
@@ -291,7 +292,7 @@ function earningDefaults(name) {
 function bonusDefaults(name) {
   const item = configured('bonuses').find(entry => entry.name === name);
   if (!item) return {};
-  const fill = { type: item.type, taxability: item.taxability, annualThreshold: item.threshold };
+  const fill = { type: item.type, taxability: item.taxability, annualThreshold: item.threshold, cappedEarning: item.cappedEarning, paymentMode: item.paymentMode, effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
   if (Number(item.amount) > 0) fill.amount = item.amount;
   return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
 }
@@ -358,8 +359,8 @@ function normalizePayrollRecord(section, input) {
   // A capped earning shows the cap its Earning Configuration sets.
   // The Capped Amount is the employee's own; it is only kept while the earning is capped.
   // Capped Earning? follows the earning's Earning Configuration and is not edited here.
-  if (section.key === 'earnings') draft = { ...draft, cappedEarning: source?.cappedEarning || draft.cappedEarning || 'No' };
-  if (section.key === 'earnings' && draft.cappedEarning !== 'Yes') draft = { ...draft, cappedAmount: '' };
+  if (section.key === 'earnings' || section.key === 'bonuses') draft = { ...draft, cappedEarning: source?.cappedEarning || draft.cappedEarning || 'No' };
+  if ((section.key === 'earnings' || section.key === 'bonuses') && draft.cappedEarning !== 'Yes') draft = { ...draft, cappedAmount: '' };
   if (section.key === 'previousEmployer' || section.key === 'previousPayroll') {
     const gross = Math.round((Number(draft.basicPay || 0) + Number(draft.taxableBonus || 0) + Number(draft.otherTaxable || 0)) * 100) / 100;
     draft = { ...draft, grossTaxable: gross.toFixed(2) };
@@ -440,7 +441,7 @@ function recalculateSection(section, rows, context = {}) {
     const ytdNonTaxable = Number(context.ytdNonTaxableBonus || 0);
     // §10.1: the ceiling is effective-dated configuration, read from the Bonus
     // Ceiling reference table rather than written into the calculation.
-    const configuredCeiling = Number(referenceValues('bonus-ceilings', 'ceiling')[0] || 0);
+    const configuredCeiling = Number(effectiveReferenceRow('bonus-ceilings')?.ceiling || 0);
     const ordered = [...rows].sort((a, b) => Number(a.hierarchyPriority || 99) - Number(b.hierarchyPriority || 99));
     let used = ytdNonTaxable;
     const resolved = new Map();
@@ -865,6 +866,14 @@ function BulkActions({ employees, setEmployees, notify }) {
   return <div className="employee-bulk"><div className="bulk-hero"><div><p className="eyebrow">Employee Masterfile / governed write channel</p><h1>Bulk Actions</h1><p>Stage, validate, preview and commit employee updates without writing directly from an uploaded file.</p></div><span className="controlled-badge"><ShieldCheck /> Company-scoped · {bulkCompanyId}</span></div><div className="bulk-stepper">{['Select fields', 'Upload', 'Validate & preview', 'Commit & history'].map((label, index) => <div key={label} className={`${step === index ? 'active' : ''} ${step > index ? 'complete' : ''}`}><span>{step > index ? <Check /> : index + 1}</span>{label}</div>)}</div>{step === 0 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>1. Choose a controlled operation</h2><p>Employee Code is immutable. Select only whitelisted fields that the actor is allowed to update.</p></div></div><label className="bulk-operation">Operation<select value={operation} onChange={event => setOperation(event.target.value)}><option>Update existing employees</option><option>Correct employee data</option></select></label><div className="bulk-field-list"><div className="bulk-field locked"><input type="checkbox" checked readOnly /><div><strong>employeeCode</strong><small>Employee Code · immutable identifier</small></div><span>Required</span></div>{bulkFieldRegistry.map(field => <label className="bulk-field" key={field.key}><input type="checkbox" checked={selectedFields.includes(field.key)} onChange={() => toggleField(field.key)} /><div><strong>{field.key}</strong><small>{field.label} · {field.type === 'reference' ? 'reference code required' : field.type}</small></div>{field.required && <span>Required</span>}</label>)}</div><div className="bulk-actions"><button className="button secondary" onClick={downloadTemplate}><FileCsv /> Download template</button><button className="button primary" disabled={!selectedFields.length} onClick={() => setStep(1)}>Continue <ArrowRight /></button></div></section>}{step === 1 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>2. Upload a staged attempt</h2><p>Upload the generated template. The file is hashed, scoped to this company, and validated before any canonical write.</p></div></div><div className="bulk-upload-box"><FileXls /><strong>Upload file</strong><span>Headers must match the selected field keys. Reference values use codes, not display labels.</span><button className="button primary" onClick={() => setImportOpen(true)}>Choose file</button><button className="button secondary" onClick={downloadTemplate}><FileXls /> Download template</button>{importOpen && <ImportDialog historyKey="employee-bulk-actions" onImport={stageFile} onClose={() => setImportOpen(false)} />}</div><div className="bulk-actions"><button className="button secondary" onClick={() => setStep(0)}>Back</button></div></section>}{step === 2 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>3. Validate and preview</h2><p>Review the exact row-level result. Invalid files never write to the masterfile.</p></div><span className={`status-pill ${job?.status === 'Ready to Commit' ? 'active' : 'inactive'}`}>{job?.status}</span></div>{job && <><div className="bulk-summary"><span><strong>{job.totalRows}</strong><small>Total rows</small></span><span><strong>{job.validRows}</strong><small>Valid rows</small></span><span><strong>{job.invalidRows}</strong><small>Invalid rows</small></span><span><strong>{job.warnings?.length || 0}</strong><small>Warnings</small></span><span><strong>{job.fileHash}</strong><small>Content hash</small></span></div>{job.errors?.length ? <div className="bulk-errors"><div><Warning /><strong>Resolve validation errors before commit.</strong><button className="button secondary" onClick={downloadErrors}>Download errors</button></div><ul>{job.errors.slice(0, 12).map((error, index) => <li key={`${error.code}-${index}`}>Row {error.row || '—'} · {error.employeeCode || '—'} · <strong>{error.code}</strong> · {error.reason}</li>)}</ul></div> : <div className="bulk-success"><CheckCircle /><span><strong>All rows are valid.</strong> Blank optional cells retain the existing value.</span></div>}<div className="table-card bulk-preview"><table><thead><tr><th>Row</th><th>Employee</th>{selectedFields.map(field => <th key={field}>{field}</th>)}</tr></thead><tbody>{job.rows.map((entry, index) => <tr key={entry.employeeCode}><td>{index + 2}</td><td><code>{entry.employeeCode}</code></td>{selectedFields.map(field => <td key={field}>{entry.values[field] || 'Retain existing'}</td>)}</tr>)}</tbody></table></div></>}{job?.status === 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload</button><button className="button primary" onClick={commit}>Commit {job.validRows} rows</button></div>}{job?.status !== 'Ready to Commit' && <div className="bulk-actions"><button className="button secondary" onClick={() => setStep(1)}>Re-upload corrected file</button></div>}</section>}{step === 3 && <section className="bulk-card"><div className="bulk-card-heading"><div><h2>4. Commit result and history</h2><p>The canonical Employee Masterfile was updated once. A second commit of the same job is not available.</p></div><span className="status-pill active">Completed</span></div>{job && <div className="bulk-success"><CheckCircle /><span><strong>{job.committedRows} rows committed.</strong> Audit event recorded with job ID {job.jobId}.</span></div>}<div className="bulk-actions"><button className="button primary" onClick={reset}><Plus /> Start another bulk action</button></div></section>}{history.length > 0 && <section className="bulk-card bulk-history"><div className="bulk-card-heading"><div><h2>Bulk job history</h2><p>Attempts, hashes, validation results and commits are retained per company.</p></div></div><div className="table-card bulk-preview"><table><thead><tr><th>Job</th><th>File</th><th>Operation</th><th>Rows</th><th>Status</th><th>Attempt</th><th>Updated</th></tr></thead><tbody>{history.map(item => <tr key={item.jobId}><td><code>{item.jobId}</code><small>{item.fileHash}</small></td><td>{item.fileName}</td><td>{item.operation}</td><td>{item.committedRows || item.validRows || 0}/{item.totalRows}</td><td><span className={`status-pill ${item.status.toLowerCase().replaceAll(' ', '-')}`}>{item.status}</span></td><td>{item.attemptNo}</td><td>{String(item.committedAt || item.validatedAt || item.uploadedAt || '').replace('T', ' ').slice(0, 16)}</td></tr>)}</tbody></table></div></section>}</div>;
 }
 
+// The payroll sections, split over three tabs: Payroll Data (YTD and previous employer), Payroll Items (pay, earnings, deductions, loans, banks)
+// and Payroll Entries (the GL entry details and the cost allocation).
+const PAYROLL_TABS = {
+  'Payroll Data': ['ytd', 'previousEmployer', 'previousPayroll'],
+  'Payroll Items': ['basicPay', 'allowances', 'earnings', 'bonuses', 'statutory', 'deductions', 'loans', 'hdmf', 'bankInformation', 'allotment'],
+  'Payroll Entries': ['payrollEntry', 'costAllocation'],
+};
+
 export function EmployeeMasterfile({ onBack, onNavigate, notify, company, companies, onSelectCompany }) {
   // Each employee's payroll entries are kept under the employee's code; the payroll transaction reads them from there.
   const [store, setStore] = useState(() => readEmployeePayrollStore());
@@ -906,7 +915,7 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
   const payrollContext = ytdContextOf(employee);
   const runExport = (keys, format) => { if (exportEmployeeData(Object.fromEntries(sectionDefinitions.map(section => [section.key, rowsFor(employee, section)])), keys, format, employee.name)) notify({ type: 'success', message: 'Employee payroll export prepared.' }); setCustomExport(false); setExportMenu(false); };
   const selectEmployee = item => { setEmployeeId(item.id); setActiveTab('Personal Details'); setDetailOpen(true); };
-  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll Allocation', 'Contacts', 'Leaves', 'Documents', 'Custom Fields'];
+  const tabs = ['Personal Details', 'Employee Record', 'Benefits', 'Time Off', 'Payroll Items', 'Payroll Data', 'Payroll Entries', 'Contacts', 'Leaves', 'Documents', 'Custom Fields'];
 
   return <div className="app-shell employee-screen">
     <BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><EmployeeSidebar onBack={onBack} module={module} setModule={setModule} closeDetail={() => setDetailOpen(false)} />
@@ -926,8 +935,8 @@ export function EmployeeMasterfile({ onBack, onNavigate, notify, company, compan
         {activeTab === 'Leaves' && <Leaves employee={employee} notify={notify} />}
         {activeTab === 'Documents' && <Documents employee={employee} notify={notify} />}
         {activeTab === 'Custom Fields' && <CustomFields employee={employee} notify={notify} fieldNames={referenceValues('custom-fields')} />}
-        {activeTab === 'Payroll Allocation' && <>
-          <section className="employee-data-stack">{sectionDefinitions.map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 4 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
+        {PAYROLL_TABS[activeTab] && <>
+          <section className="employee-data-stack">{sectionDefinitions.filter(section => PAYROLL_TABS[activeTab].includes(section.key)).map((section, index) => <EmployeeSection key={section.key} section={section} employee={employee} rows={rowsFor(employee, section)} setRows={rows => updateRows(section.key, rows)} notify={notify} context={payrollContext} onOpenBulk={() => { setModule('bulk'); setDetailOpen(false); }} initiallyOpen={index < 4 || ['loans', 'allowances', 'previousPayroll', 'costAllocation'].includes(section.key)} />)}</section>
         </>}
       </>}
     </div></main>
