@@ -1,5 +1,5 @@
 /**
- * Employee Masterfile › Payroll Allocation → the payroll transaction.
+ * Employee Masterfile › Payroll Items → the payroll transaction.
  *
  * The Project Plan assigns earnings, deductions, loans and bonuses in the Employee Masterfile (ATLAS-1419,
  * ATLAS-1420), so that is where the payroll transaction reads them from. Each employee's entries are kept

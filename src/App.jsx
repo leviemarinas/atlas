@@ -929,7 +929,7 @@ export function App() {
     {screen === 'tax-payroll' && <StatutoryTables mode="payroll" group="tax" onBack={() => setScreen('payroll')} notify={notify} />}
     {screen === 'settings-computation-admin' && <StandardComputationAdmin onBack={() => setScreen('settings')} notify={notify} />}
     {screen.startsWith('settings-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('settings')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
-    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} companyId={activeCompanyId} company={activeCompany} />}
+    {screen.startsWith('payroll-workspace:') && <OperationalWorkspace workspaceKey={screen.split(':')[1]} onBack={() => setScreen('payroll')} notify={notify} companyId={activeCompanyId} company={activeCompany} onOpenEmployeeMasterfile={() => setScreen('employee')} />}
   </PlatformLayout>;
   // Services Information, with the cards the host owns (Benefits, Leave, Time and Attendance, Overtime, Rounding Off), is also where Back from a service page returns to.
   const servicesHub = <ServicesHub companyName={activeCompany.displayName || activeCompany.legalName} onOpen={(moduleKey) => setView(moduleKey === 'computations' ? 'computations' : `service:${moduleKey}`)} />;

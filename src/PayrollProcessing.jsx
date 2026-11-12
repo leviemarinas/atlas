@@ -87,7 +87,7 @@ import { DateInput } from './DateInput.jsx';
 import './payrollApprovals.css';
 import { leaveBalancesAfterConversion, leaveConversionWindow, ytdWindow, overlapWarnings, batchProblems, batchDrafts, newBatchRow, numberBatch, toggleBatchCalendar } from './payrollRuns.js';
 import { policyAppliesToRun, policySelectionConflicts, policySnapshot, readManagedPolicies } from './policyManagement';
-import { referenceRows } from './ReferenceTables';
+import { effectiveReferenceRow, referenceRows } from './ReferenceTables';
 import {
   MONTHS,
   PAYROLL_STATUS_TABS,
@@ -436,8 +436,8 @@ const LEAVE_TYPES = ['Vacation Leave', 'Sick Leave', 'Service Incentive Leave'];
 function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, onCreate, requiresApproval, isPaAdmin }) {
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
-  // The non-taxable bonus threshold starts at the company's Bonus Ceiling (a reference table); the run can change it.
-  const companyBonusCeiling = (() => { const value = referenceRows('bonus-ceilings')[0]?.ceiling; return value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 90000; })();
+  // The non-taxable bonus threshold starts at the company's Bonus Threshold (a reference table); the run can change it.
+  const companyBonusCeiling = (() => { const value = effectiveReferenceRow('bonus-ceilings')?.ceiling; return value !== undefined && value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 90000; })();
   const [draft, setDraft] = useState(() => { const fresh = newPayrollRun({ runs, companyId: readActiveCompanyId() }); return { ...fresh, config: { ...fresh.config, thirteenthMonth: { ...fresh.config.thirteenthMonth, ntThreshold: companyBonusCeiling } } }; });
   const monthNumber = MONTHS.indexOf(draft.month) + 1 || 1;
   const transactionNumber = nextTransactionNumber(runs, draft.year, monthNumber);
@@ -2144,7 +2144,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     const failures = [];
     drafts.forEach((item, index) => {
     const warnings = overlapWarnings({ ...item, transactionMode: 'Single', additional: undefined }, [...runs, ...filed]);
-    const created = withWarnings(fileRun({ ...item, approvalLevels: levelsForCalendar(calendars, item.calendarCode), approvalFlow: levelsForCalendar(calendars, item.calendarCode) ? flowFor(readApprovalHierarchy(companyId), levelsForCalendar(calendars, item.calendarCode)) : undefined, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, funds, bonusCeiling: draft.config.bonusCeiling ?? (() => { const value = referenceRows('bonus-ceilings')[0]?.ceiling; return Number.isFinite(Number(value)) && value !== '' ? Number(value) : 90000; })() } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
+    const created = withWarnings(fileRun({ ...item, approvalLevels: levelsForCalendar(calendars, item.calendarCode), approvalFlow: levelsForCalendar(calendars, item.calendarCode) ? flowFor(readApprovalHierarchy(companyId), levelsForCalendar(calendars, item.calendarCode)) : undefined, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, funds, bonusCeiling: draft.config.bonusCeiling ?? (() => { const value = effectiveReferenceRow('bonus-ceilings')?.ceiling; return Number.isFinite(Number(value)) && value !== '' ? Number(value) : 90000; })() } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
     const outcome = applyAction(created, 'recalculate', { actor, runs: [...runs, ...filed], context: contextFor(created) });
     const stored = outcome.error ? created : outcome.run;
     commit(stored);
