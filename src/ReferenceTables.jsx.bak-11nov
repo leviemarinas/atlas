@@ -1,0 +1,509 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  Bell,
+  CaretDown,
+  CaretRight,
+  Clock,
+  Cube,
+  DownloadSimple,
+  Gear,
+  House,
+  MagnifyingGlass,
+  PencilSimple,
+  Plus,
+  PuzzlePiece,
+  SignOut,
+  Sparkle,
+  SquaresFour,
+  Table,
+  Trash,
+  UploadSimple,
+  Users,
+  WarningCircle,
+  X,
+} from '@phosphor-icons/react';
+import { RoleSwitch, useRole } from './RoleContext';
+import { BrandRail, Topbar } from './AppChrome';
+import { readPayrollCollectionDefinitions, synchronizePayrollReference } from './payrollIntegration';
+import { categoryPrefixes } from './computationCatalog';
+import { readReferences } from './computationGovernance';
+import { readActiveCompanyId } from './companyRepository';
+import { CURRENCY_COLUMNS, CURRENCY_FIELDS, SEED_CURRENCIES, migrateCurrencyRows } from './currencyReference.js';
+import { downloadFile } from './fileDownload.js';
+import { MWE_LOCALITY_COLUMNS, MWE_LOCALITY_ROWS, MWE_NO_CLASSIFICATION } from './mweRates.js';
+import { readFirstSheet } from './excelRead.js';
+import { ImportDialog } from './ImportDialog';
+
+const groups = [
+  { id: 'generic', label: 'Generic', description: 'Shared reference values maintained by P&A Administration.' },
+  { id: 'hybrid', label: 'Generic and Specific', description: 'Shared defaults with company-specific additions.' },
+  { id: 'specific', label: 'Specific', description: 'Company-isolated values managed within this company.' },
+  { id: 'others', label: 'Other Reference Tables', description: 'Supporting reference values used by Atlas modules.' },
+];
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+/** Tables that no longer exist; a copy saved in the browser is not brought back. */
+const RETIRED_TABLES = new Set(['exchange-rates']);
+
+/**
+ * A table may describe its fields beyond the column list: `optional` (not
+ * required), `type: 'number'` with `min`/`max`, `uppercase`, a `pattern` with
+ * its message, a placeholder and a hint. Status is Active when left blank.
+ */
+const fieldOf = (table, key) => table.fields?.[key] || {};
+const isOptional = (table, key) => Boolean(fieldOf(table, key).optional) || (key === 'status' && Boolean(table.fields));
+
+function normaliseEntry(table, row) {
+  const next = { ...row };
+  table.columns.forEach(([key]) => {
+    const field = fieldOf(table, key);
+    if (typeof next[key] === 'string') next[key] = next[key].trim();
+    if (field.uppercase && next[key]) next[key] = String(next[key]).toUpperCase();
+  });
+  if (!next.status) next.status = 'Active';
+  if (table.id === 'mwe-localities' && !next.classification) next.classification = MWE_NO_CLASSIFICATION;
+  return next;
+}
+
+const listRows = (values, source) => values.map((name, index) => ({ id: `${source || 'seed'}-${index + 1}`, name, status: 'Active', ...(source ? { source } : {}) }));
+const tableRows = (values, source) => values.map((row, index) => ({ id: `${source || 'seed'}-${index + 1}`, status: 'Active', ...row, ...(source ? { source } : {}) }));
+
+const seedTables = [
+  { id: 'bir-form', group: 'generic', scope: 'generic', name: 'BIR Form', description: 'Bureau of Internal Revenue forms available for payroll and statutory reporting.', columns: [['code', 'Form Code'], ['name', 'Form Name'], ['purpose', 'Purpose'], ['status', 'Status']], rows: tableRows([{ code: 'BIR-1601C', name: 'Monthly Remittance Return of Income Taxes Withheld', purpose: 'Monthly withholding remittance' }, { code: 'BIR-2316', name: 'Certificate of Compensation Payment / Tax Withheld', purpose: 'Annual employee tax certificate' }, { code: 'BIR-1604C', name: 'Annual Information Return of Income Taxes Withheld', purpose: 'Annual withholding information return' }]) },
+  { id: 'transaction-mode', group: 'generic', scope: 'generic', name: 'Transaction Mode', description: 'Approved modes for payroll disbursement, collection, and settlement.', columns: [['code', 'Mode Code'], ['name', 'Transaction Mode'], ['status', 'Status']], rows: tableRows([{ code: 'BANK', name: 'Bank Transfer' }, { code: 'CASH', name: 'Cash' }, { code: 'CHECK', name: 'Check' }, { code: 'EWALLET', name: 'Electronic Wallet' }]) },
+  { id: 'statutory-name', group: 'generic', scope: 'generic', name: 'Statutory Name', description: 'Government agencies used for contributions, taxes, loans, and remittances.', columns: [['code', 'Statutory Code'], ['name', 'Statutory Name'], ['agency', 'Agency'], ['status', 'Status']], rows: tableRows([{ code: 'BIR', name: 'Bureau of Internal Revenue', agency: 'BIR' }, { code: 'SSS', name: 'Social Security System', agency: 'SSS' }, { code: 'PHIC', name: 'PhilHealth', agency: 'PhilHealth' }, { code: 'HDMF', name: 'Home Development Mutual Fund', agency: 'Pag-IBIG' }]) },
+  { id: 'multi-currency-activity', group: 'generic', scope: 'generic', name: 'Multi-Currency Activity', description: 'Activities that may be processed in a currency other than the company base currency.', columns: [['code', 'Activity Code'], ['name', 'Activity'], ['status', 'Status']], rows: tableRows([{ code: 'PAYROLL', name: 'Payroll Processing' }, { code: 'REIMBURSEMENT', name: 'Employee Reimbursement' }, { code: 'DISBURSEMENT', name: 'Payroll Disbursement' }, { code: 'BILLING', name: 'Client Billing' }]) },
+  { id: 'de-minimis-benefits', group: 'generic', scope: 'generic', name: 'De Minimis Benefits', description: 'Shared benefit names used by the effective De Minimis statutory table.', columns: [['code', 'Benefit Code'], ['name', 'Benefit Name'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: 'DM-RICE', name: 'Rice Subsidy', classification: 'Non-taxable ceiling' }, { code: 'DM-UNIFORM', name: 'Uniform and Clothing Allowance', classification: 'Non-taxable ceiling' }, { code: 'DM-MED', name: 'Medical Cash Allowance to Dependents', classification: 'Non-taxable ceiling' }, { code: 'DM-LOA', name: 'Laundry Allowance', classification: 'Non-taxable ceiling' }]) },
+  { id: 'civil-status', group: 'generic', scope: 'generic', name: 'Civil Status', description: 'Civil status values used in employee personal details.', mode: 'list', columns: [['name', 'Civil Status']], rows: listRows(['Single', 'Married', 'Divorced', 'Separated', 'Widowed']) },
+  { id: 'countries', group: 'generic', scope: 'generic', name: 'Country', description: 'ISO-aligned country values for addresses and employee origin.', columns: [['code', 'Country Code'], ['name', 'Country Name'], ['status', 'Status']], rows: tableRows([{ code: 'PH', name: 'Philippines', status: 'Active' }, { code: 'SG', name: 'Singapore', status: 'Active' }, { code: 'US', name: 'United States', status: 'Active' }]) },
+  { id: 'nationality', group: 'generic', scope: 'generic', name: 'Nationality', description: 'Nationality values shared by employee and compliance records.', mode: 'list', columns: [['name', 'Nationality']], rows: listRows(['Filipino', 'Singaporean', 'American']) },
+  { id: 'employment-status', group: 'generic', scope: 'generic', name: 'Employment Status', description: 'Employment classifications used throughout Employee Masterfile.', mode: 'list', columns: [['name', 'Employment Status']], rows: listRows(['Full-time', 'Part-time', 'Probationary', 'Project-based', 'Separated']) },
+  { id: 'pay-frequency', group: 'generic', scope: 'generic', name: 'Pay Frequency', description: 'Payroll frequencies available to company assignments.', mode: 'list', columns: [['name', 'Pay Frequency']], rows: listRows(['Weekly', 'Semi-monthly', 'Monthly', 'Quarterly']) },
+  { id: 'banks', group: 'generic', scope: 'generic', name: 'Bank', description: 'Supported disbursement banks and bank codes.', columns: [['code', 'Bank Code'], ['name', 'Bank Name'], ['status', 'Status']], rows: tableRows([{ code: 'BDO', name: 'BDO Unibank', status: 'Active' }, { code: 'BPI', name: 'Bank of the Philippine Islands', status: 'Active' }, { code: 'UBP', name: 'UnionBank', status: 'Active' }]) },
+  { id: 'mwe-localities', group: 'generic', scope: 'generic', name: 'MWE Locality', description: 'Regions, localities (city, municipality, province) and locality names a Minimum Wage Earner is placed in on Basic Pay, as in Annex A D2. MWE 2026 Updated Table. Classification is None where the region does not classify its places.', columns: MWE_LOCALITY_COLUMNS.map(column => [...column]), fields: { code: { uppercase: true, placeholder: 'e.g. MWEL-254' }, locality: { placeholder: 'City, Municipality or Province', pattern: '^(City|Municipality|Province)$', patternMessage: 'Locality is City, Municipality or Province.' }, classification: { optional: true, placeholder: MWE_NO_CLASSIFICATION, hint: 'Leave blank or None where the region has no classification.' } }, rows: MWE_LOCALITY_ROWS.map(row => ({ ...row })) },
+  { id: 'currency', group: 'generic', scope: 'generic', name: 'Currency', description: 'Currencies available to payroll transactions and employee banking. Currency Code is the key; exchange rates are not stored here — the rate is entered on each payroll transaction.', columns: CURRENCY_COLUMNS.map(column => [...column]), fields: CURRENCY_FIELDS, rows: SEED_CURRENCIES.map(row => ({ ...row })) },
+  { id: 'remittance-parties', group: 'hybrid', scope: 'hybrid', name: 'Remittance Filed By and Paid By', description: 'Who may file a government remittance and who may pay it, used by Remittance Monitoring.', columns: [['code', 'Code'], ['name', 'Name'], ['role', 'Role'], ['status', 'Status']], rows: tableRows([{ code: 'RP-PA', name: 'P&A Payroll Team', role: 'Filed By and Paid By', source: 'generic' }, { code: 'RP-CLIENT', name: 'Client Finance', role: 'Paid By', source: 'generic' }, { code: 'RP-JD', name: 'John Doe', role: 'Filed By', source: 'specific' }, { code: 'RP-EC', name: 'Ethan Collins', role: 'Paid By', source: 'specific' }]) },
+  { id: 'remittance-statuses', group: 'generic', scope: 'generic', name: 'Remittance Monitoring Status', description: 'The statuses a remittance moves through in Remittance Monitoring.', mode: 'list', columns: [['name', 'Remittance Status']], rows: listRows(['Pending', 'Draft', 'For Payment', 'Paid', 'Verified']) },
+  { id: 'government-branches', group: 'generic', scope: 'generic', name: 'Government Branch', description: 'BIR, SSS, PhilHealth, and HDMF branch codes used by company and employee registrations.', columns: [['code', 'Branch Code'], ['name', 'Agency / Branch Name'], ['status', 'Status']], rows: tableRows([{ code: 'BIR-047', name: 'BIR RDO 047', status: 'Active' }, { code: 'SSS-NCR', name: 'SSS NCR', status: 'Active' }, { code: 'PHIC-NCR', name: 'PhilHealth NCR', status: 'Active' }, { code: 'HDMF-NCR', name: 'HDMF NCR', status: 'Active' }]) },
+  { id: 'relationships', group: 'generic', scope: 'generic', name: 'Relationship Type', description: 'Relationship values for contacts, dependents, and allottees.', mode: 'list', columns: [['name', 'Relationship Type']], rows: listRows(['Spouse', 'Child', 'Parent', 'Sibling', 'Guardian', 'Other']) },
+  { id: 'thirteenth-bonus-type', group: 'hybrid', scope: 'hybrid', name: '13th Month and Bonus Type', description: 'Shared bonus classifications with company-specific additions for payroll setup.', columns: [['code', 'Bonus Code'], ['name', 'Bonus Type'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: '13TH', name: '13th Month Pay', classification: 'Statutory / taxable ceiling' }, { code: 'PERF', name: 'Performance Bonus', classification: 'Company bonus' }, { code: 'SIGN', name: 'Signing Bonus', classification: 'Company bonus' }], 'generic').concat(tableRows([{ code: 'ABC-SPOT', name: 'ABC Spot Award', classification: 'Company bonus' }], 'specific')) },
+  { id: 'gl-name', group: 'specific', scope: 'specific', name: 'GL Name', description: 'Company-specific general ledger names used by payroll and journal mappings.', columns: [['code', 'GL Code'], ['name', 'GL Name'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: '610100', name: 'Salaries and Wages', classification: 'Expense', status: 'Active' }, { code: '610200', name: 'Employee Benefits', classification: 'Expense', status: 'Active' }, { code: '210100', name: 'Payroll Payable', classification: 'Liability', status: 'Active' }]) },
+  { id: 'departments', group: 'specific', scope: 'specific', name: 'Department', description: 'ABC Company organizational departments.', columns: [['code', 'Department Code'], ['name', 'Department Name'], ['status', 'Status']], rows: tableRows([{ code: 'HR', name: 'Human Resources', status: 'Active' }, { code: 'FIN', name: 'Finance', status: 'Active' }, { code: 'OPS', name: 'Operations', status: 'Active' }]) },
+  { id: 'cost-centers', group: 'specific', scope: 'specific', name: 'Cost Center', description: 'Client-owned cost centers available to payroll allocation.', columns: [['code', 'Cost Center Code'], ['name', 'Cost Center Name'], ['status', 'Status']], rows: tableRows([{ code: 'CC-100', name: 'Corporate Services', status: 'Active' }, { code: 'CC-220', name: 'Payroll Operations', status: 'Active' }]) },
+  { id: 'job-titles', group: 'specific', scope: 'specific', name: 'Job Title', description: 'Approved job titles used in employee assignments.', columns: [['code', 'Job Code'], ['name', 'Job Title'], ['status', 'Status']], rows: tableRows([{ code: 'PAY-01', name: 'Payroll Specialist', status: 'Active' }, { code: 'PAY-02', name: 'Payroll Analyst', status: 'Active' }, { code: 'PAY-03', name: 'Team Lead', status: 'Active' }]) },
+  { id: 'job-levels', group: 'specific', scope: 'specific', name: 'Job Level', description: 'Job levels used for employee grouping, approval routing and policy applicability.', columns: [['code', 'Job Level Code'], ['name', 'Job Level'], ['status', 'Status']], rows: tableRows([{ code: 'JL-MGR', name: 'Manager' }, { code: 'JL-SUP', name: 'Supervisor' }, { code: 'JL-RNF', name: 'Rank and File' }, { code: 'JL-CON', name: 'Consultant' }]) },
+  { id: 'job-grades', group: 'specific', scope: 'specific', name: 'Job Grade', description: 'Salary grades and their ranges, used when a pay rate is checked against its grade.', columns: [['code', 'Job Grade Code'], ['name', 'Job Grade'], ['minimum', 'Minimum Monthly Rate'], ['maximum', 'Maximum Monthly Rate'], ['status', 'Status']], rows: tableRows([{ code: 'JG-01', name: 'Grade 1', minimum: '15000', maximum: '25000' }, { code: 'JG-02', name: 'Grade 2', minimum: '25000', maximum: '45000' }, { code: 'JG-03', name: 'Grade 3', minimum: '45000', maximum: '90000' }]) },
+  { id: 'divisions', group: 'specific', scope: 'specific', name: 'Division', description: 'Company divisions, one level above departments.', columns: [['code', 'Division Code'], ['name', 'Division Name'], ['status', 'Status']], rows: tableRows([{ code: 'DIV-PD', name: 'Product Development' }, { code: 'DIV-CS', name: 'Corporate Services' }, { code: 'DIV-SD', name: 'Service Delivery' }]) },
+  { id: 'sections', group: 'specific', scope: 'specific', name: 'Section', description: 'Sections within a department, used for grouping and report exports.', columns: [['code', 'Section Code'], ['name', 'Section Name'], ['status', 'Status']], rows: tableRows([{ code: 'SEC-APP', name: 'Applications' }, { code: 'SEC-PAY', name: 'Payroll' }, { code: 'SEC-FLD', name: 'Field Services' }]) },
+  { id: 'sites', group: 'specific', scope: 'specific', name: 'Site', description: 'Company sites (offices, depots, plants) employees are assigned to.', columns: [['code', 'Site Code'], ['name', 'Site Name'], ['status', 'Status']], rows: tableRows([{ code: 'SITE-HO', name: 'Head Office' }, { code: 'SITE-MKD', name: 'Marikina Depot' }]) },
+  { id: 'work-locations', group: 'specific', scope: 'specific', name: 'Work Location', description: 'Office and remote work locations for assignments and statutory handling.', columns: [['code', 'Location Code'], ['name', 'Location Name'], ['status', 'Status']], rows: tableRows([{ code: 'MKT', name: 'Makati', status: 'Active' }, { code: 'MNL', name: 'Manila', status: 'Active' }]) },
+  { id: 'payroll-groups', group: 'specific', scope: 'specific', name: 'Payroll Group', description: 'Company payroll population groupings.', columns: [['code', 'Payroll Group Code'], ['name', 'Payroll Group Name'], ['status', 'Status']], rows: tableRows([{ code: 'SM-REG', name: 'Semi-monthly Regular', status: 'Active' }, { code: 'MN-PROJ', name: 'Monthly Project-based', status: 'Active' }]) },
+  { id: 'chart-of-accounts', group: 'specific', scope: 'specific', name: 'Chart of Accounts', description: 'Payroll expense, liability, cash, and receivable accounts used by journal-entry generation.', columns: [['code', 'Account Code'], ['name', 'Account Name'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: '610100', name: 'Salaries and Wages', classification: 'Expense', status: 'Active' }, { code: '210100', name: 'Payroll Payable', classification: 'Liability', status: 'Active' }, { code: '110200', name: 'Employee Receivable', classification: 'Asset', status: 'Active' }]) },
+  { id: 'gl-mapping', group: 'specific', scope: 'specific', name: 'GL Code Mapping', description: 'Maps payroll pay items and statutory entries to debit and credit accounts.', columns: [['code', 'Mapping Code'], ['name', 'Pay Item / Transaction'], ['debitAccount', 'Debit Account'], ['creditAccount', 'Credit Account'], ['status', 'Status']], rows: tableRows([{ code: 'GL-BASIC', name: 'Basic Pay', debitAccount: '610100', creditAccount: '210100', status: 'Active' }, { code: 'GL-SSS', name: 'SSS Payable', debitAccount: '610100', creditAccount: '220110', status: 'Active' }]) },
+  { id: 'tax-tables', group: 'specific', scope: 'specific', name: 'Tax Table', description: 'Effective tax brackets and rates used by regular withholding and annualization.', columns: [['code', 'Bracket Code'], ['minimum', 'Minimum Taxable Income'], ['maximum', 'Maximum Taxable Income'], ['rate', 'Excess Rate'], ['status', 'Status']], rows: tableRows([{ code: 'BIR-M01', minimum: '0', maximum: '20833', rate: '0%', status: 'Active' }, { code: 'BIR-M02', minimum: '20833.01', maximum: '33332', rate: '15%', status: 'Active' }, { code: 'BIR-M03', minimum: '33333', maximum: '66666', rate: '20%', status: 'Active' }]) },
+  { id: 'earning-types', group: 'specific', scope: 'specific', name: 'Earning Type', description: 'Earning and allowance references available to payroll and employee records.', columns: [['code', 'Earning Code'], ['name', 'Earning Name'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: 'ERN-REG', name: 'Regular Earning', classification: 'Taxable', status: 'Active' }, { code: 'ERN-SAL', name: 'Salary', classification: 'Taxable', status: 'Active' }, { code: 'ERN-LEC', name: 'Lecture Fee', classification: 'Taxable', status: 'Active' }, { code: 'ERN-CLO', name: 'Uniform and Clothing Allowance', classification: 'Non-taxable', status: 'Active' }, { code: 'ERN-RICE', name: 'Rice Subsidy', classification: 'Non-taxable', status: 'Active' }, { code: 'ERN-DMN', name: 'De Minimis Benefit', classification: 'Non-taxable', status: 'Active' }, { code: 'ERN-RMB', name: 'Reimbursement', classification: 'Non-taxable', status: 'Active' }]) },
+  { id: 'bonus-threshold-splitting', group: 'generic', scope: 'generic', name: 'Bonus Threshold Splitting', description: 'How much of the bonus threshold one payroll may use, offered when a bonus is set up in Services Information ▸ Bonus Configuration.', mode: 'list', columns: [['name', 'Threshold Splitting']], rows: listRows(['100%', '50%', '25%', '12.5%']) },
+  { id: 'earning-config-types', group: 'generic', scope: 'generic', name: 'Earning Configuration Type', description: 'Earning types offered when an earning is set up in Services Information ▸ Earning Configuration, used to categorize the earning (Vacation Leave, Absent, Basic Pay Adjustment, Bonus and the like), as listed in Annex A D9.', columns: [['code', 'Type Code'], ['name', 'Earning Type'], ['status', 'Status']], rows: tableRows(['Basic Pay', 'Normal', 'Late', 'Absent', 'Undertime', 'Allowance', 'Hazard', 'Vacation Leave', 'Sick Leave', 'Maternity Leave', 'Paternity Leave', 'Special Privilege Leave', 'Night Differential', 'Rehabilitation Leave', 'Basic Pay Adjustment', 'Lates Adjustment', 'Absences Adjustment', 'Overtime Adjustment', 'Undertime Adjustment', 'Bonus'].map((name, index) => ({ code: `ET-${String(index + 1).padStart(3, '0')}`, name }))) },
+  { id: 'variable-allowances', group: 'specific', scope: 'specific', name: 'Variable Allowance', description: 'Hourly variable allowances a payroll transaction can pay — the rate per hour is entered per employee and multiplied by the hours worked from timekeeping or an upload. The taxable flag decides how the amount is treated.', columns: [['code', 'Allowance Code'], ['name', 'Allowance Name'], ['taxable', 'Taxable'], ['status', 'Status']], rows: tableRows([{ code: 'VA-LEC', name: 'Lecture Fee', taxable: 'Yes', status: 'Active' }, { code: 'VA-THS', name: 'Thesis Advising', taxable: 'Yes', status: 'Active' }, { code: 'VA-HON', name: 'Honorarium', taxable: 'Yes', status: 'Active' }, { code: 'VA-TRN', name: 'Transportation Allowance (per hour)', taxable: 'No', status: 'Active' }]) },
+  { id: 'deduction-types', group: 'specific', scope: 'specific', name: 'Deduction Type', description: 'Company deduction references (MP2, health insurance, cash bond and similar) available to employee payroll records.', columns: [['code', 'Deduction Code'], ['name', 'Deduction Name'], ['classification', 'Classification'], ['status', 'Status']], rows: tableRows([{ code: 'DED-MP2', name: 'Pag-IBIG MP2 Savings', classification: 'Voluntary', status: 'Active' }, { code: 'DED-HMO', name: 'Health Insurance', classification: 'Voluntary', status: 'Active' }, { code: 'DED-BOND', name: 'Cash Bond', classification: 'Company', status: 'Active' }, { code: 'DED-CANTEEN', name: 'Canteen Charges', classification: 'Company', status: 'Active' }]) },
+  { id: 'loan-types', group: 'specific', scope: 'specific', name: 'Loan Type', description: 'Government and company loan references available to employee payroll records.', columns: [['code', 'Loan Code'], ['name', 'Loan Name'], ['agency', 'Agency'], ['status', 'Status']], rows: tableRows([{ code: 'SSS-SAL', name: 'SSS Salary Loan', agency: 'SSS', status: 'Active' }, { code: 'SSS-CAL', name: 'SSS Calamity Loan', agency: 'SSS', status: 'Active' }, { code: 'HDMF-MPL', name: 'HDMF Multi-Purpose Loan', agency: 'HDMF', status: 'Active' }, { code: 'COM-SAL', name: 'Company Salary Loan', agency: 'Company', status: 'Active' }]) },
+  { id: 'overtime-types', group: 'specific', scope: 'specific', name: 'Overtime and Premium Type', description: 'Rate factors for overtime, rest day, holiday, and night differential calculations.', columns: [['code', 'Premium Code'], ['name', 'Premium Name'], ['rate', 'Rate Factor'], ['status', 'Status']], rows: tableRows([{ code: 'OT-REG', name: 'Regular Day Overtime', rate: '1.25', status: 'Active' }, { code: 'OT-RD', name: 'Rest Day Overtime', rate: '1.69', status: 'Active' }, { code: 'OT-RH', name: 'Regular Holiday Overtime', rate: '2.60', status: 'Active' }, { code: 'ND', name: 'Night Differential', rate: '0.10', status: 'Active' }]) },
+  { id: 'holiday-groups', group: 'specific', scope: 'specific', name: 'Holiday Group', description: 'Holiday calendars assignable by company, location, and employee group.', columns: [['code', 'Holiday Group Code'], ['name', 'Holiday Group Name'], ['location', 'Location'], ['status', 'Status']], rows: tableRows([{ code: 'PH-NAT', name: 'Philippines National Holidays', location: 'Philippines', status: 'Active' }, { code: 'MKT-LOC', name: 'Makati Local Holidays', location: 'Makati', status: 'Active' }]) },
+  { id: 'de-minimis-ceilings', group: 'specific', scope: 'specific', name: 'De Minimis Ceiling', description: 'Annual and periodic non-taxable ceilings used by earning classification and tax annualization.', fields: { ceiling: { type: 'number', min: 0, max: 999999999, placeholder: '30000', hint: 'A whole number of pesos a year.' } }, columns: [['code', 'Benefit Code'], ['name', 'Benefit Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'DM-RICE', name: 'Rice Subsidy', ceiling: '30000', status: 'Active' }, { code: 'DM-UNIFORM', name: 'Uniform and Clothing Allowance', ceiling: '8000', status: 'Active' }, { code: 'DM-MED', name: 'Medical Cash Allowance to Dependents', ceiling: '4000', status: 'Active' }]) },
+  { id: 'bonus-ceilings', group: 'specific', scope: 'specific', name: 'Bonus Ceiling', description: 'Non-taxable 13th month pay and other benefit ceilings used per transaction and year to date.', fields: { ceiling: { type: 'number', min: 0, max: 999999999, placeholder: '90000', hint: 'A whole number of pesos a year. 0 makes every bonus taxable.' } }, columns: [['code', 'Bonus Ceiling Code'], ['name', 'Ceiling Name'], ['ceiling', 'Annual Ceiling'], ['status', 'Status']], rows: tableRows([{ code: 'BON-NT', name: '13th Month Pay and Other Benefits', ceiling: '90000', status: 'Active' }]) },
+  { id: 'bonus-ceiling-order', group: 'specific', scope: 'specific', name: 'Bonus Ceiling Order', description: 'The order bonuses use up the non-taxable ceiling in a payroll run — the first in line stays non-taxable longest.', fields: { priority: { type: 'number', min: 1, max: 99, placeholder: '1', hint: '1 uses the ceiling first.' } }, columns: [['code', 'Order Code'], ['name', 'Bonus Type'], ['priority', 'Order'], ['status', 'Status']], rows: tableRows([['13th Month Pay', 1], ['14th Month Pay', 2], ['Mid-year Bonus', 3], ['Performance Bonus', 4], ['Retention Bonus', 5], ['Signing Bonus', 6]].map(([name, priority]) => ({ code: `BCO-${String(priority).padStart(3, '0')}`, name, priority: String(priority), status: 'Active' }))) },
+  { id: 'deduction-hierarchy', group: 'specific', scope: 'specific', name: 'Deduction Hierarchy', description: 'Priority order for statutory, loan, and company deductions when net pay is constrained.', columns: [['code', 'Priority Code'], ['name', 'Deduction Group'], ['priority', 'Priority'], ['status', 'Status']], rows: tableRows([{ code: 'DH-001', name: 'Statutory Deductions', priority: '1', status: 'Active' }, { code: 'DH-002', name: 'Government Loans', priority: '2', status: 'Active' }, { code: 'DH-003', name: 'Company Deductions', priority: '3', status: 'Active' }]) },
+  { id: 'computation-category', group: 'generic', scope: 'generic', name: 'Computation Category', description: 'Controlled categories for Computational Basis formulas. The prefix drives the computation code Atlas generates (Earnings → ERN-001).', columns: [['code', 'Code Prefix'], ['name', 'Computation Category'], ['status', 'Status']], rows: tableRows(categoryPrefixes.map(([name, code]) => ({ code, name }))) },
+  { id: 'payment-type', group: 'generic', scope: 'generic', name: 'Payment Type', description: 'How employees are paid out by the company.', columns: [['code', 'Payment Type Code'], ['name', 'Payment Type'], ['status', 'Status']], rows: tableRows([{ code: 'BANK', name: 'Bank Transfer' }, { code: 'CHECK', name: 'Check' }, { code: 'CASH', name: 'Cash' }, { code: 'EWALLET', name: 'Electronic Wallet' }]) },
+  { id: 'tax-type', group: 'generic', scope: 'generic', name: 'Tax Type', description: 'Withholding tax types used by the BIR tax tables.', columns: [['code', 'Tax Type Code'], ['name', 'Tax Type'], ['status', 'Status']], rows: tableRows([{ code: 'WTC', name: 'Withholding Tax on Compensation' }, { code: 'EWT', name: 'Expanded Withholding Tax' }, { code: 'FWT', name: 'Final Withholding Tax' }, { code: 'FBT', name: 'Fringe Benefit Tax' }]) },
+  { id: 'religions', group: 'generic', scope: 'generic', name: 'Religions', description: 'Religion values used in employee personal details.', mode: 'list', columns: [['name', 'Religion']], rows: listRows(['Roman Catholic', 'Christian', 'Iglesia ni Cristo', 'Islam', 'Buddhism', 'None', 'Other']) },
+  { id: 'holiday-type', group: 'generic', scope: 'generic', name: 'Holiday Type', description: 'Holiday classifications that decide holiday pay.', mode: 'list', columns: [['name', 'Holiday Type']], rows: listRows(['Regular Holiday', 'Special Non-Working Holiday', 'Special Working Holiday', 'Local Holiday', 'Company Holiday']) },
+  { id: 'issuing-country', group: 'generic', scope: 'generic', name: 'Issuing Country', description: 'Countries that issue passports, visas and IDs.', columns: [['code', 'Country Code'], ['name', 'Issuing Country'], ['status', 'Status']], rows: tableRows([{ code: 'PH', name: 'Philippines' }, { code: 'SG', name: 'Singapore' }, { code: 'US', name: 'United States' }, { code: 'JP', name: 'Japan' }]) },
+  { id: 'timezone', group: 'generic', scope: 'generic', name: 'Timezone', description: 'Timezones for company sites and time logs.', columns: [['code', 'Timezone Code'], ['name', 'Timezone'], ['status', 'Status']], rows: tableRows([{ code: 'Asia/Manila', name: '(UTC+08:00) Manila' }, { code: 'Asia/Singapore', name: '(UTC+08:00) Singapore' }, { code: 'America/New_York', name: '(UTC-05:00) Eastern Time' }]) },
+  { id: 'language', group: 'generic', scope: 'generic', name: 'Language', description: 'Languages used in employee personal details.', mode: 'list', columns: [['name', 'Language']], rows: listRows(['English', 'Filipino', 'Cebuano', 'Ilocano', 'Mandarin', 'Japanese']) },
+  { id: 'reason-separation-bir', group: 'generic', scope: 'generic', name: 'Reason Of Separation BIR Reportings', description: 'Separation reasons as the BIR reports them (Alphalist and Form 2316).', columns: [['code', 'Reason Code'], ['name', 'Reason of Separation'], ['status', 'Status']], rows: tableRows([{ code: 'T', name: 'Terminated' }, { code: 'R', name: 'Resigned' }, { code: 'D', name: 'Deceased' }, { code: 'TR', name: 'Transferred' }, { code: 'RT', name: 'Retired' }]) },
+  { id: 'atc-code', group: 'generic', scope: 'generic', name: 'ATC Code', description: 'BIR Alphanumeric Tax Codes for expanded and final withholding.', columns: [['code', 'ATC Code'], ['name', 'Description'], ['status', 'Status']], rows: tableRows([{ code: 'WI010', name: 'Professional fees - individual' }, { code: 'WI100', name: 'Rentals - individual' }, { code: 'WC010', name: 'Professional fees - corporation' }, { code: 'WI158', name: 'Purchase of goods - top withholding agent' }]) },
+  { id: 'nature-of-income-payment', group: 'generic', scope: 'generic', name: 'Nature of Income Payment', description: 'Nature of income payments for withholding tax returns.', columns: [['code', 'Code'], ['name', 'Nature of Income Payment'], ['status', 'Status']], rows: tableRows([{ code: 'NIP-01', name: 'Professional fees' }, { code: 'NIP-02', name: 'Rentals' }, { code: 'NIP-03', name: 'Commissions' }, { code: 'NIP-04', name: 'Income payments to suppliers' }]) },
+  { id: 'blood-type', group: 'generic', scope: 'generic', name: 'Blood Type', description: 'Blood types recorded in employee personal details.', mode: 'list', columns: [['name', 'Blood Type']], rows: listRows(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']) },
+  { id: 'tax-rate', group: 'generic', scope: 'generic', name: 'Tax Rate', description: 'Fixed tax rates referenced by the expanded and final withholding tables.', columns: [['code', 'Tax Rate Code'], ['name', 'Tax Rate'], ['status', 'Status']], rows: tableRows([{ code: 'TR-1', name: '1%' }, { code: 'TR-2', name: '2%' }, { code: 'TR-5', name: '5%' }, { code: 'TR-10', name: '10%' }, { code: 'TR-15', name: '15%' }, { code: 'TR-35', name: '35%' }]) },
+  { id: 'violation', group: 'specific', scope: 'specific', name: 'Violation', description: 'Code of conduct violations used in disciplinary records.', columns: [['code', 'Violation Code'], ['name', 'Violation'], ['status', 'Status']], rows: tableRows([{ code: 'V-001', name: 'Tardiness' }, { code: 'V-002', name: 'Unauthorized absence' }, { code: 'V-003', name: 'Insubordination' }]) },
+  { id: 'campus', group: 'specific', scope: 'specific', name: 'Campus', description: 'Campuses, for schools and multi-campus clients.', columns: [['code', 'Campus Code'], ['name', 'Campus'], ['status', 'Status']], rows: tableRows([{ code: 'CMP-MKT', name: 'Makati Campus' }, { code: 'CMP-QC', name: 'Quezon City Campus' }]) },
+  { id: 'college', group: 'specific', scope: 'specific', name: 'College', description: 'Colleges within a campus.', columns: [['code', 'College Code'], ['name', 'College'], ['status', 'Status']], rows: tableRows([{ code: 'COL-ENG', name: 'College of Engineering' }, { code: 'COL-BUS', name: 'College of Business' }]) },
+  { id: 'program', group: 'specific', scope: 'specific', name: 'Program', description: 'Academic programs within a college.', columns: [['code', 'Program Code'], ['name', 'Program'], ['status', 'Status']], rows: tableRows([{ code: 'PRG-BSIT', name: 'BS Information Technology' }, { code: 'PRG-BSA', name: 'BS Accountancy' }]) },
+  { id: 'examination-type', group: 'specific', scope: 'specific', name: 'Examination Type', description: 'Pre-employment and periodic examinations.', mode: 'list', columns: [['name', 'Examination Type']], rows: listRows(['Pre-employment Medical', 'Drug Test', 'Annual Physical Exam', 'Aptitude Test']) },
+  { id: 'disciplinary-action', group: 'specific', scope: 'specific', name: 'Disciplinary Action', description: 'Actions taken on a violation.', mode: 'list', columns: [['name', 'Disciplinary Action']], rows: listRows(['Verbal Warning', 'Written Warning', 'Suspension', 'Termination']) },
+  { id: 'reason-on-hold', group: 'specific', scope: 'specific', name: 'Reason why on hold', description: 'Reasons an employee record or payout is put on hold.', mode: 'list', columns: [['name', 'Reason']], rows: listRows(['Pending clearance', 'Incomplete documents', 'Under investigation', 'Bank details missing']) },
+  { id: 'office-location', group: 'specific', scope: 'specific', name: 'Office Location', description: 'Office addresses employees report to.', columns: [['code', 'Office Code'], ['name', 'Office Location'], ['status', 'Status']], rows: tableRows([{ code: 'OFF-MKT', name: 'Makati Head Office' }, { code: 'OFF-CEB', name: 'Cebu Office' }]) },
+  { id: 'custom-fields', group: 'specific', scope: 'specific', name: 'Custom Fields', description: 'Company-defined employee fields, filled in on Employee Masterfile ▸ Custom Fields.', columns: [['code', 'Field Code'], ['name', 'Field Name'], ['status', 'Status']], rows: tableRows([{ code: 'CF-01', name: 'T-Shirt Size' }, { code: 'CF-02', name: 'Locker Number' }, { code: 'CF-03', name: 'Parking Slot' }]) },
+  { id: 'employment-type', group: 'hybrid', scope: 'hybrid', name: 'Employment Type', description: 'Shared employment types with company additions.', mode: 'list', columns: [['name', 'Employment Type']], rows: listRows(['Regular', 'Probationary', 'Contractual', 'Project-based', 'Seasonal']) },
+  { id: 'id-type', group: 'hybrid', scope: 'hybrid', name: 'ID Type', description: 'Valid identification card types.', mode: 'list', columns: [['name', 'ID Type']], rows: listRows(['UMID', 'Driver License', 'Passport', 'PhilSys National ID', 'PRC ID', 'Solo Parent ID']) },
+  { id: 'income-type', group: 'hybrid', scope: 'hybrid', name: 'Income Type', description: 'Income classifications for payroll and tax reporting.', mode: 'list', columns: [['name', 'Income Type']], rows: listRows(['Compensation', 'De Minimis', 'Other Benefits', 'Fringe Benefit']) },
+  { id: 'school', group: 'hybrid', scope: 'hybrid', name: 'School', description: 'Schools for education background.', mode: 'list', columns: [['name', 'School']], rows: listRows(['University of the Philippines', 'Ateneo de Manila University', 'De La Salle University', 'University of Santo Tomas']) },
+  { id: 'business-type', group: 'hybrid', scope: 'hybrid', name: 'Business Type', description: 'Company business types.', mode: 'list', columns: [['name', 'Business Type']], rows: listRows(['Corporation', 'Partnership', 'Sole Proprietorship', 'Cooperative']) },
+  { id: 'gender', group: 'hybrid', scope: 'hybrid', name: 'Gender', description: 'Gender values for employee personal details.', mode: 'list', columns: [['name', 'Gender']], rows: listRows(['Male', 'Female', 'Prefer not to say']) },
+  { id: 'link-name', group: 'hybrid', scope: 'hybrid', name: 'Link Name', description: 'Social link names for employee profiles.', mode: 'list', columns: [['name', 'Link Name']], rows: listRows(['LinkedIn', 'Facebook', 'GitHub', 'Portfolio']) },
+  { id: 'reason-of-resignation', group: 'hybrid', scope: 'hybrid', name: 'Reason of Resignation (Employee)', description: 'Reasons an employee gives on a Notice of Resignation.', mode: 'list', columns: [['name', 'Reason of Resignation']], rows: listRows(['Career growth', 'Personal reasons', 'Health reasons', 'Relocation', 'Further studies']) },
+  { id: 'reimbursement-types', group: 'hybrid', scope: 'hybrid', name: 'Reimbursement Types', description: 'Expense types an employee may claim.', mode: 'list', columns: [['name', 'Reimbursement Type']], rows: listRows(['Transportation', 'Meals', 'Communication', 'Medical', 'Training']) },
+  { id: 'loan-term', group: 'hybrid', scope: 'hybrid', name: 'Loan Term', description: 'Loan terms offered on company loans.', mode: 'list', columns: [['name', 'Loan Term']], rows: listRows(['6 months', '12 months', '18 months', '24 months', '36 months']) },
+  { id: 'work-hours-per-day', group: 'hybrid', scope: 'hybrid', name: 'Number of Work Hours Per Day', description: 'Standard work hours a day.', mode: 'list', columns: [['name', 'Work Hours Per Day']], rows: listRows(['8', '9', '10', '12']) },
+  { id: 'break-name', group: 'hybrid', scope: 'hybrid', name: 'Break Name', description: 'Break names used in shift schedules.', mode: 'list', columns: [['name', 'Break Name']], rows: listRows(['Lunch Break', 'Coffee Break', 'Dinner Break']) },
+  { id: 'holiday-name', group: 'hybrid', scope: 'hybrid', name: 'Holiday Name', description: 'Holiday names for the company calendar.', mode: 'list', columns: [['name', 'Holiday Name']], rows: listRows(['New Year\'s Day', 'Araw ng Kagitingan', 'Labor Day', 'Independence Day', 'Christmas Day']) },
+  { id: 'leave-type', group: 'hybrid', scope: 'hybrid', name: 'Leave Type', description: 'Leave types companies assign to employees.', mode: 'list', columns: [['name', 'Leave Type']], rows: listRows(['Vacation Leave', 'Sick Leave', 'Emergency Leave', 'Maternity Leave', 'Paternity Leave', 'Solo Parent Leave', 'Bereavement Leave']) },
+  { id: 'shift-type', group: 'hybrid', scope: 'hybrid', name: 'Shift Type', description: 'Shift classifications for schedules.', mode: 'list', columns: [['name', 'Shift Type']], rows: listRows(['Fixed', 'Flexible', 'Rotating', 'Compressed']) },
+  { id: 'work-days-per-year', group: 'hybrid', scope: 'hybrid', name: 'Work Days Per Year', description: 'Factor days a year used to derive daily rates.', mode: 'list', columns: [['name', 'Work Days Per Year']], rows: listRows(['261', '313', '365']) },
+  { id: 'work-days-per-month', group: 'hybrid', scope: 'hybrid', name: 'Work Days Per Month', description: 'Work days a month used to derive daily rates.', mode: 'list', columns: [['name', 'Work Days Per Month']], rows: listRows(['21.75', '26', '30']) },
+  { id: 'work-days-per-bi-week', group: 'hybrid', scope: 'hybrid', name: 'Work Days Per Bi-Week', description: 'Work days in a bi-weekly period.', mode: 'list', columns: [['name', 'Work Days Per Bi-Week']], rows: listRows(['10', '12']) },
+  { id: 'work-days-per-four-week', group: 'hybrid', scope: 'hybrid', name: 'Work Days Per Four-Week', description: 'Work days in a four-week period.', mode: 'list', columns: [['name', 'Work Days Per Four-Week']], rows: listRows(['20', '24']) },
+  { id: 'document-types', group: 'others', scope: 'specific', name: 'Document Type', description: 'Document labels available to employee records.', mode: 'list', columns: [['name', 'Document Type']], rows: listRows(['Birth Certificate', 'Employment Contract', 'Government ID', 'Medical Certificate']) },
+  { id: 'license-types', group: 'others', scope: 'specific', name: 'License Type', description: 'Professional license types used in Employee Record.', mode: 'list', columns: [['name', 'License Type']], rows: listRows(['Professional License', 'Driver License', 'Safety Accreditation']) },
+  { id: 'training-types', group: 'others', scope: 'specific', name: 'Training Type', description: 'Training classifications used in Employee Record.', mode: 'list', columns: [['name', 'Training Type']], rows: listRows(['Orientation', 'Compliance', 'Technical', 'Leadership']) },
+];
+
+function normaliseTable(table) {
+  const group = table.group === 'client' ? 'specific' : table.group || 'generic';
+  const scope = table.scope || (group === 'client' ? 'specific' : group === 'hybrid' ? 'hybrid' : group === 'generic' ? 'generic' : 'specific');
+  return { ...table, group, scope, rows: (table.rows || []).map(row => scope === 'hybrid' ? { ...row, status: row.status || 'Active', source: row.source || 'generic' } : { ...row, status: row.status || 'Active' }) };
+}
+
+function loadTables() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('atlas-reference-tables-v4') || localStorage.getItem('atlas-reference-tables-v3') || '[]'); } catch { saved = []; }
+  const savedById = new Map(saved.map(table => [table.id, normaliseTable(table)]));
+  const merged = seedTables.map(seed => {
+    const old = savedById.get(seed.id);
+    if (!old) return seed;
+    const rows = old.rows?.length ? normaliseTable({ ...seed, ...old }).rows : seed.rows;
+    return { ...seed, ...old, group: seed.group, scope: seed.scope, columns: seed.columns, fields: seed.fields, description: seed.description, rows: seed.id === 'currency' ? migrateCurrencyRows(rows) : rows };
+  });
+  const known = new Set(merged.map(table => table.id));
+  return merged.concat(saved.filter(table => !known.has(table.id) && !RETIRED_TABLES.has(table.id)).map(normaliseTable)).map(table => {
+    const definitions = readPayrollCollectionDefinitions();
+    if (table.id === 'deduction-types') return {
+      ...table,
+      rows: definitions.filter(item => item.group === 'Deduction').map((item, index) => ({ id: index + 1, code: item.code, name: item.name, classification: item.kind, status: 'Active', source: item.sourceLabel })),
+    };
+    if (table.id === 'loan-types') return {
+      ...table,
+      rows: definitions.filter(item => item.group === 'Loan').map((item, index) => ({ id: index + 1, code: item.code, name: item.name, agency: item.kind, status: 'Active', source: item.sourceLabel })),
+    };
+    if (table.id === 'deduction-hierarchy') {
+      let basisEntries = [];
+      try { basisEntries = readReferences(readActiveCompanyId()).find(item => item.code === 'REF-011')?.entries || []; } catch { /* use module priorities */ }
+      const entries = synchronizePayrollReference('REF-011', basisEntries);
+      return { ...table, rows: entries.map((entry, index) => ({ id: index + 1, code: String(entry.note).split(/\s*(?:·|Â·)\s*/)[2] || `DH-${String(index + 1).padStart(3, '0')}`, name: entry.key, priority: entry.value, status: 'Active' })) };
+    }
+    return table;
+  });
+}
+
+/**
+ * Active values from a reference table, so employee and payroll dropdowns bind
+ * to the canonical Reference Table module instead of drifting hard-coded lists.
+ */
+export function referenceValues(tableId, column = 'name') {
+  return referenceRows(tableId).map(row => row[column]).filter(Boolean);
+}
+
+/**
+ * The active rows of a reference table, for callers that need more than one
+ * column of the same row. Computational Basis reads the Computation Category
+ * table this way so a category and the code prefix it generates stay paired.
+ */
+export function referenceRows(tableId) {
+  const table = loadTables().find(item => item.id === tableId);
+  return (table?.rows || []).filter(row => (row.status || 'Active') === 'Active');
+}
+
+function csvEscape(value) {
+  return `"${String(value ?? '').replaceAll('"', '""')}"`;
+}
+
+const textEncoder = new TextEncoder();
+const u16 = value => [value & 255, (value >>> 8) & 255];
+const u32 = value => [value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255];
+const concatBytes = chunks => { const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0); const output = new Uint8Array(total); let offset = 0; chunks.forEach(chunk => { output.set(chunk, offset); offset += chunk.length; }); return output; };
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) { crc ^= byte; for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1)); }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function zipStore(entries) {
+  const locals = []; const central = []; let offset = 0;
+  entries.forEach(([name, content]) => {
+    const nameBytes = textEncoder.encode(name); const data = content instanceof Uint8Array ? content : textEncoder.encode(content); const checksum = crc32(data);
+    const local = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(checksum), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...nameBytes, ...data]);
+    locals.push(local);
+    central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(checksum), ...u32(data.length), ...u32(data.length), ...u16(nameBytes.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset), ...nameBytes]));
+    offset += local.length;
+  });
+  const localBytes = concatBytes(locals); const centralBytes = concatBytes(central);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(entries.length), ...u16(entries.length), ...u32(centralBytes.length), ...u32(localBytes.length), ...u16(0)]);
+  return concatBytes([localBytes, centralBytes, end]);
+}
+function xmlEscape(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;'); }
+export function makeXlsx(name, headers, values) {
+  const rows = [headers, ...values];
+  const columnName = index => { let result = ''; let value = index + 1; while (value) { const remainder = (value - 1) % 26; result = String.fromCharCode(65 + remainder) + result; value = Math.floor((value - 1) / 26); } return result; };
+  const sheetRows = rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, colIndex) => `<c r="${columnName(colIndex)}${rowIndex + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`).join('')}</row>`).join('');
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xmlEscape(name).slice(0, 31)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
+  return zipStore([['[Content_Types].xml', types], ['_rels/.rels', rels], ['xl/workbook.xml', workbook], ['xl/_rels/workbook.xml.rels', workbookRels], ['xl/worksheets/sheet1.xml', sheet]]);
+}
+/** A workbook with one sheet per entry of [{ name, rows }], rows being arrays of cell text (first sheet = first tab). */
+export function makeXlsxSheets(sheets) {
+  const columnName = index => { let result = ''; let value = index + 1; while (value) { const remainder = (value - 1) % 26; result = String.fromCharCode(65 + remainder) + result; value = Math.floor((value - 1) / 26); } return result; };
+  const sheetXml = rows => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, colIndex) => `<c r="${columnName(colIndex)}${rowIndex + 1}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`).join('')}</row>`).join('')}</sheetData></worksheet>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((sheet, index) => `<sheet name="${xmlEscape(sheet.name).slice(0, 31)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}</sheets></workbook>`;
+  const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')}</Relationships>`;
+  return zipStore([['[Content_Types].xml', types], ['_rels/.rels', rels], ['xl/workbook.xml', workbook], ['xl/_rels/workbook.xml.rels', workbookRels], ...sheets.map((sheet, index) => [`xl/worksheets/sheet${index + 1}.xml`, sheetXml(sheet.rows)])]);
+}
+export function makeDocx(name, headers, values) {
+  const cell = value => `<w:tc><w:p><w:r><w:t xml:space="preserve">${xmlEscape(value)}</w:t></w:r></w:p></w:tc>`;
+  const table = [headers, ...values].map(row => `<w:tr>${row.map(cell).join('')}</w:tr>`).join('');
+  const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>${xmlEscape(name)}</w:t></w:r></w:p><w:tbl>${table}</w:tbl><w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr></w:body></w:document>`;
+  const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+  return zipStore([['[Content_Types].xml', types], ['_rels/.rels', rels], ['word/document.xml', document]]);
+}
+export function makePdf(name, headers, values) {
+  const escapePdf = value => String(value ?? '').replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)');
+  const lines = [name, headers.join(' | '), ...values.map(row => row.join(' | '))].slice(0, 48);
+  const commands = ['BT', '/F1 15 Tf', '40 760 Td', `(${escapePdf(lines[0])}) Tj`, '/F1 8 Tf', '0 -24 Td', ...lines.slice(1).flatMap(line => [`(${escapePdf(line)}) Tj`, '0 -14 Td']), 'ET'].join('\n');
+  const objects = [`<< /Type /Catalog /Pages 2 0 R >>`, `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`, `<< /Length ${textEncoder.encode(commands).length} >>\nstream\n${commands}\nendstream`];
+  let pdf = '%PDF-1.4\n'; const offsets = [0]; objects.forEach((object, index) => { offsets.push(textEncoder.encode(pdf).length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; }); const xref = textEncoder.encode(pdf).length; pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return textEncoder.encode(pdf);
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '"' && text[i + 1] === '"' && quoted) { cell += '"'; i += 1; continue; }
+    if (char === '"') { quoted = !quoted; continue; }
+    if (char === ',' && !quoted) { row.push(cell); cell = ''; continue; }
+    if ((char === '\n' || char === '\r') && !quoted) { if (char === '\r' && text[i + 1] === '\n') i += 1; row.push(cell); rows.push(row); row = []; cell = ''; continue; }
+    cell += char;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(values => values.some(value => value.trim()));
+}
+
+function scopeLabel(table) {
+  if (table.scope === 'generic') return 'Shared generic values';
+  if (table.scope === 'hybrid') return 'Hybrid: shared defaults + company additions';
+  return 'Company-specific values';
+}
+
+
+function ReferenceSidebar({ activeGroup, setActiveGroup, onBack, closeTable }) {
+  return <aside className="company-sidebar reference-sidebar"><button className="back-link" onClick={onBack}><ArrowLeft /> Back to Core</button><h2>Reference<br />Tables</h2><nav>{groups.map(group => { const Icon = group.id === 'generic' ? Table : group.id === 'specific' ? Users : group.id === 'hybrid' ? SquaresFour : Cube; return <button key={group.id} className={`side-link ${activeGroup === group.id ? 'selected' : ''}`} onClick={() => { setActiveGroup(group.id); closeTable(); }}><Icon weight={activeGroup === group.id ? 'fill' : 'regular'} /><span>{group.label}</span></button>; })}</nav></aside>;
+}
+
+function SearchBox({ value, onChange, placeholder = 'Search...' }) {
+  return <label className="reference-search"><input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} /><MagnifyingGlass /></label>;
+}
+
+function ConfirmModal({ onClose, onConfirm }) {
+  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Discard unsaved changes"><header><h2>Discard changes?</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><p>Your unsaved changes will be lost.</p><div className="modal-actions"><button className="button secondary" onClick={onClose}>Continue editing</button><button className="button danger" onClick={onConfirm}>Discard changes</button></div></div></section></div>;
+}
+
+function EntryModal({ table, record, isAdmin, onClose, onSave }) {
+  const initial = record || Object.fromEntries(table.columns.map(([key]) => [key, key === 'status' ? 'Active' : '']));
+  const [draft, setDraft] = useState({ ...initial, ...(table.scope === 'hybrid' ? { source: initial.source || (isAdmin ? 'generic' : 'specific') } : {}) });
+  const [error, setError] = useState('');
+  const [confirmClose, setConfirmClose] = useState(false);
+  const dirty = JSON.stringify(draft) !== JSON.stringify({ ...initial, ...(table.scope === 'hybrid' ? { source: initial.source || (isAdmin ? 'generic' : 'specific') } : {}) });
+  const requestClose = () => (dirty ? setConfirmClose(true) : onClose());
+  const sourceEditable = table.scope === 'hybrid' && isAdmin;
+  return <>
+    <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) requestClose(); }}><section className="modal reference-entry-modal" role="dialog" aria-modal="true" aria-label={`${record ? 'Edit' : 'Add'} ${table.name}`}><header><div><p className="modal-kicker">{scopeLabel(table)}</p><h2>{record ? 'Edit' : 'Add'} {table.name}</h2></div><button className="icon-button" onClick={requestClose} aria-label="Close"><X /></button></header><form onSubmit={event => { event.preventDefault(); const result = onSave(draft); if (result) setError(result); }}><div className="modal-body reference-form-grid">
+      {table.scope === 'hybrid' && <label>Value scope<span className="required">*</span><select required disabled={!sourceEditable} value={draft.source || 'specific'} onChange={event => setDraft({ ...draft, source: event.target.value })}><option value="generic">Shared generic</option><option value="specific">Company-specific</option></select>{!sourceEditable && <small>Client Admin additions are company-specific.</small>}</label>}
+      {table.columns.map(([key, label]) => {
+        const field = fieldOf(table, key);
+        const optional = isOptional(table, key);
+        return <label key={key}>{label}{optional ? <span className="optional-tag">Optional</span> : <span className="required">*</span>}{key === 'status'
+          ? <select required value={draft[key] || 'Active'} onChange={event => setDraft({ ...draft, [key]: event.target.value })}><option>Active</option><option>Inactive</option></select>
+          : <input required={!optional} type={field.type === 'number' ? 'number' : 'text'} min={field.min} max={field.max} step={field.type === 'number' ? 1 : undefined} value={draft[key] ?? ''} onChange={event => setDraft({ ...draft, [key]: field.uppercase ? event.target.value.toUpperCase() : event.target.value })} placeholder={field.placeholder || `Input ${label.toLowerCase()}`} />}
+          {field.hint && <small className="field-hint">{field.hint}</small>}</label>;
+      })}
+      {error && <p className="form-error"><WarningCircle weight="fill" />{error}</p>}
+    </div><footer className="modal-actions"><button type="button" className="button secondary" onClick={requestClose}>Cancel</button><button className="button primary">{record ? 'Save changes' : 'Add entry'}</button></footer></form></section></div>
+    {confirmClose && <ConfirmModal onClose={() => setConfirmClose(false)} onConfirm={onClose} />}
+  </>;
+}
+
+/** The transaction number of a standing payroll transaction that pays in this currency, or ''. */
+function currencyInUse(code) {
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith('atlas-payroll-runs-v1')) continue;
+      const runs = JSON.parse(localStorage.getItem(key) || '[]');
+      const found = (Array.isArray(runs) ? runs : []).find(run => run.status !== 'Cancelled' && (run.currencies || []).some(item => item.code === code && code !== 'PHP'));
+      if (found) return found.transactionNumber;
+    }
+  } catch { /* an unreadable store holds no transaction */ }
+  return '';
+}
+
+function DeleteModal({ table, record, onClose, onDelete }) {
+  const label = record[table.columns[0][0]] || record.name || record.code;
+  return <div className="modal-backdrop"><section className="modal delete-modal" role="dialog" aria-modal="true" aria-label="Delete entry"><header><h2>Delete entry</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header><div className="modal-body"><p>Delete “{label}” from {table.name}? This cannot be undone.</p><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
+}
+
+function ExportMenu({ table, onExport, disabled }) {
+  const [open, setOpen] = useState(false);
+  const formats = ['CSV', 'XLSX', 'PDF', 'DOCX'];
+  return <div className="export-menu"><button className="button secondary" aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={() => setOpen(value => !value)}><DownloadSimple /> Export <CaretDown /></button>{open && <div className="export-menu-popover" role="menu">{formats.map(format => <button key={format} role="menuitem" onClick={() => { setOpen(false); onExport(format.toLowerCase()); }}>{format}</button>)}</div>}</div>;
+}
+
+function ReferenceOverview({ tables, activeGroup, onOpen }) {
+  const [query, setQuery] = useState('');
+  const group = groups.find(item => item.id === activeGroup);
+  const visible = tables.filter(table => table.group === activeGroup && `${table.name} ${table.description}`.toLowerCase().includes(query.toLowerCase()));
+  return <div className="reference-page"><div className="page-heading"><div><p className="breadcrumb">Core / Reference Tables / {group.label}</p><h1>{/Reference Tables$/.test(group.label) ? group.label : `${group.label} Reference Tables`}</h1><p className="page-description">{group.description}</p></div></div><SearchBox value={query} onChange={setQuery} placeholder={`Search ${group.label.toLowerCase()} tables...`} /><section className="reference-overview-card">{visible.map(table => { const activeCount = table.rows.filter(row => row.status !== 'Inactive').length; return <button key={table.id} onClick={() => onOpen(table)}><span><strong>{table.name}</strong><small>{activeCount} active value{activeCount === 1 ? '' : 's'} · {scopeLabel(table)}</small></span><CaretRight /></button>; })}{!visible.length && <div className="empty-state compact"><h3>No reference tables found</h3><p>Try another search term or category.</p></div>}</section></div>;
+}
+
+function ReferenceDetail({ table, updateTable, notify }) {
+  const { isAdmin } = useRole();
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState('data');
+  const [editing, setEditing] = useState(undefined);
+  const [deleting, setDeleting] = useState(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const canAdd = isAdmin || table.scope === 'specific' || table.scope === 'hybrid';
+  const canEdit = record => isAdmin || table.scope === 'specific' || (table.scope === 'hybrid' && record?.source === 'specific');
+  const filteredRows = useMemo(() => table.rows.filter(row => Object.entries(row).filter(([key]) => key !== 'source').map(([, value]) => value).join(' ').toLowerCase().includes(query.toLowerCase())), [table.rows, query]);
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const visibleRows = filteredRows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const first = filteredRows.length ? (safePage - 1) * pageSize + 1 : 0;
+  const last = Math.min(safePage * pageSize, filteredRows.length);
+  useEffect(() => { setPage(1); }, [query, pageSize, table.id]);
+
+  const validate = draft => {
+    if (!canAdd && !draft.id) return 'Client Admins can view generic reference tables but cannot add shared values.';
+    if (draft.id && !canEdit(draft)) return 'This shared value is maintained by P&A Administration. Add a company-specific value instead.';
+    const missing = table.columns.find(([key]) => !isOptional(table, key) && !String(draft[key] ?? '').trim());
+    if (missing) return `${missing[1]} is required.`;
+    for (const [key, label] of table.columns) {
+      const field = fieldOf(table, key);
+      const value = String(draft[key] ?? '').trim();
+      if (!value) continue;
+      if (field.pattern && !new RegExp(field.pattern).test(field.uppercase ? value.toUpperCase() : value)) return field.patternMessage || `${label} is not valid.`;
+      if (field.type === 'number') {
+        const number = Number(value);
+        if (!Number.isInteger(number) || (field.min != null && number < field.min) || (field.max != null && number > field.max)) return `${label} must be a whole number from ${field.min ?? 0} to ${field.max ?? '—'}.`;
+      }
+    }
+    const uniqueKey = table.columns[0][0];
+    const duplicate = table.rows.some(row => row.id !== draft.id && String(row[uniqueKey] ?? '').trim().toLowerCase() === String(draft[uniqueKey] ?? '').trim().toLowerCase());
+    if (duplicate) return `${table.columns.find(([key]) => key === uniqueKey)?.[1] || uniqueKey} already exists.`;
+    return '';
+  };
+
+  const save = entered => {
+    const draft = normaliseEntry(table, entered);
+    const error = validate(draft);
+    if (error) return error;
+    const next = { ...draft, id: draft.id || `${table.id}-${Date.now()}`, ...(table.scope === 'hybrid' ? { source: draft.source || (isAdmin ? 'generic' : 'specific') } : {}) };
+    const rows = draft.id ? table.rows.map(row => row.id === draft.id ? next : row) : [...table.rows, next];
+    updateTable({ ...table, rows });
+    setEditing(undefined);
+    notify({ type: 'success', message: `${table.name} entry ${draft.id ? 'updated' : 'added'} successfully.` });
+    return '';
+  };
+
+  const buildExport = format => {
+    const headers = table.columns.map(([, label]) => label);
+    const values = filteredRows.map(row => table.columns.map(([key]) => row[key] ?? ''));
+    const csv = [headers, ...values].map(row => row.map(csvEscape).join(',')).join('\r\n');
+    const extension = format === 'csv' ? 'csv' : format === 'xlsx' ? 'xlsx' : format === 'pdf' ? 'pdf' : 'docx';
+    const mime = format === 'csv' ? 'text/csv;charset=utf-8' : format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const content = format === 'csv' ? textEncoder.encode(csv) : format === 'xlsx' ? makeXlsx(table.name, headers, values) : format === 'pdf' ? makePdf(table.name, headers, values) : makeDocx(table.name, headers, values);
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const link = document.createElement('a'); link.href = url; link.download = `${table.id}.${extension}`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    notify({ type: 'success', message: `${table.name} ${format.toUpperCase()} export prepared with ${filteredRows.length} data row${filteredRows.length === 1 ? '' : 's'}.` });
+  };
+
+  /**
+   * The Import step of the Upload dialog, handled the way Atlas handles it: an Excel workbook is
+   * read, every row is checked, and nothing is saved unless every row passes. A rejected file is
+   * returned as an Excel workbook with an Errors column on each row, which downloads automatically.
+   */
+  const importFile = async file => {
+    if (!canAdd) { const message = 'Client Admins cannot upload shared generic values.'; notify({ type: 'error', message }); return { ok: false, message }; }
+    let grid;
+    try { grid = await readFirstSheet(file); } catch (problem) {
+      const message = problem.message === 'LEGACY_XLS'
+        ? 'This is an older .xls file, which cannot be read here. Save it as .xlsx and upload it again.'
+        : 'The file could not be read. Check that it is a valid Excel workbook.';
+      notify({ type: 'error', message }); return { ok: false, message };
+    }
+    const lookup = Object.fromEntries(table.columns.flatMap(([key, label]) => [[key.toLowerCase(), key], [label.toLowerCase(), key]]));
+    const cellText = value => String(value ?? '').trim();
+    // The header is the first row, within the first ten, that names one of this table's columns
+    // (an Atlas template starts its headers lower down than an exported file does).
+    const headerAt = grid.findIndex((row, index) => index < 10 && row.some(cell => lookup[cellText(cell).toLowerCase()]));
+    if (headerAt < 0) { const message = `No column headers were found. Use these columns: ${table.columns.map(([, label]) => label).join(', ')}.`; notify({ type: 'error', message }); return { ok: false, message }; }
+    const headers = grid[headerAt].map(cell => cellText(cell).toLowerCase());
+    const dataRows = grid.slice(headerAt + 1).map((cells, offset) => ({ cells, sheetRow: headerAt + offset + 2 })).filter(item => item.cells.some(cell => cellText(cell)));
+    if (!dataRows.length) { const message = 'The file has no rows to import.'; notify({ type: 'error', message }); return { ok: false, message }; }
+    const source = table.scope === 'hybrid' && !isAdmin ? 'specific' : table.scope === 'hybrid' ? 'generic' : undefined;
+    const imported = dataRows.map(({ cells }, index) => {
+      const row = { id: `${table.id}-import-${Date.now()}-${index}` };
+      headers.forEach((header, i) => { if (lookup[header]) row[lookup[header]] = cellText(cells[i]); });
+      if (table.scope === 'hybrid') row.source = source;
+      return normaliseEntry(table, row);
+    });
+    const problems = imported.map(validate);
+    const failed = problems.filter(Boolean).length;
+    if (failed) {
+      const labels = table.columns.map(([, label]) => label);
+      const keys = table.columns.map(([key]) => key);
+      const annotated = dataRows.map(({ cells }, index) => [...keys.map(key => { const at = headers.findIndex(header => lookup[header] === key); return at < 0 ? '' : cellText(cells[at]); }), problems[index] || '']);
+      const stem = String(file.name).replace(/\.[^.]+$/, '');
+      downloadFile(`${stem}-errors.xlsx`, makeXlsx(table.name, [...labels, 'Errors'], annotated), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const message = `Failed to import ${failed} of ${imported.length} ${imported.length === 1 ? 'record' : 'records'}, so nothing was imported. Check the downloaded file for details.`;
+      notify({ type: 'error', message });
+      return { ok: false, message };
+    }
+    updateTable({ ...table, rows: [...table.rows, ...imported] });
+    const message = `${imported.length} ${table.name} ${imported.length === 1 ? 'entry' : 'entries'} imported.`;
+    notify({ type: 'success', message });
+    return { ok: true, message };
+  };
+
+  return <div className="reference-page reference-detail-page"><div className="page-heading"><div><p className="breadcrumb">{groups.find(group => group.id === table.group)?.label} / {table.name}</p><h1>{table.name}</h1><p className="page-description">{table.description}</p></div></div><div className="reference-scope-note"><span><strong>{scopeLabel(table)}</strong>{table.scope === 'generic' ? (isAdmin ? ' Maintained by P&A Administration and shared across companies.' : ' View-only access for Client Admin.') : table.scope === 'hybrid' ? ' P&A Admin maintains shared defaults; Client Admin manages company-specific additions.' : ' P&A Admin and Client Admin can manage this company’s values.'}</span></div><nav className="reference-detail-tabs"><button className={tab === 'data' ? 'active' : ''} onClick={() => setTab('data')}>Data</button><button className={tab === 'usage' ? 'active' : ''} onClick={() => setTab('usage')}>Usage</button><button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Audit Log</button></nav>
+    {tab === 'data' && <><div className="reference-detail-toolbar"><SearchBox value={query} onChange={value => { setQuery(value); setPage(1); }} /><span className="toolbar-spacer" />{canAdd && <button className="button primary" onClick={() => setEditing(null)}><Plus /> Add</button>}<button className="button secondary" onClick={() => setImportOpen(true)} disabled={!canAdd}><UploadSimple /> Upload</button><ExportMenu table={table} onExport={buildExport} disabled={false} />{importOpen && <ImportDialog historyKey={table.id} onImport={importFile} onClose={() => setImportOpen(false)} />}</div><section className="reference-editor-card"><div className="reference-data-table"><table><thead><tr>{table.columns.map(([, label]) => <th key={label}>{label}</th>)}<th>Action</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.id}>{table.columns.map(([key]) => <td key={key}>{row[key] || '—'}</td>)}<td><div className="row-actions always">{canEdit(row) && <><button onClick={() => setEditing(row)} aria-label="Edit"><PencilSimple /></button><button onClick={() => setDeleting(row)} aria-label="Delete"><Trash /></button></>}</div></td></tr>)}</tbody></table>{!filteredRows.length && <div className="empty-state compact"><h3>No entries found</h3><p>Try another search or export the column headers for a clean template.</p></div>}<div className="reference-pagination"><span>Displaying <strong>{first}-{last}</strong> of <strong>{filteredRows.length}</strong> items</span><label>Rows <select aria-label="Rows per page" value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>{PAGE_SIZE_OPTIONS.map(size => <option key={size} value={size}>{size}</option>)}</select></label><div className="pagination-controls"><button aria-label="First page" disabled={safePage === 1} onClick={() => setPage(1)}>«</button><button aria-label="Previous page" disabled={safePage === 1} onClick={() => setPage(value => Math.max(1, value - 1))}>‹</button><label>Page <input aria-label="Page number" type="number" min="1" max={pageCount} value={safePage} onChange={event => setPage(Math.min(pageCount, Math.max(1, Number(event.target.value) || 1)))} /> of {pageCount}</label><button aria-label="Next page" disabled={safePage === pageCount} onClick={() => setPage(value => Math.min(pageCount, value + 1))}>›</button><button aria-label="Last page" disabled={safePage === pageCount} onClick={() => setPage(pageCount)}>»</button></div></div></div></section></>}
+    {tab === 'usage' && <section className="reference-info-card"><h2>Used by Atlas</h2><p>This reference table is available to Employee Masterfile forms, company configuration, payroll allocation, statutory processing, and reporting filters. Updates apply to new selections while historical records retain their saved value.</p><div className="reference-usage-grid"><span>Employee Masterfile<strong>Synced</strong></span><span>Company Configuration<strong>Synced</strong></span><span>Payroll and Reports<strong>Synced</strong></span></div></section>}
+    {tab === 'history' && <section className="reference-info-card"><h2>Audit Log</h2><div className="reference-audit-row"><span>10 Aug 2026 · John Doe</span><strong>Reference table reviewed</strong></div><div className="reference-audit-row"><span>09 Aug 2026 · System migration</span><strong>{table.rows.length} values loaded</strong></div></section>}
+    {editing !== undefined && <EntryModal table={table} record={editing || null} isAdmin={isAdmin} onClose={() => setEditing(undefined)} onSave={save} />}{deleting && <DeleteModal table={table} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
+      const holder = table.id === 'currency' ? currencyInUse(deleting.code) : null;
+      if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} is used by ${holder}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
+      updateTable({ ...table, rows: table.rows.filter(item => item.id !== deleting.id) }); setDeleting(null); notify({ type: 'success', message: `${table.name} entry deleted.` }); }} />}
+  </div>;
+}
+
+export function ReferenceTables({ onBack, onNavigate, notify, company, companies, onSelectCompany }) {
+  const [tables, setTables] = useState(loadTables);
+  const [activeGroup, setActiveGroup] = useState('generic');
+  const [activeId, setActiveId] = useState(null);
+  useEffect(() => localStorage.setItem('atlas-reference-tables-v4', JSON.stringify(tables)), [tables]);
+  const activeTable = useMemo(() => tables.find(table => table.id === activeId), [activeId, tables]);
+  const updateTable = next => setTables(previous => previous.map(table => table.id === next.id ? next : table));
+  return <div className="app-shell reference-screen"><BrandRail onHome={onBack} onCore={onBack} onHrm={() => onNavigate?.('hrm')} onTime={() => onNavigate?.('timekeeping')} onPayroll={() => onNavigate?.('payroll')} onSettings={() => onNavigate?.('settings')} active="core" /><ReferenceSidebar activeGroup={activeGroup} setActiveGroup={setActiveGroup} onBack={onBack} closeTable={() => setActiveId(null)} /><main className="reference-main"><Topbar company={company} companies={companies} onSelectCompany={onSelectCompany} /><div className="mobile-reference-navigation"><label htmlFor="mobile-reference-group">Reference table group</label><select id="mobile-reference-group" value={activeGroup} onChange={event => { setActiveGroup(event.target.value); setActiveId(null); }}>{groups.map(group => <option key={group.id} value={group.id}>{group.label}</option>)}</select></div>{activeTable ? <ReferenceDetail table={activeTable} updateTable={updateTable} notify={notify} /> : <ReferenceOverview tables={tables} activeGroup={activeGroup} onOpen={table => setActiveId(table.id)} />}</main></div>;
+}

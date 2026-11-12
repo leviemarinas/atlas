@@ -36,7 +36,7 @@ function connectedFlow({ id, workbook, testCase, title, section, entry, data, ex
   return scenario(id, 'client_admin', 'Masterfile to payroll', `${workbook}: ${title}`,
     `add ${entry} for ${CONNECTED_FLOW_EMPLOYEE} in the Employee Masterfile and run it through a payroll`,
     `the payroll line shows the figures expected by ${workbook} ${testCase}`, [
-      step('Core', `Open Ethan Collins' ${section}`, `Go to Employee Masterfile › ${CONNECTED_FLOW_EMPLOYEE} › Payroll Allocation › ${section}.`),
+      step('Core', `Open Ethan Collins' ${section}`, `Go to Employee Masterfile › ${CONNECTED_FLOW_EMPLOYEE} › Payroll Items › ${section}.`),
       step(section, `Add the ${entry} entry`, `Select Add entry. Test data: ${data}.`),
       step(section, 'Save the entry', 'Select Add. The entry is listed in the section.', 'Entry saved'),
       step('Payroll', 'Open Payroll Processing', 'Go to Payroll › Payroll Processing.'),

@@ -22,7 +22,7 @@ export const PAYROLL_UI_PATHS = Object.freeze({
   policy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines'),
   takeHome: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Minimum Take-Home Pay'),
   deductionHierarchy: path('Core', 'Company Configuration', 'Services Information', 'Computational Basis', 'Policy Engines', 'Deduction and Loan Hierarchy'),
-  basicPayConfig: path('Core', 'Employee Masterfile', 'Payroll Allocation', 'Basic Pay'),
+  basicPayConfig: path('Core', 'Employee Masterfile', 'Payroll Items', 'Basic Pay'),
   salaryBasic: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Basic Pay'),
   salaryEarnings: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Earnings'),
   salaryStatutory: path('HRM', 'Benefits', 'Salary Information', 'Employee', 'Statutory Deductions'),
@@ -71,7 +71,7 @@ function featureFor(step) {
   if (/^(ERN-002|ERN-003|ERN-006)/.test(code)) return { kind: 'Computation', feature: 'Overtime and premium earnings', extra: [ref('Approved time', 'Overtime Summary', PAYROLL_UI_PATHS.overtime)] };
   if (/^DED-00/.test(code)) return { kind: 'Computation', feature: 'Attendance deductions', extra: [ref('Attendance input', 'Time & Attendance Summary', PAYROLL_UI_PATHS.attendance)] };
   if (/^(DMN-|RCL-)/.test(code)) return { kind: 'Effective reference', feature: 'De Minimis tax treatment', extra: [ref('Effective table', 'De Minimis statutory version', PAYROLL_UI_PATHS.statutory), ref('Earning source', 'Employee or company earning record', PAYROLL_UI_PATHS.earningRegister)] };
-  if (/^BON-/.test(code)) return { kind: 'Computation + reference', feature: '13th month and bonus treatment', extra: [ref('Bonus source', 'Bonus Management', PAYROLL_UI_PATHS.bonusRegister), ref('Reference value', 'Bonus ceiling reference', PAYROLL_UI_PATHS.formulaReference)] };
+  if (/^BON-/.test(code)) return { kind: 'Computation + reference', feature: '13th month and bonus treatment', extra: [ref('Bonus source', 'Bonus Management', PAYROLL_UI_PATHS.bonusRegister), ref('Reference value', 'Bonus Threshold reference', PAYROLL_UI_PATHS.formulaReference)] };
   if (/^GOV-/.test(code)) return { kind: 'Effective table lookup', feature: 'Statutory contributions', extra: [ref('Employee election', 'Employee statutory settings', PAYROLL_UI_PATHS.salaryStatutory), ref('Effective table', step.source || 'Statutory contribution table', PAYROLL_UI_PATHS.statutory)] };
   if (/^TAX-/.test(code)) return { kind: 'Effective table lookup', feature: 'Withholding tax', extra: [ref('Employee tax setup', 'Employee statutory and tax settings', PAYROLL_UI_PATHS.salaryStatutory), ref('Effective table', step.source || 'BIR tax table', PAYROLL_UI_PATHS.tax)] };
   if (/^THP-/.test(code)) return { kind: 'Policy engine', feature: 'Minimum Take-Home Pay', extra: [ref('Policy', 'Protected minimum, caps, deferral, and employee notice', PAYROLL_UI_PATHS.takeHome), ref('Priority policy', 'REF-011 Deduction and Loan Hierarchy', PAYROLL_UI_PATHS.deductionHierarchy)] };
@@ -119,7 +119,7 @@ export function buildPayrollAuditTrail(line, run) {
     if (/^GOV-/.test(step.code)) return ['SSS/PhilHealth/Pag-IBIG effective versions'];
     if (/^TAX-/.test(step.code)) return ['BIR withholding tax version'];
     if (/^(DMN-|RCL-)/.test(step.code)) return ['De Minimis effective version'];
-    if (/^BON-/.test(step.code)) return ['Bonus ceiling reference'];
+    if (/^BON-/.test(step.code)) return ['Bonus Threshold reference'];
     return [];
   }))];
   const deductionRows = (line.deductions || []).map(item => `${item.code || item.name} · ${money(item.due)} due · ${item.source || 'employee/company assignment'}`);
