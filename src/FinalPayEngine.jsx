@@ -242,7 +242,7 @@ export function FinalPayEngine({ policy, setPolicy, retirementPolicy, onSave }) 
         <ArrowsDownUp weight="duotone" />
         <span>{policy.hierarchySource === HIERARCHY_SOURCES[1]
           ? <>Final pay uses its own order. A regular payroll hierarchy is <strong>not</strong> assumed to apply to a final settlement.</>
-          : <>Final pay reuses the regular payroll order from <strong>REF-011</strong>. Change this if the settlement collects balances in a different sequence.</>}</span>
+          : <>Final pay reuses the regular payroll order: the Deduction Hierarchy and Company Loan Hierarchy chosen in the Take-Home Pay policy. Change this if the settlement collects balances in a different sequence.</>}</span>
       </div>
       {policy.hierarchySource === HIERARCHY_SOURCES[1] && offsets.length > 0 && <LockedBlock lockKey="finalPayRanks"><div className="deduction-rank-table">
         <h4>Final pay adjustment order</h4>

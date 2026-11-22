@@ -18,44 +18,61 @@
 const number = value => Number(value || 0);
 const round2 = value => Number((Number(value) || 0).toFixed(2));
 
+/** Atlas's Unit options for PhilHealth and Pag-IBIG brackets. */
+export const UNIT_PERCENTAGE = 'Percentage (%)';
+export const UNIT_AMOUNT = 'Amount (\u20b1)';
+/** Atlas's Payment Mode list (PaymentModeType). */
+export const PAYMENT_MODES = ['Daily', 'Weekly', 'Bi-Weekly', 'Semi-Monthly', 'Monthly', 'Quarterly', 'Yearly'];
+/** Atlas's ATC Code Classification values. */
+export const ATC_CLASSIFICATIONS = ['IND', 'CORP'];
+
+const RATE_OR_AMOUNT_FIELDS = [
+  ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation', 'optional'], ['unit', 'Unit', 'select', [UNIT_PERCENTAGE, UNIT_AMOUNT]],
+  ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate'],
+  ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share'],
+];
+const RATE_OR_AMOUNT_COLUMNS = [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['employeeShare', 'Employee Share'], ['employerShare', 'Employer Share'], ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate']];
+const WITHHOLDING_FIELDS = [
+  ['taxType', 'Tax Type Name', 'locked'],
+  ['incomePayment', 'Nature of Income Payment', 'reference', 'nature-of-income-payment'],
+  ['atcClass', 'ATC Code Classification', 'select', ATC_CLASSIFICATIONS],
+  ['atcCode', 'ATC Code', 'reference', 'atc-code', 'code'],
+  ['excessRate', 'Tax Rate', 'reference', 'tax-rate'],
+];
+const WITHHOLDING_COLUMNS = [['taxType', 'Tax Type Name'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['atcCode', 'ATC Code'], ['excessRate', 'Tax Rate']];
+
+/** SSS Employees' Compensation: 10 pesos below MSC 15,000 and 30 from it. Atlas keeps no EC field, so the mockup derives it. */
+export const ecFor = mscRegular => (Number(mscRegular || 0) > 14500 ? 30 : 10);
+
 export const agencyDefinitions = {
   sss: {
     name: 'Social Security System', short: 'SSS', prefix: 'SSS',
+    // As Atlas (23 Nov 2026): eight entry fields, no EC - ER and no totals on screen. The EC is still
+    // worked out from the MSC behind the scenes (see ecFor) so payroll keeps charging it.
     fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'],
-      ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['totalMsc', 'Total Monthly Salary Credit'],
-      ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'], ['ecEr', 'EC - ER'], ['totalRegular', 'Total Regular SS & EC'],
-      ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER'], ['totalMpf', 'Total MPF'],
-      ['totalEe', 'Total EE'], ['totalEr', 'Total ER'], ['overallTotal', 'Overall Total'],
+      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation', 'optional'],
+      ['mscRegular', 'MSC - Regular SS/EC'], ['mscMpf', 'MSC - MPF'],
+      ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'],
+      ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER'],
     ],
-    // Columns as Atlas Core lists them; the totals stay in the entry view.
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['mscRegular', 'MSC - Regular SS / EC'], ['mscMpf', 'MSC - MPF'], ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'], ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER']],
+    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['mscRegular', 'MSC - Regular SS/EC'], ['mscMpf', 'MSC - MPF'], ['regularEe', 'Regular SS - EE'], ['regularEr', 'Regular SS - ER'], ['mpfEe', 'MPF - EE'], ['mpfEr', 'MPF - ER']],
   },
   philhealth: {
     name: 'PhilHealth', short: 'PhilHealth', prefix: 'PHIC',
-    fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['eeRate', 'Employee Percentage Rate'], ['erRate', 'Employer Percentage Rate'],
-      ['minimumEmployeeShare', 'Employee Share (in Range) - Minimum'], ['maximumEmployeeShare', 'Employee Share (in Range) - Maximum'],
-      ['minimumEmployerShare', 'Employer Share (in Range) - Minimum'], ['maximumEmployerShare', 'Employer Share (in Range) - Maximum'],
-    ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'], ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'], ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate']],
-    note: 'PhilHealth \u20b10.01 rounding difference: when the total premium cannot be split equally, the \u20b10.01 is assigned to the Employer Share so the total stays exact.',
+    // As Atlas (fix of 9-12 Nov 2026): one Employee Share and one Employer Share when the unit is Amount.
+    fields: RATE_OR_AMOUNT_FIELDS,
+    columns: RATE_OR_AMOUNT_COLUMNS,
   },
   pagibig: {
     name: 'Pag-IBIG', short: 'Pag-IBIG', prefix: 'HDMF',
-    fields: [
-      ['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit', 'select'],
-      ['eeRate', 'Employee Percentage Rate'], ['erRate', 'Employer Percentage Rate'],
-      ['minimumEmployeeShare', 'Employee Contribution - Minimum'], ['maximumEmployeeShare', 'Employee Contribution - Maximum'],
-      ['minimumEmployerShare', 'Employer Contribution - Minimum'], ['maximumEmployerShare', 'Employer Contribution - Maximum'],
-    ],
-    columns: [['minimum', 'Minimum Monthly Compensation'], ['maximum', 'Maximum Monthly Compensation'], ['unit', 'Unit'], ['minimumEmployeeShare', 'Minimum Employee Share'], ['maximumEmployeeShare', 'Maximum Employee Share'], ['minimumEmployerShare', 'Minimum Employer Share'], ['maximumEmployerShare', 'Maximum Employer Share'], ['eeRate', 'EE Premium Rate'], ['erRate', 'ER Premium Rate']],
-    note: 'The maximum fund amount is \u20b110,000.00. For example, an employee who earns \u20b130,000.00 has the contribution worked out on the maximum fund amount.',
+    fields: RATE_OR_AMOUNT_FIELDS,
+    columns: RATE_OR_AMOUNT_COLUMNS,
+    // Payroll > Pag-IBIG uses its own headings in Atlas.
+    payrollColumnLabels: { employeeShare: 'Employee Contribution', employerShare: 'Employer Contribution', eeRate: 'Employee Percentage Rate', erRate: 'Employer Percentage Rate' },
   },
   tax: {
     name: 'BIR Compensation Tax Table', short: 'Compensation Tax', prefix: 'WTC',
-    fields: [['minimum', 'Minimum'], ['maximum', 'Maximum'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax'], ['frequency', 'Payment Mode', 'select', ['Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly', 'Annual']]],
+    fields: [['frequency', 'Payment Mode', 'select', PAYMENT_MODES], ['minimum', 'Minimum Compensation'], ['maximum', 'Maximum Compensation', 'optional'], ['excessRate', 'Tax Rate (%)'], ['fixedTax', 'Fixed Tax']],
     columns: [['frequency', 'Payment Mode'], ['minimum', 'Minimum Compensation'], ['maximum', 'Maximum Compensation'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
   },
   annualTax: {
@@ -65,14 +82,15 @@ export const agencyDefinitions = {
   },
   expandedTax: {
     name: 'BIR Expanded Withholding Tax Table', short: 'Expanded Tax', prefix: 'WTE',
-    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['fixedTax', 'Fixed Tax'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['taxType', 'Tax Type Name'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['atcCode', 'ATC Code'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
+    // As Atlas: every field but Tax Type Name is picked from a reference table, and Expanded has no Fixed Tax.
+    fields: WITHHOLDING_FIELDS,
+    columns: WITHHOLDING_COLUMNS,
     taxType: 'WE',
   },
   finalTax: {
     name: 'BIR Final Tax Table', short: 'Final Tax', prefix: 'WTF',
-    fields: [['taxType', 'Tax Type', 'locked'], ['incomePayment', 'Nature of Income Payment', 'text'], ['atcClass', 'ATC Code Classification', 'select', ['Individual', 'Corporation']], ['excessRate', 'Tax Rate (%)'], ['atcCode', 'ATC Code', 'text'], ['fixedTax', 'Fixed Tax'], ['minimum', 'Minimum Income Payment'], ['maximum', 'Maximum Income Payment']],
-    columns: [['taxType', 'Tax Type Name'], ['incomePayment', 'Nature of Income Payment'], ['atcClass', 'ATC Code Classification'], ['atcCode', 'ATC Code'], ['excessRate', 'Tax Rate'], ['fixedTax', 'Fixed Tax']],
+    fields: [...WITHHOLDING_FIELDS, ['fixedTax', 'Fixed Tax']],
+    columns: [...WITHHOLDING_COLUMNS, ['fixedTax', 'Fixed Tax']],
     taxType: 'WF',
   },
   deMinimis: {
@@ -95,7 +113,7 @@ export const agencyGroups = {
 /* --------------------------------------------------------------- the tables */
 
 function sssRow(id, minimum, maximum, mscRegular, mscMpf, rate = 0.15, employeeShare = 5 / 15) {
-  const ec = mscRegular > 14500 ? 30 : 10;
+  const ec = ecFor(mscRegular);
   const regularTotal = round2(mscRegular * rate);
   const regularEe = round2(regularTotal * employeeShare);
   const regularEr = round2(regularTotal - regularEe);
@@ -124,7 +142,7 @@ function sssRows(rate) {
   for (let msc = 5000; msc <= totalCap; msc += 500) {
     const index = rows.length + 1;
     const minimum = msc === 5000 ? 0 : msc - 250;
-    const maximum = msc === totalCap ? 9999999 : msc + 249.99;
+    const maximum = msc === totalCap ? null : msc + 249.99;
     rows.push(sssRow(index, round2(minimum), round2(maximum), Math.min(msc, regularCap), Math.max(0, msc - regularCap), rate));
   }
   return rows;
@@ -134,18 +152,18 @@ function sssRows(rate) {
 function philhealthRows(rate, floor, ceiling) {
   const half = round2(rate / 2);
   return [
-    { id: 1, minimum: 0, maximum: floor, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(floor * half / 100), maximumEmployeeShare: round2(floor * half / 100), minimumEmployerShare: round2(floor * half / 100), maximumEmployerShare: round2(floor * half / 100) },
-    { id: 2, minimum: round2(floor + 0.01), maximum: round2(ceiling - 0.01), unit: 'Percentage (%)', eeRate: half, erRate: half, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
-    { id: 3, minimum: ceiling, maximum: 9999999, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(ceiling * half / 100), maximumEmployeeShare: round2(ceiling * half / 100), minimumEmployerShare: round2(ceiling * half / 100), maximumEmployerShare: round2(ceiling * half / 100) },
+    { id: 1, minimum: 0, maximum: floor, unit: UNIT_AMOUNT, employeeShare: round2(floor * half / 100), employerShare: round2(floor * half / 100) },
+    { id: 2, minimum: round2(floor + 0.01), maximum: round2(ceiling - 0.01), unit: UNIT_PERCENTAGE, eeRate: half, erRate: half },
+    { id: 3, minimum: ceiling, maximum: null, unit: UNIT_AMOUNT, employeeShare: round2(ceiling * half / 100), employerShare: round2(ceiling * half / 100) },
   ];
 }
 
 /** Pag-IBIG: 1%/2% below ₱1,500, 2%/2% above, on compensation capped at ₱10,000. */
 function pagibigRows(cap) {
   return [
-    { id: 1, minimum: 0, maximum: 1500, unit: 'Percentage (%)', eeRate: 1, erRate: 2, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
-    { id: 2, minimum: 1500.01, maximum: round2(cap - 0.01), unit: 'Percentage (%)', eeRate: 2, erRate: 2, minimumEmployeeShare: 0, maximumEmployeeShare: 0, minimumEmployerShare: 0, maximumEmployerShare: 0 },
-    { id: 3, minimum: cap, maximum: 9999999, unit: 'Amount (Php)', eeRate: 0, erRate: 0, minimumEmployeeShare: round2(cap * 0.02), maximumEmployeeShare: round2(cap * 0.02), minimumEmployerShare: round2(cap * 0.02), maximumEmployerShare: round2(cap * 0.02) },
+    { id: 1, minimum: 0, maximum: 1500, unit: UNIT_PERCENTAGE, eeRate: 1, erRate: 2 },
+    { id: 2, minimum: 1500.01, maximum: round2(cap - 0.01), unit: UNIT_PERCENTAGE, eeRate: 2, erRate: 2 },
+    { id: 3, minimum: cap, maximum: null, unit: UNIT_AMOUNT, employeeShare: round2(cap * 0.02), employerShare: round2(cap * 0.02) },
   ];
 }
 
@@ -161,6 +179,9 @@ const ANNUAL_BRACKETS = [
 
 /** Periods per year for each payroll frequency the compensation table carries. */
 export const TAX_PERIODS_PER_YEAR = Object.freeze({ Daily: 313, Weekly: 52, 'Bi-weekly': 26, 'Semi-monthly': 24, Monthly: 12, Annual: 1 });
+/** Payment modes compare without case or hyphens, and Annual is Yearly, so a 'Semi-monthly' payroll finds the 'Semi-Monthly' rows. */
+const modeKey = value => { const key = String(value || '').toLowerCase().replace(/[^a-z]/g, ''); return key === 'annual' ? 'yearly' : key; };
+const COMPENSATION_SEED_MODES = { Daily: 'Daily', Weekly: 'Weekly', 'Bi-weekly': 'Bi-Weekly', 'Semi-monthly': 'Semi-Monthly', Monthly: 'Monthly' };
 
 function compensationRows() {
   const rows = [];
@@ -170,10 +191,10 @@ function compensationRows() {
       rows.push({
         id: rows.length + 1,
         minimum: index === 0 ? 0 : round2(minimum / periods),
-        maximum: round2(maximum / periods),
+        maximum: index === ANNUAL_BRACKETS.length - 1 ? null : round2(maximum / periods),
         fixedTax: round2(fixedTax / periods),
         excessRate,
-        frequency,
+        frequency: COMPENSATION_SEED_MODES[frequency],
       });
     });
   });
@@ -208,18 +229,18 @@ function deMinimisRows(year = 2026) {
 
 function expandedRows() {
   return [
-    { id: 1, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Professional fees (individual)', atcCode: 'WI010', excessRate: 5, minimum: 0, maximum: 3000000 },
-    { id: 2, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Professional fees (individual, above threshold)', atcCode: 'WI011', excessRate: 10, minimum: 3000000.01, maximum: 100000000 },
-    { id: 3, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Rentals', atcCode: 'WI100', excessRate: 5, minimum: 0, maximum: 100000000 },
-    { id: 4, taxType: 'WE', atcClass: 'Individual', incomePayment: 'Income payments to certain contractors', atcCode: 'WI120', excessRate: 2, minimum: 0, maximum: 100000000 },
+    { id: 1, taxType: 'WE', atcClass: 'IND', incomePayment: 'Professional fees', atcCode: 'WI010', excessRate: 5 },
+    { id: 2, taxType: 'WE', atcClass: 'IND', incomePayment: 'Professional fees', atcCode: 'WI011', excessRate: 10 },
+    { id: 3, taxType: 'WE', atcClass: 'IND', incomePayment: 'Rentals', atcCode: 'WI100', excessRate: 5 },
+    { id: 4, taxType: 'WE', atcClass: 'IND', incomePayment: 'Income payments to suppliers', atcCode: 'WI120', excessRate: 2 },
   ];
 }
 
 function finalRows() {
   return [
-    { id: 1, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Interest on bank deposits', atcCode: 'WI170', excessRate: 20, minimum: 0, maximum: 100000000 },
-    { id: 2, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Cash dividends (individual)', atcCode: 'WI180', excessRate: 10, minimum: 0, maximum: 100000000 },
-    { id: 3, taxType: 'WF', atcClass: 'Individual', incomePayment: 'Fringe benefit tax (grossed-up)', atcCode: 'WI360', excessRate: 35, minimum: 0, maximum: 100000000 },
+    { id: 1, taxType: 'WF', atcClass: 'IND', incomePayment: 'Interest on bank deposits', atcCode: 'WI170', excessRate: 20, fixedTax: 0 },
+    { id: 2, taxType: 'WF', atcClass: 'IND', incomePayment: 'Cash dividends', atcCode: 'WI180', excessRate: 10, fixedTax: 0 },
+    { id: 3, taxType: 'WF', atcClass: 'IND', incomePayment: 'Fringe benefits', atcCode: 'WI360', excessRate: 35, fixedTax: 0 },
   ];
 }
 
@@ -284,7 +305,8 @@ export function effectiveVersionIn(data = {}, agency, asOf = new Date().toISOStr
   const versions = (data[agency] || []).filter(item => item.status === 'Active');
   if (!versions.length) return null;
   const sorted = [...versions].sort((a, b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)));
-  return sorted.find(item => String(item.effectiveDate) <= String(asOf)) || sorted[sorted.length - 1];
+  // Atlas: no Active version on or before the date means no table, not the earliest one.
+  return sorted.find(item => String(item.effectiveDate) <= String(asOf)) || null;
 }
 
 /**
@@ -325,7 +347,7 @@ export function rateContribution(version, monthlyCompensation) {
   const row = bracketFor(version, monthlyCompensation);
   if (!row) return { employee: 0, employer: 0, bracket: null };
   const amount = Math.max(0, number(monthlyCompensation));
-  const isPercentage = (row.unit || 'Amount (Php)') === 'Percentage (%)';
+  const isPercentage = row.unit === UNIT_PERCENTAGE;
   if (isPercentage && (version?.agency === 'philhealth' || /^PHIC/.test(version?.code || ''))) {
     // The total premium is exact; the employee share is rounded down to the centavo and the employer takes the odd centavo.
     const rateTotal = number(row.eeRate) + number(row.erRate);
@@ -334,17 +356,18 @@ export function rateContribution(version, monthlyCompensation) {
     return { employee: round2(employee), employer: round2(total - employee), bracket: row };
   }
   return {
-    employee: round2(isPercentage ? amount * number(row.eeRate) / 100 : number(row.minimumEmployeeShare)),
-    employer: round2(isPercentage ? amount * number(row.erRate) / 100 : number(row.minimumEmployerShare)),
+    // A bracket saved before 23 Nov 2026 carries a share range; its minimum stands in for the single share.
+    employee: round2(isPercentage ? amount * number(row.eeRate) / 100 : number(row.employeeShare ?? row.minimumEmployeeShare)),
+    employer: round2(isPercentage ? amount * number(row.erRate) / 100 : number(row.employerShare ?? row.minimumEmployerShare)),
     bracket: row,
   };
 }
 
 /** Graduated withholding brackets for a payroll frequency, low to high. */
 export function bracketsForFrequency(version, frequency = 'Monthly') {
-  const rows = (version?.rows || []).filter(row => !row.frequency || row.frequency === frequency);
+  const rows = (version?.rows || []).filter(row => !row.frequency || modeKey(row.frequency) === modeKey(frequency));
   return rows
-    .map(row => ({ minimum: number(row.minimum), maximum: number(row.maximum), fixedTax: number(row.fixedTax), excessRate: number(row.excessRate) }))
+    .map(row => ({ minimum: number(row.minimum), maximum: row.maximum === null || row.maximum === undefined || row.maximum === '' ? Infinity : number(row.maximum), fixedTax: number(row.fixedTax), excessRate: number(row.excessRate) }))
     .sort((a, b) => a.minimum - b.minimum);
 }
 

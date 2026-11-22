@@ -1214,6 +1214,8 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       detail: ceiling === 0 ? 'Threshold set to zero for this run — every bonus is taxable' : `Non-taxable ceiling less bonuses already paid this year${number(employee.previousEmployer?.nontaxableBonus) ? ' and by the previous employer' : ''}`,
       source: 'Bonus Threshold reference table',
     });
+    // The order the bonuses use the threshold in is named on the transaction, so the trace shows which Bonus Hierarchy decided it.
+    if (config.bonusHierarchy !== undefined) record({ code: 'BON-004', category: 'Bonus', evaluate: false, inputs: {}, detail: config.bonusHierarchy ? `Bonuses use the threshold in the order of the ${config.bonusHierarchy} Bonus Hierarchy` : 'No Bonus Hierarchy in effect; bonuses use the threshold oldest first', source: config.bonusHierarchy ? `Bonus Hierarchy · ${config.bonusHierarchy}` : 'Bonus Hierarchy · none in effect' });
     let available = remainingCeiling;
     // The Bonus Threshold Order reference table decides which bonus uses the
     // non-taxable ceiling first; types it does not list keep their run order.
@@ -1477,7 +1479,7 @@ export function computeEmployeeLine({ employee, transaction, context }) {
       record({
         code: 'TAX-002', category: 'Tax', amount: withholdingTax, evaluate: false,
         inputs: { taxable_income: taxableIncome, tax_rate: number(result.bracket?.excessRate) / 100, tax_offset: number(result.bracket?.fixedTax) },
-        detail: result.bracket ? `Bracket ₱${result.bracket.minimum.toLocaleString()}–₱${result.bracket.maximum.toLocaleString()}: ₱${result.bracket.fixedTax.toLocaleString()} + ${result.bracket.excessRate}% of the excess` : 'Below the first taxable bracket',
+        detail: result.bracket ? `Bracket ₱${result.bracket.minimum.toLocaleString()}–${Number.isFinite(result.bracket.maximum) ? `₱${result.bracket.maximum.toLocaleString()}` : 'and above'}: ₱${result.bracket.fixedTax.toLocaleString()} + ${result.bracket.excessRate}% of the excess` : 'Below the first taxable bracket',
         source: 'BIR compensation tax table',
       });
     }

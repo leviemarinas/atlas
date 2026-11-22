@@ -146,7 +146,7 @@ const sectionDefinitions = [
   },
   {
     key: 'bonuses', title: 'Fixed Bonuses', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['code', 'Bonus Code'], ['name', 'Bonus Name'], ['paymentMode', 'Frequency'], ['amount', 'Amount'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Ceiling']],
+    columns: [['dateCreated', 'Date Created'], ['code', 'Bonus Code'], ['name', 'Bonus Name'], ['paymentMode', 'Frequency'], ['amount', 'Amount'], ['type', 'Bonus Type'], ['taxability', 'Taxability'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['remainingCeiling', 'Remaining Threshold']],
     // No Taxability: the remaining non-taxable ceiling is used first and only the excess is taxable.
     // Follows the approved Add Bonus screen: Name (Bonus Code - Bonus Name, searchable), Type, Taxability and Amount. Picking the bonus fills the
     // rest from Bonus Configuration; the release month, schedule and thresholds an entry also carries are kept with it and are not asked again.
@@ -335,6 +335,12 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   // Start and End are a month and a year; the record keeps the first day (Start) or the last day (End) of that month.
   if (type === 'monthyear') return <MonthYearField fieldKey={key} label={label} value={value} onChange={onChange} required={required} notBefore={key === 'end' ? toIsoDate(draft.start) : ''} />;
   if (type === 'textarea') return <textarea value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="Enter remarks" />;
+  // Basic Pay Amount takes only as many decimals as Core > Services Information > Payroll > Rounding Off sets for Basic Pay (like the rates it drives).
+  if (key === 'amount' && 'payType' in draft) {
+    const places = readPayrollRounding().basicPay;
+    const limit = text => { const [whole, decimals] = String(text).split('.'); return decimals === undefined ? text : places === 0 ? whole : `${whole}.${decimals.slice(0, places)}`; };
+    return <input type="number" min="0" step={places ? (1 / 10 ** places).toFixed(places) : '1'} value={value ?? ''} onChange={e => onChange(limit(e.target.value))} placeholder={(0).toFixed(places)} required={required} />;
+  }
   return <input type={type} min={type === 'number' ? '0' : undefined} step={type === 'number' ? 'any' : undefined} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={type === 'number' ? '0.00' : `Input ${label.toLowerCase()}`} required={required} />;
 }
 
@@ -874,27 +880,66 @@ const PAYROLL_TABS = {
   'Payroll Entries': ['payrollEntry', 'costAllocation'],
 };
 
+/** What an employee shows before anything is stored: the HR record for the payroll sections, the demo rows for the rest. */
+function defaultSectionRows(hrm, personId, section) {
+  if (PAYROLL_SECTIONS.includes(section.key)) {
+    const rostered = employeeRoster.find(item => item.code === personId);
+    if (ROSTER_SECTIONS.includes(section.key)) return rostered ? masterfileRowsFromRoster(rostered, YTD_AS_OF)[section.key] : [];
+    const salary = rostered && (hrm?.salaryInformation || []).find(row => row.employeeId === rostered.employeeId);
+    return salary ? masterfileRowsFromHrm(salary, (hrm?.loanInquiries || []).filter(row => row.employeeId === rostered.employeeId), rostered.payroll)[section.key] : [];
+  }
+  return section.rows.map((row, index) => ({ ...row, id: index + 1 }));
+}
+
+function storedSectionRows(store, hrm, personId, section) {
+  const stored = store[personId]?.[section.key];
+  return (Array.isArray(stored) ? stored : defaultSectionRows(hrm, personId, section)).map(row => normalizePayrollRecord(section, row));
+}
+
+function ytdContextFor(store, hrm, personId) {
+  const ytdSection = sectionDefinitions.find(item => item.key === 'ytd');
+  const latestYtd = [...storedSectionRows(store, hrm, personId, ytdSection)].sort((a, b) => String(b.year).localeCompare(String(a.year)))[0] || {};
+  return { ytdNonTaxableBonus: Number(latestYtd.nonTaxableBonus || 0), ytdDeMinimis: Number(latestYtd.deMinimis || 0), ytdYear: latestYtd.year };
+}
+
+/** The Basic Pay record in force today, as a one-row list: none when every record is future-dated. */
+function currentBasicPay(rows, today = new Date()) {
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const effective = rows.filter(row => { const at = toIsoDate(row.effectiveDate); return at && at <= todayIso; })
+    .sort((a, b) => toIsoDate(a.effectiveDate).localeCompare(toIsoDate(b.effectiveDate)));
+  return effective.length ? [effective[effective.length - 1]] : [];
+}
+
+/**
+ * The employee's own Payroll Items, read-only, for the Employee's View 201 File in HRM.
+ * The rows are the ones P&A Admin and Client Admin keep in the Employee Masterfile (same store, same rules);
+ * there is no Add, Edit, Delete, Upload or Export, and only the signed-in employee's code is ever read.
+ */
+export function OwnPayrollItems({ employeeCode }) {
+  const [store] = useState(() => readEmployeePayrollStore());
+  const [hrm] = useState(() => { try { return readHrmData(); } catch { return null; } });
+  if (!employeeCode) return <p className="hrm-modal-message">No employee record is linked to this account.</p>;
+  const context = ytdContextFor(store, hrm, employeeCode);
+  const sections = sectionDefinitions.filter(section => PAYROLL_TABS['Payroll Items'].includes(section.key));
+  return <div className="own-payroll-items">{sections.map(section => {
+    const rows = recalculateSection(section, storedSectionRows(store, hrm, employeeCode, section), context);
+    // Basic Pay: only the record in force today (the latest Effectivity Date on or before today). Future-dated and earlier records are not shown.
+    const sorted = section.key === 'basicPay' ? currentBasicPay(rows) : rows;
+    return <section key={section.key} className="own-payroll-section">
+      <h3>{section.title}</h3>
+      {sorted.length ? <div className="table-card"><table><thead><tr>{section.columns.map(([key, label]) => <th key={key}>{label}</th>)}</tr></thead>
+        <tbody>{sorted.map((row, index) => <tr key={row.id ?? index}>{section.columns.map(([key]) => <td key={key}>{String(formatCell(key, row[key]) ?? '')}</td>)}</tr>)}</tbody></table></div>
+        : <p className="muted">{rows.length ? `No ${section.title} is in force today.` : `No ${section.title} has been added to your record.`}</p>}
+    </section>;
+  })}</div>;
+}
+
 export function EmployeeMasterfile({ onBack, onNavigate, notify, company, companies, onSelectCompany }) {
   // Each employee's payroll entries are kept under the employee's code; the payroll transaction reads them from there.
   const [store, setStore] = useState(() => readEmployeePayrollStore());
   const [hrm] = useState(() => { try { return readHrmData(); } catch { return null; } });
-  /** What an employee shows before anything is stored: the HR record for the payroll sections, the demo rows for the rest. */
-  const defaultRows = (person, section) => {
-    if (PAYROLL_SECTIONS.includes(section.key)) {
-      const rostered = employeeRoster.find(item => item.code === person.id);
-      if (ROSTER_SECTIONS.includes(section.key)) return rostered ? masterfileRowsFromRoster(rostered, YTD_AS_OF)[section.key] : [];
-      const salary = rostered && (hrm?.salaryInformation || []).find(row => row.employeeId === rostered.employeeId);
-      return salary ? masterfileRowsFromHrm(salary, (hrm?.loanInquiries || []).filter(row => row.employeeId === rostered.employeeId), rostered.payroll)[section.key] : [];
-    }
-    return section.rows.map((row, index) => ({ ...row, id: index + 1 }));
-  };
-  const rawRows = (person, section) => { const stored = store[person.id]?.[section.key]; return (Array.isArray(stored) ? stored : defaultRows(person, section)).map(row => normalizePayrollRecord(section, row)); };
-  const ytdContextOf = person => {
-    const ytdSection = sectionDefinitions.find(item => item.key === 'ytd');
-    const latestYtd = [...rawRows(person, ytdSection)].sort((a, b) => String(b.year).localeCompare(String(a.year)))[0] || {};
-    return { ytdNonTaxableBonus: Number(latestYtd.nonTaxableBonus || 0), ytdDeMinimis: Number(latestYtd.deMinimis || 0), ytdYear: latestYtd.year };
-  };
-  const rowsFor = (person, section) => recalculateSection(section, rawRows(person, section), ytdContextOf(person));
+  const ytdContextOf = person => ytdContextFor(store, hrm, person.id);
+  const rowsFor = (person, section) => recalculateSection(section, storedSectionRows(store, hrm, person.id, section), ytdContextOf(person));
   const [employeeList, setEmployeeList] = useState(() => {
     try { return JSON.parse(localStorage.getItem(MASTERFILE_STORAGE_KEY)) || employees; } catch { return employees; }
   });

@@ -88,6 +88,7 @@ import './payrollApprovals.css';
 import { leaveBalancesAfterConversion, leaveConversionWindow, ytdWindow, overlapWarnings, batchProblems, batchDrafts, newBatchRow, numberBatch, toggleBatchCalendar } from './payrollRuns.js';
 import { policyAppliesToRun, policySelectionConflicts, policySnapshot, readManagedPolicies } from './policyManagement';
 import { effectiveReferenceRow, referenceRows } from './ReferenceTables';
+import { bonusHierarchyNames, bonusOrderFor } from './bonusHierarchy';
 import {
   MONTHS,
   PAYROLL_STATUS_TABS,
@@ -752,6 +753,7 @@ function CreateWizard({ runs, calendars, policies: managedPolicies, onCancel, on
         <fieldset className="payroll-fieldset">
           <legend>13th month pay and bonuses</legend>
           <Switch label="Compute 13th month pay / bonus" hint="Unticked by default" checked={draft.config.thirteenthMonth.enabled} onChange={value => setNested('thirteenthMonth', 'enabled', value)} />
+          <label className="payroll-field"><span>Bonus Hierarchy</span>{(() => { const names = bonusHierarchyNames(); const policyChoice = readPolicies(readActiveCompanyId()).bonus?.hierarchy; const standard = names.includes('Standard') ? 'Standard' : names[0] || ''; const effective = names.includes(draft.config.bonusHierarchy) ? draft.config.bonusHierarchy : names.includes(policyChoice) ? policyChoice : standard; const order = bonusOrderFor(effective); return <><select value={draft.config.bonusHierarchy || ''} onChange={event => setConfig('bonusHierarchy', event.target.value)}><option value="">{`Policy default (${names.includes(policyChoice) ? policyChoice : standard})`}</option>{names.map(name => <option key={name} value={name}>{name}</option>)}</select><small className="field-hint">Decides which bonus uses the non-taxable Bonus Threshold first in this transaction. Saved with the transaction.</small>{!effective && <small className="field-hint bonus-order-warning" role="alert">No Bonus Hierarchy is in effect, so bonuses use the threshold oldest first.</small>}<small className="field-hint bonus-order-preview"><strong>Order{effective ? ` in ${effective}` : ''}:</strong> {order.length ? order.map((name, index) => `${index + 1}. ${name}`).join('  ›  ') : 'No bonuses are set up yet.'}</small></>; })()}</label>
           {draft.config.thirteenthMonth.enabled && <>
             <div className="payroll-field-grid">
               <FieldRow label="Basis" hint="A custom basis takes the uploaded amount and locks the bonus selection">
@@ -2136,7 +2138,10 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     const timekeepingWorkDays = Number((readScoped('atlas-core-si-work-days-v1', [], companyId) || [])[0]?.perYear) || 0;
     const workDaysPerYear = Number(controls.find(item => Number(item.factorDays) > 0)?.factorDays) || timekeepingWorkDays || draft.config.workDaysPerYear;
     const workHoursPerDay = Number(controls.find(item => Number(item.workHoursPerDay) > 0)?.workHoursPerDay) || draft.config.workHoursPerDay;
-    const bonusCeilingOrder = referenceRows('bonus-ceiling-order').sort((left, right) => Number(left.priority) - Number(right.priority)).map(row => row.name);
+    const policyBonusHierarchy = readPolicies(companyId).bonus?.hierarchy;
+    // A hierarchy that is gone or inactive ranks nothing: bonuses then go oldest first, and the transaction records that no hierarchy was in effect.
+    const bonusHierarchyName = bonusHierarchyNames().includes(draft.config.bonusHierarchy) ? draft.config.bonusHierarchy : bonusHierarchyNames().includes(policyBonusHierarchy) ? policyBonusHierarchy : (bonusHierarchyNames().includes('Standard') ? 'Standard' : bonusHierarchyNames()[0] || '');
+    const bonusCeilingOrder = bonusOrderFor(bonusHierarchyName);
     const funds = controls.filter(item => item.type === 'Provident / Pension Fund').map(item => ({ code: item.code, name: item.name, fundType: item.fundType || 'Provident Fund', basis: item.fundBasis || 'Basic Pay', employeeRate: item.employeeRate || 0, employerRate: item.employerRate || 0 }));
     const drafts = batchDrafts(draft);
     const numbers = numberBatch(drafts, runs);
@@ -2144,7 +2149,7 @@ export function PayrollProcessingWorkspace({ companyId: scopedCompanyId, onBack,
     const failures = [];
     drafts.forEach((item, index) => {
     const warnings = overlapWarnings({ ...item, transactionMode: 'Single', additional: undefined }, [...runs, ...filed]);
-    const created = withWarnings(fileRun({ ...item, approvalLevels: levelsForCalendar(calendars, item.calendarCode), approvalFlow: levelsForCalendar(calendars, item.calendarCode) ? flowFor(readApprovalHierarchy(companyId), levelsForCalendar(calendars, item.calendarCode)) : undefined, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, funds, bonusCeiling: draft.config.bonusCeiling ?? (() => { const value = effectiveReferenceRow('bonus-ceilings')?.ceiling; return Number.isFinite(Number(value)) && value !== '' ? Number(value) : 90000; })() } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
+    const created = withWarnings(fileRun({ ...item, approvalLevels: levelsForCalendar(calendars, item.calendarCode), approvalFlow: levelsForCalendar(calendars, item.calendarCode) ? flowFor(readApprovalHierarchy(companyId), levelsForCalendar(calendars, item.calendarCode)) : undefined, transactionNumber: numbers[index], companyId, overlapWarnings: warnings, config: { ...draft.config, leaveConversion: conversionWindow ? { ...draft.config.leaveConversion, window: { start: conversionWindow.start, end: conversionWindow.end, source: conversionWindow.source } } : draft.config.leaveConversion, workDaysPerYear, workHoursPerDay, ecolaTreatment, bonusCeilingOrder, bonusHierarchy: bonusHierarchyName, funds, bonusCeiling: draft.config.bonusCeiling ?? (() => { const value = effectiveReferenceRow('bonus-ceilings')?.ceiling; return Number.isFinite(Number(value)) && value !== '' ? Number(value) : 90000; })() } }, { runs, actor, isPaAdmin, requiresApproval: requiresBackdateApproval }), warnings);
     const outcome = applyAction(created, 'recalculate', { actor, runs: [...runs, ...filed], context: contextFor(created) });
     const stored = outcome.error ? created : outcome.run;
     commit(stored);
