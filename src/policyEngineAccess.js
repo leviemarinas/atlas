@@ -15,7 +15,7 @@
 
 export const CLIENT_EDITABLE_ENGINE_PARAMETERS = Object.freeze({
   takeHome: Object.freeze([
-    'assignment', 'employeeGroup',
+    'assignment', 'employeeGroup', 'deductionHierarchy', 'loanHierarchy',
     'threshold', 'deductionCap', 'loanCap', 'attendanceCap',
     'payslipTagging', 'notifyEmployee',
     // Deferred recovery: the amounts and timing, not the method or its controls.
@@ -27,6 +27,7 @@ export const CLIENT_EDITABLE_ENGINE_PARAMETERS = Object.freeze({
     'companyDays', 'additionalBenefits', 'earlyRetirementAge', 'minimumGuarantee', 'maximumCap',
   ]),
   finalPay: Object.freeze(['assignment', 'employeeGroup', 'notifyAdmin']),
+  bonus: Object.freeze(['hierarchy']),
   grossUp: Object.freeze(['assignment', 'employeeGroup', 'employerSharePercent', 'frequency', 'employeeSharePercent', 'grossUpFrequency', 'deductionTreatment', 'targetEarning']),
 });
 
@@ -52,6 +53,7 @@ export function engineSectionForCode(record = {}) {
   if (subcategory === 'Retirement Pay') return 'retirement';
   if (subcategory === 'Final Pay') return 'finalPay';
   if (subcategory === 'Gross Up') return 'grossUp';
+  if (record.code === 'BON-004') return 'bonus';
   return '';
 }
 

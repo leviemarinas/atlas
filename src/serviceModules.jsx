@@ -223,6 +223,9 @@ function nextBonusCode(companyId) {
   return `${prefix}${String(Math.max(0, ...used) + 1).padStart(4, '0')}`;
 }
 
+/** The bonus types a Bonus Hierarchy can rank, in the order the standard hierarchy starts with. */
+export const BONUS_HIERARCHY_TYPES = ['13th Month Pay', '14th Month Pay', 'Mid-year Bonus', 'Performance Bonus', 'Retention Bonus', 'Signing Bonus', 'Productivity Bonus'];
+
 const baseModuleDefinitions = {
   earnings: {
     title: 'Earning Configuration',
@@ -380,69 +383,108 @@ const baseModuleDefinitions = {
     defaults: { type: 'Performance Bonus', threshold: '90000', thresholdSplittingType: 'Percentage', thresholdSplitting: '100', cappedEarning: 'No', autoCompute: 'Yes',taxability: 'Non-taxable', amount: '0', paymentMode: 'Yearly', frequency: 'Yearly', ...DATE_SET_DEFAULTS, dateStart: '2026-01-01', status: 'Active', glBreakdown: 'Per Employee', glName: 'Bonus Expense', subGlName: 'Performance Incentives' },
     rows: [['BON-001', '13th Month Pay', '13th Month Pay'], ['BON-002', 'Performance Bonus', 'Performance Bonus'], ['BON-003', 'Signing Bonus', 'Signing Bonus'], ['BON-004', 'Productivity Incentive', 'Productivity Bonus'], ['BON-005', 'Service Award', 'Performance Bonus']],
   },
+  deductionHierarchy: {
+    title: 'Deduction Hierarchy',
+    plural: 'deduction hierarchies',
+    description: 'Set up the order in which company deductions are collected when net pay is short. The Take-Home Pay policy chooses which hierarchy payroll follows.',
+    table: [['code', 'Hierarchy Code'], ['name', 'Hierarchy Name'], ['rankedItems', 'Deduction Order'], ['status', 'Status']],
+    steps: [{ title: 'Hierarchy Details', fields: [
+      { key: 'code', label: 'Hierarchy Code', required: true, half: true }, { key: 'name', label: 'Hierarchy Name', required: true, half: true },
+      { key: 'rankedItems', label: 'Deduction Order', type: 'multiselect', variant: 'ranked', noun: 'deduction', options: (draft, { companyId }) => readServiceConfiguration('deductions', companyId).filter(item => (item.status || 'Active') === 'Active').map(item => item.name), required: true, hint: 'The first one is collected first when net pay is short. One that is not listed is collected after the ones that are.' },
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+    ] }],
+    defaults: { status: 'Active', rankedItems: '' },
+    rows: [['DHY-001', 'Standard', 'Deduction Hierarchy', { rankedItems: '' }]],
+  },
+  loanHierarchy: {
+    title: 'Company Loan Hierarchy',
+    plural: 'company loan hierarchies',
+    description: 'Set up the order in which company loans are collected when net pay is short. The Take-Home Pay policy chooses which hierarchy payroll follows.',
+    table: [['code', 'Hierarchy Code'], ['name', 'Hierarchy Name'], ['rankedItems', 'Company Loan Order'], ['status', 'Status']],
+    steps: [{ title: 'Hierarchy Details', fields: [
+      { key: 'code', label: 'Hierarchy Code', required: true, half: true }, { key: 'name', label: 'Hierarchy Name', required: true, half: true },
+      { key: 'rankedItems', label: 'Company Loan Order', type: 'multiselect', variant: 'ranked', noun: 'company loan', options: (draft, { companyId }) => readServiceConfiguration('loans', companyId).filter(item => (item.status || 'Active') === 'Active').map(item => item.name), required: true, hint: 'The first one is collected first when net pay is short. One that is not listed is collected after the ones that are.' },
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+    ] }],
+    defaults: { status: 'Active', rankedItems: '' },
+    rows: [['LHY-001', 'Standard', 'Company Loan Hierarchy', { rankedItems: '' }]],
+  },
+  bonusHierarchy: {
+    title: 'Bonus Hierarchy',
+    plural: 'bonus hierarchies',
+    description: 'Set up the order in which bonuses use the non-taxable Bonus Threshold. A payroll uses the hierarchy its policy, or the transaction itself, chooses.',
+    table: [['code', 'Hierarchy Code'], ['name', 'Hierarchy Name'], ['rankedBonuses', 'Bonus Order'], ['status', 'Status']],
+    steps: [{ title: 'Hierarchy Details', fields: [
+      { key: 'code', label: 'Hierarchy Code', required: true, half: true }, { key: 'name', label: 'Hierarchy Name', required: true, half: true },
+      { key: 'rankedBonuses', label: 'Bonus Order', type: 'multiselect', variant: 'ranked', noun: 'bonus', options: BONUS_HIERARCHY_TYPES, required: true, hint: 'The first bonus uses the non-taxable Bonus Threshold first. A bonus that is not listed is paid after the ones that are.' },
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+    ] }],
+    defaults: { status: 'Active', rankedBonuses: BONUS_HIERARCHY_TYPES.slice(0, 6).join(', ') },
+    rows: [['BHY-001', 'Standard', 'Bonus Hierarchy', { rankedBonuses: BONUS_HIERARCHY_TYPES.slice(0, 6).join(', ') }]],
+  },
   deductions: {
     title: 'Deduction Configuration',
     plural: 'deductions',
     description: 'Configure fixed or one-time deductions, recurring frequency, payroll basis, net-pay treatment, and accounting setup.',
-    table: [['code', 'Deduction Code'], ['name', 'Deduction Name'], ['type', 'Deduction Type'], ['applicability', 'Applies To'], ['basis', 'Deduction Basis'], ['status', 'Status']],
+    table: [['code', 'Deduction Code'], ['name', 'Deduction Name'], ['type', 'Deduction Type'], ['applicability', 'Employee Group'], ['basis', 'Deduction Basis'], ['status', 'Status']],
+    // Two steps, as designed: the details (with Employee Group and Employee Names as on Earning Configuration), then the accounting setup.
+    // Amounts, tax treatment and net-pay handling are not asked here; a new deduction takes the defaults below and the employee's own deduction holds its figures.
     steps: [
       { title: 'Deduction Details', fields: [
         { key: 'code', label: 'Deduction Code', required: true, half: true }, { key: 'name', label: 'Deduction Name', required: true, half: true },
         { key: 'type', label: 'Deduction Type', type: 'select', options: ['Fixed Deduction', 'One-time Deduction', 'Recurring Deduction', 'Adjustment'], required: true },
-        { key: 'applicability', label: 'Applies to', type: 'applicability' },
-        { key: 'basis', label: 'Deduction Basis', type: 'select', options: ['Fixed Amount', 'Percentage of Basic Pay', 'Percentage of Gross Pay', 'Balance'] }, { key: 'deductionTag', label: 'Deduction Tag', type: 'select', options: ['Company Deduction', 'Withholding Tax', 'Other Statutory Deduction'], half: true, required: true, half: true },
-        { key: 'amount', label: 'Default Amount / Rate', type: 'number', required: true, half: true },
-        // Payment Mode, Frequency and the effectivity, start, end and period dates are not asked here; a new deduction takes the defaults below (Semi-monthly, Every Payroll, in effect from 01/01/2026). The employee's own deduction holds its schedule.
-        { key: 'partOfNetPay', label: 'Is part of net pay?', type: 'boolean', required: true, half: true }, { key: 'tax', label: 'Tax Treatment', type: 'select', options: ['Pre-tax', 'Post-tax', 'Not applicable'], half: true },
-        { key: 'takeHomeTreatment', label: 'Insufficient Net Pay Handling', type: 'select', options: ['Defer Balance', 'Partial Deduction', 'Deduct in Full'], required: true, half: true },
-        { key: 'hierarchyPriority', label: 'Hierarchy Rank', type: 'select', options: HIERARCHY_RANKS, required: true, half: true },
+        { key: 'applicability', label: 'Employee Group', type: 'applicability', variant: 'earning', hideLabel: true, noun: 'deduction' },
+        { key: 'basis', label: 'Deduction Basis', type: 'select', options: ['Fixed Amount', 'Percentage of Basic Pay', 'Percentage of Gross Pay', 'Balance'] },
+        { key: 'partOfNetPay', label: 'Is part of net pay?', type: 'boolean', required: true },
+        { key: 'status', label: 'Status', type: 'radio', options: ['Active', 'Inactive'], required: true },
       ] },
       { title: 'Accounting Setup', fields: [
-        { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'] },
-        { key: 'glName', label: 'GL Name', type: 'select', options: ['Payroll Deductions', 'Employee Receivable'] },
-        { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Company Deductions', 'Other Receivables'] },
+        { key: 'glBreakdown', label: 'GL Breakdown', type: 'select', options: ['Per Employee', 'Per Department', 'Per Cost Center'], required: true },
+        { key: 'glName', label: 'GL Name', type: 'select', options: ['Payroll Deductions', 'Employee Receivable'], required: true },
+        { key: 'subGlName', label: 'Sub-GL Name', type: 'select', options: ['Company Deductions', 'Other Receivables'], required: true },
       ] },
     ],
+    validate: draft => employeeGroupProblems(draft, 'deduction'),
     filterCriteria: [
-      { key: 'code', label: 'Deduction Code', kind: 'text' }, { key: 'name', label: 'Deduction Name', kind: 'text' }, { key: 'type', label: 'Deduction Type', kind: 'list' },
-      { key: 'applicability', label: 'Employee Group', kind: 'group' }, { key: 'basis', label: 'Deduction Basis', kind: 'list' },
+      { key: 'code', label: 'Deduction Code', kind: 'text' },
+      { key: 'applicability', label: 'Employee Group', kind: 'group' }, { key: 'type', label: 'Deduction Type', kind: 'list' }, { key: 'basis', label: 'Deduction Basis', kind: 'list' },
       { key: 'partOfNetPay', label: 'Is part of net pay?', kind: 'list', options: ['Yes', 'No'] },
       { key: 'glBreakdown', label: 'GL Breakdown', kind: 'list' }, { key: 'glName', label: 'GL Name', kind: 'list' }, { key: 'subGlName', label: 'Sub GL Name', kind: 'list' },
       { key: 'status', label: 'Status', kind: 'list', options: ['Active', 'Inactive'] },
     ],
-    // Step 3 is Computation Mapping: the Basis of Computation and its mapping, then Status, Hold Date, Effective Status and Remarks.
-    finalFields: [
-      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
-      // The date the deduction goes Inactive on its own and is no longer offered in the system.
-      { key: 'holdDate', label: 'Hold Date', type: 'date', half: true },
-      { key: 'effectiveStatus', label: 'Effective Status', type: 'readonly', half: true, show: draft => effectiveStatusText(draft) },
-      { key: 'remarks', label: 'Remarks', type: 'textarea', placeholder: 'Optional' },
-    ],
+    // P&A's third step is the Computation Mapping alone: the Basis of Computation and its mapping. A Client Admin sees it only once P&A has bound a formula.
+    finalFields: [],
     // The number of deductions and the total belong to the employee's own deduction record, not to the company configuration.
-    defaults: { type: 'Fixed Deduction', basis: 'Fixed Amount', amount: '500', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, partOfNetPay: 'Yes', tax: 'Post-tax', takeHomeTreatment: 'Partial Deduction', hierarchyPriority: '20', status: 'Active', glBreakdown: 'Per Employee', glName: 'Payroll Deductions', subGlName: 'Company Deductions' },
+    defaults: { type: 'Fixed Deduction', basis: 'Fixed Amount', amount: '500', paymentMode: 'Semi-monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, partOfNetPay: 'Yes', tax: 'Post-tax', takeHomeTreatment: 'Partial Deduction', status: 'Active', glBreakdown: 'Per Employee', glName: 'Payroll Deductions', subGlName: 'Company Deductions' },
     rows: [['DED-001', 'Uniform Deduction', 'Fixed Deduction', { amount: '500', hierarchyPriority: '21' }], ['DED-002', 'Cooperative Dues', 'Recurring Deduction', { amount: '750', hierarchyPriority: '22' }], ['DED-003', 'Cash Advance', 'Recurring Deduction', { amount: '1000', hierarchyPriority: '23' }], ['DED-004', 'Equipment Charge', 'One-time Deduction', { amount: '900', hierarchyPriority: '24' }], ['DED-005', 'Union Dues', 'Recurring Deduction', { amount: '350', hierarchyPriority: '25' }], ['DED-006', 'Health Insurance', 'Recurring Deduction', { amount: '1200', hierarchyPriority: '26' }]],
   },
   loans: {
-    title: 'Company Loan Configuration',
+    title: 'Company Loan',
     plural: 'company loans',
     description: 'Set up company loan types, principal, interest, amortization, employee coverage, and recurring collection schedules.',
-    table: [['code', 'Loan Code'], ['name', 'Company Loan Name'], ['type', 'Company Loan Type'], ['principal', 'Principal'], ['terms', 'Terms'], ['amortization', 'Amortization'], ['applicability', 'Applies To'], ['status', 'Status']],
+    table: [['code', 'Code'], ['name', 'Company Loan Name'], ['type', 'Company Loan Type'], ['principal', 'Principal'], ['interest', 'Interest per Annum'], ['terms', 'Terms'], ['amortization', 'Amortization'], ['applicability', 'Employee Group'], ['status', 'Status']],
+    // One step, as designed. Payment mode, frequency, the effectivity, start and period dates, net-pay handling and the interest method are not asked here;
+    // a new loan takes the defaults below and the employee's own loan holds its schedule.
     steps: [{ title: 'Company Loan Details', fields: [
-      { key: 'code', label: 'Loan Code', required: true, half: true }, { key: 'name', label: 'Company Loan Name', required: true, half: true },
-      { key: 'type', label: 'Company Loan Type', type: 'select', options: ['Salary Loan', 'Emergency Loan', 'Educational Loan', 'Calamity Loan'], required: true },
-      { key: 'principal', label: 'Principal', type: 'number', required: true, half: true }, { key: 'interest', label: 'Interest per Annum (%)', type: 'number', required: true, half: true },
-      { key: 'terms', label: 'Terms (months)', type: 'number', required: true, half: true }, { key: 'interestAmount', label: 'Interest Amount', type: 'number', half: true },
+      { key: 'code', label: 'Code', required: true },
+      { key: 'name', label: 'Company Loan Name', required: true, half: true },
+      { key: 'type', label: 'Company Loan Type', type: 'select', options: ['Salary Loan', 'Emergency Loan', 'Educational Loan', 'Calamity Loan'], required: true, half: true },
+      { key: 'principal', label: 'Principal', type: 'number', required: true, half: true }, { key: 'interest', label: 'Interest Rate per Annum (%)', type: 'number', required: true, half: true },
+      { key: 'terms', label: 'Terms', type: 'number', required: true, hint: 'Number of terms, in months.' },
+      { key: 'interestAmount', label: 'Interest Amount', type: 'readonly', half: true, show: draft => `₱ ${Number(draft.interestAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
       { key: 'amortization', label: 'Amortization', type: 'number', required: true, half: true },
-      ...scheduleFields(),
-      ...dateSetFields(),
-      { key: 'balanceHandling', label: 'Insufficient Net Pay Handling', type: 'select', options: ['Defer Balance', 'Partial Deduction', 'Deduct in Full'], required: true, half: true },
-      { key: 'hierarchyPriority', label: 'Hierarchy Rank', type: 'select', options: HIERARCHY_RANKS, required: true, half: true },
-      { key: 'applicability', label: 'Applies to', type: 'applicability' },
-      { key: 'interestMethod', label: 'Interest Computation Method', type: 'select', options: ['Simple', 'Add-on', 'Diminishing balance'], required: true, half: true }, { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true, half: true },
+      { key: 'applicability', label: 'Employee Group', type: 'applicability', variant: 'earning', hideLabel: true, noun: 'company loan' },
+      { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true },
     ] }],
-    // Interest Amount fills in from the principal, the annual rate and the term, and stays editable.
+    validate: draft => employeeGroupProblems(draft, 'company loan'),
+    filterCriteria: [
+      { key: 'code', label: 'Code', kind: 'text' }, { key: 'type', label: 'Company Loan Type', kind: 'list' }, { key: 'principal', label: 'Principal', kind: 'text' },
+      { key: 'interest', label: 'Interest per Annum', kind: 'text' }, { key: 'terms', label: 'Terms', kind: 'text' }, { key: 'amortization', label: 'Amortization', kind: 'text' },
+      { key: 'applicability', label: 'Employee Group', kind: 'group' }, { key: 'status', label: 'Status', kind: 'list', options: ['Active', 'Inactive'] },
+    ],
+    // Interest Amount fills in from the principal, the annual rate and the term.
     derive: (draft, key) => (['principal', 'interest', 'terms'].includes(key) ? { interestAmount: String(loanInterest(draft)) } : null),
-    defaults: { type: 'Salary Loan', principal: '100000', interest: '5', terms: '12', interestAmount: '5000', amortization: '8750', paymentMode: 'Monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, balanceHandling: 'Partial Deduction', hierarchyPriority: '10', interestMethod: 'Simple', status: 'Active' },
+    defaults: { type: 'Salary Loan', principal: '100000', interest: '5', terms: '12', interestAmount: '5000', amortization: '8750', paymentMode: 'Monthly', frequency: 'Every Payroll', ...DATE_SET_DEFAULTS, balanceHandling: 'Partial Deduction', interestMethod: 'Simple', status: 'Active' },
     rows: [['CL-001', 'Employee Salary Loan', 'Salary Loan', { principal: '30000', interestAmount: '1500', amortization: '2500', hierarchyPriority: '11' }], ['CL-002', 'Emergency Assistance', 'Emergency Loan', { principal: '15000', interestAmount: '750', amortization: '1500', hierarchyPriority: '12' }], ['CL-003', 'School Support Loan', 'Educational Loan', { principal: '18000', interestAmount: '900', amortization: '1500', hierarchyPriority: '13' }], ['CL-004', 'Calamity Assistance', 'Calamity Loan', { principal: '12000', interestAmount: '600', amortization: '1000', hierarchyPriority: '14' }]],
   },
   allowances: {
@@ -633,6 +675,9 @@ function withComputationBinding(moduleKey, def) {
   };
 }
 
+// The standard hierarchies start with every seeded deduction and company loan, in the order their records list them.
+baseModuleDefinitions.deductionHierarchy.rows[0][3].rankedItems = baseModuleDefinitions.deductions.rows.map(row => row[1]).join(', ');
+baseModuleDefinitions.loanHierarchy.rows[0][3].rankedItems = baseModuleDefinitions.loans.rows.map(row => row[1]).join(', ');
 const moduleDefinitions = Object.fromEntries(
   Object.entries(baseModuleDefinitions).map(([key, def]) => [key, withComputationBinding(key, def)]));
 
@@ -650,8 +695,9 @@ export const PA_OWNED_CONFIGURATION_FIELDS = Object.freeze({
   // A Client Admin sets up and edits an earning's ordinary fields; only its Basis of Computation (BINDING_FIELD_KEYS) is P&A's.
   earnings: [],
   bonuses: ['type', 'thresholdSplittingType', 'thresholdSplitting'],
-  deductions: ['type', 'basis', 'partOfNetPay', 'tax', 'takeHomeTreatment', 'hierarchyPriority'],
-  loans: ['type', 'balanceHandling', 'hierarchyPriority'],
+  // A Client Admin sets up and edits a deduction's and a company loan's ordinary fields; only the Basis of Computation (BINDING_FIELD_KEYS) is bound by P&A.
+  deductions: [],
+  loans: [],
   allowances: ['type', 'timekeeping', 'taxability'],
   governmentLoans: ['type', 'priority', 'balanceHandling'],
   leaveBenefits: ['type', 'carryover', 'forfeiture', 'cashConvertible', 'conversionBasis', 'taxTreatment'],
@@ -665,8 +711,8 @@ export function isPaOwnedField(moduleKey, fieldKey) {
   return BINDING_FIELD_KEYS.includes(fieldKey) || (PA_OWNED_CONFIGURATION_FIELDS[moduleKey] || []).includes(fieldKey);
 }
 
-/** The modules a Client Admin adds, edits and deletes freely; only their Computation Mapping is P&A's. */
-export const CLIENT_FREE_MODULES = Object.freeze(['earnings', 'bonuses']);
+/** The modules a Client Admin adds, edits and deletes freely until a payroll uses the record; only their Computation Mapping is P&A's. */
+export const CLIENT_FREE_MODULES = Object.freeze(['earnings', 'bonuses', 'deductions', 'loans']);
 
 /** The modules whose Computation Mapping decides whether a Client Admin may edit a record at all. */
 export const MAPPING_GATED_MODULES = Object.freeze(['earnings', 'deductions', 'loans', 'bonuses']);
@@ -742,8 +788,11 @@ const serviceTabs = Object.freeze({
     { key: 'computations', short: 'Computational Basis', detail: 'Standard formulas, client assignments, test calculations and reference tables' },
     { key: 'earnings', short: 'Earning Configuration', detail: 'Earning types, taxability, computation and GL setup' },
     { key: 'bonuses', short: 'Bonus Configuration', detail: 'Bonus schedules, non-taxable thresholds and GL setup' },
+    { key: 'bonusHierarchy', short: 'Bonus Hierarchy', detail: 'Named bonus orders that decide which bonus uses the non-taxable threshold first' },
     { key: 'deductions', short: 'Deduction Configuration', detail: 'Deduction basis, recurring schedules and GL setup' },
+    { key: 'deductionHierarchy', short: 'Deduction Hierarchy', detail: 'Named deduction orders that decide what is collected first when net pay is short' },
     { key: 'loans', short: 'Company Loan Configuration', detail: 'Principal, interest, terms, amortization and balances' },
+    { key: 'loanHierarchy', short: 'Company Loan Hierarchy', detail: 'Named company loan orders that decide what is collected first when net pay is short' },
     { key: 'governmentLoans', short: 'Government Loans', detail: 'SSS and HDMF loan references, collection schedules and priority' },
     { key: 'payrollControls', short: 'Payroll Controls', detail: 'Calendars, currencies, deduction order, approvals and payslips' },
   ],
@@ -795,14 +844,69 @@ const effectiveStatusText = draft => (draft.holdDate
   ? `${draft.status === 'Inactive' && effectiveEarningStatus(draft) !== 'Inactive' ? 'Usable' : 'Active'} until ${formatUsDate(draft.holdDate)}`
   : (draft.status || 'Active'));
 
+/** The seeded Standard of each hierarchy kind. It is required: it cannot be deleted or made inactive, so a company always has one. */
+export const STANDARD_HIERARCHY_CODES = Object.freeze({ bonusHierarchy: 'BHY-001', deductionHierarchy: 'DHY-001', loanHierarchy: 'LHY-001' });
+export const isStandardHierarchy = (moduleKey, record) => Boolean(STANDARD_HIERARCHY_CODES[moduleKey]) && record?.code === STANDARD_HIERARCHY_CODES[moduleKey];
+
+/**
+ * A Deduction or Company Loan Hierarchy lists the records by name. When a deduction or a company loan is deleted its name
+ * leaves every hierarchy, and when it is renamed the new name takes its place, so the order never points at a record that is gone.
+ */
+const HIERARCHY_OF = Object.freeze({ deductions: 'deductionHierarchy', loans: 'loanHierarchy' });
+function syncHierarchies(moduleKey, companyId, oldName, newName) {
+  const hierarchyKey = HIERARCHY_OF[moduleKey];
+  if (!hierarchyKey || !oldName || oldName === newName) return;
+  try {
+    const rows = readServiceConfiguration(hierarchyKey, companyId);
+    let changed = false;
+    const next = rows.map(row => {
+      const items = String(row.rankedItems || '').split(',').map(item => item.trim()).filter(Boolean);
+      if (!items.includes(oldName)) return row;
+      changed = true;
+      const updated = items.flatMap(item => (item === oldName ? (newName ? [newName] : []) : [item]));
+      return { ...row, rankedItems: updated.join(', ') };
+    });
+    if (changed) localStorage.setItem(serviceStorageKey(hierarchyKey, companyId), JSON.stringify(next));
+  } catch { /* the hierarchies are left as they were */ }
+}
+
 export function readServiceConfiguration(moduleKey, companyId = readActiveCompanyId()) {
-  const rows = readSavedServiceConfiguration(moduleKey, companyId);
+  let rows = readSavedServiceConfiguration(moduleKey, companyId);
+  const standardCode = STANDARD_HIERARCHY_CODES[moduleKey];
+  if (standardCode) {
+    // A company that has lost its Standard (or has it inactive) gets it back, so there is always a hierarchy to fall to.
+    if (!rows.some(row => row.code === standardCode)) rows = [{ ...initialRows(moduleDefinitions[moduleKey])[0], companyId }, ...rows];
+    else rows = rows.map(row => (row.code === standardCode && row.status === 'Inactive' ? { ...row, status: 'Active' } : row));
+  }
   return ['earnings', 'bonuses', 'deductions'].includes(moduleKey) ? rows.map(heldByDate) : rows;
+}
+
+/**
+ * Before the Bonus Hierarchies had their own page their order lived in two Reference Tables.
+ * A company that had ranked bonuses there keeps that order: it becomes its hierarchies the first
+ * time they are read, and only while nothing has been saved for the new page.
+ */
+function migrateBonusHierarchies(companyId) {
+  try {
+    const key = serviceStorageKey('bonusHierarchy', companyId);
+    if (localStorage.getItem(key) !== null) return;
+    const tables = JSON.parse(localStorage.getItem('atlas-reference-tables-v4') || localStorage.getItem('atlas-reference-tables-v3') || '[]');
+    const order = tables.find(table => table.id === 'bonus-ceiling-order')?.rows || [];
+    if (!order.length) return;
+    const names = (tables.find(table => table.id === 'bonus-hierarchies')?.rows || []).map(row => row.name).filter(Boolean);
+    const groups = [...new Set([...(names.length ? names : ['Standard']), ...order.map(row => row.hierarchy || 'Standard')])];
+    const rows = groups.map((name, index) => ({
+      id: index + 1, companyId, code: `BHY-${String(index + 1).padStart(3, '0')}`, name, type: 'Bonus Hierarchy', status: 'Active',
+      rankedBonuses: order.filter(row => (row.hierarchy || 'Standard') === name && (row.status || 'Active') === 'Active').sort((left, right) => Number(left.priority) - Number(right.priority)).map(row => row.name).join(', '),
+    }));
+    localStorage.setItem(key, JSON.stringify(rows));
+  } catch { /* nothing to carry over */ }
 }
 
 function readSavedServiceConfiguration(moduleKey, companyId) {
   const def = moduleDefinitions[moduleKey];
   if (!def) return [];
+  if (moduleKey === 'bonusHierarchy') migrateBonusHierarchies(companyId);
   try {
     const scoped = JSON.parse(localStorage.getItem(serviceStorageKey(moduleKey, companyId)));
     const legacy = companyId === defaultCompanyRecord.companyId
@@ -1305,7 +1409,7 @@ const TEXT_CATEGORIES = Object.freeze(['Tenure', 'Home Address City / Municipali
  * It reads and writes the same applicability scope every other configuration uses; `groups` and `hired` are what payroll
  * enforces, `filters` is every pick as the screen shows it, and `extra` holds the ones payroll has no employee data for yet.
  */
-function EarningAssignmentField({ value, onChange }) {
+function EarningAssignmentField({ value, onChange, noun = 'earning' }) {
   const scope = normalizeScope(value);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
@@ -1386,7 +1490,7 @@ function EarningAssignmentField({ value, onChange }) {
         </div>
       </div>
     </div>}
-    {mode && <p className="field-hint">{describeScope({ ...scope, scope: 'Criteria', groups: mode === 'all' ? ['All Employees'] : groups, hired, extra, names })}. Payroll applies this earning only to the employees it covers.</p>}
+    {mode && <p className="field-hint">{describeScope({ ...scope, scope: 'Criteria', groups: mode === 'all' ? ['All Employees'] : groups, hired, extra, names })}. Payroll applies this {noun} only to the employees it covers.</p>}
   </div>;
 }
 
@@ -1399,6 +1503,26 @@ function ChipMultiSelect({ options, value, onChange }) {
     {picked.map(name => <span key={name} className="earning-assignment-chip">{name}<button type="button" onClick={() => save(picked.filter(item => item !== name))} aria-label={`Remove ${name}`}>×</button></span>)}
     <select value="" aria-label="Add earning" onChange={event => { if (event.target.value) save([...picked, event.target.value]); }}>
       <option value="">{!options.length ? 'No other earnings yet' : picked.length ? 'Add another…' : 'Please select'}</option>
+      {remaining.map(option => <option key={option} value={option}>{option}</option>)}
+    </select>
+  </div>;
+}
+
+/** The bonuses of a Bonus Hierarchy in order: the number is the rank, and the arrows move a bonus up or down. */
+function RankedChipSelect({ options, value, onChange, noun = 'bonus' }) {
+  const picked = String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+  const save = next => onChange(next.join(', '));
+  const move = (index, step) => { const next = [...picked]; const target = index + step; if (target < 0 || target >= next.length) return; [next[index], next[target]] = [next[target], next[index]]; save(next); };
+  const remaining = options.filter(option => !picked.includes(option));
+  return <div className="ranked-bonus-list">
+    {picked.length > 0 && <ol className="ranked-bonus-rows">{picked.map((name, index) => <li key={name}>
+      <span className="ranked-bonus-rank">{index + 1}</span><span className="ranked-bonus-name">{name}</span>
+      <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Move ${name} up`}>↑</button>
+      <button type="button" onClick={() => move(index, 1)} disabled={index === picked.length - 1} aria-label={`Move ${name} down`}>↓</button>
+      <button type="button" onClick={() => save(picked.filter(item => item !== name))} aria-label={`Remove ${name}`}>×</button>
+    </li>)}</ol>}
+    <select value="" aria-label={`Add a ${noun} to the order`} onChange={event => { if (event.target.value) save([...picked, event.target.value]); }}>
+      <option value="">{!remaining.length ? (options.length ? `Every ${noun} is ranked` : `No ${noun} has been set up yet`) : picked.length ? `Add the next ${noun}…` : 'Please select'}</option>
       {remaining.map(option => <option key={option} value={option}>{option}</option>)}
     </select>
   </div>;
@@ -1435,12 +1559,13 @@ function MultiSelectField({ options, value, onChange }) {
 }
 
 function Field({ field, value, onChange, draft, def, catalog, companyId }) {
-  if (field.type === 'applicability' && field.variant === 'earning') return <EarningAssignmentField value={value} onChange={onChange} />;
+  if (field.type === 'applicability' && field.variant === 'earning') return <EarningAssignmentField value={value} onChange={onChange} noun={field.noun} />;
   const common = { value: value ?? '', onChange: event => onChange(event.target.value), required: field.required };
   // Options may depend on the rest of the record; a stored value stays selectable.
   const listed = typeof field.options === 'function' ? field.options(draft, { companyId }) : (field.options || []);
   const options = field.type === 'select' && value && !listed.includes(value) ? [...listed, value] : listed;
   if (field.type === 'frequency') return <FrequencyField paymentMode={draft.paymentMode} value={value} onChange={onChange} />;
+  if (field.type === 'multiselect' && field.variant === 'ranked') return <RankedChipSelect options={options} value={value} onChange={onChange} noun={field.noun} />;
   if (field.type === 'multiselect' && field.variant === 'chips') return <ChipMultiSelect options={options} value={value} onChange={onChange} />;
   if (field.type === 'multiselect') return <MultiSelectField options={options} value={value} onChange={onChange} />;
   if (field.type === 'applicability') return <ApplicabilityField value={value} onChange={onChange} />;
@@ -1449,6 +1574,11 @@ function Field({ field, value, onChange, draft, def, catalog, companyId }) {
   if (field.type === 'bindings') return <BindingField field={field} value={value} onChange={onChange} draft={draft} def={def} catalog={catalog} />;
   if (field.type === 'select' && field.searchable) return <SearchSelect options={options} value={value} onChange={onChange} required={field.required} label={field.label} />;
   if (field.type === 'select') return <select {...common}><option value="">Please select</option>{options.map(option => <option key={option}>{option}</option>)}</select>;
+  if (field.type === 'radio') return (
+    <div className="radio-group">
+      {(field.options || []).map(option => <label key={option}><input type="radio" name={field.key} value={option} checked={(value ?? field.options[0]) === option} onChange={() => onChange(option)} /> {option}</label>)}
+    </div>
+  );
   if (field.type === 'boolean') return (
     <div className="radio-group">
       {['Yes', 'No'].map(option => <label key={option}><input type="radio" name={field.key} value={option} checked={(value ?? 'No') === option} onChange={() => onChange(option)} /> {option}</label>)}
@@ -1470,7 +1600,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     const stamped = !record?.id && def.steps.some(step => step.fields.some(field => field.key === 'dateCreated')) ? { dateCreated: localToday() } : {};
     // A field that can suggest a value (the next Earning Code) fills it in on a new item.
     const suggested = record?.id ? {} : Object.fromEntries(def.steps.flatMap(step => step.fields).filter(field => field.suggest).map(field => [field.key, field.suggest({ companyId })]));
-    const blanks = !record?.id ? (moduleKey === 'earnings' ? { taxability: '', classification: '', computationBasis: '' } : moduleKey === 'bonuses' ? { threshold: '', thresholdSplittingType: '', thresholdSplitting: '', taxability: '' } : {}) : {};
+    const blanks = !record?.id ? (moduleKey === 'earnings' ? { taxability: '', classification: '', computationBasis: '' } : moduleKey === 'bonuses' ? { threshold: '', thresholdSplittingType: '', thresholdSplitting: '', taxability: '' } : moduleKey === 'deductions' ? { type: '', basis: '' } : moduleKey === 'loans' ? { type: '', principal: '', interest: '', terms: '', interestAmount: '', amortization: '' } : {}) : {};
     const initial = { ...def.defaults, ...blanks, ...stamped, ...suggested, ...record };
     // An earning saved without a Unit opens on Daily.
     if (moduleKey === 'earnings' && !initial.unit) initial.unit = 'Daily';
@@ -1481,12 +1611,15 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
   const [changeReason, setChangeReason] = useState('');
   const [changeEffective, setChangeEffective] = useState(localToday);
   const catalog = useBindingCatalog(companyId);
-  const current = def.steps[step];
   const editing = Boolean(record?.id);
-  const lastStep = step === def.steps.length - 1;
-  const locked = key => clientView && isPaOwnedField(moduleKey, key);
+  // The required Standard hierarchy keeps its code, name and status; its order can still be changed.
+  const locked = key => (clientView && isPaOwnedField(moduleKey, key)) || (editing && isStandardHierarchy(moduleKey, record) && ['code', 'name', 'status'].includes(key));
   // A Client Admin does not see the Basis of Computation or its mapping until P&A has bound a formula to the saved record.
-  const hiddenFromClient = field => clientView && CLIENT_FREE_MODULES.includes(moduleKey) && (field.type === 'computation' || field.type === 'bindings') && !String(record?.computationCode || '').trim();
+  // On a deduction or company loan the "not bound yet" note goes with it, so a client sees only the steps there is something to fill in.
+  const hiddenFromClient = field => clientView && CLIENT_FREE_MODULES.includes(moduleKey) && (field.type === 'computation' || field.type === 'bindings' || (['deductions', 'loans'].includes(moduleKey) && field.key === 'bindingStatus')) && !String(record?.computationCode || '').trim();
+  const steps = def.steps.filter(item => item.fields.some(field => !hiddenFromClient(field) && (!field.visible || field.visible(draft))));
+  const current = steps[step] || steps[steps.length - 1];
+  const lastStep = step === steps.length - 1;
   const pendingChanges = editing ? describeConfigurationChanges(def, record, draft) : [];
   // Editing anything retires the refusal that was shown for the previous draft:
   // an error still on screen after the thing it complained about was fixed
@@ -1506,7 +1639,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
     // Each step is checked as it is left: a blank-looking code, a negative amount or an end date before its start never gets to the next step.
     const stepProblems = configFieldProblems(moduleKey, draft, [current]);
     if (stepProblems.length) { setError(stepProblems[0]); return; }
-    if (step < def.steps.length - 1) { setStep(step + 1); return; }
+    if (step < steps.length - 1) { setStep(step + 1); return; }
     // A half-bound formula is refused here rather than at payroll: an unbound
     // variable resolves to nothing, and a deduction that silently computes zero
     // is worse than one that never saved.
@@ -1518,7 +1651,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
       ...parameterValueProblems({ record: draft, library: catalog.library, configFields }),
       ...(def.validate?.(draft, { companyId }) || []),
     ];
-    if (problems.length) { setError(problems[0]); setStep(def.steps.length - 1); return; }
+    if (problems.length) { setError(problems[0]); setStep(steps.length - 1); return; }
     setError('');
     const trimmed = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, typeof value === 'string' && def.steps.some(step => step.fields.some(field => field.key === key && (field.type ?? 'text') === 'text')) ? value.trim() : value]));
     // A bonus keeps the threshold the Bonus Threshold reference table gave it (none when it is taxable), so the list and filter can show it.
@@ -1533,9 +1666,9 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
       <section className="modal config-modal" role="dialog" aria-modal="true" aria-label={`${record?.id ? 'Edit' : 'Add'} ${def.title}`}>
         <header><h2>{record?.id ? 'Edit' : 'Add'} {def.title}</h2><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></header>
         <form onSubmit={next}>
-          {def.steps.length > 1 && <div className="stepper">{def.steps.map((item, index) => <div key={item.title} className={index <= step ? 'active' : ''}><span>{index < step ? <Check weight="bold" /> : index + 1}</span><i /></div>)}</div>}
+          {steps.length > 1 && <div className="stepper">{steps.map((item, index) => <div key={item.title} className={index <= step ? 'active' : ''}><span>{index < step ? <Check weight="bold" /> : index + 1}</span><i /></div>)}</div>}
           <div className="config-form-body">
-            {clientView && step === 0 && <div className="linked-reference-note governed-notice"><Lock weight="duotone" /><span>Fields marked “Set by P&amp;A” and the formula this pay item uses are maintained by P&amp;A. You can change amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who the item applies to — every change is recorded with your name.</span></div>}
+            {clientView && step === 0 && !['deductions', 'loans'].includes(moduleKey) && <div className="linked-reference-note governed-notice"><Lock weight="duotone" /><span>Fields marked “Set by P&amp;A” and the formula this pay item uses are maintained by P&amp;A. You can change amounts, rates, thresholds, caps, frequency, effective dates, payroll period and who the item applies to — every change is recorded with your name.</span></div>}
             <h3>{current.title}</h3>
             <div className="config-form-grid">
               {current.fields.filter(field => !hiddenFromClient(field) && (!field.visible || field.visible(draft))).map(field => {
@@ -1565,7 +1698,7 @@ function ConfigurationForm({ def, moduleKey, record, companyId, clientView = fal
           </div>
           <footer className="modal-actions sticky-actions">
             <button type="button" className="button secondary" onClick={step === 0 ? onClose : () => setStep(step - 1)}>{step === 0 ? 'Cancel' : 'Back'}</button>
-            <button className="button primary">{step < def.steps.length - 1 ? 'Next' : record?.id ? 'Save' : 'Add'}</button>
+            <button className="button primary">{step < steps.length - 1 ? 'Next' : record?.id ? 'Save' : 'Add'}</button>
           </footer>
         </form>
       </section>
@@ -1733,7 +1866,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   const clientFree = CLIENT_FREE_MODULES.includes(moduleKey);
   const clientMayAdd = !clientLocked || clientFree;
   // The Earning and Bonus lists carry the approved button design: Add, Upload and Export.
-  const figmaActions = ['earnings', 'bonuses', 'deductions'].includes(moduleKey);
+  const figmaActions = ['earnings', 'bonuses', 'deductions', 'loans'].includes(moduleKey);
   const mappingGated = clientLocked && !clientFree && MAPPING_GATED_MODULES.includes(moduleKey);
   const storageKey = serviceStorageKey(moduleKey, companyId);
   const [records, setRecords] = useState(() => readServiceConfiguration(moduleKey, companyId));
@@ -1783,12 +1916,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
     const sameName = draft.name && records.find(record => record.id !== draft.id && String(record.name || '').trim().toLowerCase() === String(draft.name).trim().toLowerCase());
     // A bonus may share its name with another; its code is what must be unique.
     if (sameName && moduleKey !== 'bonuses') { notify({ type: 'error', message: `${draft.name} already exists as ${sameName.code}. Use a unique name.` }); return; }
-    // Deductions and loans share one hierarchy, so a rank can be held by only one of them.
-    if (['deductions', 'loans'].includes(moduleKey) && draft.hierarchyPriority) {
-      const others = [...records.filter(record => record.id !== draft.id), ...readServiceConfiguration(moduleKey === 'deductions' ? 'loans' : 'deductions', companyId)];
-      const holder = others.find(record => String(record.hierarchyPriority) === String(draft.hierarchyPriority));
-      if (holder) { notify({ type: 'error', message: `Hierarchy Rank ${draft.hierarchyPriority} is already held by ${holder.code} · ${holder.name}. Two items can’t share a rank.` }); return; }
-    }
+    // The order deductions and loans are collected in is set in the Deduction Hierarchy and Company Loan Hierarchy, not on the record.
     if (['timeAttendance', 'overtime', 'leaveBenefits'].includes(moduleKey) && draft.status === 'Active') {
       const asDate = value => value ? new Date(value).getTime() : Number.POSITIVE_INFINITY;
       const start = asDate(draft.effectiveDate);
@@ -1811,7 +1939,9 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
         ? { at: new Date().toISOString(), by: actor, reason: audit.reason, effectiveDate: audit.effectiveDate, changes: audit.changes }
         : null;
       const stored = { ...draft, companyId, ...(entry ? { changeLog: [entry, ...(draft.changeLog || [])] } : {}) };
+      const before = records.find(record => record.id === draft.id);
       setRecords(previous => previous.map(record => record.id === draft.id ? stored : record));
+      if (before && before.name !== stored.name) syncHierarchies(moduleKey, companyId, before.name, stored.name);
       if (entry) recordChange({ action: 'ConfigurationUpdated', summary: [audit.reason, `effective ${audit.effectiveDate}`].filter(Boolean).join(' · '), record: stored, changes: audit.changes, reason: audit.reason, effectiveDate: audit.effectiveDate });
     } else {
       if (!clientMayAdd) { notify({ type: 'error', message: `New ${def.plural} are set up by P&A.` }); return; }
@@ -1898,7 +2028,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
             <td>{holderOf(record)
               ? <span className="binding-chip used-chip" title={usersOf(record).join(', ')}><Lock weight="duotone" /><span className="used-chip-text">{usersOf(record).join(', ')}</span></span>
               : <span className="binding-chip none">Not used</span>}</td>
-            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit" disabled={!mayEdit(record)} title={editTitle(record)}><PencilSimple /></button>{(!clientLocked || clientFree) && <button onClick={() => setDeleting(record)} aria-label="Delete" disabled={Boolean(holderOf(record))} title={holderOf(record) ? usedReason(record) : undefined}><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 3 : 2)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
+            <td><div className="row-actions always"><button onClick={() => setViewing(record)} aria-label="View"><Eye /></button><button onClick={() => setEditing(record)} aria-label="Edit" disabled={!mayEdit(record)} title={editTitle(record)}><PencilSimple /></button>{(!clientLocked || clientFree) && <button onClick={() => setDeleting(record)} aria-label="Delete" disabled={Boolean(holderOf(record)) || isStandardHierarchy(moduleKey, record)} title={isStandardHierarchy(moduleKey, record) ? 'Standard is required and can’t be deleted.' : holderOf(record) ? usedReason(record) : undefined}><Trash /></button>}</div></td></tr>) : <tr><td colSpan={def.table.length + (def.bindable ? 3 : 2)}><div className="empty-state"><MagnifyingGlass /><h3>No {def.plural} found</h3><p>Try another search or add a new configuration.</p></div></td></tr>}</tbody>
         </table>
       </div>
       <div className="pagination"><span>Displaying <select className="page-size-select" aria-label="Rows per page" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); }}>{[20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}</select> per page · showing <strong>{visible.length}</strong> of {filtered.length} items</span><div><button disabled={page === 1} onClick={() => setPage(1)}>«</button><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>‹</button><strong>{page}</strong><span>of {pages}</span><button disabled={page === pages} onClick={() => setPage(value => value + 1)}>›</button><button disabled={page === pages} onClick={() => setPage(pages)}>»</button></div></div>
@@ -1907,7 +2037,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       {deleting && (!clientLocked || clientFree) && <DeleteDialog def={def} record={deleting} onClose={() => setDeleting(null)} onDelete={() => {
         const holder = usedInPayroll(deleting, readUsedRuns(companyId));
         if (holder) { setDeleting(null); notify({ type: 'error', message: `${deleting.code} · ${deleting.name} is already used in ${holder.transactionNumber}, so it cannot be deleted. Set it to Inactive instead.` }); return; }
-        setRecords(previous => previous.filter(record => record.id !== deleting.id)); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
+        setRecords(previous => previous.filter(record => record.id !== deleting.id)); syncHierarchies(moduleKey, companyId, deleting.name, null); recordChange({ action: 'ConfigurationDeleted', summary: `${def.title} deleted`, record: deleting }); setDeleting(null); notify({ type: 'success', message: `${def.title} deleted successfully.` }); }} />}
       {filterOpen && (def.filterCriteria
         ? <FilterTableDialog def={def} filters={filters} onApply={setFilters} onClose={() => setFilterOpen(false)} />
         : <FilterDrawer def={def} filters={filters} setFilters={setFilters} onClose={() => setFilterOpen(false)} />)}

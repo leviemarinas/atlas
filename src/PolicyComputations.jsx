@@ -22,12 +22,13 @@ import { withholdingTax } from './statutoryService';
 import { takeHomeFieldProblems } from './configValidation.js';
 import { CUSTOM_INCOME, DEDUCTION_TREATMENTS, GROSS_UP_METHODS, GROSS_UP_TARGETS, TREATMENT_HINT, approvedRate, grossUpFieldProblems, grossUpResult, incomesFor, normalizeGrossUpPolicy } from './grossUp.js';
 import { codeParameterScopes, completeParameterSchema, defaultParameterSchema, defaultParameterValues, hydratePolicyCode, parameterSchemaError, PolicyParameterFields } from './PolicyParameters';
-import { configuredCollectionByCode } from './payrollIntegration';
+import { collectionHierarchyNames, configuredCollectionByCode, hierarchyOrder } from './payrollIntegration';
 import { applyTakeHomePolicy } from './payrollEngine';
 import {
   BASE_OPTIONS, baseAmount, EngineAccess, EngineScope, EngineSwitch, FieldHelp, FieldLabel, money, number, NumberField, OpenForTesting, PolicySaveBar, Toggle,
 } from './PolicyFields';
 import { clientEditViolations, diffPolicySection, engineAccessFor } from './policyEngineAccess';
+import { bonusHierarchyNames, bonusOrderFor } from './bonusHierarchy';
 import { useRole } from './RoleContext';
 import { describeAssignment, normalizeAssignment, seedAssignment, ApplicabilityPanel } from './PolicyApplicability';
 import { DeferredRecoveryPanel, seedRecovery } from './DeferredDeductions';
@@ -190,9 +191,17 @@ export function deletePolicyCode(code, companyId = readActiveCompanyId()) {
 export const HIERARCHY_REFERENCE_CODE = 'REF-011';
 
 const seedPolicies = {
+  bonus: {
+    enabled: true,
+    assignment: seedAssignment(),
+    hierarchy: 'Standard',
+  },
   takeHome: {
     enabled: true,
     assignment: seedAssignment(),
+    // The Deduction Hierarchy and Company Loan Hierarchy (Services Information) payroll follows.
+    deductionHierarchy: 'Standard',
+    loanHierarchy: 'Standard',
     recovery: seedRecovery(),
     base: 'Gross Pay less reimbursements / receivables',
     thresholdType: 'Percentage',
@@ -456,10 +465,16 @@ export function takeHomeResult(policy, hierarchy) {
 
 export { grossUpResult };
 
-function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, onOpenService, sourced }) {
+function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, onOpenService, sourced, policy, onSelect }) {
+  const deductionNames = collectionHierarchyNames('deductionHierarchy');
+  const loanNames = collectionHierarchyNames('loanHierarchy');
+  // A choice that is gone or inactive falls to Standard, which a company always has.
+  const fallback = names => (names.includes('Standard') ? 'Standard' : names[0] || '');
+  const chosenDeduction = deductionNames.includes(policy?.deductionHierarchy) ? policy.deductionHierarchy : fallback(deductionNames);
+  const chosenLoan = loanNames.includes(policy?.loanHierarchy) ? policy.loanHierarchy : fallback(loanNames);
   const groups = [
-    ['Hierarchy of Deductions', hierarchy.filter(item => item.group === 'Deduction')],
-    ['Hierarchy of Loans', hierarchy.filter(item => item.group === 'Loan')],
+    ['Hierarchy of Deductions', hierarchy.filter(item => item.group === 'Deduction'), { key: 'deductionHierarchy', label: 'Deduction Hierarchy', names: deductionNames, chosen: chosenDeduction, empty: chosenDeduction ? 'No deductions are ranked in this hierarchy. They are collected oldest first.' : 'No Deduction Hierarchy is in effect, so deductions are collected oldest first.' }],
+    ['Hierarchy of Loans', hierarchy.filter(item => item.group === 'Loan'), { key: 'loanHierarchy', label: 'Company Loan Hierarchy', names: loanNames, chosen: chosenLoan, empty: chosenLoan ? 'No company loans are ranked in this hierarchy. They are collected oldest first.' : 'No Company Loan Hierarchy is in effect, so company loans are collected oldest first.' }],
   ];
   return <>
     <div className="deduction-rank-heading">
@@ -467,15 +482,19 @@ function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, on
         <h3>Deduction and loan hierarchy <FieldHelp helpKey="deductionHierarchy" /></h3>
         <p>Rank 1 is adjusted first. Statutory deductions are always applied in full and never deferred.</p>
       </div>
-      <div className="hierarchy-actions"><button className="button secondary small" onClick={onManageHierarchy}><Table /> Manage ranks in {HIERARCHY_REFERENCE_CODE}</button><button className="button secondary small" onClick={() => onOpenService?.('deductions')}>Deductions</button><button className="button secondary small" onClick={() => onOpenService?.('loans')}>Company Loans</button><button className="button secondary small" onClick={() => onOpenService?.('governmentLoans')}>Government Loans</button></div>
+      <div className="hierarchy-actions"><button className="button secondary small" onClick={() => onOpenService?.('deductionHierarchy')}><Table /> Deduction Hierarchy</button><button className="button secondary small" onClick={() => onOpenService?.('loanHierarchy')}><Table /> Company Loan Hierarchy</button><button className="button secondary small" onClick={() => onOpenService?.('deductions')}>Deductions</button><button className="button secondary small" onClick={() => onOpenService?.('loans')}>Company Loans</button><button className="button secondary small" onClick={() => onOpenService?.('governmentLoans')}>Government Loans</button></div>
     </div>
     <div className={`hierarchy-source ${sourced ? 'linked' : 'fallback'}`}>
       <Lock weight="duotone" />
       <span>{sourced
-        ? <>Active codes and collection settings come from their owning modules; <strong>{HIERARCHY_REFERENCE_CODE} Deduction and Loan Hierarchy</strong> owns only the adjustment order.</>
+        ? <>Active codes and collection settings come from their owning modules; the <strong>Deduction Hierarchy</strong> and <strong>Company Loan Hierarchy</strong> chosen below own only the adjustment order.</>
         : <>The <strong>{HIERARCHY_REFERENCE_CODE}</strong> reference table has no usable rows, so the Atlas default order is in use.</>}</span>
     </div>
-    {groups.map(([title, rows]) => rows.length > 0 && <div className="deduction-rank-table" key={title}>
+    {groups.map(([title, rows, pick]) => <div className="hierarchy-group" key={title}>
+      <div className="hierarchy-pick">
+        <FieldLabel label={pick.label} helpKey={pick.key}><select value={pick.chosen} onChange={event => onSelect?.(pick.key, event.target.value)}>{pick.names.map(name => <option key={name}>{name}</option>)}</select><small className={`field-hint${pick.chosen ? '' : ' hierarchy-warning'}`}><strong>Order:</strong> {hierarchyOrder(pick.key, pick.chosen).map((name, index) => `${index + 1}. ${name}`).join('  ›  ') || pick.empty}</small></FieldLabel>
+      </div>
+      {rows.length > 0 && <div className="deduction-rank-table">
       <h4>{title}</h4>
       <table>
         <thead><tr><th>Priority</th><th>Collection</th><th>Amount due</th><th>Carry-forward balance</th></tr></thead>
@@ -490,6 +509,7 @@ function HierarchyPanel({ hierarchy, scenario, onScenario, onManageHierarchy, on
           </tr>;
         })}</tbody>
       </table>
+      </div>}
     </div>)}
   </>;
 }
@@ -547,7 +567,7 @@ function TakeHomeEngine({ policy, setPolicy, hierarchy, sourced, onManageHierarc
         <Toggle value={policy.notifyEmployee} onChange={value => update('notifyEmployee', value)} helpKey="notifyEmployee" label="Admin and employee notification" hint="Send an alert when a deduction is deferred or an exception remains." />
       </div>
 
-      <HierarchyPanel hierarchy={hierarchy} scenario={policy.scenario} onScenario={updateScenario} onManageHierarchy={onManageHierarchy} onOpenService={onOpenService} sourced={sourced} />
+      <HierarchyPanel hierarchy={hierarchy} scenario={policy.scenario} onScenario={updateScenario} onManageHierarchy={onManageHierarchy} onOpenService={onOpenService} sourced={sourced} policy={policy} onSelect={update} />
 
       {policy.carryForward && <DeferredRecoveryPanel
         rows={outstandingRows}
@@ -622,6 +642,34 @@ const GROSS_UP_FORMULA = {
   'Final Tax': 'gross − final tax at the approved rate = target net',
   'Expanded Tax': 'gross − expanded tax at the approved rate = target net',
 };
+
+/**
+ * Bonus Priority Allocation (BON-004): which Bonus Hierarchy a payroll uses to hand out the
+ * non-taxable Bonus Threshold. The hierarchies and their ranked bonuses are kept in the Reference Tables;
+ * the policy only chooses one, and a payroll transaction may choose another for that transaction.
+ */
+function BonusEngine({ policy, setPolicy, onSave }) {
+  const names = bonusHierarchyNames();
+  // A choice that is gone or inactive falls to Standard, which a company always has.
+  const chosen = names.includes(policy.hierarchy) ? policy.hierarchy : (names.includes('Standard') ? 'Standard' : names[0] || '');
+  const order = bonusOrderFor(chosen);
+  const update = (key, value) => setPolicy(previous => ({ ...previous, [key]: value }));
+  return <div className="policy-engine-grid bonus-engine">
+    <section className="policy-config-card">
+      <header><span><Calculator weight="duotone" /></span><div><h2>Bonus Priority Allocation</h2><p>Chooses the Bonus Hierarchy that decides which bonus uses the non-taxable Bonus Threshold first. A bonus that is not in the hierarchy is paid after the ranked ones.</p></div></header>
+      <div className="policy-form-grid">
+        <FieldLabel className="wide" label="Bonus Hierarchy" helpKey="hierarchy"><select value={chosen} onChange={event => update('hierarchy', event.target.value)}>{names.map(option => <option key={option}>{option}</option>)}</select><small className="field-hint">Used by every payroll transaction unless the transaction chooses another one.</small></FieldLabel>
+      </div>
+      <div className="hierarchy-preview" style={{ margin: '4px 0 14px' }}>
+        <strong>{chosen ? `Order in ${chosen}` : 'Order (oldest first)'}</strong>
+        {!chosen && <p className="approver-problem" role="alert">No Bonus Hierarchy is in effect, so bonuses use the Bonus Threshold oldest first. Add or activate one in Services Information › Payroll › Bonus Hierarchy.</p>}
+        {order.length ? <ol style={{ margin: '6px 0 10px 20px', fontSize: '0.9rem' }}>{order.map(name => <li key={name}>{name}</li>)}</ol> : <p>No bonuses are ranked in this hierarchy yet.</p>}
+        <small>Add hierarchies and rank their bonuses in Core › Company Configuration › Services Information › Payroll › Bonus Hierarchy. The order can be changed at any time; a payroll transaction does not lock it.</small>
+      </div>
+      <PolicySaveBar label="Save bonus policy" onSave={reason => onSave({ hierarchy: chosen }, reason)} />
+    </section>
+  </div>;
+}
 
 function GrossUpEngine({ policy: saved, setPolicy, onSave }) {
   const policy = useMemo(() => normalizeGrossUpPolicy(saved), [saved]);
@@ -748,6 +796,7 @@ export const policyEngines = [
   { key: 'retirement', section: 'retirement', label: 'Retirement Pay', code: 'RET-001' },
   { key: 'final-pay', section: 'finalPay', label: 'Final Pay', code: 'FIN-001' },
   { key: 'gross-up', section: 'grossUp', label: 'Gross Up', code: 'GUP-001' },
+  { key: 'bonus', section: 'bonus', label: 'Bonus', code: 'BON-004' },
 ];
 
 const policyEngineTabForCode = item =>
@@ -1057,13 +1106,18 @@ export function PolicyComputations({ companyId = readActiveCompanyId(), notify, 
       retirementPolicy={policies.retirement}
       onSave={(result, reason) => savePolicy('finalPay', 'Final Pay policy', `${describeAssignment(policies.finalPay.assignment)} · ${result.separation.applied.reason} → ${result.separation.applied.formula} · net ${money(result.netFinalPay)} · retirement pay ${policies.finalPay.components['Retirement pay'] ? 'included' : 'excluded'}`, reason)}
       /></EngineAccess.Provider>}
+      {tab === 'bonus' && <EngineAccess.Provider value={accessFor('bonus')}><BonusEngine
+      policy={policies.bonus}
+      setPolicy={setSection('bonus')}
+      onSave={(result, reason) => savePolicy('bonus', 'Bonus policy', `Bonus Hierarchy ${policies.bonus.hierarchy}`, reason)}
+      /></EngineAccess.Provider>}
       </EngineScope.Provider>
       <EngineVersionHistory label={activeEngine?.label} history={engineHistory(versions, ENGINE_SECTIONS[tab])} onActivate={(item, date) => activateVersion(ENGINE_SECTIONS[tab], item, date)} onLoad={item => loadVersion(ENGINE_SECTIONS[tab], item)} />
     </div>
   </section>;
 }
 
-const ENGINE_SECTIONS = { 'take-home': 'takeHome', retirement: 'retirement', 'gross-up': 'grossUp', 'final-pay': 'finalPay' };
+const ENGINE_SECTIONS = { 'take-home': 'takeHome', retirement: 'retirement', 'gross-up': 'grossUp', 'final-pay': 'finalPay', bonus: 'bonus' };
 
 /** How the next Save is recorded: active from a date (a future date schedules it) or a draft. */
 function EngineVersionBar({ saveMode, onChange }) {

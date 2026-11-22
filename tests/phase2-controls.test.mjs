@@ -84,6 +84,24 @@ test('the bonus ceiling order decides which bonus stays non-taxable first', () =
   assert.ok(taxableOf(reversed, '13th Month Pay') > 0);
 });
 
+test('the chosen Bonus Hierarchy is named in the bonus trace and a different hierarchy changes the order', () => {
+  store.clear();
+  const base = run('PR-B2');
+  const thirteenth = { enabled: true, basis: 'Custom / uploaded value', bonusTypes: ['13th Month Pay', 'Performance Bonus'], ntThreshold: 50000 };
+  const bonuses = [{ name: '13th Month Pay', amount: 40000 }, { name: 'Performance Bonus', amount: 30000 }];
+  const computeWith = (hierarchy, order) => {
+    const transaction = { ...base, config: { ...base.config, thirteenthMonth: thirteenth, bonusCeilingOrder: order, bonusHierarchy: hierarchy }, overrides: { 'EMP-1001': { bonuses } } };
+    return runPayroll({ transaction, context: buildPayrollContext({ companyId: COMPANY, run: transaction, hrmData }) }).lines.find(entry => entry.employeeId === 'EMP-1001');
+  };
+  const standard = computeWith('Standard', ['13th Month Pay', 'Performance Bonus']);
+  const yearEnd = computeWith('Year-end', ['Performance Bonus', '13th Month Pay']);
+  const named = line => JSON.stringify(line.computationTrace || line.trace || line).includes('Bonus Hierarchy');
+  assert.ok(named(standard) && named(yearEnd), 'the trace names the hierarchy');
+  assert.ok(JSON.stringify(yearEnd).includes('Year-end Bonus Hierarchy'));
+  assert.equal(standard.bonuses.find(item => item.name === '13th Month Pay').taxable, 0);
+  assert.equal(yearEnd.bonuses.find(item => item.name === 'Performance Bonus').taxable, 0);
+});
+
 test('policy engine versions: draft is not used, a future version is scheduled, a backdated run reads the version then in force', () => {
   store.clear();
   recordEngineVersion(COMPANY, 'takeHome', { values: { threshold: 30 }, effectiveDate: '2026-01-01', by: 'P&A', reason: 'Initial' });

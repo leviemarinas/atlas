@@ -25,6 +25,7 @@ import {
   mdoBalanceFor,
   toggleDashboardWidget,
 } from './hrmData.js';
+import { OwnPayrollItems } from './EmployeeMasterfile.jsx';
 import {
   BarChart,
   Field,
@@ -340,6 +341,7 @@ function CalendarWidget({ data, onOpen }) {
 export function HRMDashboard({ data, setData, requests, user, access, onOpenWorkspace, onNotify }) {
   const [managing, setManaging] = useState(false);
   const [viewing201, setViewing201] = useState(false);
+  const [tab201, setTab201] = useState('Employee Record');
 
   const employee = findEmployee(data, user.employeeId);
   const attendance = data.attendance || {};
@@ -417,16 +419,18 @@ export function HRMDashboard({ data, setData, requests, user, access, onOpenWork
       </ul>
     </Modal>}
 
-    {viewing201 && <Modal title="201 File" onClose={() => setViewing201(false)} footer={<GhostButton onClick={() => setViewing201(false)}>Close</GhostButton>}>
-      <div className="hrm-form-grid">
+    {viewing201 && <Modal title="201 File" width="lg" onClose={() => setViewing201(false)} footer={<GhostButton onClick={() => setViewing201(false)}>Close</GhostButton>}>
+      <SegmentedTabs value={tab201} onChange={setTab201} tabs={['Employee Record', 'Payroll Items']} ariaLabel="201 File" />
+      {tab201 === 'Employee Record' && <div className="hrm-form-grid">
         <Field label="Employee Name"><input value={employee?.name || ''} readOnly disabled /></Field>
         <Field label="Employee Code"><input value={employee?.employeeCode || ''} readOnly disabled /></Field>
         <Field label="Position"><input value={employee?.position || ''} readOnly disabled /></Field>
         <Field label="Department"><input value={employee?.department || ''} readOnly disabled /></Field>
         <Field label="Employment Type"><input value={employee?.employmentType || ''} readOnly disabled /></Field>
         <Field label="Status"><input value={employee?.status || ''} readOnly disabled /></Field>
-      </div>
-      <p className="hrm-modal-message">The full 201 file lives in Employee Masterfile; this summary is read-only here.</p>
+      </div>}
+      {tab201 === 'Payroll Items' && <OwnPayrollItems employeeCode={employee?.employeeCode} />}
+      <p className="hrm-modal-message">Your own 201 file, read-only. P&A Admin and Client Admin maintain it in the Employee Masterfile; ask them for any change.</p>
     </Modal>}
   </div>;
 }

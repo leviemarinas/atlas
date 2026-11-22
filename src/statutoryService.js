@@ -35,8 +35,8 @@ export function readStatutoryData() {
 
 /**
  * The version in force on `asOf`: the latest Active version whose effective
- * date is on or before that date, falling back to the earliest Active version
- * when the run predates every published table.
+ * date is on or before that date. As in Atlas there is no fallback: a run that
+ * predates every Active table finds none.
  */
 export function effectiveVersion(agency, asOf = new Date().toISOString().slice(0, 10), data = readStatutoryData()) {
   return effectiveVersionIn(data, agency, asOf);

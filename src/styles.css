@@ -1457,8 +1457,10 @@ textarea { min-height: 72px; resize: vertical; }
 .policy-toggle > span { display: grid; gap: 2px; }
 .policy-toggle strong { font-size: 11.5px; }
 .policy-toggle small { color: var(--muted); font-size: 10.4px; }
-.deduction-rank-heading { padding: 2px 15px 9px; display: flex; justify-content: space-between; align-items: end; gap: 10px; }
-.hierarchy-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.deduction-rank-heading { padding: 2px 15px 9px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.deduction-rank-heading > div:first-child { min-width: 0; }
+.hierarchy-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 5px; }
+.hierarchy-actions .button { white-space: nowrap; }
 .linked-reference-note { margin: 10px 0; padding: 10px 12px; border: 1px solid #d8c9e7; border-radius: 6px; background: #faf7fd; color: #5a4d64; display: flex; align-items: flex-start; gap: 8px; font-size: 11.2px; line-height: 1.5; }
 .linked-reference-note svg { width: 16px; flex: 0 0 auto; color: var(--violet); }
 .reference-entry-table input[readonly] { background: #f5f2f7; color: #62586a; cursor: not-allowed; }
@@ -2049,6 +2051,10 @@ textarea { min-height: 72px; resize: vertical; }
 .hrm-modal.size-sm { max-width: 420px; }
 .hrm-modal.size-md { max-width: 560px; }
 .hrm-modal.size-lg { max-width: 780px; }
+.own-payroll-items { display: grid; gap: 14px; margin-top: 12px; max-height: 60vh; overflow-y: auto; }
+.own-payroll-section h3 { font-size: 13px; margin: 0 0 6px; }
+.own-payroll-section .table-card { overflow-x: auto; }
+.own-payroll-section table { font-size: 12px; white-space: nowrap; }
 .hrm-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 19px; border-bottom: 1px solid var(--line); }
 .hrm-modal-head h2 { margin: 0; font-size: 14.2px; font-weight: 600; }
 .hrm-modal-head button { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 5px; color: #6d6678; }
@@ -4011,3 +4017,21 @@ fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fiel
 .binding-chip.used-chip { max-width: 170px; }
 .binding-chip .used-chip-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .pagination select.page-size-select { width: 54px !important; height: 22px !important; min-height: 0 !important; padding: 0 2px !important; margin: 0 3px !important; display: inline-block !important; border: 1px solid var(--line); border-radius: 4px; background-color: #fff; font-size: 11.5px !important; line-height: 1; }
+
+/* Bonus Hierarchy: the bonuses of one hierarchy in rank order. */
+.ranked-bonus-list { display: grid; gap: 8px; }
+.ranked-bonus-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ranked-bonus-rows li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: #fff; }
+.ranked-bonus-rank { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #efe7f7; color: #4b2a78; font-size: 12px; font-weight: 700; }
+.ranked-bonus-name { flex: 1; font-size: 13px; }
+.ranked-bonus-rows button { border: 1px solid var(--line); background: #fff; border-radius: 4px; min-width: 26px; height: 26px; cursor: pointer; color: #4b2a78; }
+.ranked-bonus-rows button:disabled { opacity: 0.35; cursor: default; }
+
+/* Take-Home Pay: each hierarchy choice sits directly above its own table. */
+.hierarchy-group + .hierarchy-group { margin-top: 14px; }
+.hierarchy-pick { margin: 0 15px 8px; max-width: 100%; }
+.hierarchy-pick .policy-field { max-width: 380px; }
+.hierarchy-pick select { width: 100%; }
+.hierarchy-pick .field-hint { display: block; margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
+.hierarchy-pick .hierarchy-warning { color: #a4452c; }
+.hierarchy-pick .policy-field-label { font-size: 11.4px; font-weight: 700; color: var(--ink, #2d2535); margin-bottom: 4px; }

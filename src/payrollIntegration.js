@@ -1,4 +1,6 @@
-import { readServiceConfiguration } from './serviceModules';
+import { isStandardHierarchy, readServiceConfiguration } from './serviceModules';
+import { chosenCollectionHierarchies } from './hierarchyChoice.js';
+import { byCreation } from './creationOrder.js';
 
 const numeric = value => Number(value || 0);
 const active = record => (record.status || 'Active') === 'Active';
@@ -11,13 +13,43 @@ export const PAYROLL_REFERENCE_CODES = {
 };
 
 /**
+ * The ranked items of a Deduction Hierarchy or Company Loan Hierarchy (Services Information), first in line first.
+ * The Take-Home Pay policy chooses which one; with no choice, or one that is gone or inactive, Standard is used. Items it does not rank go oldest first.
+ */
+export function hierarchyOrder(moduleKey, chosenName) {
+  const rows = readServiceConfiguration(moduleKey).filter(active);
+  // Standard is always there: it is what a missing or inactive choice falls to.
+  const chosen = rows.find(record => record.name === chosenName) || rows.find(record => isStandardHierarchy(moduleKey, record)) || rows[0];
+  return String(chosen?.rankedItems || '').split(',').map(item => item.trim()).filter(Boolean);
+}
+
+/** The names of the active hierarchies of one kind, for the policy's selector. */
+export const collectionHierarchyNames = moduleKey => {
+  const names = readServiceConfiguration(moduleKey).filter(active).map(record => record.name).filter(Boolean);
+  return names;
+};
+
+/** A listed item is collected before the unlisted ones of its kind, in the hierarchy's own order. */
+const rankInHierarchy = (name, order, createdPosition, base) => {
+  const position = order.indexOf(name);
+  return position < 0 ? base + createdPosition / 1000 : (base - 1) + (position + 1) / 1000;
+};
+/** Where a record falls among its kind when they are put oldest first. */
+const createdPositions = records => new Map([...records].sort(byCreation).map((record, index) => [record.id, index + 1]));
+
+/**
  * Canonical deduction/loan definitions consumed by reference sources, the
  * Take-Home engine, payroll simulation, the employee ledger, and payslips.
  * Setup stays owned by the service modules; this projection never stores a
  * competing copy of those definitions.
  */
 export function readPayrollCollectionDefinitions() {
-  const deductions = readServiceConfiguration('deductions').filter(active)
+  const chosen = chosenCollectionHierarchies();
+  const deductionOrder = hierarchyOrder('deductionHierarchy', chosen.deduction);
+  const loanOrder = hierarchyOrder('loanHierarchy', chosen.loan);
+  const deductionRecords = readServiceConfiguration('deductions').filter(active);
+  const deductionCreated = createdPositions(deductionRecords);
+  const deductions = deductionRecords
     .filter(record => (record.partOfNetPay || 'Yes') === 'Yes')
     .map(record => ({
       code: record.code,
@@ -26,7 +58,7 @@ export function readPayrollCollectionDefinitions() {
       kind: record.type || 'Company',
       sourceModule: 'deductions',
       sourceLabel: 'Deduction module',
-      rank: numeric(record.hierarchyPriority) || 20,
+      rank: rankInHierarchy(record.name, deductionOrder, deductionCreated.get(record.id) || 0, 20),
       due: numeric(record.amount),
       outstanding: numeric(record.balance) || numeric(record.amount),
       frequency: record.frequency,
@@ -34,14 +66,16 @@ export function readPayrollCollectionDefinitions() {
       canAdjust: adjustable(record),
     }));
 
-  const companyLoans = readServiceConfiguration('loans').filter(active).map(record => ({
+  const loanRecords = readServiceConfiguration('loans').filter(active);
+  const loanCreated = createdPositions(loanRecords);
+  const companyLoans = loanRecords.map(record => ({
     code: record.code,
     name: record.name,
     group: 'Loan',
     kind: 'Company',
     sourceModule: 'loans',
     sourceLabel: 'Company Loan module',
-    rank: numeric(record.hierarchyPriority) || 10,
+    rank: rankInHierarchy(record.name, loanOrder, loanCreated.get(record.id) || 0, 10),
     due: numeric(record.amortization),
     outstanding: numeric(record.balance) || numeric(record.principal),
     frequency: record.frequency,

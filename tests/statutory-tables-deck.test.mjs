@@ -17,9 +17,9 @@ test('PhilHealth gives the odd centavo to the employer, and the total is exact',
   assert.deepEqual([even.employee, even.employer], [500, 500]);
 });
 
-test('Pag-IBIG and PhilHealth units are Percentage (%) or Amount (Php)', () => {
+test('Pag-IBIG and PhilHealth units are Percentage (%) or Amount (₱), as in Atlas', () => {
   const units = new Set(['philhealth', 'pagibig'].flatMap(agency => effectiveVersionIn(data, agency, '2026-06-15').rows.map(row => row.unit)));
-  assert.deepEqual([...units].sort(), ['Amount (Php)', 'Percentage (%)']);
+  assert.deepEqual([...units].sort(), ['Amount (₱)', 'Percentage (%)']);
 });
 
 test('the version in force is chosen by the payroll cut-off against the Effectivity Date', () => {
@@ -35,7 +35,7 @@ test('the version in force is chosen by the payroll cut-off against the Effectiv
 test('the tax tables carry Payment Mode and Bi-weekly, and the codes follow the approved prefixes', () => {
   const compensation = agencyDefinitions.tax.fields.find(([key]) => key === 'frequency');
   assert.equal(compensation[1], 'Payment Mode');
-  assert.deepEqual(compensation[3], ['Daily', 'Weekly', 'Bi-weekly', 'Semi-monthly', 'Monthly', 'Annual']);
+  assert.deepEqual(compensation[3], ['Daily', 'Weekly', 'Bi-Weekly', 'Semi-Monthly', 'Monthly', 'Quarterly', 'Yearly']);
   assert.deepEqual(['sss', 'philhealth', 'pagibig', 'annualTax', 'tax', 'expandedTax', 'finalTax'].map(key => agencyDefinitions[key].prefix), ['SSS', 'PHIC', 'HDMF', 'WTA', 'WTC', 'WTE', 'WTF']);
   const biweekly = graduatedTax(effectiveVersionIn(data, 'tax', '2026-06-15'), 20000, 'Bi-weekly');
   assert.ok(biweekly.tax > 0 && biweekly.brackets.length > 0, 'a bi-weekly employee has a tax bracket');
@@ -44,7 +44,8 @@ test('the tax tables carry Payment Mode and Bi-weekly, and the codes follow the 
 test('Expanded and Final tax rows carry a locked Tax Type and both ATC code fields', () => {
   for (const [agency, type] of [['expandedTax', 'WE'], ['finalTax', 'WF']]) {
     const keys = agencyDefinitions[agency].fields.map(([key]) => key);
-    assert.deepEqual(keys.slice(0, 5), ['taxType', 'incomePayment', 'atcClass', 'excessRate', 'atcCode']);
+    assert.deepEqual(keys.slice(0, 5), ['taxType', 'incomePayment', 'atcClass', 'atcCode', 'excessRate']);
+    assert.equal(keys.includes('fixedTax'), agency === 'finalTax', 'Atlas: only Final carries Fixed Tax');
     assert.ok(effectiveVersionIn(data, agency, '2026-06-15').rows.every(row => row.taxType === type));
   }
 });
