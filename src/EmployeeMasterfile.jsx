@@ -132,11 +132,13 @@ const sectionDefinitions = [
   },
   {
     key: 'earnings', title: 'Fixed Earnings', upload: true,
-    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['paymentMode', 'Frequency'], ['amount', 'Earnings Amount'], ['type', 'Earning Type'], ['taxability', 'Taxability'], ['classification', 'Non-taxable Classification'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
+    columns: [['dateCreated', 'Date Created'], ['code', 'Earning Code'], ['name', 'Earning Name'], ['paymentMode', 'Payment Mode'], ['frequency', 'Frequency'], ['amount', 'Earnings Amount'], ['type', 'Earning Type'], ['taxability', 'Taxability'], ['classification', 'Non-taxable Classification'], ['cappedEarning', 'Capped Earning?'], ['cappedAmount', 'Capped Amount'], ['nonTaxableAmount', 'Non-Taxable'], ['taxableAmount', 'Taxable'], ['source', 'Source']],
     // The earning is picked from Earning Configuration, so its code fills in; the frequency follows the payment mode.
     // Follows the approved Add Earnings screen. Picking the earning (Earning Code - Earning Name, searchable) fills in what applies to it
     // from Earning Configuration: taxability, classification, amount, frequency, dates and hold date. The code is kept with the entry.
-    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'earningpick'], ['paymentMode', 'Frequency', 'select', CONFIG_PAYMENT_MODES], ['amount', 'Earning Amount', 'number'], ['type', 'Earning Type', 'computed'], ['taxability', 'Taxability', 'computed'], ['grossUp', 'Gross up this earning?', 'computed', null, draft => draft.taxability === 'Taxable'], ['classification', 'Non-taxable Classification', 'select', ['Receivable', 'De Minimis', 'Other Non-taxable'], draft => draft.taxability === 'Non-taxable'], ['cappedEarning', 'Capped Earning?', 'computed'], ['cappedAmount', 'Capped Amount', 'number', null, draft => draft.cappedEarning === 'Yes'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'monthyear'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'monthyear'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['holdStatus', 'Effective Status', 'status', () => 'On hold: this earning will not be released until the Hold Date is removed. Once removed, it will be released retroactively in the payroll transaction.', draft => Boolean(draft.holdDate)], ['remarks', 'Remarks', 'textarea']],
+    fields: [['dateCreated', 'Date Created', 'date'], ['name', 'Earning Name', 'earningpick'],
+      // Payment Mode comes from the employee's masterfile and is not edited here; Frequency is ticked from the periods that mode has.
+      ['paymentMode', 'Payment Mode', 'computed'], ['frequency', 'Frequency', 'frequencychecks', draft => frequencyOptions(draft.paymentMode)], ['amount', 'Earning Amount', 'number'], ['type', 'Earning Type', 'computed'], ['taxability', 'Taxability', 'computed'], ['grossUp', 'Gross up this earning?', 'computed', null, draft => draft.taxability === 'Taxable'], ['classification', 'Non-taxable Classification', 'select', ['Receivable', 'De Minimis', 'Other Non-taxable'], draft => draft.taxability === 'Non-taxable'], ['cappedEarning', 'Capped Earning?', 'computed'], ['cappedAmount', 'Capped Amount', 'number', null, draft => draft.cappedEarning === 'Yes'], ['effectiveDate', 'Effectivity Date', 'date'], ['start', 'Start', 'monthyear'], ['periodStart', 'Period Start', 'select', draft => frequencyOptions(draft.paymentMode)], ['end', 'End', 'monthyear'], ['periodEnd', 'Period End', 'select', draft => frequencyOptions(draft.paymentMode)], ['holdDate', 'Hold Date', 'date'], ['holdStatus', 'Effective Status', 'status', () => 'On hold: this earning will not be released until the Hold Date is removed. Once removed, it will be released retroactively in the payroll transaction.', draft => Boolean(draft.holdDate)], ['remarks', 'Remarks', 'textarea']],
     rows: [
       { dateCreated: '01/01/2026', code: 'EXA-001', name: 'Salary', amount: '50000', frequency: 'Semi-monthly', taxability: 'Taxable', classification: 'Taxable' },
       { dateCreated: '01/01/2026', code: 'EXA-002', name: 'Lecture Fee', amount: '7500', frequency: 'One-time', taxability: 'Non-taxable', classification: 'Non-Taxable' },
@@ -283,7 +285,7 @@ function earningDefaults(name) {
   const item = configured('earnings').find(entry => entry.name === name);
   if (!item) return {};
   const classification = ['Regular Earning', 'Retirement', 'Fringe Benefit', 'Receivable', 'De Minimis', 'Other Non-taxable'].includes(item.classification) ? item.classification : (item.taxability === 'Non-taxable' ? 'Other Non-taxable' : 'Regular Earning');
-  const fill = { type: item.type, grossUp: item.grossUp, taxability: item.taxability, classification: item.taxability === 'Non-taxable' ? classification : '', deMinimisBenefit: classification === 'De Minimis' ? item.deMinimisBenefit : '', paymentMode: item.paymentMode, effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
+  const fill = { type: item.type, grossUp: item.grossUp, taxability: item.taxability, classification: item.taxability === 'Non-taxable' ? classification : '', deMinimisBenefit: classification === 'De Minimis' ? item.deMinimisBenefit : '', effectiveDate: item.effectivityDate, start: item.startDate, periodStart: item.periodStart, periodEnd: item.periodEnd, holdDate: item.holdDate };
   if (Number(item.defaultAmount) > 0) fill.amount = item.defaultAmount;
   return Object.fromEntries(Object.entries(fill).filter(([, entry]) => entry !== undefined && entry !== ''));
 }
@@ -323,6 +325,18 @@ function InputField({ field, value, onChange, draft = {}, required = true }) {
   const choices = value && !sourced.includes(value) ? [...sourced, value] : sourced;
   // A read-only note, like Effective Status in Earning Configuration; the text is worked out from the entry.
   if (type === 'status') return <div className="locked-value">{options(draft)}</div>;
+  // Frequency checkboxes: Every Payroll stands alone, the named periods can be ticked together; ticking none goes back to Every Payroll.
+  if (type === 'frequencychecks') {
+    const picked = String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+    const single = sourced.length === 1;
+    const toggle = item => {
+      if (item === 'Every Payroll') return onChange('Every Payroll');
+      const named = picked.filter(entry => entry !== 'Every Payroll');
+      const next = named.includes(item) ? named.filter(entry => entry !== item) : [...named, item];
+      onChange(next.length ? sourced.filter(entry => next.includes(entry)).join(', ') : sourced[0]);
+    };
+    return <div className="radio-group frequency-checks" role="group" aria-label={label}>{sourced.map(item => <label key={item}><input type="checkbox" checked={single || picked.includes(item)} disabled={single} onChange={() => toggle(item)} /> {item}</label>)}</div>;
+  }
   if (type === 'computed') return <input value={value ?? ''} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'rate') return <input className="rate-box" value={value ?? 0} readOnly aria-label={`${label} (computed)`} />;
   if (type === 'percent') return <div className="percent-field"><input value={value ?? 0} readOnly aria-label={`${label} (computed)`} /><span>%</span></div>;
@@ -527,7 +541,7 @@ function applicableLoanNames(employee) {
 }
 
 function EntryModal({ section, record, onClose, onSave, preview, setup = {}, employee = null, left = 0 }) {
-  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'costAllocation' && !record?.id ? { percentage: String(left) } : {}), ...(section.key === 'allowances' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Work Days per Year', workHours: String(setup.workHours || 8), effectiveDate: today } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record }));
+  const [draft, setDraft] = useState(() => normalizePayrollRecord(section, { dateCreated: createdToday(), ...(section.key === 'basicPay' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Per Year', workHours: String(setup.workHours || 8) } : {}), ...(section.key === 'costAllocation' && !record?.id ? { percentage: String(left) } : {}), ...(section.key === 'allowances' && !record?.id ? { workDays: String(setup.workDays || 261), workDaysType: 'Work Days per Year', workHours: String(setup.workHours || 8), effectiveDate: today } : {}), ...(section.key === 'bonuses' && !record?.id ? { annualThreshold: String(referenceValues('bonus-ceilings', 'ceiling')[0] || ''), effectiveDate: today } : {}), ...record, ...(section.key === 'earnings' && setup.paymentMode ? { paymentMode: setup.paymentMode } : {}) }));
   const [reason, setReason] = useState('');
   // Pay-affecting sections keep an employee-level audit, with optional remarks.
   const audited = AUDITED_SECTIONS.includes(section.key);
@@ -683,6 +697,8 @@ function EmployeeSection({ section, rows, setRows, notify, initiallyOpen, onOpen
         const values = line.split(',').map(value => value.replace(/^"|"$/g, '').trim()); const row = { id: Date.now() + index };
         headers.forEach((header, i) => { if (labels[header]) row[labels[header]] = values[i]; });
         if (Object.keys(row).length <= 1) errors.push({ row: index + 2, reason: `No ${section.title} value on this row.` });
+        // A Fixed Earning takes the employee's Payment Mode; several Frequency periods in one cell are separated by semicolons.
+        if (section.key === 'earnings') { if (setup.paymentMode) row.paymentMode = setup.paymentMode; if (row.frequency) row.frequency = row.frequency.replaceAll(';', ','); }
         return normalizePayrollRecord(section, row);
       });
       const added = parsed.filter(row => Object.keys(row).length > 1);
