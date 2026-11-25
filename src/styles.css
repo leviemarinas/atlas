@@ -4035,3 +4035,14 @@ fieldset.field-switch.off input:not([type="checkbox"]):not([type="radio"]), fiel
 .hierarchy-pick .field-hint { display: block; margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
 .hierarchy-pick .hierarchy-warning { color: #a4452c; }
 .hierarchy-pick .policy-field-label { font-size: 11.4px; font-weight: 700; color: var(--ink, #2d2535); margin-bottom: 4px; }
+
+/* DM Link column (Earning Configuration and Fixed Earnings): an icon, with the linked earning on hover */
+.dm-link-cell { display: inline-flex; gap: 6px; }
+.dm-link { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; cursor: help; font-size: 15px; }
+.dm-link.none { color: var(--muted); cursor: default; }
+.dm-link.source { color: #0f6b5c; background: #e0f4ef; }
+.dm-link.excess { color: #8a4b00; background: #fff1dc; }
+.dm-link-tip { display: none; position: absolute; z-index: 30; top: calc(100% + 6px); right: 0; min-width: 220px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid #ddd8e6; box-shadow: 0 6px 18px rgba(30, 20, 60, .12); color: #2c2738; font-size: 12px; font-weight: 400; line-height: 1.5; text-align: left; white-space: nowrap; }
+.dm-link-tip b { display: block; font-weight: 600; color: #6b6478; }
+.dm-link-tip > span { display: block; }
+.dm-link:hover .dm-link-tip, .dm-link:focus .dm-link-tip { display: block; }
