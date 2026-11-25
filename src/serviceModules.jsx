@@ -13,6 +13,7 @@ import {
   Function,
   Link,
   LinkBreak,
+  ArrowsLeftRight,
   Lock,
   MagnifyingGlass,
   PencilSimple,
@@ -100,7 +101,8 @@ const FREQUENCY_BY_MODE = Object.freeze({
   Daily: ['Calendar View'],
   Yearly: ['Yearly'],
   'Piece-rate': ['Per work completed'],
-  Quarterly: ['Every Payroll', 'First Quarter', 'Second Quarter', 'Third Quarter'],
+  'Four-weekly': ['Every Payroll', 'First Payroll', 'Second Payroll'],
+  Quarterly: ['Every Payroll', 'First Quarter', 'Second Quarter', 'Third Quarter', 'Fourth Quarter'],
 });
 export const PAYROLL_PERIODS = Object.freeze(['Every Payroll', 'First Half', 'Second Half']);
 
@@ -232,7 +234,7 @@ const baseModuleDefinitions = {
     plural: 'earnings',
     description: 'Set up fixed or one-time earnings, recurring frequency, taxability, computation rules, and accounting mappings.',
     table: [
-      ['code', 'Earning Code'], ['name', 'Earning Name'], ['type', 'Earning Type'], ['applicability', 'Applies To'], ['status', 'Status'],
+      ['code', 'Earning Code'], ['name', 'Earning Name'], ['type', 'Earning Type'], ['applicability', 'Applies To'], ['dmLink', 'DM Link'], ['status', 'Status'],
     ],
     // Three steps: details, setup and accounting. Payment mode, frequency and the effectivity dates are not asked for
     // here; a new earning takes the defaults below (Semi-monthly, Every Payroll, in effect from 01/01/2026).
@@ -1855,6 +1857,36 @@ function DeleteDialog({ def, record, onClose, onDelete }) {
   return <div className="modal-backdrop" role="presentation"><section className="modal delete-modal" role="dialog" aria-modal="true"><header><h2>Delete {def.title}</h2><button className="icon-button" onClick={onClose}><X /></button></header><div className="modal-body"><div className="delete-copy"><div className="delete-icon"><Trash weight="duotone" /></div><div><h3>Delete “{record.name}”?</h3><p>This removes the configuration from the working list. This action cannot be undone.</p></div></div><div className="modal-actions"><button className="button secondary" onClick={onClose}>Cancel</button><button className="button danger" onClick={onDelete}>Delete</button></div></div></section></div>;
 }
 
+/**
+ * The De Minimis links set in Earning Configuration: which earning takes the excess of each
+ * De Minimis benefit (Adjustment after Threshold). Worked out from the setup, never typed.
+ * Each link is kept as "code · name" so the hover can name the earning exactly.
+ */
+export function deMinimisLinks(earnings = []) {
+  const label = name => { const found = earnings.find(item => item.name === name); return found?.code ? `${found.code} · ${name}` : name; };
+  const excessOf = new Map();
+  const excessTo = new Map();
+  earnings.filter(item => item.classification === 'De Minimis' && item.deMinimisAdjustment && (item.status || 'Active') === 'Active').forEach(item => {
+    excessTo.set(item.name, label(item.deMinimisAdjustment));
+    excessOf.set(item.deMinimisAdjustment, [...(excessOf.get(item.deMinimisAdjustment) || []), label(item.name)]);
+  });
+  return { excessOf, excessTo };
+}
+
+/**
+ * The DM Link cell: a link icon on a De Minimis earning (hover: where its excess goes) and an
+ * arrows icon on the earning that takes the excess (hover: from which benefits). A dash when unlinked.
+ */
+export function DeMinimisLinkIcon({ name, links }) {
+  const sources = (name && links?.excessOf.get(name)) || [];
+  const target = name && links?.excessTo.get(name);
+  if (!sources.length && !target) return <span className="dm-link none">—</span>;
+  return <span className="dm-link-cell">
+    {target && <span className="dm-link source" tabIndex={0} aria-label={`Excess goes to ${target}`}><Link weight="bold" /><span className="dm-link-tip" role="tooltip"><b>Excess goes to</b>{target}</span></span>}
+    {sources.length > 0 && <span className="dm-link excess" tabIndex={0} aria-label={`Takes the excess of ${sources.join(', ')}`}><ArrowsLeftRight weight="bold" /><span className="dm-link-tip" role="tooltip"><b>Takes the excess of</b>{sources.map(item => <span key={item}>{item}</span>)}</span></span>}
+  </span>;
+}
+
 export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyId(), onBack, notify, backLabel = 'Services Information', breadcrumb = 'Company Information / Services Information / Payroll' }) {
   const def = moduleDefinitions[moduleKey];
   const { isPaAdmin, actor } = useRole();
@@ -1899,6 +1931,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
   }), [records, query, filters]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const dmLinks = useMemo(() => (moduleKey === 'earnings' ? deMinimisLinks(records) : null), [moduleKey, records]);
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
 
   /**
@@ -2021,7 +2054,7 @@ export function ServiceConfiguration({ moduleKey, companyId = readActiveCompanyI
       <div className="table-card config-table-card">
         <table className="config-table">
           <thead><tr>{def.table.map(([, label]) => <th key={label}>{label}</th>)}{def.bindable && <th>Basis of Computation</th>}<th>Payroll Transaction</th><th>Action</th></tr></thead>
-          <tbody>{visible.length ? visible.map(record => <tr key={record.id}>{def.table.map(([key]) => <td key={key}>{key === 'status' ? <span className={`status-pill ${String(record[key]).toLowerCase()}`}>{record[key]}</span> : key === 'applicability' ? <span className="scope-chip"><Users weight="duotone" />{describeScope(record.applicability)}</span> : ['principal', 'amortization', 'threshold'].includes(key) ? `₱ ${Number(record[key] || 0).toLocaleString()}` : record[key] || '—'}</td>)}
+          <tbody>{visible.length ? visible.map(record => <tr key={record.id}>{def.table.map(([key]) => <td key={key}>{key === 'status' ? <span className={`status-pill ${String(record[key]).toLowerCase()}`}>{record[key]}</span> : key === 'applicability' ? <span className="scope-chip"><Users weight="duotone" />{describeScope(record.applicability)}</span> : ['principal', 'amortization', 'threshold'].includes(key) ? `₱ ${Number(record[key] || 0).toLocaleString()}` : key === 'dmLink' ? <DeMinimisLinkIcon name={record.name} links={dmLinks} /> : record[key] || '—'}</td>)}
             {def.bindable && <td>{record.computationCode
               ? <span className="binding-chip" title={bindingSummary(record, catalog.library)}><Function weight="duotone" />{record.computationCode}</span>
               : <span className="binding-chip none"><LinkBreak />Not bound</span>}</td>}
